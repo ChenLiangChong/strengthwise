@@ -6,9 +6,9 @@ class ProfilePage extends StatelessWidget {
   final AuthWrapper authWrapper;
   
   const ProfilePage({
-    Key? key, 
+    super.key, 
     required this.authWrapper,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

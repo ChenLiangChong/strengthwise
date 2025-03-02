@@ -4,7 +4,7 @@ import 'note_editor_page.dart';
 import 'dart:math';
 
 class RecordsPage extends StatefulWidget {
-  const RecordsPage({Key? key}) : super(key: key);
+  const RecordsPage({super.key});
 
   @override
   _RecordsPageState createState() => _RecordsPageState();

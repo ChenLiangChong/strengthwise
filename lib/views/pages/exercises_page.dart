@@ -127,8 +127,8 @@ class _ExercisesPageState extends State<ExercisesPage> {
     });
     
     _logDebug('開始載入Level$level分類');
-    _logDebug('目前選擇條件: type=${_selectedType}, bodyPart=${_selectedBodyPart}');
-    _logDebug('目前選擇層級: L1=${_selectedLevel1}, L2=${_selectedLevel2}, L3=${_selectedLevel3}, L4=${_selectedLevel4}, L5=${_selectedLevel5}');
+    _logDebug('目前選擇條件: type=$_selectedType, bodyPart=$_selectedBodyPart');
+    _logDebug('目前選擇層級: L1=$_selectedLevel1, L2=$_selectedLevel2, L3=$_selectedLevel3, L4=$_selectedLevel4, L5=$_selectedLevel5');
     
     // 先檢查是否有緩存
     final cacheKey = 'level${level}_${_selectedType ?? ""}_${_selectedBodyPart ?? ""}_${_selectedLevel1 ?? ""}_${_selectedLevel2 ?? ""}_${_selectedLevel3 ?? ""}_${_selectedLevel4 ?? ""}';
@@ -150,34 +150,34 @@ class _ExercisesPageState extends State<ExercisesPage> {
       // 總是添加類型過濾條件，這是基本條件
       if (_selectedType != null && _selectedType!.isNotEmpty) {
         query = query.where('type', isEqualTo: _selectedType);
-        _logDebug('添加基本查詢條件: type=${_selectedType}');
+        _logDebug('添加基本查詢條件: type=$_selectedType');
       }
       
       // 總是添加身體部位過濾條件，這是基本條件
       if (_selectedBodyPart != null && _selectedBodyPart!.isNotEmpty) {
         query = query.where('bodyParts', arrayContains: _selectedBodyPart);
-        _logDebug('添加基本查詢條件: bodyParts包含${_selectedBodyPart}');
+        _logDebug('添加基本查詢條件: bodyParts包含$_selectedBodyPart');
       }
       
       // 根據當前要查詢的層級，添加所有前置層級的條件
       if (level >= 2 && _selectedLevel1 != null && _selectedLevel1!.isNotEmpty) {
         query = query.where('level1', isEqualTo: _selectedLevel1);
-        _logDebug('添加層級條件: level1=${_selectedLevel1}');
+        _logDebug('添加層級條件: level1=$_selectedLevel1');
       }
       
       if (level >= 3 && _selectedLevel2 != null && _selectedLevel2!.isNotEmpty) {
         query = query.where('level2', isEqualTo: _selectedLevel2);
-        _logDebug('添加層級條件: level2=${_selectedLevel2}');
+        _logDebug('添加層級條件: level2=$_selectedLevel2');
       }
       
       if (level >= 4 && _selectedLevel3 != null && _selectedLevel3!.isNotEmpty) {
         query = query.where('level3', isEqualTo: _selectedLevel3);
-        _logDebug('添加層級條件: level3=${_selectedLevel3}');
+        _logDebug('添加層級條件: level3=$_selectedLevel3');
       }
       
       if (level >= 5 && _selectedLevel4 != null && _selectedLevel4!.isNotEmpty) {
         query = query.where('level4', isEqualTo: _selectedLevel4);
-        _logDebug('添加層級條件: level4=${_selectedLevel4}');
+        _logDebug('添加層級條件: level4=$_selectedLevel4');
       }
       
       // 執行查詢，獲取文檔 - 使用 Source.SERVER 確保從服務器獲取最新數據
@@ -208,27 +208,27 @@ class _ExercisesPageState extends State<ExercisesPage> {
           case 1:
             _level1Categories = categories.toList()..sort();
             // 儲存到緩存
-            ExerciseCacheService.cacheCategories('${cacheKey}', _level1Categories);
+            ExerciseCacheService.cacheCategories(cacheKey, _level1Categories);
             break;
           case 2:
             _level2Categories = categories.toList()..sort();
             // 儲存到緩存
-            ExerciseCacheService.cacheCategories('${cacheKey}', _level2Categories);
+            ExerciseCacheService.cacheCategories(cacheKey, _level2Categories);
             break;
           case 3:
             _level3Categories = categories.toList()..sort();
             // 儲存到緩存
-            ExerciseCacheService.cacheCategories('${cacheKey}', _level3Categories);
+            ExerciseCacheService.cacheCategories(cacheKey, _level3Categories);
             break;
           case 4:
             _level4Categories = categories.toList()..sort();
             // 儲存到緩存
-            ExerciseCacheService.cacheCategories('${cacheKey}', _level4Categories);
+            ExerciseCacheService.cacheCategories(cacheKey, _level4Categories);
             break;
           case 5:
             _level5Categories = categories.toList()..sort();
             // 儲存到緩存
-            ExerciseCacheService.cacheCategories('${cacheKey}', _level5Categories);
+            ExerciseCacheService.cacheCategories(cacheKey, _level5Categories);
             break;
         }
         
@@ -270,37 +270,37 @@ class _ExercisesPageState extends State<ExercisesPage> {
       // 添加所有筛选条件
       if (_selectedType != null && _selectedType!.isNotEmpty) {
         query = query.where('type', isEqualTo: _selectedType);
-        _logDebug('添加查詢條件: type=${_selectedType}');
+        _logDebug('添加查詢條件: type=$_selectedType');
       }
       
       if (_selectedBodyPart != null && _selectedBodyPart!.isNotEmpty) {
         query = query.where('bodyParts', arrayContains: _selectedBodyPart);
-        _logDebug('添加查詢條件: bodyParts包含${_selectedBodyPart}');
+        _logDebug('添加查詢條件: bodyParts包含$_selectedBodyPart');
       }
       
       if (_selectedLevel1 != null && _selectedLevel1!.isNotEmpty) {
         query = query.where('level1', isEqualTo: _selectedLevel1);
-        _logDebug('添加查詢條件: level1=${_selectedLevel1}');
+        _logDebug('添加查詢條件: level1=$_selectedLevel1');
       }
       
       if (_selectedLevel2 != null && _selectedLevel2!.isNotEmpty) {
         query = query.where('level2', isEqualTo: _selectedLevel2);
-        _logDebug('添加查詢條件: level2=${_selectedLevel2}');
+        _logDebug('添加查詢條件: level2=$_selectedLevel2');
       }
       
       if (_selectedLevel3 != null && _selectedLevel3!.isNotEmpty) {
         query = query.where('level3', isEqualTo: _selectedLevel3);
-        _logDebug('添加查詢條件: level3=${_selectedLevel3}');
+        _logDebug('添加查詢條件: level3=$_selectedLevel3');
       }
       
       if (_selectedLevel4 != null && _selectedLevel4!.isNotEmpty) {
         query = query.where('level4', isEqualTo: _selectedLevel4);
-        _logDebug('添加查詢條件: level4=${_selectedLevel4}');
+        _logDebug('添加查詢條件: level4=$_selectedLevel4');
       }
       
       if (_selectedLevel5 != null && _selectedLevel5!.isNotEmpty) {
         query = query.where('level5', isEqualTo: _selectedLevel5);
-        _logDebug('添加查詢條件: level5=${_selectedLevel5}');
+        _logDebug('添加查詢條件: level5=$_selectedLevel5');
       }
       
       // 执行查询 - 强制使用 Source.SERVER 绕过缓存
@@ -738,12 +738,17 @@ class _ExercisesPageState extends State<ExercisesPage> {
           _logDebug('點擊了運動項目: ${exercise.name} (actionName: ${exercise.actionName}) (ID: ${exercise.id})');
           try {
             _logDebug('嘗試導航到詳情頁...');
-            Navigator.push(
+            Navigator.push<Exercise>(
               context,
               MaterialPageRoute(
                 builder: (context) => ExerciseDetailPage(exercise: exercise),
               ),
-            );
+            ).then((selectedExercise) {
+              if (selectedExercise != null) {
+                // 如果從詳情頁返回了所選動作，則將其返回到PlanEditorPage
+                Navigator.pop(context, selectedExercise);
+              }
+            });
             _logDebug('導航成功完成');
           } catch (e) {
             _logDebug('導航失敗: $e');

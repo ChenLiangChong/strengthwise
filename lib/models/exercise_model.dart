@@ -86,7 +86,7 @@ class Exercise {
       'imageUrl': imageUrl,
       'videoUrl': videoUrl,
       'apps': apps,
-      'createdAt': createdAt?.millisecondsSinceEpoch,
+      'createdAt': createdAt.millisecondsSinceEpoch,
     };
   }
 

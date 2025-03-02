@@ -28,6 +28,17 @@ class ExerciseDetailPage extends StatelessWidget {
       return Scaffold(
         appBar: AppBar(
           title: Text(displayName),
+          actions: [
+            // 新增動作選擇按鈕
+            IconButton(
+              icon: const Icon(Icons.add_circle),
+              tooltip: '添加到訓練計畫',
+              onPressed: () {
+                // 返回所選的動作
+                Navigator.pop(context, exercise);
+              },
+            ),
+          ],
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -183,6 +194,23 @@ class ExerciseDetailPage extends StatelessWidget {
                   },
                 ),
               ],
+              
+              // 添加到訓練計畫按鈕
+              const SizedBox(height: 32),
+              Center(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('添加到訓練計畫'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  onPressed: () {
+                    // 返回所選的動作
+                    Navigator.pop(context, exercise);
+                  },
+                ),
+              ),
             ],
           ),
         ),

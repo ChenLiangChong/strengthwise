@@ -3,13 +3,12 @@ import '../services/auth_wrapper.dart';
 import 'login_page.dart';
 import 'pages/home_page.dart';
 import 'pages/booking_page.dart';
-import 'pages/training_page.dart';
 import 'pages/records_page.dart';
 import 'pages/profile_page.dart';
-import 'pages/exercises_page.dart';
+import 'pages/training_page.dart';
 
 class MainHomePage extends StatefulWidget {
-  const MainHomePage({Key? key}) : super(key: key);
+  const MainHomePage({super.key});
 
   @override
   State<MainHomePage> createState() => _MainHomePageState();
@@ -30,8 +29,8 @@ class _MainHomePageState extends State<MainHomePage> {
       const HomePage(),
       // 預約頁面
       const BookingPage(),
-      // 動作庫頁面
-      const ExercisesPage(),
+      // 動作庫頁面改為訓練頁面
+      const TrainingPage(),
       // 記錄頁面
       const RecordsPage(),
       // 個人頁面
@@ -77,7 +76,7 @@ class _MainHomePageState extends State<MainHomePage> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.fitness_center),
-              label: '動作庫',
+              label: '訓練',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.note_alt),

@@ -230,7 +230,7 @@ class ExerciseCacheService {
   static Future<void> clearCacheForKey(String key) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final cacheKey = '${_prefixCache}$key';
+      final cacheKey = '$_prefixCache$key';
       await prefs.remove(cacheKey);
       await prefs.remove('${cacheKey}_time');
       print('已清除緩存: $key');

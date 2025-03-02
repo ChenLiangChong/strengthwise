@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../models/note_model.dart';
-import 'dart:math';
-import 'dart:ui' as ui;
 import 'dart:async';
 
 class NoteEditorPage extends StatefulWidget {
@@ -9,10 +7,10 @@ class NoteEditorPage extends StatefulWidget {
   final Function(Note) onSave;
 
   const NoteEditorPage({
-    Key? key,
+    super.key,
     this.note,
     required this.onSave,
-  }) : super(key: key);
+  });
 
   @override
   _NoteEditorPageState createState() => _NoteEditorPageState();
@@ -298,7 +296,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> with SingleTickerProvid
                 // 撤銷按鈕
                 IconButton(
                   icon: const Icon(Icons.undo),
-                  onPressed: _drawingHistory.length > 0 ? _undoDrawing : null,
+                  onPressed: _drawingHistory.isNotEmpty ? _undoDrawing : null,
                 ),
                 
                 // 橡皮擦按鈕
