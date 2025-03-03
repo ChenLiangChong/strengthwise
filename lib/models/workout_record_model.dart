@@ -7,7 +7,7 @@ class WorkoutRecord {
   final DateTime date;
   final List<ExerciseRecord> exerciseRecords;
   final String notes;
-  final bool isCompleted;
+  final bool completed;
   final DateTime createdAt;
 
   WorkoutRecord({
@@ -17,7 +17,7 @@ class WorkoutRecord {
     required this.date,
     required this.exerciseRecords,
     this.notes = '',
-    this.isCompleted = false,
+    this.completed = false,
     required this.createdAt,
   });
 
@@ -29,7 +29,7 @@ class WorkoutRecord {
       'date': Timestamp.fromDate(date),
       'exerciseRecords': exerciseRecords.map((record) => record.toJson()).toList(),
       'notes': notes,
-      'isCompleted': isCompleted,
+      'completed': completed,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -44,7 +44,7 @@ class WorkoutRecord {
           .map((e) => ExerciseRecord.fromFirestore(e as Map<String, dynamic>))
           .toList(),
       notes: data['notes'] ?? '',
-      isCompleted: data['isCompleted'] ?? false,
+      completed: data['completed'] ?? false,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -64,7 +64,7 @@ class WorkoutRecord {
       exerciseRecords: exercises
           .map((e) => ExerciseRecord.fromWorkoutExercise(e as Map<String, dynamic>))
           .toList(),
-      isCompleted: false,
+      completed: false,
       createdAt: DateTime.now(),
     );
   }
@@ -75,14 +75,14 @@ class ExerciseRecord {
   final String exerciseName;
   final List<SetRecord> sets;
   final String notes;
-  final bool isCompleted;
+  final bool completed;
 
   ExerciseRecord({
     required this.exerciseId,
     required this.exerciseName,
     required this.sets,
     this.notes = '',
-    this.isCompleted = false,
+    this.completed = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -91,7 +91,7 @@ class ExerciseRecord {
       'exerciseName': exerciseName,
       'sets': sets.map((set) => set.toJson()).toList(),
       'notes': notes,
-      'isCompleted': isCompleted,
+      'completed': completed,
     };
   }
 
@@ -103,7 +103,7 @@ class ExerciseRecord {
           .map((e) => SetRecord.fromFirestore(e as Map<String, dynamic>))
           .toList(),
       notes: data['notes'] ?? '',
-      isCompleted: data['isCompleted'] ?? false,
+      completed: data['completed'] ?? false,
     );
   }
 
@@ -122,12 +122,20 @@ class ExerciseRecord {
       ));
     }
     
+    // 優先使用exerciseName，然後是name，最後是actionName
+    final name = exerciseData['exerciseName'] ?? 
+                exerciseData['name'] ?? 
+                exerciseData['actionName'] ?? 
+                '未命名運動';
+    
+    print('創建運動記錄，名稱: $name, 原始數據: ${exerciseData.keys}');
+    
     return ExerciseRecord(
       exerciseId: exerciseData['exerciseId'] ?? '',
-      exerciseName: exerciseData['name'] ?? '',
+      exerciseName: name,
       sets: sets,
-      notes: '',
-      isCompleted: false,
+      notes: exerciseData['notes'] ?? '',
+      completed: false,
     );
   }
 
@@ -137,14 +145,14 @@ class ExerciseRecord {
     String? exerciseName,
     List<SetRecord>? sets,
     String? notes,
-    bool? isCompleted,
+    bool? completed,
   }) {
     return ExerciseRecord(
       exerciseId: exerciseId ?? this.exerciseId,
       exerciseName: exerciseName ?? this.exerciseName,
       sets: sets ?? this.sets,
       notes: notes ?? this.notes,
-      isCompleted: isCompleted ?? this.isCompleted,
+      completed: completed ?? this.completed,
     );
   }
 }
@@ -154,14 +162,14 @@ class SetRecord {
   final int reps;
   final double weight;
   final int restTime;
-  final bool isCompleted;
+  final bool completed;
 
   SetRecord({
     required this.setNumber,
     required this.reps,
     required this.weight,
     required this.restTime,
-    this.isCompleted = false,
+    this.completed = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -170,7 +178,7 @@ class SetRecord {
       'reps': reps,
       'weight': weight,
       'restTime': restTime,
-      'isCompleted': isCompleted,
+      'completed': completed,
     };
   }
 
@@ -180,7 +188,7 @@ class SetRecord {
       reps: data['reps'] ?? 0,
       weight: (data['weight'] as num?)?.toDouble() ?? 0.0,
       restTime: data['restTime'] ?? 0,
-      isCompleted: data['isCompleted'] ?? false,
+      completed: data['completed'] ?? false,
     );
   }
 
@@ -190,14 +198,14 @@ class SetRecord {
     int? reps,
     double? weight,
     int? restTime,
-    bool? isCompleted,
+    bool? completed,
   }) {
     return SetRecord(
       setNumber: setNumber ?? this.setNumber,
       reps: reps ?? this.reps,
       weight: weight ?? this.weight,
       restTime: restTime ?? this.restTime,
-      isCompleted: isCompleted ?? this.isCompleted,
+      completed: completed ?? this.completed,
     );
   }
 } 

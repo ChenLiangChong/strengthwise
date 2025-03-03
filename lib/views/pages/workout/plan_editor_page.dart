@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import '../../../models/workout_exercise_model.dart';
+import '../../../models/workout_exercise_model.dart' as exercise_models;
 import '../../../models/exercise_model.dart';
 import '../exercises_page.dart';
+import 'template_management_page.dart';
 
 class PlanEditorPage extends StatefulWidget {
   final DateTime selectedDate;
@@ -24,7 +25,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   
-  List<WorkoutExercise> _exercises = [];
+  List<exercise_models.WorkoutExercise> _exercises = [];
   bool _isLoading = false;
   String? _selectedPlanType;
   
@@ -67,7 +68,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         // 載入訓練動作
         final exercisesData = data['exercises'] as List<dynamic>? ?? [];
         _exercises = exercisesData
-            .map((e) => WorkoutExercise.fromFirestore(e as Map<String, dynamic>))
+            .map((e) => exercise_models.WorkoutExercise.fromFirestore(e as Map<String, dynamic>))
             .toList();
       }
     } catch (e) {
@@ -100,31 +101,46 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         throw Exception('未登入');
       }
 
-      final planData = {
+      // 創建訓練記錄數據
+      final recordData = {
         'userId': userId,
         'title': _titleController.text,
         'description': _descriptionController.text,
         'planType': _selectedPlanType,
-        'scheduledDate': Timestamp.fromDate(widget.selectedDate),
-        'exercises': _exercises.map((e) => e.toJson()).toList(),
+        'date': Timestamp.fromDate(widget.selectedDate),
+        'exercises': _exercises.map((e) => {
+          'exerciseId': e.id,
+          'exerciseName': e.name,
+          'actionName': e.actionName,
+          'sets': e.sets,
+          'reps': e.reps,
+          'weight': e.weight,
+          'restTime': e.restTime,
+          'notes': e.notes,
+          'completed': false,
+        }).toList(),
+        'totalSets': _exercises.fold(0, (sum, exercise) => sum + exercise.sets),
+        'totalExercises': _exercises.length,
         'completed': false,
+        'note': '',
+        'startTime': null,
+        'endTime': null,
+        'duration': 0,
+        'createdAt': FieldValue.serverTimestamp(),
       };
 
       if (widget.planId != null) {
-        // 更新現有計畫
+        // 更新現有記錄
         await FirebaseFirestore.instance
-            .collection('workoutPlans')
+            .collection('workoutRecords')
             .doc(widget.planId)
             .update({
-          ...planData,
+          ...recordData,
           'updatedAt': FieldValue.serverTimestamp(),
         });
       } else {
-        // 創建新計畫
-        await FirebaseFirestore.instance.collection('workoutPlans').add({
-          ...planData,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+        // 創建新記錄
+        await FirebaseFirestore.instance.collection('workoutRecords').add(recordData);
       }
 
       // 返回行事曆頁面
@@ -146,6 +162,145 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     }
   }
 
+  // 保存為模板
+  Future<void> _saveAsTemplate() async {
+    try {
+      if (_titleController.text.isEmpty || _selectedPlanType == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('請填寫計畫名稱和類型')),
+        );
+        return;
+      }
+
+      if (_exercises.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('請至少添加一個訓練動作')),
+        );
+        return;
+      }
+
+      // 顯示模板名稱輸入框
+      TextEditingController templateNameController = TextEditingController(text: _titleController.text);
+      final templateName = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('保存為模板'),
+          content: TextField(
+            controller: templateNameController,
+            decoration: const InputDecoration(
+              labelText: '模板名稱',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context, templateNameController.text);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+              child: const Text('保存'),
+            ),
+          ],
+        ),
+      );
+
+      if (templateName == null || templateName.isEmpty) return;
+
+      setState(() {
+        _isLoading = true;
+      });
+
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('用戶未登入');
+      }
+
+      // 創建模板數據 (直接存儲在 workoutPlans 集合中)
+      final templateData = {
+        'userId': userId,
+        'title': templateName,
+        'description': _descriptionController.text,
+        'planType': _selectedPlanType,
+        'exercises': _exercises.map((e) => e.toJson()).toList(),
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      print('準備保存模板: $templateName');
+      await FirebaseFirestore.instance
+          .collection('workoutPlans')
+          .add(templateData);
+      print('模板已保存: $templateName');
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('模板保存成功')),
+        );
+      }
+    } catch (e, stackTrace) {
+      print('保存模板錯誤: $e');
+      print('錯誤堆棧: $stackTrace');
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('保存模板失敗: $e')),
+        );
+      }
+    }
+  }
+
+  // 從模板加載
+  Future<void> _loadFromTemplate() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('請先登入')),
+        );
+        return;
+      }
+
+      final template = await Navigator.push<WorkoutTemplate>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const TemplateManagementPage(),
+        ),
+      );
+
+      if (template != null && mounted) {
+        setState(() {
+          _titleController.text = template.title;
+          _descriptionController.text = template.description;
+          _selectedPlanType = template.planType;
+          _exercises = List.from(template.exercises);
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已加載模板: ${template.title}')),
+        );
+      }
+    } catch (e) {
+      print('從模板加載錯誤: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('加載模板失敗: $e')),
+      );
+    }
+  }
+
   // 添加訓練動作
   void _addExercise() async {
     final result = await Navigator.push<Exercise>(
@@ -157,7 +312,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
     if (result != null) {
       setState(() {
-        _exercises.add(WorkoutExercise.fromExercise(result));
+        _exercises.add(exercise_models.WorkoutExercise.fromExercise(result));
       });
     }
   }
@@ -298,6 +453,16 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       appBar: AppBar(
         title: Text(widget.planId != null ? '編輯訓練計畫' : '新增訓練計畫'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.save_alt),
+            tooltip: '保存為模板',
+            onPressed: _isLoading ? null : _saveAsTemplate,
+          ),
+          IconButton(
+            icon: const Icon(Icons.folder_open),
+            tooltip: '從模板創建',
+            onPressed: _isLoading ? null : _loadFromTemplate,
+          ),
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: _isLoading ? null : _savePlan,

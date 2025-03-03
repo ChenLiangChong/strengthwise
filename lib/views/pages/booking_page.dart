@@ -30,8 +30,8 @@ class _BookingPageState extends State<BookingPage> {
   ];
   
   String? _selectedPlanType;
-  String _planTitle = '';
-  String _planDescription = '';
+  final String _planTitle = '';
+  final String _planDescription = '';
   Map<DateTime, List<dynamic>> _events = {};
   List<dynamic> _selectedEvents = [];
   
@@ -49,7 +49,7 @@ class _BookingPageState extends State<BookingPage> {
       if (userId == null) return;
       
       final querySnapshot = await FirebaseFirestore.instance
-          .collection('workoutPlans')
+          .collection('workoutRecords')
           .where('userId', isEqualTo: userId)
           .get();
       
@@ -58,7 +58,7 @@ class _BookingPageState extends State<BookingPage> {
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
         final planData = {...data, 'id': doc.id}; // 添加文檔ID到數據中
-        final scheduledDate = data['scheduledDate'] as Timestamp;
+        final scheduledDate = data['date'] as Timestamp;
         final dateTime = scheduledDate.toDate();
         final key = DateTime(dateTime.year, dateTime.month, dateTime.day);
         
@@ -92,7 +92,7 @@ class _BookingPageState extends State<BookingPage> {
   Future<void> _deleteWorkoutPlan(String planId) async {
     try {
       await FirebaseFirestore.instance
-          .collection('workoutPlans')
+          .collection('workoutRecords')
           .doc(planId)
           .delete();
       
@@ -136,7 +136,7 @@ class _BookingPageState extends State<BookingPage> {
       context,
       MaterialPageRoute(
         builder: (context) => WorkoutExecutionPage(
-          workoutPlanId: planId,
+          workoutRecordId: planId,
         ),
       ),
     );
@@ -168,14 +168,55 @@ class _BookingPageState extends State<BookingPage> {
   
   // 查看計畫詳情
   void _viewPlanDetails(dynamic plan) {
-    _editWorkoutPlan(plan['id']);
+    // 不論完成狀態，都進入訓練執行頁面
+    _startWorkout(plan['id']);
   }
   
   // 切換計畫完成狀態
   Future<void> _togglePlanCompletion(String planId, bool currentStatus) async {
     try {
+      // 獲取計畫數據以檢查日期
+      final doc = await FirebaseFirestore.instance
+          .collection('workoutRecords')
+          .doc(planId)
+          .get();
+          
+      if (!doc.exists) {
+        throw Exception('找不到訓練計畫');
+      }
+      
+      final planData = doc.data()!;
+      
+      // 檢查日期是否為過去或未來日期
+      if (planData['date'] != null && planData['date'] is Timestamp) {
+        final planTimestamp = planData['date'] as Timestamp;
+        final planDate = planTimestamp.toDate();
+        
+        // 對比今日日期（僅考慮年月日）
+        final today = DateTime.now();
+        final todayDate = DateTime(today.year, today.month, today.day);
+        final planDateOnly = DateTime(planDate.year, planDate.month, planDate.day);
+        
+        if (planDateOnly.isBefore(todayDate)) {
+          // 過去的訓練計畫不允許修改
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('無法修改過去的訓練記錄')),
+          );
+          return;
+        }
+        
+        if (planDateOnly.isAfter(todayDate)) {
+          // 未來的訓練計畫不允許修改
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('無法修改未來的訓練記錄，請在訓練當天進行操作')),
+          );
+          return;
+        }
+      }
+      
+      // 繼續更新計畫狀態
       await FirebaseFirestore.instance
-          .collection('workoutPlans')
+          .collection('workoutRecords')
           .doc(planId)
           .update({
         'completed': !currentStatus,
@@ -308,19 +349,57 @@ class _BookingPageState extends State<BookingPage> {
                         onPressed: () => _startWorkout(plan['id']),
                       ),
                     // 完成狀態切換
-                    IconButton(
-                      icon: Icon(
-                        isCompleted ? Icons.check_circle : Icons.check_circle_outline,
-                        color: isCompleted ? Colors.green : Colors.grey,
-                      ),
-                      tooltip: isCompleted ? '標記為未完成' : '標記為完成',
-                      onPressed: () => _togglePlanCompletion(plan['id'], isCompleted),
+                    Builder(
+                      builder: (context) {
+                        // 判斷是否為過去或未來的日期
+                        bool isPastDate = false;
+                        bool isFutureDate = false;
+                        bool isToday = false;
+                        
+                        if (plan['date'] != null && plan['date'] is Timestamp) {
+                          final planTimestamp = plan['date'] as Timestamp;
+                          final planDate = planTimestamp.toDate();
+                          
+                          // 對比今日日期
+                          final today = DateTime.now();
+                          final todayDate = DateTime(today.year, today.month, today.day);
+                          final planDateOnly = DateTime(planDate.year, planDate.month, planDate.day);
+                          
+                          isPastDate = planDateOnly.isBefore(todayDate);
+                          isFutureDate = planDateOnly.isAfter(todayDate);
+                          isToday = planDateOnly.isAtSameMomentAs(todayDate);
+                        }
+                        
+                        final canModify = isToday && !isPastDate && !isFutureDate;
+                        
+                        return IconButton(
+                          icon: Icon(
+                            isCompleted ? Icons.check_circle : Icons.check_circle_outline,
+                            color: isCompleted 
+                              ? Colors.green 
+                              : (isPastDate || isFutureDate ? Colors.grey.shade400 : Colors.grey),
+                          ),
+                          tooltip: isPastDate 
+                              ? '無法修改過去的訓練' 
+                              : (isFutureDate
+                                  ? '無法修改未來的訓練'
+                                  : (isCompleted ? '標記為未完成' : '標記為完成')),
+                          onPressed: (isPastDate || isFutureDate) ? () {
+                            String message = isPastDate 
+                                ? '無法修改過去的訓練記錄' 
+                                : '無法修改未來的訓練記錄，請在訓練當天進行操作';
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(message)),
+                            );
+                          } : () => _togglePlanCompletion(plan['id'], isCompleted),
+                        );
+                      },
                     ),
                     // 編輯按鈕
                     IconButton(
                       icon: const Icon(Icons.edit, color: Colors.blue),
-                      tooltip: '編輯',
-                      onPressed: () => _editWorkoutPlan(plan['id']),
+                      tooltip: '查看/編輯',
+                      onPressed: () => _startWorkout(plan['id']),
                     ),
                     // 刪除按鈕
                     IconButton(

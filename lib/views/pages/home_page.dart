@@ -18,69 +18,61 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _loadTodayWorkoutPlans();
+    _loadTodaysWorkouts();
   }
 
   // 獲取當天訓練計畫
-  Future<void> _loadTodayWorkoutPlans() async {
-    try {
-      setState(() {
-        _isLoading = true;
-      });
+  Future<void> _loadTodaysWorkouts() async {
+    setState(() {
+      _isLoading = true;
+    });
 
+    try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) {
-        setState(() {
-          _isLoading = false;
-        });
-        return;
+        throw Exception('用戶未登入');
       }
 
+      // 獲取今天的日期範圍 - 使用更寬鬆的時間範圍
       final now = DateTime.now();
-      print('當前時間: $now'); // 輸出當前時間以便調試
-      final today = DateTime(now.year, now.month, now.day);
-      final tomorrow = today.add(const Duration(days: 1));
-      
-      print('查詢範圍: ${today.toIso8601String()} 到 ${tomorrow.toIso8601String()}');
-      
-      // 由於可能有模擬器時間問題，先嘗試直接查詢所有計畫
+      print('原始當前時間: $now');
+
+      // 首先嘗試不使用日期範圍查詢，避免時區問題
       final querySnapshot = await FirebaseFirestore.instance
-          .collection('workoutPlans')
+          .collection('workoutRecords')
           .where('userId', isEqualTo: userId)
           .get();
+
+      print('找到總共 ${querySnapshot.docs.length} 個訓練記錄');
       
-      print('找到 ${querySnapshot.docs.length} 個訓練計畫');
+      // 在本地過濾今天的記錄
+      final todayRecords = <Map<String, dynamic>>[];
       
-      // 在本地過濾日期，避開 Firestore 索引問題
-      final filteredDocs = querySnapshot.docs.where((doc) {
-        final timestamp = doc.data()['scheduledDate'] as Timestamp?;
-        final completed = doc.data()['completed'] as bool? ?? false;
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        final recordDate = (data['date'] as Timestamp).toDate();
         
-        if (timestamp == null) return false;
+        // 調試信息
+        print('記錄日期: ${recordDate}, 時間戳: ${data['date']}');
         
-        final date = timestamp.toDate();
-        print('計畫日期: ${date.toIso8601String()}, 完成狀態: $completed');
+        // 檢查是否是今天的記錄（忽略時間部分）
+        final recordDay = DateTime(recordDate.year, recordDate.month, recordDate.day);
+        final today = DateTime(now.year, now.month, now.day);
         
-        // 檢查日期是否是今天
-        final planDate = DateTime(date.year, date.month, date.day);
-        final todayDate = DateTime(today.year, today.month, today.day);
-        
-        return planDate.isAtSameMomentAs(todayDate) && !completed;
-      }).toList();
-      
-      print('過濾後剩餘 ${filteredDocs.length} 個今日訓練計畫');
-      
+        if (recordDay.isAtSameMomentAs(today)) {
+          print('找到今天的記錄: ${doc.id}');
+          todayRecords.add({...data, 'id': doc.id});
+        }
+      }
+
       setState(() {
-        _todayWorkoutPlans = filteredDocs
-            .map((doc) => {
-                  ...doc.data(),
-                  'id': doc.id,
-                })
-            .toList();
+        _todayWorkoutPlans = todayRecords;
         _isLoading = false;
       });
+
+      print('過濾後今日訓練數量: ${_todayWorkoutPlans.length}');
     } catch (e) {
-      print('加載今日訓練計畫失敗: $e');
+      print('載入今日訓練失敗: $e');
       setState(() {
         _isLoading = false;
       });
@@ -88,19 +80,19 @@ class _HomePageState extends State<HomePage> {
   }
 
   // 開始訓練
-  Future<void> _startWorkout(String planId) async {
+  Future<void> _startWorkout(String recordId) async {
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => WorkoutExecutionPage(
-          workoutPlanId: planId,
+          workoutRecordId: recordId,
         ),
       ),
     );
     
     if (result == true) {
       // 訓練完成後重新加載計畫
-      await _loadTodayWorkoutPlans();
+      await _loadTodaysWorkouts();
     }
   }
 
@@ -168,7 +160,7 @@ class _HomePageState extends State<HomePage> {
                     ? _buildEmptyPlanCard()
                     : Column(
                         children: _todayWorkoutPlans
-                            .map((plan) => _buildWorkoutPlanCard(plan))
+                            .map((plan) => _buildWorkoutCard(plan))
                             .toList(),
                       ),
             
@@ -243,16 +235,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   // 訓練計畫卡片
-  Widget _buildWorkoutPlanCard(Map<String, dynamic> plan) {
-    final title = plan['title'] ?? '未命名訓練';
-    final type = plan['planType'] ?? '';
-    final exercisesCount = (plan['exercises'] as List?)?.length ?? 0;
+  Widget _buildWorkoutCard(Map<String, dynamic> record) {
+    final title = record['title'] ?? '未命名訓練';
+    final type = record['planType'] ?? '';
+    final exercisesCount = (record['exercises'] as List?)?.length ?? 0;
+    final isCompleted = record['completed'] ?? false;
     
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () => _startWorkout(plan['id']),
+        onTap: () => _startWorkout(record['id']),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -281,9 +274,10 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            decoration: isCompleted ? TextDecoration.lineThrough : null,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -311,11 +305,17 @@ class _HomePageState extends State<HomePage> {
               // 開始訓練按鈕
               Center(
                 child: ElevatedButton.icon(
-                  onPressed: () => _startWorkout(plan['id']),
-                  icon: const Icon(Icons.play_circle_outline),
-                  label: const Text('開始訓練'),
+                  onPressed: () => _startWorkout(record['id']),
+                  icon: Icon(
+                    isCompleted ? Icons.visibility : Icons.play_arrow,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    isCompleted ? '查看詳情' : '開始訓練',
+                    style: const TextStyle(color: Colors.white),
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: isCompleted ? Colors.blue : Colors.green,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 10,
