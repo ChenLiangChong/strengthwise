@@ -55,7 +55,7 @@ class _HomePageState extends State<HomePage> {
         final recordDate = (data['date'] as Timestamp).toDate();
         
         // 調試信息
-        print('記錄日期: ${recordDate}, 時間戳: ${data['date']}');
+        print('記錄日期: $recordDate, 時間戳: ${data['date']}');
         
         // 檢查是否是今天的記錄（忽略時間部分）
         final recordDay = DateTime(recordDate.year, recordDate.month, recordDate.day);

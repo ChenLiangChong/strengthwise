@@ -86,8 +86,8 @@ class UserModel {
     bool? isStudent,
   }) {
     return UserModel(
-      uid: this.uid,
-      email: this.email,
+      uid: uid,
+      email: email,
       displayName: displayName ?? this.displayName,
       photoURL: photoURL ?? this.photoURL,
       nickname: nickname ?? this.nickname,
@@ -97,7 +97,7 @@ class UserModel {
       age: age ?? this.age,
       isCoach: isCoach ?? this.isCoach,
       isStudent: isStudent ?? this.isStudent,
-      profileCreatedAt: this.profileCreatedAt,
+      profileCreatedAt: profileCreatedAt,
       profileUpdatedAt: DateTime.now(),
     );
   }

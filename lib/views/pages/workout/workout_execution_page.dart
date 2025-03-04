@@ -1061,7 +1061,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                     runSpacing: 8,
                     alignment: WrapAlignment.center,
                     children: List.generate(24, (index) {
-                      final formattedHour = index.toString().padLeft(2, '0') + ':00';
+                      final formattedHour = '${index.toString().padLeft(2, '0')}:00';
                       return ChoiceChip(
                         label: Text(formattedHour),
                         selected: index == _trainingHour,

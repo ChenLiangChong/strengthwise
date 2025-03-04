@@ -9,9 +9,9 @@ class ProfileSettingsPage extends StatefulWidget {
   final bool isFirstTimeSetup;
   
   const ProfileSettingsPage({
-    Key? key,
+    super.key,
     this.isFirstTimeSetup = false,
-  }) : super(key: key);
+  });
 
   @override
   _ProfileSettingsPageState createState() => _ProfileSettingsPageState();
