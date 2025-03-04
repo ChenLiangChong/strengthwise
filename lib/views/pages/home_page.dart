@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'workout/workout_execution_page.dart';
+import 'booking_page.dart';
+import 'workout/plan_editor_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -137,9 +139,17 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 InkWell(
-                  onTap: () {
+                  onTap: () async {
                     // 導航到訓練行事曆頁面
-                    Navigator.of(context).pushNamed('/booking');
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BookingPage(),
+                      ),
+                    );
+                    
+                    // 返回後重新加載數據
+                    await _loadTodaysWorkouts();
                   },
                   child: const Text(
                     '查看全部',
@@ -199,6 +209,9 @@ class _HomePageState extends State<HomePage> {
 
   // 沒有訓練計畫的卡片
   Widget _buildEmptyPlanCard() {
+    // 獲取當天日期
+    final today = DateTime.now();
+    
     return Card(
       elevation: 2,
       child: Padding(
@@ -219,9 +232,19 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () {
-                // 導航到訓練行事曆頁面
-                Navigator.of(context).pushNamed('/booking');
+              onPressed: () async {
+                // 直接導航到訓練計畫編輯頁面並傳入當天日期
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PlanEditorPage(
+                      selectedDate: today,
+                    ),
+                  ),
+                );
+                
+                // 無論結果如何，返回後都重新加載今日訓練數據
+                await _loadTodaysWorkouts();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
@@ -240,6 +263,18 @@ class _HomePageState extends State<HomePage> {
     final type = record['planType'] ?? '';
     final exercisesCount = (record['exercises'] as List?)?.length ?? 0;
     final isCompleted = record['completed'] ?? false;
+    
+    // 處理訓練時間顯示邏輯
+    String trainingTimeDisplay = '';
+    if (record['trainingTime'] != null) {
+      // 新格式：DateTime 類型
+      final trainingTime = (record['trainingTime'] as Timestamp).toDate();
+      trainingTimeDisplay = DateFormat('HH:mm').format(trainingTime);
+    } else if (record['trainingHour'] != null) {
+      // 舊格式：int 類型
+      final hour = record['trainingHour'] as int;
+      trainingTimeDisplay = '${hour.toString().padLeft(2, '0')}:00';
+    }
     
     return Card(
       elevation: 2,
@@ -288,6 +323,26 @@ class _HomePageState extends State<HomePage> {
                             color: Colors.grey,
                           ),
                         ),
+                        const SizedBox(height: 2),
+                        if (trainingTimeDisplay.isNotEmpty)
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                size: 12,
+                                color: Colors.green.shade700,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '訓練時間: $trainingTimeDisplay',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.green.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
                         const SizedBox(height: 2),
                         Text(
                           '包含 $exercisesCount 個訓練動作',

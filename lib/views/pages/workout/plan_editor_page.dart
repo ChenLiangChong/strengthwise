@@ -5,7 +5,8 @@ import 'package:intl/intl.dart';
 import '../../../models/workout_exercise_model.dart' as exercise_models;
 import '../../../models/exercise_model.dart';
 import '../exercises_page.dart';
-import 'template_management_page.dart';
+import 'template_management_page.dart' hide WorkoutTemplate;
+import '../../../models/workout_template_model.dart';
 
 class PlanEditorPage extends StatefulWidget {
   final DateTime selectedDate;
@@ -29,6 +30,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   bool _isLoading = false;
   String? _selectedPlanType;
   
+  // 修改：使用 DateTime 替代 int
+  DateTime _trainingTime = DateTime.now().copyWith(hour: 8, minute: 0, second: 0, millisecond: 0, microsecond: 0);
+  
   // 訓練計畫類型
   final List<String> _planTypes = [
     '力量訓練',
@@ -42,6 +46,26 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   @override
   void initState() {
     super.initState();
+    
+    // 检查是否是过去的日期
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selectedDate = DateTime(widget.selectedDate.year, widget.selectedDate.month, widget.selectedDate.day);
+    
+    if (selectedDate.isBefore(today)) {
+      // 使用 Future.microtask 确保在 initState 之后显示错误提示并返回
+      Future.microtask(() {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('無法為過去的日期創建訓練計畫'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        Navigator.of(context).pop();
+      });
+      return;
+    }
+    
     if (widget.planId != null) {
       _loadExistingPlan();
     }
@@ -64,6 +88,16 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         _titleController.text = data['title'] ?? '';
         _descriptionController.text = data['description'] ?? '';
         _selectedPlanType = data['planType'];
+        
+        // 加載訓練時間，如果存在
+        if (data['trainingTime'] != null) {
+          _trainingTime = (data['trainingTime'] as Timestamp).toDate();
+        } else if (data['trainingHour'] != null) {
+          // 兼容舊數據
+          final hour = data['trainingHour'] as int;
+          final date = widget.selectedDate;
+          _trainingTime = DateTime(date.year, date.month, date.day, hour, 0);
+        }
 
         // 載入訓練動作
         final exercisesData = data['exercises'] as List<dynamic>? ?? [];
@@ -101,32 +135,17 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         throw Exception('未登入');
       }
 
-      // 創建訓練記錄數據
+      // 創建訓練計畫數據
       final recordData = {
         'userId': userId,
         'title': _titleController.text,
         'description': _descriptionController.text,
         'planType': _selectedPlanType,
         'date': Timestamp.fromDate(widget.selectedDate),
-        'exercises': _exercises.map((e) => {
-          'exerciseId': e.id,
-          'exerciseName': e.name,
-          'actionName': e.actionName,
-          'sets': e.sets,
-          'reps': e.reps,
-          'weight': e.weight,
-          'restTime': e.restTime,
-          'notes': e.notes,
-          'completed': false,
-        }).toList(),
-        'totalSets': _exercises.fold(0, (sum, exercise) => sum + exercise.sets),
-        'totalExercises': _exercises.length,
+        'exercises': _exercises.map((e) => e.toJson()).toList(),
         'completed': false,
-        'note': '',
-        'startTime': null,
-        'endTime': null,
-        'duration': 0,
-        'createdAt': FieldValue.serverTimestamp(),
+        'trainingTime': Timestamp.fromDate(_trainingTime),
+        'createdAt': Timestamp.fromDate(DateTime.now()),
       };
 
       if (widget.planId != null) {
@@ -228,6 +247,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         'description': _descriptionController.text,
         'planType': _selectedPlanType,
         'exercises': _exercises.map((e) => e.toJson()).toList(),
+        'trainingTime': Timestamp.fromDate(_trainingTime),
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       };
@@ -287,6 +307,10 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           _descriptionController.text = template.description;
           _selectedPlanType = template.planType;
           _exercises = List.from(template.exercises);
+          // 如果模板中有訓練時間設置，則使用該設置
+          if (template.trainingTime != null) {
+            _trainingTime = template.trainingTime!;
+          }
         });
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -445,6 +469,197 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     });
   }
 
+  // 添加選擇訓練時間的方法 - 更新為類似鬧鐘的界面
+  void _selectTrainingTime() {
+    // 獲取當前選中的小時和分鐘
+    int selectedHour = _trainingTime.hour;
+    int selectedMinute = _trainingTime.minute;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('選擇訓練時間'),
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('請選擇訓練時間', style: TextStyle(fontSize: 16)),
+                  const SizedBox(height: 20),
+                  
+                  // 顯示當前選擇的時間
+                  Text(
+                    '${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')}',
+                    style: const TextStyle(
+                      fontSize: 38,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // 時間選擇區
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // 小時選擇
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text('小時', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 10),
+                            Container(
+                              height: 200,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ListWheelScrollView(
+                                itemExtent: 40,
+                                diameterRatio: 1.5,
+                                onSelectedItemChanged: (index) {
+                                  setState(() {
+                                    selectedHour = index;
+                                  });
+                                },
+                                controller: FixedExtentScrollController(initialItem: selectedHour),
+                                children: List.generate(24, (index) {
+                                  return Container(
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: selectedHour == index 
+                                        ? Colors.blue.withOpacity(0.1) 
+                                        : Colors.transparent,
+                                    ),
+                                    child: Text(
+                                      index.toString().padLeft(2, '0'),
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: selectedHour == index 
+                                          ? FontWeight.bold 
+                                          : FontWeight.normal,
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(width: 20),
+                      
+                      // 分鐘選擇（只有0和30兩個選項）
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text('分鐘', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 10),
+                            Container(
+                              height: 200,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedMinute = 0;
+                                      });
+                                    },
+                                    child: Container(
+                                      height: 80,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: selectedMinute == 0 
+                                          ? Colors.blue.withOpacity(0.1) 
+                                          : Colors.transparent,
+                                        border: Border(
+                                          bottom: BorderSide(color: Colors.grey.shade300),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '00',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: selectedMinute == 0 
+                                            ? FontWeight.bold 
+                                            : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedMinute = 30;
+                                      });
+                                    },
+                                    child: Container(
+                                      height: 80,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: selectedMinute == 30 
+                                          ? Colors.blue.withOpacity(0.1) 
+                                          : Colors.transparent,
+                                      ),
+                                      child: Text(
+                                        '30',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: selectedMinute == 30 
+                                            ? FontWeight.bold 
+                                            : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // 更新選中的訓練時間
+              final now = DateTime.now();
+              _trainingTime = DateTime(
+                now.year, 
+                now.month, 
+                now.day, 
+                selectedHour, 
+                selectedMinute
+              );
+              setState(() {}); // 更新外部狀態
+              Navigator.pop(context);
+            },
+            child: const Text('確定'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final formattedDate = DateFormat('yyyy年MM月dd日').format(widget.selectedDate);
@@ -483,6 +698,39 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // 添加訓練時間選擇
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 18,
+                        color: Colors.green.shade700,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '訓練時間: ${DateFormat('HH:mm').format(_trainingTime)}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton.icon(
+                        onPressed: _selectTrainingTime,  // 更新方法名
+                        icon: const Icon(Icons.edit_calendar_outlined, size: 16),
+                        label: const Text('修改時間'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.blue,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 

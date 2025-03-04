@@ -47,6 +47,10 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   bool _isPastDate = false;  // 是否為過去的訓練計劃
   bool _isFutureDate = false;  // 是否為未來的訓練計劃
   DateTime? _planDate;  // 訓練計劃的日期
+  
+  // 訓練時間相關
+  int _trainingHour = 8;  // 預設訓練時間為早上8點
+  bool _hasScheduledTime = false;  // 是否有設定訓練時間
 
   @override
   void initState() {
@@ -105,6 +109,12 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
       }
       
       print('加載訓練記錄: ${doc.id}, 數據: ${planData.keys}');
+      
+      // 加載訓練時間
+      if (planData['trainingHour'] != null) {
+        _trainingHour = planData['trainingHour'] as int;
+        _hasScheduledTime = true;
+      }
       
       // 檢查訓練計劃日期並確定權限
       if (planData['date'] != null && planData['date'] is Timestamp) {
@@ -296,6 +306,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
         'startTime': Timestamp.fromDate(_workoutStartTime!),
         'endTime': Timestamp.fromDate(_workoutEndTime!),
         'duration': durationInMinutes,
+        'trainingHour': _trainingHour,  // 添加訓練時間到記錄中
         'updatedAt': FieldValue.serverTimestamp(),
       };
       
@@ -1019,6 +1030,124 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     );
   }
   
+  // 設置訓練時間
+  void _setTrainingHour() async {
+    // 是否允許修改
+    final canModifyTime = !_isPastDate; // 過去的訓練不能修改時間
+    
+    if (!canModifyTime) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('無法修改過去訓練的時間')),
+      );
+      return;
+    }
+    
+    // 顯示時間選擇器
+    final selectedHour = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('選擇訓練時間'),
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('請選擇每天的訓練時間', style: TextStyle(fontSize: 16)),
+                  const SizedBox(height: 20),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: List.generate(24, (index) {
+                      final formattedHour = index.toString().padLeft(2, '0') + ':00';
+                      return ChoiceChip(
+                        label: Text(formattedHour),
+                        selected: index == _trainingHour,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _trainingHour = index;
+                            });
+                          }
+                        },
+                        selectedColor: Colors.green,
+                        labelStyle: TextStyle(
+                          color: index == _trainingHour ? Colors.white : Colors.black,
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, _trainingHour),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+            ),
+            child: const Text('確定'),
+          ),
+        ],
+      ),
+    );
+    
+    if (selectedHour != null && selectedHour != _trainingHour) {
+      try {
+        // 顯示加載指示器
+        setState(() {
+          _isSaving = true;
+        });
+        
+        setState(() {
+          _trainingHour = selectedHour;
+          _hasScheduledTime = true;
+          _isDataChanged = true;
+        });
+        
+        // 更新到 Firestore
+        final userId = FirebaseAuth.instance.currentUser?.uid;
+        if (userId == null) {
+          throw Exception('用戶未登入');
+        }
+        
+        await FirebaseFirestore.instance
+            .collection('workoutRecords')
+            .doc(widget.workoutRecordId)
+            .update({
+              'trainingHour': selectedHour,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+        
+        // 更新完成，關閉加載指示器
+        setState(() {
+          _isSaving = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('訓練時間已設定為 ${selectedHour.toString().padLeft(2, '0')}:00')),
+        );
+      } catch (e) {
+        // 發生錯誤，關閉加載指示器
+        setState(() {
+          _isSaving = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('設定訓練時間失敗: $e')),
+        );
+      }
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -1093,6 +1222,39 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                                   label: Text('未來訓練 (僅查看)'),
                                   backgroundColor: Colors.blue,
                                   labelStyle: TextStyle(color: Colors.white),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          // 添加訓練時間顯示
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                size: 18,
+                                color: Colors.green.shade700,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '訓練時間: ${_trainingHour.toString().padLeft(2, '0')}:00',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.green.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              if (!_isPastDate)
+                                TextButton.icon(
+                                  onPressed: _setTrainingHour,
+                                  icon: const Icon(Icons.edit_calendar_outlined, size: 16),
+                                  label: const Text('修改時間'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.blue,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
                                 ),
                             ],
                           ),

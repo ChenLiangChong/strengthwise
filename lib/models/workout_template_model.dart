@@ -10,6 +10,7 @@ class WorkoutTemplate {
   final List<WorkoutExercise> exercises;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime? trainingTime;
 
   WorkoutTemplate({
     required this.id,
@@ -20,6 +21,7 @@ class WorkoutTemplate {
     required this.exercises,
     required this.createdAt,
     required this.updatedAt,
+    this.trainingTime,
   });
 
   Map<String, dynamic> toJson() {
@@ -29,6 +31,7 @@ class WorkoutTemplate {
       'description': description,
       'planType': planType,
       'exercises': exercises.map((e) => e.toJson()).toList(),
+      'trainingTime': trainingTime != null ? Timestamp.fromDate(trainingTime!) : null,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
@@ -36,6 +39,16 @@ class WorkoutTemplate {
 
   factory WorkoutTemplate.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    
+    DateTime? trainingTime;
+    if (data['trainingTime'] != null) {
+      trainingTime = (data['trainingTime'] as Timestamp).toDate();
+    } else if (data['trainingHour'] != null) {
+      final today = DateTime.now();
+      final hour = data['trainingHour'] as int;
+      trainingTime = DateTime(today.year, today.month, today.day, hour, 0);
+    }
+    
     return WorkoutTemplate(
       id: doc.id,
       userId: data['userId'] ?? '',
@@ -45,6 +58,7 @@ class WorkoutTemplate {
       exercises: (data['exercises'] as List<dynamic>?)
           ?.map((e) => WorkoutExercise.fromFirestore(e as Map<String, dynamic>))
           .toList() ?? [],
+      trainingTime: trainingTime,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -57,6 +71,7 @@ class WorkoutTemplate {
     String? description,
     String? planType,
     List<WorkoutExercise>? exercises,
+    DateTime? trainingTime,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -67,6 +82,7 @@ class WorkoutTemplate {
       description: description ?? this.description,
       planType: planType ?? this.planType,
       exercises: exercises ?? this.exercises,
+      trainingTime: trainingTime ?? this.trainingTime,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

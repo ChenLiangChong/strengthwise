@@ -2,49 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/workout_exercise_model.dart' as exercise_models;
-
-class WorkoutTemplate {
-  final String id;
-  final String userId;
-  final String title;
-  final String description;
-  final String planType;
-  final List<exercise_models.WorkoutExercise> exercises;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-
-  WorkoutTemplate({
-    required this.id,
-    required this.userId,
-    required this.title,
-    required this.description,
-    required this.planType,
-    required this.exercises,
-    this.createdAt,
-    this.updatedAt,
-  });
-
-  // 從 Firestore 文檔創建模板對象
-  factory WorkoutTemplate.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    
-    final exercisesData = (data['exercises'] as List<dynamic>?) ?? [];
-    final exercises = exercisesData
-        .map((e) => exercise_models.WorkoutExercise.fromFirestore(e as Map<String, dynamic>))
-        .toList();
-    
-    return WorkoutTemplate(
-      id: doc.id,
-      userId: data['userId'] ?? '',
-      title: data['title'] ?? '',
-      description: data['description'] ?? '',
-      planType: data['planType'] ?? '',
-      exercises: exercises,
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
-    );
-  }
-}
+import '../../../models/workout_template_model.dart';
 
 class TemplateManagementPage extends StatefulWidget {
   const TemplateManagementPage({super.key});
@@ -91,14 +49,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
           
       // 在本地進行排序（按創建時間）
       templates.sort((a, b) {
-        if (a.createdAt != null && b.createdAt != null) {
-          return b.createdAt!.compareTo(a.createdAt!);
-        } else if (a.createdAt == null && b.createdAt != null) {
-          return 1;
-        } else if (a.createdAt != null && b.createdAt == null) {
-          return -1;
-        }
-        return 0;
+        return b.createdAt.compareTo(a.createdAt);
       });
 
       setState(() {
@@ -221,12 +172,16 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
   // 直接從模板創建訓練記錄
   Future<void> _createWorkoutRecordFromTemplate(WorkoutTemplate template) async {
     try {
-      // 顯示日期選擇器
+      // 獲取當前日期（僅日期部分）
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      
+      // 顯示日期選擇器，只允許選擇當天及未來的日期
       final selectedDate = await showDatePicker(
         context: context,
-        initialDate: DateTime.now(),
-        firstDate: DateTime.now().subtract(const Duration(days: 7)),
-        lastDate: DateTime.now().add(const Duration(days: 30)),
+        initialDate: today,
+        firstDate: today,  // 修改為從當天開始
+        lastDate: today.add(const Duration(days: 30)),
       );
       
       if (selectedDate == null) return;
@@ -243,6 +198,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
         'description': template.description,
         'planType': template.planType,
         'date': Timestamp.fromDate(selectedDate),
+        'trainingTime': template.trainingTime != null ? Timestamp.fromDate(template.trainingTime!) : null,
         'completed': false,
         'exercises': template.exercises.map((exercise) => {
           'exerciseId': exercise.id,

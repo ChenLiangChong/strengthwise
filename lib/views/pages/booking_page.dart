@@ -114,6 +114,21 @@ class _BookingPageState extends State<BookingPage> {
   Future<void> _editWorkoutPlan(String planId) async {
     if (_selectedDay == null) return;
     
+    // 检查是否是过去的日期
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selectedDate = DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day);
+    
+    if (selectedDate.isBefore(today)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('無法編輯過去日期的訓練計畫'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
@@ -130,26 +145,24 @@ class _BookingPageState extends State<BookingPage> {
     }
   }
   
-  // 開始執行訓練
-  Future<void> _startWorkout(String planId) async {
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => WorkoutExecutionPage(
-          workoutRecordId: planId,
-        ),
-      ),
-    );
-    
-    if (result == true) {
-      // 訓練完成後重新加載計畫
-      await _loadWorkoutPlans();
-    }
-  }
-  
   // 開啟訓練計畫編輯頁面
   Future<void> _navigateToPlanEditor() async {
     if (_selectedDay == null) return;
+    
+    // 检查是否是过去的日期
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selectedDate = DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day);
+    
+    if (selectedDate.isBefore(today)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('無法為過去的日期創建訓練計畫'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     
     final result = await Navigator.push<bool>(
       context,
@@ -229,6 +242,23 @@ class _BookingPageState extends State<BookingPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('更新狀態失敗，請稍後再試')),
       );
+    }
+  }
+  
+  // 開始執行訓練
+  Future<void> _startWorkout(String planId) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WorkoutExecutionPage(
+          workoutRecordId: planId,
+        ),
+      ),
+    );
+    
+    if (result == true) {
+      // 訓練完成後重新加載計畫
+      await _loadWorkoutPlans();
     }
   }
   
@@ -336,6 +366,25 @@ class _BookingPageState extends State<BookingPage> {
                         '動作數量: ${(plan['exercises'] as List?)?.length ?? 0}個',
                         style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
+                    // 添加訓練時間顯示
+                    if (plan['trainingHour'] != null)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 14,
+                            color: Colors.green.shade700,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '訓練時間: ${(plan['trainingHour'] as int).toString().padLeft(2, '0')}:00',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
                 trailing: Row(
@@ -399,7 +448,7 @@ class _BookingPageState extends State<BookingPage> {
                     IconButton(
                       icon: const Icon(Icons.edit, color: Colors.blue),
                       tooltip: '查看/編輯',
-                      onPressed: () => _startWorkout(plan['id']),
+                      onPressed: () => _editWorkoutPlan(plan['id']),
                     ),
                     // 刪除按鈕
                     IconButton(

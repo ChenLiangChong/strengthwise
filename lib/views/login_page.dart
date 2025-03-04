@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'main_home_page.dart';
 import '../services/auth_wrapper.dart';
+import '../services/user_service.dart';
+import 'pages/profile_settings_page.dart';
 import 'dart:math' as math;
 
 class LoginPage extends StatefulWidget {
@@ -16,6 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isLogin = true;
   bool _isLoading = false;
+  final _userService = UserService();
 
   @override
   void dispose() {
@@ -47,9 +50,23 @@ class _LoginPageState extends State<LoginPage> {
         if (!mounted) return;
         
         if (userData != null) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => MainHomePage()),
-          );
+          final isProfileCompleted = await _userService.isProfileCompleted();
+          
+          if (!mounted) return;
+          
+          if (!isProfileCompleted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => ProfileSettingsPage(
+                  isFirstTimeSetup: !_isLogin,
+                ),
+              ),
+            );
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => MainHomePage()),
+            );
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("登入失敗，請稍後再試"))

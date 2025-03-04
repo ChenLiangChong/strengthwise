@@ -9,6 +9,7 @@ class WorkoutRecord {
   final String notes;
   final bool completed;
   final DateTime createdAt;
+  final DateTime? trainingTime;
 
   WorkoutRecord({
     required this.id,
@@ -19,6 +20,7 @@ class WorkoutRecord {
     this.notes = '',
     this.completed = false,
     required this.createdAt,
+    this.trainingTime,
   });
 
   Map<String, dynamic> toJson() {
@@ -31,10 +33,20 @@ class WorkoutRecord {
       'notes': notes,
       'completed': completed,
       'createdAt': Timestamp.fromDate(createdAt),
+      'trainingTime': trainingTime != null ? Timestamp.fromDate(trainingTime!) : null,
     };
   }
 
   factory WorkoutRecord.fromFirestore(Map<String, dynamic> data, String docId) {
+    DateTime? trainingTime;
+    if (data['trainingTime'] != null) {
+      trainingTime = (data['trainingTime'] as Timestamp).toDate();
+    } else if (data['trainingHour'] != null) {
+      final date = (data['date'] as Timestamp).toDate();
+      final hour = data['trainingHour'] as int;
+      trainingTime = DateTime(date.year, date.month, date.day, hour, 0);
+    }
+    
     return WorkoutRecord(
       id: docId,
       workoutPlanId: data['workoutPlanId'] ?? '',
@@ -46,6 +58,7 @@ class WorkoutRecord {
       notes: data['notes'] ?? '',
       completed: data['completed'] ?? false,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      trainingTime: trainingTime,
     );
   }
 
@@ -56,6 +69,16 @@ class WorkoutRecord {
     Map<String, dynamic> planData,
   ) {
     final exercises = (planData['exercises'] as List<dynamic>? ?? []);
+    
+    DateTime? trainingTime;
+    if (planData['trainingTime'] != null) {
+      trainingTime = (planData['trainingTime'] as Timestamp).toDate();
+    } else if (planData['trainingHour'] != null) {
+      final date = DateTime.now();
+      final hour = planData['trainingHour'] as int;
+      trainingTime = DateTime(date.year, date.month, date.day, hour, 0);
+    }
+    
     return WorkoutRecord(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       workoutPlanId: planId,
@@ -66,6 +89,7 @@ class WorkoutRecord {
           .toList(),
       completed: false,
       createdAt: DateTime.now(),
+      trainingTime: trainingTime,
     );
   }
 }
