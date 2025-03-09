@@ -4,6 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../../models/workout_exercise_model.dart' as exercise_models;
 import '../../../models/exercise_model.dart';
+import '../../../controllers/interfaces/i_workout_controller.dart';
+import '../../../services/error_handling_service.dart';
+import '../../../services/service_locator.dart';
 import '../exercises_page.dart';
 import 'template_management_page.dart' hide WorkoutTemplate;
 import '../../../models/workout_template_model.dart';
@@ -11,11 +14,13 @@ import '../../../models/workout_template_model.dart';
 class PlanEditorPage extends StatefulWidget {
   final DateTime selectedDate;
   final String? planId; // 如果是編輯現有計畫，則提供planId
+  final String? planType; // 計劃類型: "self" 或 "trainer"
 
   const PlanEditorPage({
     super.key,
     required this.selectedDate,
     this.planId,
+    this.planType,
   });
 
   @override
@@ -23,6 +28,9 @@ class PlanEditorPage extends StatefulWidget {
 }
 
 class _PlanEditorPageState extends State<PlanEditorPage> {
+  late final IWorkoutController _workoutController;
+  late final ErrorHandlingService _errorService;
+  
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   
@@ -46,6 +54,17 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   @override
   void initState() {
     super.initState();
+    
+    // 從服務定位器獲取依賴
+    _workoutController = serviceLocator<IWorkoutController>();
+    _errorService = serviceLocator<ErrorHandlingService>();
+    
+    // 如果提供了計劃類型，設置默認值
+    if (widget.planType != null) {
+      // 注意: 這裡的 planType 是用於 Firebase 存儲的值 ("self" 或 "trainer")
+      // 而 _selectedPlanType 是界面顯示的訓練類型 (力量訓練, 有氧訓練等)
+      // 我們在保存時會保存兩種值
+    }
     
     // 检查是否是过去的日期
     final now = DateTime.now();
@@ -135,13 +154,19 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         throw Exception('未登入');
       }
 
+      // 將現有的訓練界面類型 (力量訓練等) 映射到系統標記類型 (self/trainer)
+      final actualPlanType = widget.planType ?? 'self'; // 預設為自主訓練
+      
       // 創建訓練計畫數據
       final recordData = {
-        'userId': userId,
+        // 根據新的集合結構添加字段
+        'creatorId': userId, // 創建者就是當前用戶
+        'traineeId': userId, // 預設情況下，訓練計劃是給自己的
         'title': _titleController.text,
         'description': _descriptionController.text,
-        'planType': _selectedPlanType,
-        'date': Timestamp.fromDate(widget.selectedDate),
+        'uiPlanType': _selectedPlanType, // 界面顯示的訓練類型 (力量訓練等)
+        'planType': actualPlanType, // 系統標記的計劃類型 (self/trainer)
+        'scheduledDate': Timestamp.fromDate(widget.selectedDate), // 改用 scheduledDate
         'exercises': _exercises.map((e) => e.toJson()).toList(),
         'completed': false,
         'trainingTime': Timestamp.fromDate(_trainingTime),
@@ -151,7 +176,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       if (widget.planId != null) {
         // 更新現有記錄
         await FirebaseFirestore.instance
-            .collection('workoutRecords')
+            .collection('workoutPlans') // 改用 workoutPlans 集合
             .doc(widget.planId)
             .update({
           ...recordData,
@@ -159,7 +184,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         });
       } else {
         // 創建新記錄
-        await FirebaseFirestore.instance.collection('workoutRecords').add(recordData);
+        await FirebaseFirestore.instance.collection('workoutPlans').add(recordData); // 改用 workoutPlans 集合
       }
 
       // 返回行事曆頁面

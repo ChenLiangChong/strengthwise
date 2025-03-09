@@ -1,146 +1,327 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:google_sign_in/google_sign_in.dart';
+import 'dart:async';
 import '../models/user_model.dart';
+import '../services/interfaces/i_auth_service.dart';
+import '../services/auth_wrapper.dart';
+import '../services/error_handling_service.dart';
+import '../services/service_locator.dart' show Environment, serviceLocator;
+import 'interfaces/i_auth_controller.dart';
 
-class AuthController extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+/// 身份驗證控制器
+/// 
+/// 管理用戶身份驗證狀態和操作，作為應用程序與身份驗證服務的中間層
+/// 提供反應式狀態管理和統一的錯誤處理
+class AuthController extends ChangeNotifier implements IAuthController {
+  // 依賴注入
+  final IAuthService _authService;
+  final ErrorHandlingService _errorService;
   
-  User? _user;
+  // 控制器狀態
+  UserModel? _user;
   bool _isLoading = false;
   String? _errorMessage;
-
+  bool _isInitialized = false;
+  
+  // 狀態監聽
+  StreamSubscription? _authStateSubscription;
+  
+  @override
   bool get isLoading => _isLoading;
+  
+  @override
   String? get errorMessage => _errorMessage;
+  
+  @override
   bool get isLoggedIn => _user != null;
   
-  UserModel? get user {
-    if (_user == null) return null;
+  @override
+  UserModel? get user => _user;
+  
+  /// 構造函數，支持依賴注入
+  AuthController({
+    IAuthService? authService,
+    ErrorHandlingService? errorService,
+  }) : 
+    _authService = authService ?? serviceLocator<IAuthService>(),
+    _errorService = errorService ?? serviceLocator<ErrorHandlingService>() {
+    _initialize();
+  }
+  
+  /// 初始化控制器
+  Future<void> _initialize() async {
+    if (_isInitialized) return;
     
-    return UserModel(
-      uid: _user!.uid,
-      email: _user!.email ?? '',
-      displayName: _user!.displayName,
-      photoURL: _user!.photoURL,
-    );
+    try {
+      _isLoading = true;
+      notifyListeners();
+      
+      // 確保服務已初始化（如果它是AuthWrapper）
+      if (_authService is AuthWrapper) {
+        final authWrapper = _authService as AuthWrapper;
+        await authWrapper.initialize(environment: Environment.production);
+      }
+      
+      // 初始化當前用戶
+      _refreshCurrentUser();
+      
+      // 設置認證狀態變更監聽
+      _setupAuthStateListener();
+      
+      _isInitialized = true;
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _handleError('初始化身份驗證控制器失敗: $e');
+      _isLoading = false;
+      notifyListeners();
+    }
   }
-
-  AuthController() {
-    _initializeUser();
+  
+  /// 釋放資源
+  Future<void> dispose() async {
+    try {
+      // 取消狀態監聽
+      await _authStateSubscription?.cancel();
+      _authStateSubscription = null;
+      
+      // 釋放服務資源（如果它是AuthWrapper）
+      if (_authService is AuthWrapper) {
+        final authWrapper = _authService as AuthWrapper;
+        await authWrapper.dispose();
+      }
+      
+      _isInitialized = false;
+      super.dispose();
+    } catch (e) {
+      _errorService.logError('釋放身份驗證控制器資源時發生錯誤: $e');
+    }
   }
-
-  void _initializeUser() {
-    _user = _auth.currentUser;
+  
+  /// 設置認證狀態監聽器
+  void _setupAuthStateListener() {
+    if (_authService is AuthWrapper) {
+      // AuthWrapper 已經有內建的狀態監聽和處理
+      // 這裡可以添加額外的回調或自定義處理邏輯
+    } else {
+      // 根據具體需求實現狀態監聽
+      // 這裡是一個簡單的定期檢查示例
+      _authStateSubscription?.cancel();
+      _authStateSubscription = Stream.periodic(const Duration(seconds: 30)).listen((_) {
+        _refreshCurrentUser();
+      });
+    }
+  }
+  
+  /// 刷新當前用戶信息
+  void _refreshCurrentUser() {
+    final userData = _authService.getCurrentUser();
+    if (userData != null) {
+      _user = UserModel(
+        uid: userData['uid'],
+        email: userData['email'],
+        displayName: userData['displayName'] ?? '',
+        photoURL: userData['photoURL'] ?? '',
+      );
+    } else {
+      _user = null;
+    }
+    notifyListeners();
+  }
+  
+  /// 處理錯誤
+  void _handleError(String errorMsg, {dynamic originalError}) {
+    _isLoading = false;
+    _errorMessage = _getUserFriendlyError(errorMsg, originalError);
+    _errorService.logError('認證錯誤: $errorMsg', type: 'AuthError');
+    notifyListeners();
+  }
+  
+  /// 將技術錯誤轉換為用戶友好的消息
+  String _getUserFriendlyError(String errorMsg, dynamic originalError) {
+    // 處理Firebase Auth常見錯誤
+    if (originalError is firebase_auth.FirebaseAuthException) {
+      switch (originalError.code) {
+        case 'user-not-found':
+          return '找不到該用戶，請檢查您的電子郵件';
+        case 'wrong-password':
+          return '密碼不正確';
+        case 'invalid-email':
+          return '電子郵件格式無效';
+        case 'user-disabled':
+          return '該帳戶已被停用';
+        case 'email-already-in-use':
+          return '該電子郵件已被註冊';
+        case 'operation-not-allowed':
+          return '此操作不被允許';
+        case 'weak-password':
+          return '密碼強度太弱，請使用更複雜的密碼';
+        case 'network-request-failed':
+          return '網絡連接失敗，請檢查您的網絡連接';
+        case 'too-many-requests':
+          return '登入嘗試次數過多，請稍後再試';
+        case 'account-exists-with-different-credential':
+          return '此電子郵件已與其他登入方式關聯';
+        default:
+          return '登入失敗: ${originalError.message}';
+      }
+    }
+    
+    // 處理Google登入錯誤
+    if (originalError.toString().contains('GoogleSignIn')) {
+      return 'Google登入失敗，請稍後再試';
+    }
+    
+    // 其他常見錯誤模式
+    if (errorMsg.toLowerCase().contains('network')) {
+      return '網絡連接錯誤，請檢查您的網絡連接';
+    }
+    if (errorMsg.toLowerCase().contains('timeout')) {
+      return '連接超時，請稍後再試';
+    }
+    if (errorMsg.toLowerCase().contains('credential')) {
+      return '登入憑證無效';
+    }
+    
+    // 默認錯誤消息
+    return '登入失敗，請稍後再試';
+  }
+  
+  /// 清除錯誤信息
+  void clearError() {
+    _errorMessage = null;
     notifyListeners();
   }
 
+  @override
   Future<bool> signInWithEmail(String email, String password) async {
+    if (!_isInitialized) await _initialize();
+    
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
 
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final userData = await _authService.signInWithEmail(email, password);
       
-      final user = userCredential.user;
-      if (user != null) {
-        _user = user;
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      }
-      return false;
-    } catch (e) {
-      _isLoading = false;
-      _errorMessage = e.toString();
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<bool> registerWithEmail(String email, String password) async {
-    try {
-      _isLoading = true;
-      _errorMessage = null;
-      notifyListeners();
-
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      
-      final user = userCredential.user;
-      if (user != null) {
-        _user = user;
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      }
-      return false;
-    } catch (e) {
-      _isLoading = false;
-      _errorMessage = e.toString();
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<bool> signInWithGoogle() async {
-    try {
-      _isLoading = true;
-      _errorMessage = null;
-      notifyListeners();
-
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      try {
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-        final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
+      if (userData != null) {
+        _user = UserModel(
+          uid: userData['uid'],
+          email: userData['email'],
+          displayName: userData['displayName'] ?? '',
+          photoURL: userData['photoURL'] ?? '',
         );
-
-        final userCredential = await _auth.signInWithCredential(credential);
-        
-        if (userCredential.user != null) {
-          _user = userCredential.user;
-          _isLoading = false;
-          notifyListeners();
-          return true;
-        }
-        
         _isLoading = false;
         notifyListeners();
-        return false;
-      } catch (authError) {
-        print("Google Authentication Error: $authError");
-        _isLoading = false;
-        _errorMessage = "Google 登入認證失敗";
-        notifyListeners();
-        return false;
+        return true;
       }
+      
+      _handleError('登入失敗，請檢查您的電子郵件和密碼');
+      return false;
     } catch (e) {
-      print("Google Sign In Error: $e");
-      _isLoading = false;
-      _errorMessage = "Google 登入失敗";
-      notifyListeners();
+      _handleError('電子郵件登入錯誤', originalError: e);
       return false;
     }
   }
 
+  @override
+  Future<bool> registerWithEmail(String email, String password) async {
+    if (!_isInitialized) await _initialize();
+    
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final userData = await _authService.registerWithEmail(email, password);
+      
+      if (userData != null) {
+        _user = UserModel(
+          uid: userData['uid'],
+          email: userData['email'],
+          displayName: userData['displayName'] ?? '',
+          photoURL: userData['photoURL'] ?? '',
+        );
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+      
+      _handleError('註冊失敗，請稍後再試');
+      return false;
+    } catch (e) {
+      _handleError('電子郵件註冊錯誤', originalError: e);
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> signInWithGoogle() async {
+    if (!_isInitialized) await _initialize();
+    
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final userData = await _authService.signInWithGoogle();
+      
+      if (userData != null) {
+        _user = UserModel(
+          uid: userData['uid'],
+          email: userData['email'],
+          displayName: userData['displayName'] ?? '',
+          photoURL: userData['photoURL'] ?? '',
+        );
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+      
+      _handleError("Google 登入失敗");
+      return false;
+    } catch (e) {
+      _handleError("Google 登入錯誤", originalError: e);
+      return false;
+    }
+  }
+
+  @override
   Future<void> signOut() async {
-    await _auth.signOut();
-    await _googleSignIn.signOut();
-    _user = null;
-    notifyListeners();
+    if (!_isInitialized) await _initialize();
+    
+    try {
+      _isLoading = true;
+      notifyListeners();
+      
+      await _authService.signOut();
+      _user = null;
+      
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _handleError("登出錯誤", originalError: e);
+    }
+  }
+  
+  /// 檢查電子郵件格式是否有效
+  bool isEmailValid(String email) {
+    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    return emailRegex.hasMatch(email);
+  }
+  
+  /// 檢查密碼強度
+  /// 返回值: 0 (弱) 到 3 (強)
+  int getPasswordStrength(String password) {
+    if (password.length < 6) return 0;
+    
+    int strength = 0;
+    if (password.length >= 8) strength++;
+    if (RegExp(r'[A-Z]').hasMatch(password) && RegExp(r'[a-z]').hasMatch(password)) strength++;
+    if (RegExp(r'[0-9]').hasMatch(password)) strength++;
+    if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) strength++;
+    
+    return strength > 3 ? 3 : strength;
   }
 } 

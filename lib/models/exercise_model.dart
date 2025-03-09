@@ -1,25 +1,64 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class Exercise {
-  final String id;
-  final String name;
-  final String nameEn;
-  final List<String> bodyParts;
-  final String type;
-  final String equipment;
-  final String jointType;
-  final String level1;
-  final String level2;
-  final String level3;
-  final String level4;
-  final String level5;
-  final String? actionName;
-  final String description;
-  final String imageUrl;
-  final String videoUrl;
-  final List<String> apps;
-  final DateTime createdAt;
+/// 訓練類型枚舉
+enum ExerciseType {
+  strength,     // 力量訓練
+  cardio,       // 有氧訓練
+  flexibility,  // 柔韌性訓練
+  balance,      // 平衡訓練
+  custom        // 自定義
+}
 
+/// 訓練類型枚舉擴展方法
+extension ExerciseTypeExtension on ExerciseType {
+  /// 獲取類型的顯示名稱
+  String get displayName {
+    switch (this) {
+      case ExerciseType.strength: return '力量訓練';
+      case ExerciseType.cardio: return '有氧訓練';
+      case ExerciseType.flexibility: return '柔韌性訓練';
+      case ExerciseType.balance: return '平衡訓練';
+      case ExerciseType.custom: return '自訂';
+    }
+  }
+  
+  /// 從字符串轉換為枚舉值
+  static ExerciseType fromString(String value) {
+    switch (value) {
+      case '力量訓練': return ExerciseType.strength;
+      case '有氧訓練': return ExerciseType.cardio;
+      case '柔韌性訓練': return ExerciseType.flexibility;
+      case '平衡訓練': return ExerciseType.balance;
+      case '自訂': return ExerciseType.custom;
+      default: return ExerciseType.custom;
+    }
+  }
+}
+
+/// 訓練動作模型
+///
+/// 表示應用中的標準訓練動作，包含詳細的分類和描述信息
+class Exercise {
+  final String id;            // 唯一標識符
+  final String name;          // 動作名稱
+  final String nameEn;        // 英文名稱
+  final List<String> bodyParts; // 鍛鍊部位
+  final String type;          // 訓練類型
+  final String equipment;     // 所需器材
+  final String jointType;     // 關節類型
+  final String level1;        // 一級分類
+  final String level2;        // 二級分類
+  final String level3;        // 三級分類
+  final String level4;        // 四級分類
+  final String level5;        // 五級分類
+  final String? actionName;   // 動作名稱別名
+  final String description;   // 動作描述
+  final String imageUrl;      // 圖片URL
+  final String videoUrl;      // 視頻URL
+  final List<String> apps;    // 適用的應用列表
+  final DateTime createdAt;   // 創建時間
+
+  /// 創建一個訓練動作實例
   Exercise({
     required this.id,
     required this.name,
@@ -41,6 +80,7 @@ class Exercise {
     required this.createdAt,
   });
 
+  /// 從 Firestore 文檔創建對象
   factory Exercise.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     
@@ -66,7 +106,30 @@ class Exercise {
     );
   }
 
-  // JSON 序列化方法
+  /// 轉換為 Firestore 可用的數據格式
+  Map<String, dynamic> toFirestore() {
+    return {
+      'name': name,
+      'nameEn': nameEn,
+      'bodyParts': bodyParts,
+      'type': type,
+      'equipment': equipment,
+      'jointType': jointType,
+      'level1': level1,
+      'level2': level2,
+      'level3': level3,
+      'level4': level4,
+      'level5': level5,
+      'actionName': actionName,
+      'description': description,
+      'imageUrl': imageUrl,
+      'videoUrl': videoUrl,
+      'apps': apps,
+      'createdAt': Timestamp.fromDate(createdAt),
+    };
+  }
+
+  /// 轉換為 JSON 數據格式
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -90,7 +153,7 @@ class Exercise {
     };
   }
 
-  // 從 JSON 創建對象
+  /// 從 JSON 創建對象
   static Exercise fromJson(Map<String, dynamic> json) {
     return Exercise(
       id: json['id'] ?? '',
@@ -115,4 +178,62 @@ class Exercise {
                  DateTime.now(),
     );
   }
+  
+  /// 創建一個本對象的副本，並可選擇性地修改某些屬性
+  Exercise copyWith({
+    String? id,
+    String? name,
+    String? nameEn,
+    List<String>? bodyParts,
+    String? type,
+    String? equipment,
+    String? jointType,
+    String? level1,
+    String? level2,
+    String? level3,
+    String? level4,
+    String? level5,
+    String? actionName,
+    String? description,
+    String? imageUrl,
+    String? videoUrl,
+    List<String>? apps,
+    DateTime? createdAt,
+  }) {
+    return Exercise(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      nameEn: nameEn ?? this.nameEn,
+      bodyParts: bodyParts ?? this.bodyParts,
+      type: type ?? this.type,
+      equipment: equipment ?? this.equipment,
+      jointType: jointType ?? this.jointType,
+      level1: level1 ?? this.level1,
+      level2: level2 ?? this.level2,
+      level3: level3 ?? this.level3,
+      level4: level4 ?? this.level4,
+      level5: level5 ?? this.level5,
+      actionName: actionName ?? this.actionName,
+      description: description ?? this.description,
+      imageUrl: imageUrl ?? this.imageUrl,
+      videoUrl: videoUrl ?? this.videoUrl,
+      apps: apps ?? this.apps,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+  
+  /// 獲取訓練類型的枚舉值
+  ExerciseType get exerciseType => ExerciseTypeExtension.fromString(type);
+  
+  @override
+  String toString() => 'Exercise(id: $id, name: $name, type: $type)';
+  
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Exercise && other.id == id;
+  }
+  
+  @override
+  int get hashCode => id.hashCode;
 } 

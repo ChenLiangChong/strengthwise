@@ -2,25 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../models/user_model.dart';
-import '../../services/user_service.dart';
-import '../../services/auth_wrapper.dart';
+import '../../services/interfaces/i_auth_service.dart';
+import '../../services/interfaces/i_user_service.dart';
+import '../../services/service_locator.dart';
 import '../login_page.dart';
 import 'profile_settings_page.dart';
 
 class ProfilePage extends StatefulWidget {
-  final AuthWrapper authWrapper;
-  
-  const ProfilePage({
-    super.key, 
-    required this.authWrapper,
-  });
+  const ProfilePage({super.key});
   
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final UserService _userService = UserService();
+  late final IUserService _userService;
+  late final IAuthService _authService;
   final _formKey = GlobalKey<FormState>();
   
   UserModel? _userProfile;
@@ -42,6 +39,9 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
+    // 從服務定位器獲取服務
+    _userService = serviceLocator<IUserService>();
+    _authService = serviceLocator<IAuthService>();
     _loadUserProfile();
   }
   
@@ -130,7 +130,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final userData = widget.authWrapper.getCurrentUser();
+    final userData = _authService.getCurrentUser();
     
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -251,7 +251,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     icon: Icons.logout,
                     title: '登出',
                     onTap: () async {
-                      await widget.authWrapper.signOut();
+                      await _authService.signOut();
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute(builder: (_) => LoginPage()),
                       );

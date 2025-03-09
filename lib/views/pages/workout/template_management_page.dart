@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/workout_template_model.dart';
+import '../../../controllers/interfaces/i_workout_controller.dart';
+import '../../../services/error_handling_service.dart';
+import '../../../services/service_locator.dart';
 
 class TemplateManagementPage extends StatefulWidget {
   const TemplateManagementPage({super.key});
@@ -11,12 +12,20 @@ class TemplateManagementPage extends StatefulWidget {
 }
 
 class _TemplateManagementPageState extends State<TemplateManagementPage> {
+  late final IWorkoutController _workoutController;
+  late final ErrorHandlingService _errorService;
+  
   List<WorkoutTemplate> _templates = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    
+    // 從服務定位器獲取依賴
+    _workoutController = serviceLocator<IWorkoutController>();
+    _errorService = serviceLocator<ErrorHandlingService>();
+    
     _loadTemplates();
   }
 
@@ -26,45 +35,20 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
     });
 
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) {
-        throw Exception('用戶未登入');
-      }
-
-      print('正在加載用戶 $userId 的模板...');
-
-      // 從 workoutPlans 中查詢用戶的所有模板
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('workoutPlans')
-          .where('userId', isEqualTo: userId)
-          .get();
-
-      print('找到 ${querySnapshot.docs.length} 個模板');
+      // 使用控制器加載模板
+      final templates = await _workoutController.loadUserTemplates();
       
-      // 在本地排序結果
-      final templates = querySnapshot.docs
-          .map((doc) => WorkoutTemplate.fromFirestore(doc))
-          .toList();
-          
-      // 在本地進行排序（按創建時間）
-      templates.sort((a, b) {
-        return b.createdAt.compareTo(a.createdAt);
-      });
-
       setState(() {
         _templates = templates;
         _isLoading = false;
       });
     } catch (e) {
-      print('加載模板失敗: $e');
       setState(() {
         _isLoading = false;
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加載模板失敗: $e')),
-        );
+        _errorService.handleError(context, e);
       }
     }
   }
@@ -104,25 +88,16 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
 
       if (newTitle == null || newTitle.isEmpty) return;
 
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) {
-        throw Exception('用戶未登入');
-      }
-
-      // 創建新的模板文檔
-      final newTemplateData = {
-        'userId': userId,
-        'title': newTitle,
-        'description': template.description,
-        'planType': template.planType,
-        'exercises': template.exercises.map((e) => e.toJson()).toList(),
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      await FirebaseFirestore.instance
-          .collection('workoutPlans')
-          .add(newTemplateData);
+      // 創建新模板的副本
+      final newTemplate = template.copyWith(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: newTitle,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      // 使用控制器創建模板
+      await _workoutController.createTemplate(newTemplate);
 
       // 重新加載模板列表
       await _loadTemplates();
@@ -133,37 +108,31 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
         );
       }
     } catch (e) {
-      print('複製模板失敗: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('複製模板失敗: $e')),
-        );
+        _errorService.handleError(context, e);
       }
     }
   }
 
   Future<void> _deleteTemplate(String templateId) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('workoutPlans')
-          .doc(templateId)
-          .delete();
+      // 使用控制器刪除模板
+      final success = await _workoutController.deleteTemplate(templateId);
 
-      setState(() {
-        _templates.removeWhere((template) => template.id == templateId);
-      });
+      if (success) {
+        setState(() {
+          _templates.removeWhere((template) => template.id == templateId);
+        });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('模板已刪除')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('模板已刪除')),
+          );
+        }
       }
     } catch (e) {
-      print('刪除模板失敗: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('刪除模板失敗: $e')),
-        );
+        _errorService.handleError(context, e);
       }
     }
   }
@@ -185,43 +154,17 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
       
       if (selectedDate == null) return;
       
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) {
-        throw Exception('用戶未登入');
-      }
+      // 使用控制器從模板創建訓練記錄
+      // 首先創建包含日期的WorkoutRecord對象
+      final record = await _workoutController.createRecordFromTemplate(template.id);
       
-      // 創建訓練記錄
-      final workoutRecordData = {
-        'userId': userId,
-        'title': template.title,
-        'description': template.description,
-        'planType': template.planType,
-        'date': Timestamp.fromDate(selectedDate),
-        'trainingTime': template.trainingTime != null ? Timestamp.fromDate(template.trainingTime!) : null,
-        'completed': false,
-        'exercises': template.exercises.map((exercise) => {
-          'exerciseId': exercise.id,
-          'exerciseName': exercise.name,
-          'actionName': exercise.actionName,
-          'sets': exercise.sets,
-          'reps': exercise.reps,
-          'weight': exercise.weight,
-          'restTime': exercise.restTime,
-          'notes': exercise.notes,
-          'completed': false,
-        }).toList(),
-        'totalSets': template.exercises.fold(0, (sum, exercise) => sum + exercise.sets),
-        'totalExercises': template.exercises.length,
-        'note': '',
-        'startTime': null,
-        'endTime': null,
-        'duration': 0,
-        'createdAt': FieldValue.serverTimestamp(),
-      };
+      // 使用特定日期更新記錄
+      final updatedRecord = record.copyWith(
+        date: selectedDate,
+      );
       
-      await FirebaseFirestore.instance
-          .collection('workoutRecords')
-          .add(workoutRecordData);
+      // 更新記錄
+      await _workoutController.updateRecord(updatedRecord);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -229,11 +172,8 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
         );
       }
     } catch (e) {
-      print('創建訓練記錄失敗: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('創建訓練記錄失敗: $e')),
-        );
+        _errorService.handleError(context, e);
       }
     }
   }

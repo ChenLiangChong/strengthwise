@@ -1,24 +1,31 @@
 import 'package:flutter/material.dart';
+import '../controllers/interfaces/i_auth_controller.dart';
+import '../services/service_locator.dart';
+import '../services/error_handling_service.dart';
 import 'main_home_page.dart';
-import '../services/auth_wrapper.dart';
-import '../services/user_service.dart';
-import 'pages/profile_settings_page.dart';
-import 'dart:math' as math;
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
-
   @override
   _LoginPageState createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isLogin = true;
   bool _isLoading = false;
-  final _userService = UserService();
+  bool _isSignUp = false;
+  
+  late final IAuthController _authController;
+  late final ErrorHandlingService _errorService;
+
+  @override
+  void initState() {
+    super.initState();
+    // 從服務定位器獲取控制器
+    _authController = serviceLocator<IAuthController>();
+    _errorService = serviceLocator<ErrorHandlingService>();
+  }
 
   @override
   void dispose() {
@@ -27,61 +34,82 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() { _isLoading = true; });
-      
-      try {
-        final authWrapper = AuthWrapper();
-        Map<String, dynamic>? userData;
-        
-        if (_isLogin) {
-          userData = await authWrapper.signInWithEmail(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
-        } else {
-          userData = await authWrapper.registerWithEmail(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
-        }
-        
-        if (!mounted) return;
-        
-        if (userData != null) {
-          final isProfileCompleted = await _userService.isProfileCompleted();
-          
-          if (!mounted) return;
-          
-          if (!isProfileCompleted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => ProfileSettingsPage(
-                  isFirstTimeSetup: !_isLogin,
-                ),
-              ),
-            );
-          } else {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => MainHomePage()),
-            );
-          }
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("登入失敗，請稍後再試"))
-          );
-        }
-      } catch (e) {
-        print("登入表單錯誤: $e");
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("登入時發生錯誤"))
+  void _toggleMode() {
+    setState(() {
+      _isSignUp = !_isSignUp;
+    });
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      bool success;
+      if (_isSignUp) {
+        success = await _authController.registerWithEmail(
+          _emailController.text.trim(),
+          _passwordController.text,
         );
-      } finally {
-        if (mounted) {
-          setState(() { _isLoading = false; });
-        }
+      } else {
+        success = await _authController.signInWithEmail(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+      }
+
+      if (success && mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainHomePage()),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_authController.errorMessage ?? '登入失敗，請稍後再試'),
+            backgroundColor: Colors.red[700],
+          ),
+        );
+      }
+    } catch (e) {
+      _errorService.handleError(context, e);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final success = await _authController.signInWithGoogle();
+      if (success && mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainHomePage()),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_authController.errorMessage ?? 'Google 登入失敗，請稍後再試'),
+            backgroundColor: Colors.red[700],
+          ),
+        );
+      }
+    } catch (e) {
+      _errorService.handleError(context, e);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -89,138 +117,117 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_isLogin ? '登入' : '註冊'),
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(height: 60),
-              FlutterLogo(size: 80),
-              SizedBox(height: 40),
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: '電子郵件',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Logo
+                const FlutterLogo(size: 100),
+                const SizedBox(height: 32),
+                
+                // 標題
+                Text(
+                  _isSignUp ? '註冊新帳號' : '歡迎回來',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '請輸入電子郵件';
-                  }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                    return '請輸入有效的電子郵件';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: '密碼',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
+                const SizedBox(height: 24),
+                
+                // 電子郵件輸入
+                TextFormField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                    labelText: '電子郵件',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '請輸入電子郵件';
+                    }
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      return '請輸入有效的電子郵件格式';
+                    }
+                    return null;
+                  },
                 ),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '請輸入密碼';
-                  }
-                  if (value.length < 6) {
-                    return '密碼長度至少為6位';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 24),
-              if (mounted && mounted)
-                Padding(
-                  padding: EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    mounted ? '' : '',
-                    style: TextStyle(color: Colors.red),
+                const SizedBox(height: 16),
+                
+                // 密碼輸入
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: const InputDecoration(
+                    labelText: '密碼',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock),
+                  ),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '請輸入密碼';
+                    }
+                    if (_isSignUp && value.length < 6) {
+                      return '密碼長度至少需要6個字符';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                
+                // 提交按鈕
+                SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _handleSubmit,
+                    child: _isLoading
+                        ? const CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          )
+                        : Text(
+                            _isSignUp ? '註冊' : '登入',
+                            style: const TextStyle(fontSize: 16),
+                          ),
                   ),
                 ),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _submitForm,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: _isLoading
-                      ? CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          _isLogin ? '登入' : '註冊',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                const SizedBox(height: 16),
+                
+                // 切換註冊/登入模式
+                TextButton(
+                  onPressed: _toggleMode,
+                  child: Text(_isSignUp ? '已有帳號？點此登入' : '沒有帳號？點此註冊'),
                 ),
-              ),
-              SizedBox(height: 16),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _isLogin = !_isLogin;
-                  });
-                },
-                child: Text(_isLogin ? '沒有帳號? 去註冊' : '已有帳號? 去登入'),
-              ),
-              SizedBox(height: 20),
-              Divider(thickness: 1),
-              SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: _isLoading
-                    ? null
-                    : () async {
-                        setState(() { 
-                          _isLoading = true; 
-                        });
-                        
-                        try {
-                          final authWrapper = AuthWrapper();
-                          print("準備調用 Google 登入...");
-                          final userData = await authWrapper.signInWithGoogle();
-                          
-                          if (userData != null && mounted) {
-                            print("登入成功，導航到主頁");
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(builder: (_) => MainHomePage()),
-                            );
-                          } else if (mounted) {
-                            print("登入失敗，顯示提示");
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Google 登入失敗，請稍後再試"))
-                            );
-                          }
-                        } catch (e) {
-                          print("前端 Google 登入錯誤: $e");
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("登入過程發生錯誤: ${e.toString().substring(0, math.min(50, e.toString().length))}..."))
-                            );
-                          }
-                        } finally {
-                          if (mounted) {
-                            setState(() {
-                              _isLoading = false;
-                            });
-                          }
-                        }
-                      },
-                icon: Image.asset(
-                  'assets/images/google_logo.png',
-                  height: 24,
+                const SizedBox(height: 24),
+                
+                const Text(
+                  '或者使用以下方式登入',
+                  textAlign: TextAlign.center,
                 ),
-                label: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text('使用Google帳號登入', style: TextStyle(fontSize: 16)),
+                const SizedBox(height: 16),
+                
+                // Google登入按鈕
+                ElevatedButton.icon(
+                  onPressed: _handleGoogleSignIn,
+                  icon: const Icon(Icons.g_mobiledata, size: 24),
+                  label: const Text('使用 Google 帳號登入'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black87,
+                    elevation: 1,
+                    side: const BorderSide(color: Colors.grey),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

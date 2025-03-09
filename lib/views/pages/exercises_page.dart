@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/exercise_model.dart';
 import 'exercise_detail_page.dart';
 import '../../services/exercise_cache_service.dart';
+import 'custom_exercises_page.dart';
 
 class ExercisesPage extends StatefulWidget {
   const ExercisesPage({super.key});
@@ -29,7 +30,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
   List<String> _level5Categories = [];
   List<Exercise> _exercises = [];
   
-  int _currentStep = 0; // 當前導航步驟：0=類型, 1=部位, 2=level1, 3=level2...
+  int _currentStep = 0; // 當前導航步驟：0=類型, 1=身體部位, 2=level1, 3=level2...
 
   @override
   void initState() {
@@ -38,7 +39,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     _logDebug('應用啟動：正在清除所有緩存...');
     
     // 強制清除所有緩存，包括 SharedPreferences 和 Firestore 緩存
-    ExerciseCacheService.clearAllCaches().then((_) {
+    ExerciseCacheService.clearCache().then((_) {
       _logDebug('緩存清除完成，開始加載訓練類型');
       _loadExerciseTypes();
     }).catchError((error) {
@@ -337,20 +338,20 @@ class _ExercisesPageState extends State<ExercisesPage> {
   
   @override
   Widget build(BuildContext context) {
-    // 獲取完整的導航路徑
-    final fullTitle = _getFullTitle();
-    
     return Scaffold(
       appBar: AppBar(
-        title: _currentStep == 0 
-            ? const Text('訓練動作庫') 
-            : Text(fullTitle, overflow: TextOverflow.ellipsis),
+        title: Text(_getAppBarTitle()),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: _navigateToCustomExercises,
+            tooltip: '自定義動作',
+          ),
+        ],
         leading: _currentStep > 0 
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  _navigateBack();
-                },
+                onPressed: _navigateBack,
               )
             : null,
       ),
@@ -360,70 +361,84 @@ class _ExercisesPageState extends State<ExercisesPage> {
     );
   }
   
-  Widget _buildTitle() {
-    // 使用完整標題替代原有簡單標題
-    return Text(_getFullTitle(), overflow: TextOverflow.ellipsis);
+  String _getAppBarTitle() {
+    switch (_currentStep) {
+      case 0:
+        return '選擇訓練類型';
+      case 1:
+        return '選擇身體部位';
+      case 2:
+        return '選擇第一層分類';
+      case 3:
+        return '選擇第二層分類';
+      case 4:
+        return '選擇第三層分類';
+      case 5:
+        return '選擇第四層分類';
+      case 6:
+        return '選擇第五層分類';
+      case 7:
+        return '訓練動作列表';
+      default:
+        return '訓練動作庫';
+    }
   }
   
-  // 獲取完整標題
-  String _getFullTitle() {
-    if (_currentStep == 0) return '訓練動作庫';
-    
-    List<String> parts = [];
-    if (_selectedType != null && _selectedType!.isNotEmpty) parts.add(_selectedType!);
-    if (_selectedBodyPart != null && _selectedBodyPart!.isNotEmpty) parts.add(_selectedBodyPart!);
-    if (_selectedLevel1 != null && _selectedLevel1!.isNotEmpty) parts.add(_selectedLevel1!);
-    if (_selectedLevel2 != null && _selectedLevel2!.isNotEmpty) parts.add(_selectedLevel2!);
-    if (_selectedLevel3 != null && _selectedLevel3!.isNotEmpty) parts.add(_selectedLevel3!);
-    if (_selectedLevel4 != null && _selectedLevel4!.isNotEmpty) parts.add(_selectedLevel4!);
-    if (_selectedLevel5 != null && _selectedLevel5!.isNotEmpty) parts.add(_selectedLevel5!);
-    
-    return parts.join(' > ');
+  void _navigateToCustomExercises() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CustomExercisesPage(),
+      ),
+    );
   }
   
   void _navigateBack() {
     setState(() {
       switch (_currentStep) {
-        case 1:
+        case 1: // 返回到訓練類型選擇
           _selectedType = null;
-          _loadExerciseTypes();
+          _currentStep = 0;
           break;
-        case 2:
+        case 2: // 返回到身體部位選擇
           _selectedBodyPart = null;
-          _loadBodyParts();
+          _currentStep = 1;
           break;
-        case 3:
+        case 3: // 返回到level1選擇
           _selectedLevel1 = null;
-          _loadCategories(1);
+          _currentStep = 2;
           break;
-        case 4:
+        case 4: // 返回到level2選擇
           _selectedLevel2 = null;
-          _loadCategories(2);
+          _currentStep = 3;
           break;
-        case 5:
+        case 5: // 返回到level3選擇
           _selectedLevel3 = null;
-          _loadCategories(3);
+          _currentStep = 4;
           break;
-        case 6:
+        case 6: // 返回到level4選擇
           _selectedLevel4 = null;
-          _loadCategories(4);
+          _currentStep = 5;
           break;
-        case 7:
+        case 7: // 從最終動作列表返回
           if (_selectedLevel5 != null) {
             _selectedLevel5 = null;
-            _loadCategories(5);
+            _currentStep = 6;
           } else if (_selectedLevel4 != null) {
             _selectedLevel4 = null;
-            _loadCategories(4);
+            _currentStep = 5;
           } else if (_selectedLevel3 != null) {
             _selectedLevel3 = null;
-            _loadCategories(3);
+            _currentStep = 4;
           } else if (_selectedLevel2 != null) {
             _selectedLevel2 = null;
-            _loadCategories(2);
+            _currentStep = 3;
           } else if (_selectedLevel1 != null) {
             _selectedLevel1 = null;
-            _loadCategories(1);
+            _currentStep = 2;
+          } else {
+            _selectedBodyPart = null;
+            _currentStep = 1;
           }
           break;
       }
@@ -454,307 +469,420 @@ class _ExercisesPageState extends State<ExercisesPage> {
   }
   
   Widget _buildTypeSelection() {
-    return ListView.builder(
-      itemCount: _exerciseTypes.length,
-      itemBuilder: (context, index) {
-        final type = _exerciseTypes[index];
-        return ListTile(
-          title: Text(type),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            setState(() {
-              _selectedType = type;
-            });
-            _loadBodyParts();
-          },
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            '請選擇訓練類型:',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: _exerciseTypes.length,
+            itemBuilder: (context, index) {
+              final type = _exerciseTypes[index];
+              final isSelected = type == _selectedType;
+              
+              return Card(
+                elevation: isSelected ? 4 : 1,
+                color: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
+                margin: const EdgeInsets.only(bottom: 8.0),
+                child: ListTile(
+                  title: Text(
+                    type,
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios),
+                  onTap: () {
+                    setState(() {
+                      _selectedType = type;
+                    });
+                    _loadBodyParts();
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
   
   Widget _buildBodyPartSelection() {
-    return ListView.builder(
-      itemCount: _bodyParts.length,
-      itemBuilder: (context, index) {
-        final part = _bodyParts[index];
-        return ListTile(
-          title: Text(part),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            setState(() {
-              _selectedBodyPart = part;
-            });
-            _loadCategories(1);
-          },
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '已選擇訓練類型: $_selectedType',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '請選擇身體部位:',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: _bodyParts.length,
+            itemBuilder: (context, index) {
+              final bodyPart = _bodyParts[index];
+              final isSelected = bodyPart == _selectedBodyPart;
+              
+              return Card(
+                elevation: isSelected ? 4 : 1,
+                color: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
+                margin: const EdgeInsets.only(bottom: 8.0),
+                child: ListTile(
+                  title: Text(
+                    bodyPart,
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios),
+                  onTap: () {
+                    setState(() {
+                      _selectedBodyPart = bodyPart;
+                    });
+                    _loadCategories(1);
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
   
-  Widget _buildLevel1Selection() {
-    if (_level1Categories.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.info_outline, size: 48, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('沒有找到分類', 
-                style: TextStyle(fontSize: 16, color: Colors.grey)),
-            SizedBox(height: 8),
-            Text('請確認數據庫中是否有相關動作',
-                style: TextStyle(fontSize: 14, color: Colors.grey)),
-          ],
+  Widget _buildCategorySelectionList(List<String> categories, String header, String selectedValue, Function(String) onSelectCategory) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _getSelectionPathText(),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                header,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ],
+          ),
         ),
-      );
-    }
+        if (categories.isEmpty)
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.info_outline,
+                    size: 48,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '沒有找到符合條件的分類',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '請嘗試選擇其他條件',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.list),
+                    label: const Text('查看所有符合條件的訓練'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    onPressed: () {
+                      _loadFinalExercises();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final category = categories[index];
+                final isSelected = category == selectedValue;
+                
+                return Card(
+                  elevation: isSelected ? 4 : 1,
+                  color: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
+                  margin: const EdgeInsets.only(bottom: 8.0),
+                  child: ListTile(
+                    title: Text(
+                      category,
+                      style: TextStyle(
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () => onSelectCategory(category),
+                  ),
+                );
+              },
+            ),
+          ),
+        if (categories.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.list),
+              label: const Text('跳過分類，直接顯示所有動作'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+              ),
+              onPressed: () {
+                _loadFinalExercises();
+              },
+            ),
+          ),
+      ],
+    );
+  }
+  
+  String _getSelectionPathText() {
+    List<String> parts = [];
+    if (_selectedType != null) parts.add(_selectedType!);
+    if (_selectedBodyPart != null) parts.add(_selectedBodyPart!);
+    if (_selectedLevel1 != null) parts.add(_selectedLevel1!);
+    if (_selectedLevel2 != null) parts.add(_selectedLevel2!);
+    if (_selectedLevel3 != null) parts.add(_selectedLevel3!);
+    if (_selectedLevel4 != null) parts.add(_selectedLevel4!);
+    if (_selectedLevel5 != null) parts.add(_selectedLevel5!);
     
-    return ListView.builder(
-      itemCount: _level1Categories.length,
-      itemBuilder: (context, index) {
-        final category = _level1Categories[index];
-        return ListTile(
-          title: Text(category),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            setState(() {
-              _selectedLevel1 = category;
-            });
-            _loadCategories(2);
-          },
-        );
-      },
+    return '已選擇: ${parts.join(' > ')}';
+  }
+  
+  Widget _buildLevel1Selection() {
+    return _buildCategorySelectionList(
+      _level1Categories,
+      '請選擇第一層分類:',
+      _selectedLevel1 ?? '',
+      (category) {
+        setState(() {
+          _selectedLevel1 = category;
+        });
+        _loadCategories(2);
+      }
     );
   }
   
   Widget _buildLevel2Selection() {
-    if (_level2Categories.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadFinalExercises();
-      });
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('沒有找到更多分類，正在載入動作...', 
-                style: TextStyle(fontSize: 16)),
-          ],
-        ),
-      );
-    }
-    
-    return ListView.builder(
-      itemCount: _level2Categories.length,
-      itemBuilder: (context, index) {
-        final category = _level2Categories[index];
-        return ListTile(
-          title: Text(category),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            setState(() {
-              _selectedLevel2 = category;
-            });
-            _loadCategories(3);
-          },
-        );
-      },
+    return _buildCategorySelectionList(
+      _level2Categories,
+      '請選擇第二層分類:',
+      _selectedLevel2 ?? '',
+      (category) {
+        setState(() {
+          _selectedLevel2 = category;
+        });
+        _loadCategories(3);
+      }
     );
   }
   
   Widget _buildLevel3Selection() {
-    if (_level3Categories.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadFinalExercises();
-      });
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('沒有找到更多分類，正在載入動作...', 
-                style: TextStyle(fontSize: 16)),
-          ],
-        ),
-      );
-    }
-    
-    return ListView.builder(
-      itemCount: _level3Categories.length,
-      itemBuilder: (context, index) {
-        final category = _level3Categories[index];
-        return ListTile(
-          title: Text(category),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            setState(() {
-              _selectedLevel3 = category;
-            });
-            _loadCategories(4);
-          },
-        );
-      },
+    return _buildCategorySelectionList(
+      _level3Categories,
+      '請選擇第三層分類:',
+      _selectedLevel3 ?? '',
+      (category) {
+        setState(() {
+          _selectedLevel3 = category;
+        });
+        _loadCategories(4);
+      }
     );
   }
   
   Widget _buildLevel4Selection() {
-    if (_level4Categories.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadFinalExercises();
-      });
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('沒有找到更多分類，正在載入動作...', 
-                style: TextStyle(fontSize: 16)),
-          ],
-        ),
-      );
-    }
-    
-    return ListView.builder(
-      itemCount: _level4Categories.length,
-      itemBuilder: (context, index) {
-        final category = _level4Categories[index];
-        return ListTile(
-          title: Text(category),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            setState(() {
-              _selectedLevel4 = category;
-            });
-            _loadCategories(5);
-          },
-        );
-      },
+    return _buildCategorySelectionList(
+      _level4Categories,
+      '請選擇第四層分類:',
+      _selectedLevel4 ?? '',
+      (category) {
+        setState(() {
+          _selectedLevel4 = category;
+        });
+        _loadCategories(5);
+      }
     );
   }
   
   Widget _buildLevel5Selection() {
-    if (_level5Categories.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    return _buildCategorySelectionList(
+      _level5Categories,
+      '請選擇第五層分類:',
+      _selectedLevel5 ?? '',
+      (category) {
+        setState(() {
+          _selectedLevel5 = category;
+        });
         _loadFinalExercises();
-      });
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('沒有找到更多分類，正在載入動作...', 
-                style: TextStyle(fontSize: 16)),
-          ],
-        ),
-      );
-    }
-    
-    return ListView.builder(
-      itemCount: _level5Categories.length,
-      itemBuilder: (context, index) {
-        final category = _level5Categories[index];
-        return ListTile(
-          title: Text(category),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            setState(() {
-              _selectedLevel5 = category;
-            });
-            _loadFinalExercises();
-          },
-        );
-      },
+      }
     );
   }
   
   Widget _buildExerciseList() {
-    if (_exercises.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.info_outline, size: 48, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('沒有找到符合條件的訓練動作', 
-                style: TextStyle(fontSize: 16, color: Colors.grey)),
-            SizedBox(height: 8),
-            Text('請嘗試選擇其他分類或返回上一層',
-                style: TextStyle(fontSize: 14, color: Colors.grey)),
-          ],
-        ),
-      );
-    }
-    
-    return ListView.builder(
-      itemCount: _exercises.length,
-      itemBuilder: (context, index) => _exercises.isNotEmpty && index < _exercises.length ? 
-        _buildExerciseItem(_exercises[index]) : const SizedBox.shrink(),
-    );
-  }
-  
-  Widget _buildExerciseItem(Exercise exercise) {
-    // 調試信息：輸出完整的exercise對象數據
-    _logDebug('構建運動項目: ID=${exercise.id}');
-    _logDebug('數據詳情：name=${exercise.name}, actionName=${exercise.actionName}');
-    _logDebug('數據詳情：type=${exercise.type}, bodyParts=${exercise.bodyParts}');
-    _logDebug('數據詳情：各層級：L1=${exercise.level1}, L2=${exercise.level2}, L3=${exercise.level3}');
-    
-    // 優先使用actionName，如果為空則使用name
-    final displayName = (exercise.actionName != null && exercise.actionName!.isNotEmpty) 
-        ? exercise.actionName! 
-        : exercise.name;
-    
-    // 獲取所有非空的身體部位
-    final bodyParts = exercise.bodyParts.where((part) => part.isNotEmpty).toList();
-    final bodyPartsText = bodyParts.isNotEmpty ? bodyParts.join(', ') : '無指定部位';
-    
-    // 獲取器材信息，如果為空則顯示"徒手"
-    final equipment = exercise.equipment.isNotEmpty ? exercise.equipment : '徒手';
-    
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: Text(
-          displayName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('訓練部位: $bodyPartsText'),
-              Text('所需器材: $equipment'),
+              Text(
+                _getSelectionPathText(),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '符合條件的訓練動作:',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ],
           ),
         ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () {
-          _logDebug('點擊了運動項目: ${exercise.name} (actionName: ${exercise.actionName}) (ID: ${exercise.id})');
-          try {
-            _logDebug('嘗試導航到詳情頁...');
-            Navigator.push<Exercise>(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ExerciseDetailPage(exercise: exercise),
+        Expanded(
+          child: _exercises.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.info_outline,
+                      size: 48,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '沒有找到符合條件的訓練動作',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '請嘗試選擇其他條件',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(16.0),
+                itemCount: _exercises.length,
+                itemBuilder: (context, index) {
+                  final exercise = _exercises[index];
+                  
+                  // 優先使用actionName，如果為空則使用name
+                  final displayName = (exercise.actionName != null && exercise.actionName!.isNotEmpty) 
+                      ? exercise.actionName! 
+                      : exercise.name;
+                  
+                  // 獲取所有非空的身體部位
+                  final bodyParts = exercise.bodyParts.where((part) => part.isNotEmpty).toList();
+                  final bodyPartsText = bodyParts.isNotEmpty ? bodyParts.join(', ') : '無指定部位';
+                  
+                  // 獲取器材信息，如果為空則顯示"徒手"
+                  final equipment = exercise.equipment.isNotEmpty ? exercise.equipment : '徒手';
+                  
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8.0),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      title: Text(
+                        displayName,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('訓練部位: $bodyPartsText'),
+                            Text('所需器材: $equipment'),
+                          ],
+                        ),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // 添加選擇按鈕
+                          IconButton(
+                            icon: const Icon(Icons.add_circle, color: Colors.green),
+                            tooltip: '選擇此動作',
+                            onPressed: () {
+                              // 直接返回所選動作
+                              Navigator.pop(context, exercise);
+                            },
+                          ),
+                          const Icon(Icons.info_outline),
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ExerciseDetailPage(exercise: exercise),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
-            ).then((selectedExercise) {
-              if (selectedExercise != null) {
-                // 如果從詳情頁返回了所選動作，則將其返回到PlanEditorPage
-                Navigator.pop(context, selectedExercise);
-              }
-            });
-            _logDebug('導航成功完成');
-          } catch (e) {
-            _logDebug('導航失敗: $e');
-            _logDebug('導航失敗堆棧: ${StackTrace.current}');
-          }
-        },
+        ),
+      ],
+    );
+  }
+  
+  void _navigateToExerciseDetail(Exercise exercise) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ExerciseDetailPage(exercise: exercise),
       ),
     );
   }

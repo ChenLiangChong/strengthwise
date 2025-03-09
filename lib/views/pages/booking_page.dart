@@ -5,249 +5,507 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'workout/plan_editor_page.dart';
 import 'workout/workout_execution_page.dart';
+import '../../controllers/interfaces/i_booking_controller.dart';
+import '../../controllers/booking_controller.dart';
+import '../../services/error_handling_service.dart';
+import '../../services/service_locator.dart';
 
 class BookingPage extends StatefulWidget {
-  const BookingPage({super.key});
+  // 允許外部注入控制器，實現依賴注入
+  final IBookingController? controller;
+  
+  const BookingPage({
+    super.key,
+    this.controller,
+  });
 
   @override
   _BookingPageState createState() => _BookingPageState();
 }
 
-class _BookingPageState extends State<BookingPage> {
-  // 行事曆控制
-  CalendarFormat _calendarFormat = CalendarFormat.month;
+class _BookingPageState extends State<BookingPage> with SingleTickerProviderStateMixin {
+  late final IBookingController _controller;
+  final ErrorHandlingService _errorService = serviceLocator<ErrorHandlingService>();
+  
+  late TabController _tabController;
+  
+  List<Map<String, dynamic>> _userBookings = [];
+  List<Map<String, dynamic>> _coachBookings = [];
+  bool _isLoading = true;
+  bool _isCoachMode = false;
+  bool _isInitialized = false;
+  
+  // 行事曆相關變數
+  DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
+  CalendarFormat _calendarFormat = CalendarFormat.month;
   
-  // 訓練計畫類型
-  final List<String> _planTypes = [
-    '力量訓練',
-    '有氧訓練',
-    '肌肉塑形',
-    '核心訓練',
-    '全身訓練',
-    '恢復訓練'
-  ];
+  // 訓練計劃相關變數
+  Map<DateTime, List<Map<String, dynamic>>> _trainings = {};
+  List<Map<String, dynamic>> _selectedDayTrainings = [];
   
-  String? _selectedPlanType;
-  final String _planTitle = '';
-  final String _planDescription = '';
-  Map<DateTime, List<dynamic>> _events = {};
-  List<dynamic> _selectedEvents = [];
+  // 訓練記錄相關變數
+  Map<DateTime, List<Map<String, dynamic>>> _workoutRecords = {};
   
+  // 預約相關變數
+  Map<DateTime, List<Map<String, dynamic>>> _bookings = {};
+  List<Map<String, dynamic>> _selectedDayBookings = [];
+  
+  // 訓練計劃過濾
+  bool _showSelfPlans = true;  // 顯示自主訓練計劃
+  bool _showTrainerPlans = true;  // 顯示教練創建的計劃
+  bool _showRecords = true;  // 顯示訓練記錄
+  bool _showBookings = true;  // 顯示預約
+
   @override
   void initState() {
     super.initState();
-    _selectedDay = _focusedDay;
-    _loadWorkoutPlans();
+    
+    // 使用注入的控制器或創建新的控制器
+    _controller = widget.controller ?? BookingController();
+    
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_handleTabChange);
+    
+    // 確保控制器已初始化後再載入數據
+    _safeInitialize();
+    
+    // 載入訓練計劃數據
+    _loadTrainingPlans();
+    
+    // 載入訓練記錄數據
+    _loadWorkoutRecords();
   }
   
-  // 加載訓練計畫數據
-  Future<void> _loadWorkoutPlans() async {
+  Future<void> _safeInitialize() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // 添加更堅固的超時保護
+      bool initializationComplete = false;
+      
+      // 等待控制器初始化，但設置絕對超時
+      if (_controller is BookingController) {
+        try {
+          await Future.any<void>([
+            (_controller as BookingController).initialized.then((_) {
+              initializationComplete = true;
+            }),
+            Future.delayed(const Duration(seconds: 8), () {
+              if (!initializationComplete) {
+                print('[BOOKING PAGE] 控制器初始化超時(8秒)，強制繼續');
+              }
+            })
+          ]);
+        } catch (e) {
+          print('[BOOKING PAGE] 等待控制器初始化時發生錯誤: $e');
+          // 繼續執行，不要中斷界面顯示
+        }
+      }
+      
+      // 無論控制器是否完全初始化，都標記為已初始化並嘗試加載數據
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+          _isLoading = false;
+        });
+        
+        // 嘗試載入預約數據，但使用 try-catch 確保即使載入失敗也不會阻止界面顯示
+        try {
+          _loadBookings();
+        } catch (e) {
+          print('[BOOKING PAGE] 初始加載預約失敗: $e');
+          // 顯示空列表
+          setState(() {
+            _userBookings = [];
+            _coachBookings = [];
+          });
+        }
+      }
+    } catch (e) {
+      // 確保界面總是顯示，即使初始化完全失敗
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isInitialized = true; // 即使失敗也設為已初始化，避免卡住界面
+          _userBookings = [];
+          _coachBookings = [];
+        });
+        
+        // 嘗試顯示錯誤，但不讓它阻止界面顯示
+        try {
+          _errorService.handleError(
+            context, 
+            '預約系統無法正常啟動: ${e.toString()}', 
+            customMessage: '初始化失敗',
+          );
+        } catch (_) {
+          // 即使錯誤處理失敗也繼續顯示界面
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('預約系統初始化失敗'))
+          );
+        }
+      }
+    }
+  }
+  
+  @override
+  void dispose() {
+    _tabController.removeListener(_handleTabChange);
+    _tabController.dispose();
+    super.dispose();
+  }
+  
+  void _handleTabChange() {
+    if (_tabController.indexIsChanging) {
+      setState(() {
+        _isCoachMode = _tabController.index == 1;
+      });
+      if (_isInitialized) {
+        _loadBookings();
+        _loadTrainingPlans();
+        _loadWorkoutRecords();
+      }
+    }
+  }
+  
+  Future<void> _loadBookings() async {
+    if (!mounted || !_isInitialized) return;
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      List<Map<String, dynamic>> bookings;
+      
+      if (_isCoachMode) {
+        bookings = await _controller.loadCoachBookings();
+      } else {
+        bookings = await _controller.loadUserBookings();
+      }
+      
+      if (!mounted) return;
+      
+      // 將預約按日期分組
+      final bookingsByDate = <DateTime, List<Map<String, dynamic>>>{};
+      
+      for (var booking in bookings) {
+        final dateTime = booking['dateTime'];
+        if (dateTime != null && dateTime is Timestamp) {
+          final date = dateTime.toDate();
+          final day = DateTime(date.year, date.month, date.day);
+          
+          if (bookingsByDate[day] == null) {
+            bookingsByDate[day] = [];
+          }
+          
+          bookingsByDate[day]!.add(booking);
+        }
+      }
+      
+      setState(() {
+        if (_isCoachMode) {
+          _coachBookings = bookings;
+        } else {
+          _userBookings = bookings;
+        }
+        _bookings = bookingsByDate;
+        _updateSelectedDayData();
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      _errorService.handleLoadingError(context, e);
+    }
+  }
+  
+  // 載入訓練計劃數據，根據新的集合結構
+  Future<void> _loadTrainingPlans() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) return;
+      if (userId == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
       
-      final querySnapshot = await FirebaseFirestore.instance
+      // 獲取所有該用戶的訓練計劃（包括自主計劃和教練分配的計劃）
+      final snapshot = await FirebaseFirestore.instance
+          .collection('workoutPlans')
+          .where('traineeId', isEqualTo: userId) // 查詢指派給該用戶的計劃
+          .get();
+      
+      final trainings = <DateTime, List<Map<String, dynamic>>>{};
+      
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        data['dataType'] = 'plan'; // 標記數據類型為訓練計劃
+        
+        // 使用 scheduledDate 替代舊的 date 字段
+        if (data['scheduledDate'] is Timestamp) {
+          final timestamp = data['scheduledDate'] as Timestamp;
+          final date = timestamp.toDate();
+          final day = DateTime(date.year, date.month, date.day);
+          
+          if (trainings[day] == null) {
+            trainings[day] = [];
+          }
+          
+          trainings[day]!.add(data);
+        }
+      }
+      
+      // 再獲取當前用戶作為教練創建的訓練計劃
+      if (_isCoachMode) {
+        final coachSnapshot = await FirebaseFirestore.instance
+            .collection('workoutPlans')
+            .where('creatorId', isEqualTo: userId) // 查詢用戶作為教練創建的計劃
+            .where('planType', isEqualTo: 'trainer') // 只獲取教練創建的計劃
+            .get();
+            
+        for (var doc in coachSnapshot.docs) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          data['isCoachView'] = true; // 標記該計劃是以教練身份查看
+          data['dataType'] = 'plan'; // 標記數據類型為訓練計劃
+          
+          if (data['scheduledDate'] is Timestamp) {
+            final timestamp = data['scheduledDate'] as Timestamp;
+            final date = timestamp.toDate();
+            final day = DateTime(date.year, date.month, date.day);
+            
+            if (trainings[day] == null) {
+              trainings[day] = [];
+            }
+            
+            // 避免重複添加（如果該計劃已經在第一個查詢中加入）
+            if (!trainings[day]!.any((plan) => plan['id'] == doc.id)) {
+              trainings[day]!.add(data);
+            }
+          }
+        }
+      }
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _trainings = trainings;
+        _updateSelectedDayData();
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      print('[BOOKING PAGE] 載入訓練計劃失敗: $e');
+    }
+  }
+  
+  // 載入訓練記錄數據
+  Future<void> _loadWorkoutRecords() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      // 獲取該用戶的所有訓練記錄
+      final snapshot = await FirebaseFirestore.instance
           .collection('workoutRecords')
           .where('userId', isEqualTo: userId)
+          .orderBy('date', descending: true)
           .get();
       
-      final events = <DateTime, List<dynamic>>{};
+      final records = <DateTime, List<Map<String, dynamic>>>{};
       
-      for (var doc in querySnapshot.docs) {
+      for (var doc in snapshot.docs) {
         final data = doc.data();
-        final planData = {...data, 'id': doc.id}; // 添加文檔ID到數據中
-        final scheduledDate = data['date'] as Timestamp;
-        final dateTime = scheduledDate.toDate();
-        final key = DateTime(dateTime.year, dateTime.month, dateTime.day);
+        data['id'] = doc.id;
+        data['dataType'] = 'record'; // 標記數據類型為訓練記錄
         
-        if (events[key] != null) {
-          events[key]!.add(planData);
-        } else {
-          events[key] = [planData];
-        }
-      }
-      
-      setState(() {
-        _events = events;
-        _updateSelectedEvents();
-      });
-    } catch (e) {
-      print('加載訓練計畫失敗: $e');
-    }
-  }
-  
-  // 更新選定日期的事件
-  void _updateSelectedEvents() {
-    if (_selectedDay != null) {
-      final key = DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day);
-      setState(() {
-        _selectedEvents = _events[key] ?? [];
-      });
-    }
-  }
-  
-  // 刪除訓練計畫
-  Future<void> _deleteWorkoutPlan(String planId) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('workoutRecords')
-          .doc(planId)
-          .delete();
-      
-      // 刷新計畫列表
-      await _loadWorkoutPlans();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('訓練計畫已刪除')),
-      );
-    } catch (e) {
-      print('刪除訓練計畫失敗: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('刪除失敗，請稍後再試')),
-      );
-    }
-  }
-  
-  // 編輯訓練計畫
-  Future<void> _editWorkoutPlan(String planId) async {
-    if (_selectedDay == null) return;
-    
-    // 检查是否是过去的日期
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final selectedDate = DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day);
-    
-    if (selectedDate.isBefore(today)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('無法編輯過去日期的訓練計畫'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-    
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PlanEditorPage(
-          selectedDate: _selectedDay!,
-          planId: planId,
-        ),
-      ),
-    );
-    
-    if (result == true) {
-      // 重新加載計畫
-      await _loadWorkoutPlans();
-    }
-  }
-  
-  // 開啟訓練計畫編輯頁面
-  Future<void> _navigateToPlanEditor() async {
-    if (_selectedDay == null) return;
-    
-    // 检查是否是过去的日期
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final selectedDate = DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day);
-    
-    if (selectedDate.isBefore(today)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('無法為過去的日期創建訓練計畫'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-    
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PlanEditorPage(
-          selectedDate: _selectedDay!,
-        ),
-      ),
-    );
-    
-    if (result == true) {
-      // 重新加載計畫
-      await _loadWorkoutPlans();
-    }
-  }
-  
-  // 查看計畫詳情
-  void _viewPlanDetails(dynamic plan) {
-    // 不論完成狀態，都進入訓練執行頁面
-    _startWorkout(plan['id']);
-  }
-  
-  // 切換計畫完成狀態
-  Future<void> _togglePlanCompletion(String planId, bool currentStatus) async {
-    try {
-      // 獲取計畫數據以檢查日期
-      final doc = await FirebaseFirestore.instance
-          .collection('workoutRecords')
-          .doc(planId)
-          .get();
+        if (data['date'] is Timestamp) {
+          final timestamp = data['date'] as Timestamp;
+          final date = timestamp.toDate();
+          final day = DateTime(date.year, date.month, date.day);
           
-      if (!doc.exists) {
-        throw Exception('找不到訓練計畫');
-      }
-      
-      final planData = doc.data()!;
-      
-      // 檢查日期是否為過去或未來日期
-      if (planData['date'] != null && planData['date'] is Timestamp) {
-        final planTimestamp = planData['date'] as Timestamp;
-        final planDate = planTimestamp.toDate();
-        
-        // 對比今日日期（僅考慮年月日）
-        final today = DateTime.now();
-        final todayDate = DateTime(today.year, today.month, today.day);
-        final planDateOnly = DateTime(planDate.year, planDate.month, planDate.day);
-        
-        if (planDateOnly.isBefore(todayDate)) {
-          // 過去的訓練計畫不允許修改
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('無法修改過去的訓練記錄')),
-          );
-          return;
-        }
-        
-        if (planDateOnly.isAfter(todayDate)) {
-          // 未來的訓練計畫不允許修改
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('無法修改未來的訓練記錄，請在訓練當天進行操作')),
-          );
-          return;
+          if (records[day] == null) {
+            records[day] = [];
+          }
+          
+          records[day]!.add(data);
         }
       }
       
-      // 繼續更新計畫狀態
-      await FirebaseFirestore.instance
-          .collection('workoutRecords')
-          .doc(planId)
-          .update({
-        'completed': !currentStatus,
+      if (!mounted) return;
+      
+      setState(() {
+        _workoutRecords = records;
+        _updateSelectedDayData();
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
       });
       
-      // 刷新計畫列表
-      await _loadWorkoutPlans();
-    } catch (e) {
-      print('更新計畫狀態失敗: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('更新狀態失敗，請稍後再試')),
-      );
+      print('[BOOKING PAGE] 載入訓練記錄失敗: $e');
     }
   }
   
-  // 開始執行訓練
-  Future<void> _startWorkout(String planId) async {
-    final result = await Navigator.push<bool>(
+  // 更新選定日期的數據
+  void _updateSelectedDayData() {
+    final selectedDay = DateTime(_selectedDay.year, _selectedDay.month, _selectedDay.day);
+    
+    // 獲取所有選定日期的訓練計劃
+    final allTrainings = _trainings[selectedDay] ?? [];
+    
+    // 應用訓練計劃過濾器
+    _selectedDayTrainings = allTrainings.where((training) {
+      final planType = training['planType'] as String? ?? '';
+      
+      if (planType == 'self' && !_showSelfPlans) {
+        return false;
+      }
+      
+      if (planType == 'trainer' && !_showTrainerPlans) {
+        return false;
+      }
+      
+      return true;
+    }).toList();
+    
+    // 獲取選定日期的預約
+    _selectedDayBookings = _showBookings 
+        ? (_bookings[selectedDay] ?? [])
+        : [];
+  }
+  
+  // 切換過濾器
+  void _toggleFilter(String filterType) {
+    setState(() {
+      switch (filterType) {
+        case 'self':
+          _showSelfPlans = !_showSelfPlans;
+          break;
+        case 'trainer':
+          _showTrainerPlans = !_showTrainerPlans;
+          break;
+        case 'records':
+          _showRecords = !_showRecords;
+          break;
+        case 'bookings':
+          _showBookings = !_showBookings;
+          break;
+      }
+      _updateSelectedDayData();
+    });
+  }
+  
+  Future<void> _createBooking() async {
+    // TODO: 實現創建預約的邏輯
+  }
+  
+  Future<void> _cancelBooking(String bookingId) async {
+    try {
+      final success = await _controller.cancelBooking(bookingId);
+      
+      if (!mounted) return;
+      
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('預約已取消')),
+        );
+        _loadBookings();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('取消預約失敗')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      _errorService.handleError(context, e, customMessage: '取消預約失敗');
+    }
+  }
+  
+  Future<void> _confirmBooking(String bookingId) async {
+    try {
+      final success = await _controller.confirmBooking(bookingId);
+      
+      if (!mounted) return;
+      
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('預約已確認')),
+        );
+        _loadBookings();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('確認預約失敗')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      _errorService.handleError(context, e, customMessage: '確認預約失敗');
+    }
+  }
+  
+  // 創建新的訓練計劃
+  Future<void> _createTrainingPlan() async {
+    if (!mounted) return;
+    
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlanEditorPage(
+          selectedDate: _selectedDay,
+          planType: _isCoachMode ? 'trainer' : 'self', // 根據當前模式設置計劃類型
+        ),
+      ),
+    );
+    
+    if (result == true) {
+      // 如果成功創建了計劃，重新載入數據
+      _loadTrainingPlans();
+    }
+  }
+  
+  // 執行訓練計劃
+  Future<void> _executeTrainingPlan(String planId) async {
+    if (!mounted) return;
+    
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => WorkoutExecutionPage(
@@ -257,287 +515,640 @@ class _BookingPageState extends State<BookingPage> {
     );
     
     if (result == true) {
-      // 訓練完成後重新加載計畫
-      await _loadWorkoutPlans();
+      // 如果訓練計劃有更新，重新載入數據
+      _loadTrainingPlans();
     }
   }
-  
-  // 構建行事曆
-  Widget _buildCalendar() {
-    return TableCalendar(
-      firstDay: DateTime.now().subtract(const Duration(days: 365)),
-      lastDay: DateTime.now().add(const Duration(days: 365)),
-      focusedDay: _focusedDay,
-      calendarFormat: _calendarFormat,
-      selectedDayPredicate: (day) {
-        return isSameDay(_selectedDay, day);
-      },
-      onDaySelected: (selectedDay, focusedDay) {
-        setState(() {
-          _selectedDay = selectedDay;
-          _focusedDay = focusedDay;
-          _updateSelectedEvents();
-        });
-      },
-      onFormatChanged: (format) {
-        setState(() {
-          _calendarFormat = format;
-        });
-      },
-      onPageChanged: (focusedDay) {
-        _focusedDay = focusedDay;
-      },
-      eventLoader: (day) {
-        final key = DateTime(day.year, day.month, day.day);
-        return _events[key] ?? [];
-      },
-      calendarStyle: const CalendarStyle(
-        todayDecoration: BoxDecoration(
-          color: Colors.green,
-          shape: BoxShape.circle,
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('行事曆'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: '我的行事曆'),
+            Tab(text: '教練模式'),
+          ],
         ),
-        selectedDecoration: BoxDecoration(
-          color: Colors.green,
-          shape: BoxShape.circle,
-        ),
-        markerDecoration: BoxDecoration(
-          color: Colors.redAccent,
-          shape: BoxShape.circle,
-        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // 學生模式 - 行事曆視圖
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _buildCalendarView(isCoachMode: false),
+          
+          // 教練模式 - 行事曆視圖
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _buildCalendarView(isCoachMode: true),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _isCoachMode ? null : _createTrainingPlan,
+        tooltip: '創建訓練計劃',
+        child: const Icon(Icons.add),
       ),
     );
   }
   
-  // 構建訓練計畫列表
-  Widget _buildWorkoutPlans() {
-    if (_selectedEvents.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+  // 構建行事曆視圖
+  Widget _buildCalendarView({required bool isCoachMode}) {
+    return Column(
+      children: [
+        // 行事曆部分
+        TableCalendar(
+          firstDay: DateTime.utc(2020, 1, 1),
+          lastDay: DateTime.utc(2030, 12, 31),
+          focusedDay: _focusedDay,
+          calendarFormat: _calendarFormat,
+          eventLoader: (day) {
+            final normalizedDay = DateTime(day.year, day.month, day.day);
+            
+            // 合併該日的所有數據：訓練計劃、訓練記錄和預約
+            final allEvents = <Map<String, dynamic>>[];
+            
+            // 添加訓練計劃
+            if (_showSelfPlans || _showTrainerPlans) {
+              final plans = _trainings[normalizedDay] ?? [];
+              for (var plan in plans) {
+                final planType = plan['planType'] as String? ?? '';
+                if ((planType == 'self' && _showSelfPlans) || 
+                    (planType == 'trainer' && _showTrainerPlans)) {
+                  allEvents.add(plan);
+                }
+              }
+            }
+            
+            // 添加訓練記錄
+            if (_showRecords) {
+              final records = _workoutRecords[normalizedDay] ?? [];
+              allEvents.addAll(records);
+            }
+            
+            // 添加預約
+            if (_showBookings) {
+              final bookings = _bookings[normalizedDay] ?? [];
+              allEvents.addAll(bookings);
+            }
+            
+            return allEvents;
+          },
+          selectedDayPredicate: (day) {
+            return isSameDay(_selectedDay, day);
+          },
+          onDaySelected: (selectedDay, focusedDay) {
+            setState(() {
+              _selectedDay = selectedDay;
+              _focusedDay = focusedDay;
+              _updateSelectedDayData();
+            });
+          },
+          onFormatChanged: (format) {
+            setState(() {
+              _calendarFormat = format;
+            });
+          },
+          onPageChanged: (focusedDay) {
+            _focusedDay = focusedDay;
+          },
+          calendarStyle: CalendarStyle(
+            markersMaxCount: 4,
+            markerDecoration: const BoxDecoration(
+              color: Colors.green,
+              shape: BoxShape.circle,
+            ),
+            todayDecoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            selectedDecoration: const BoxDecoration(
+              color: Colors.green,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        
+        const Divider(height: 1),
+        
+        // 過濾器
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
             children: [
-              const Text('這一天沒有訓練計畫'),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: _navigateToPlanEditor,
-                icon: const Icon(Icons.add),
-                label: const Text('添加訓練計畫'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                ),
+              Text('過濾：', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(width: 8),
+              FilterChip(
+                label: const Text('自主訓練'),
+                selected: _showSelfPlans,
+                onSelected: (_) => _toggleFilter('self'),
+                selectedColor: Colors.green.withOpacity(0.2),
+                checkmarkColor: Colors.green,
+              ),
+              const SizedBox(width: 8),
+              FilterChip(
+                label: const Text('教練計劃'),
+                selected: _showTrainerPlans,
+                onSelected: (_) => _toggleFilter('trainer'),
+                selectedColor: Colors.blue.withOpacity(0.2),
+                checkmarkColor: Colors.blue,
+              ),
+              const SizedBox(width: 8),
+              FilterChip(
+                label: const Text('訓練記錄'),
+                selected: _showRecords,
+                onSelected: (_) => _toggleFilter('records'),
+                selectedColor: Colors.purple.withOpacity(0.2),
+                checkmarkColor: Colors.purple,
+              ),
+              const SizedBox(width: 8),
+              FilterChip(
+                label: const Text('預約'),
+                selected: _showBookings,
+                onSelected: (_) => _toggleFilter('bookings'),
+                selectedColor: Colors.orange.withOpacity(0.2),
+                checkmarkColor: Colors.orange,
               ),
             ],
           ),
         ),
-      );
-    }
-    
-    return Column(
-      children: [
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _selectedEvents.length,
-          itemBuilder: (context, index) {
-            final plan = _selectedEvents[index];
-            final isCompleted = plan['completed'] ?? false;
-            
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-              child: ListTile(
-                title: Text(
-                  plan['title'] ?? '未命名計畫',
-                  style: TextStyle(
-                    decoration: isCompleted ? TextDecoration.lineThrough : null,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      plan['description'] ?? '${plan['planType'] ?? "訓練計畫"}',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (plan['exercises'] != null) 
-                      Text(
-                        '動作數量: ${(plan['exercises'] as List?)?.length ?? 0}個',
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                    // 添加訓練時間顯示
-                    if (plan['trainingHour'] != null)
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            size: 14,
-                            color: Colors.green.shade700,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '訓練時間: ${(plan['trainingHour'] as int).toString().padLeft(2, '0')}:00',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.green.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 開始訓練按鈕
-                    if (!isCompleted)
-                      IconButton(
-                        icon: const Icon(Icons.play_circle_filled, color: Colors.green),
-                        tooltip: '開始訓練',
-                        onPressed: () => _startWorkout(plan['id']),
-                      ),
-                    // 完成狀態切換
-                    Builder(
-                      builder: (context) {
-                        // 判斷是否為過去或未來的日期
-                        bool isPastDate = false;
-                        bool isFutureDate = false;
-                        bool isToday = false;
-                        
-                        if (plan['date'] != null && plan['date'] is Timestamp) {
-                          final planTimestamp = plan['date'] as Timestamp;
-                          final planDate = planTimestamp.toDate();
-                          
-                          // 對比今日日期
-                          final today = DateTime.now();
-                          final todayDate = DateTime(today.year, today.month, today.day);
-                          final planDateOnly = DateTime(planDate.year, planDate.month, planDate.day);
-                          
-                          isPastDate = planDateOnly.isBefore(todayDate);
-                          isFutureDate = planDateOnly.isAfter(todayDate);
-                          isToday = planDateOnly.isAtSameMomentAs(todayDate);
-                        }
-                        
-                        final canModify = isToday && !isPastDate && !isFutureDate;
-                        
-                        return IconButton(
-                          icon: Icon(
-                            isCompleted ? Icons.check_circle : Icons.check_circle_outline,
-                            color: isCompleted 
-                              ? Colors.green 
-                              : (isPastDate || isFutureDate ? Colors.grey.shade400 : Colors.grey),
-                          ),
-                          tooltip: isPastDate 
-                              ? '無法修改過去的訓練' 
-                              : (isFutureDate
-                                  ? '無法修改未來的訓練'
-                                  : (isCompleted ? '標記為未完成' : '標記為完成')),
-                          onPressed: (isPastDate || isFutureDate) ? () {
-                            String message = isPastDate 
-                                ? '無法修改過去的訓練記錄' 
-                                : '無法修改未來的訓練記錄，請在訓練當天進行操作';
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(message)),
-                            );
-                          } : () => _togglePlanCompletion(plan['id'], isCompleted),
-                        );
-                      },
-                    ),
-                    // 編輯按鈕
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue),
-                      tooltip: '查看/編輯',
-                      onPressed: () => _editWorkoutPlan(plan['id']),
-                    ),
-                    // 刪除按鈕
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      tooltip: '刪除',
-                      onPressed: () => _deleteWorkoutPlan(plan['id']),
-                    ),
-                  ],
-                ),
-                onTap: () => _viewPlanDetails(plan),
-              ),
-            );
-          },
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ElevatedButton.icon(
-            onPressed: _navigateToPlanEditor,
-            icon: const Icon(Icons.add),
-            label: const Text('添加訓練計畫'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-            ),
-          ),
+        
+        // 選定日期的數據列表
+        Expanded(
+          child: _buildSelectedDayList(isCoachMode),
         ),
       ],
     );
   }
   
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('訓練行事曆'),
+  // 構建選定日期的列表，包含訓練計劃、訓練記錄和預約
+  Widget _buildSelectedDayList(bool isCoachMode) {
+    // 合併所有選定日期的數據
+    final List<Map<String, dynamic>> allItems = [];
+    
+    // 添加訓練計劃
+    allItems.addAll(_selectedDayTrainings);
+    
+    // 添加訓練記錄
+    if (_showRecords) {
+      final selectedDay = DateTime(_selectedDay.year, _selectedDay.month, _selectedDay.day);
+      final records = _workoutRecords[selectedDay] ?? [];
+      allItems.addAll(records);
+    }
+    
+    // 添加預約
+    allItems.addAll(_selectedDayBookings);
+    
+    if (allItems.isEmpty) {
+      return _buildEmptyState(
+        '今日沒有活動',
+        '點擊右下角按鈕創建訓練計劃',
+        Icons.calendar_today,
+      );
+    }
+    
+    return ListView.builder(
+      padding: const EdgeInsets.all(8.0),
+      itemCount: allItems.length,
+      itemBuilder: (context, index) {
+        final item = allItems[index];
+        
+        // 根據數據類型構建不同的卡片
+        final dataType = item['dataType'] as String? ?? '';
+        if (dataType == 'record') {
+          return _buildWorkoutRecordCard(item);
+        } else if (item.containsKey('status')) { // 預約有status字段
+          return _buildBookingCard(item, isUserMode: !isCoachMode);
+        } else {
+          return _buildTrainingCard(item);
+        }
+      },
+    );
+  }
+  
+  // 構建訓練記錄卡片
+  Widget _buildWorkoutRecordCard(Map<String, dynamic> record) {
+    final title = record['title'] ?? '未命名訓練';
+    final exercises = record['exercises'] as List<dynamic>? ?? [];
+    final completed = record['completed'] as bool? ?? false;
+    
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+      child: InkWell(
+        onTap: () {
+          // 點擊查看訓練記錄詳情
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WorkoutExecutionPage(
+                workoutRecordId: record['id'],
+              ),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      '已完成訓練',
+                      style: TextStyle(
+                        color: Colors.purple,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.fitness_center, size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${exercises.length} 個動作',
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton(
+                onPressed: () {
+                  // 點擊查看訓練記錄詳情
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => WorkoutExecutionPage(
+                        workoutRecordId: record['id'],
+                      ),
+                    ),
+                  );
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.purple,
+                ),
+                child: const Text('查看訓練記錄'),
+              ),
+            ],
+          ),
+        ),
       ),
-      body: SingleChildScrollView(
+    );
+  }
+  
+  // 構建訓練計劃卡片，根據新集合結構
+  Widget _buildTrainingCard(Map<String, dynamic> training) {
+    final title = training['title'] ?? '未命名訓練';
+    final description = training['description'] ?? '';
+    final planType = training['planType'] as String? ?? 'self';
+    final exercises = training['exercises'] as List<dynamic>? ?? [];
+    final completed = training['completed'] as bool? ?? false;
+    final isCoachView = training['isCoachView'] as bool? ?? false;
+    
+    // 顯示計劃是由誰創建的信息（僅對教練計劃顯示）
+    final traineeId = training['traineeId'] as String?;
+    final creatorId = training['creatorId'] as String?;
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    
+    String timeInfo = '全天';
+    if (training['scheduledDate'] != null) {
+      final timestamp = training['scheduledDate'] as Timestamp;
+      final time = timestamp.toDate();
+      
+      // 只顯示時間部分，如果有
+      if (time.hour != 0 || time.minute != 0) {
+        timeInfo = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+      }
+    }
+    
+    // 根據計劃類型設置顏色
+    Color typeColor = planType == 'self' ? Colors.green : Colors.blue;
+    String typeText = planType == 'self' ? '自主訓練' : '教練計劃';
+    
+    // 計算進度
+    int totalExercises = exercises.length;
+    int completedExercises = exercises.where((e) => e['completed'] == true).length;
+    double progress = totalExercises > 0 ? completedExercises / totalExercises : 0.0;
+    
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+      child: InkWell(
+        onTap: () => _executeTrainingPlan(training['id']),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: typeColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      typeText,
+                      style: TextStyle(
+                        color: typeColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (description.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(color: Colors.grey[700]),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    timeInfo,
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.fitness_center, size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${exercises.length} 個動作',
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
+                ],
+              ),
+              
+              // 顯示教練/學員信息（如果是教練計劃）
+              if (planType == 'trainer' && !isCoachView && userId == traineeId) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.person, size: 16, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      '教練安排的計劃',
+                      style: TextStyle(color: Colors.grey[700]),
+                    ),
+                  ],
+                ),
+              ],
+              
+              // 如果是教練查看學員的計劃
+              if (isCoachView && userId == creatorId) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.person, size: 16, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      '已分配給學員',
+                      style: TextStyle(color: Colors.grey[700]),
+                    ),
+                  ],
+                ),
+              ],
+              
+              // 進度條
+              const SizedBox(height: 8),
+              LinearProgressIndicator(
+                value: progress,
+                backgroundColor: Colors.grey[200],
+                valueColor: AlwaysStoppedAnimation(
+                  completed ? Colors.green : Colors.orange,
+                ),
+              ),
+              
+              // 顯示完成狀態
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    completed ? '已完成' : '進行中: $completedExercises/$totalExercises',
+                    style: TextStyle(
+                      color: completed ? Colors.green : Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => _executeTrainingPlan(training['id']),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: typeColor,
+                    ),
+                    child: Text(completed ? '查看訓練' : '開始訓練'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildEmptyState(String title, String subtitle, IconData icon) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildBookingCard(Map<String, dynamic> booking, {required bool isUserMode}) {
+    final bookingId = booking['id'] ?? '';
+    final status = booking['status'] ?? 'pending';
+    final dateTime = booking['dateTime'];
+    final coachName = booking['coachName'] ?? '未知教練';
+    final userName = booking['userName'] ?? '未知用戶';
+    final course = booking['course'] ?? '個人訓練';
+    
+    // 格式化日期時間
+    String formattedDateTime = '未知時間';
+    if (dateTime != null) {
+      final date = dateTime.toDate();
+      formattedDateTime = '${date.year}/${date.month}/${date.day} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    }
+    
+    // 狀態顏色
+    Color statusColor;
+    String statusText;
+    
+    switch (status) {
+      case 'confirmed':
+        statusColor = Colors.green;
+        statusText = '已確認';
+        break;
+      case 'cancelled':
+        statusColor = Colors.red;
+        statusText = '已取消';
+        break;
+      case 'completed':
+        statusColor = Colors.blue;
+        statusText = '已完成';
+        break;
+      default:
+        statusColor = Colors.orange;
+        statusText = '待確認';
+    }
+    
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                '選擇日期',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: _buildCalendar(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Text(
-                    _selectedDay != null 
-                        ? '${DateFormat('yyyy年MM月dd日').format(_selectedDay!)} 訓練計畫' 
-                        : '訓練計畫',
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    course,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const Spacer(),
-                  if (_selectedDay != null && DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day)
-                      .isAfter(DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day).subtract(const Duration(days: 1))))
-                    IconButton(
-                      icon: const Icon(Icons.add_circle, color: Colors.green, size: 28),
-                      onPressed: _navigateToPlanEditor,
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.bold,
                     ),
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
-            _buildWorkoutPlans(),
-            const SizedBox(height: 30),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(
+                  formattedDateTime,
+                  style: TextStyle(color: Colors.grey[700]),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.person, size: 16, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(
+                  isUserMode ? '教練: $coachName' : '學生: $userName',
+                  style: TextStyle(color: Colors.grey[700]),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (status == 'pending' && isUserMode)
+                  TextButton(
+                    onPressed: () => _cancelBooking(bookingId),
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    child: const Text('取消預約'),
+                  ),
+                
+                if (status == 'pending' && !isUserMode)
+                  TextButton(
+                    onPressed: () => _confirmBooking(bookingId),
+                    style: TextButton.styleFrom(foregroundColor: Colors.green),
+                    child: const Text('確認預約'),
+                  ),
+                
+                if (status == 'confirmed')
+                  OutlinedButton(
+                    onPressed: () {
+                      // TODO: 導航到課程詳情頁面
+                    },
+                    child: const Text('查看詳情'),
+                  ),
+              ],
+            ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToPlanEditor,
-        backgroundColor: Colors.green,
-        child: const Icon(Icons.add),
       ),
     );
   }

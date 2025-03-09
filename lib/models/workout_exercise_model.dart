@@ -1,19 +1,25 @@
 import 'exercise_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+/// 訓練動作配置模型
+///
+/// 表示用戶訓練計劃中的一個具體動作配置，包含組數、次數和重量等信息
 class WorkoutExercise {
-  final String id;
-  final String exerciseId;
-  final String name;
-  final String? actionName;
-  final String equipment;
-  final List<String> bodyParts;
-  final int sets;
-  final int reps;
-  final double weight;
-  final int restTime; // 休息時間（秒）
-  final String notes;
-  final bool isCompleted;
+  final String id;               // 唯一標識符
+  final String exerciseId;       // 關聯的動作ID
+  final String name;             // 動作名稱
+  final String? actionName;      // 動作名稱別名
+  final String equipment;        // 所需器材
+  final List<String> bodyParts;  // 鍛鍊部位
+  final int sets;                // 組數
+  final int reps;                // 次數
+  final double weight;           // 重量(kg)
+  final int restTime;            // 休息時間（秒）
+  final String notes;            // 備註
+  final bool isCompleted;        // 是否完成
 
+  /// 創建一個訓練動作配置實例
   WorkoutExercise({
     required this.id,
     required this.exerciseId,
@@ -29,6 +35,9 @@ class WorkoutExercise {
     this.isCompleted = false,
   });
 
+  /// 從標準動作模型創建訓練動作配置
+  /// 
+  /// 使用標準的預設值初始化新的訓練動作配置
   factory WorkoutExercise.fromExercise(Exercise exercise) {
     return WorkoutExercise(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -44,6 +53,7 @@ class WorkoutExercise {
     );
   }
 
+  /// 轉換為 JSON 數據格式
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -61,6 +71,7 @@ class WorkoutExercise {
     };
   }
 
+  /// 從 JSON 創建對象
   factory WorkoutExercise.fromJson(Map<String, dynamic> json) {
     return WorkoutExercise(
       id: json['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
@@ -78,6 +89,7 @@ class WorkoutExercise {
     );
   }
 
+  /// 從 Firestore 數據創建對象
   factory WorkoutExercise.fromFirestore(Map<String, dynamic> data) {
     return WorkoutExercise(
       id: data['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
@@ -94,7 +106,13 @@ class WorkoutExercise {
       isCompleted: data['isCompleted'] ?? false,
     );
   }
+  
+  /// 轉換為 Firestore 可用的數據格式
+  Map<String, dynamic> toFirestore() {
+    return toJson();
+  }
 
+  /// 創建一個本對象的副本，並可選擇性地修改某些屬性
   WorkoutExercise copyWith({
     String? id,
     String? exerciseId,
@@ -124,4 +142,21 @@ class WorkoutExercise {
       isCompleted: isCompleted ?? this.isCompleted,
     );
   }
+  
+  /// 更新完成狀態
+  WorkoutExercise toggleCompletion() {
+    return copyWith(isCompleted: !isCompleted);
+  }
+  
+  @override
+  String toString() => 'WorkoutExercise(id: $id, name: $name, sets: $sets, reps: $reps)';
+  
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is WorkoutExercise && other.id == id;
+  }
+  
+  @override
+  int get hashCode => id.hashCode;
 } 

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../models/user_model.dart';
-import '../../services/user_service.dart';
+import '../../services/interfaces/i_user_service.dart';
+import '../../services/service_locator.dart';
 import '../main_home_page.dart';
 
 class ProfileSettingsPage extends StatefulWidget {
@@ -18,7 +19,7 @@ class ProfileSettingsPage extends StatefulWidget {
 }
 
 class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
-  final UserService _userService = UserService();
+  late final IUserService _userService;
   final _formKey = GlobalKey<FormState>();
   
   UserModel? _userProfile;
@@ -40,6 +41,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   @override
   void initState() {
     super.initState();
+    _userService = serviceLocator<IUserService>();
     _loadUserProfile();
   }
   
