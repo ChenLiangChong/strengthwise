@@ -362,7 +362,7 @@ class ExerciseCacheService {
     final parts = key.split('_');
     
     if (parts.isNotEmpty) {
-      if (parts.length > 0 && parts[0].isNotEmpty) {
+      if (parts.isNotEmpty && parts[0].isNotEmpty) {
         filterParams['type'] = parts[0];
       }
       

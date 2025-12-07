@@ -253,7 +253,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     onTap: () async {
                       await _authService.signOut();
                       Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (_) => LoginPage()),
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
                       );
                     },
                   ),

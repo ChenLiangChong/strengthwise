@@ -200,8 +200,8 @@ class _RecordsPageState extends State<RecordsPage> {
                   ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(true),
-                    child: const Text('刪除'),
                     style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    child: const Text('刪除'),
                   ),
                 ],
               ),

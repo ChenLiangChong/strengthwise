@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import '../../../models/workout_record_model.dart';
 import '../../../models/exercise_model.dart';
 import '../../../controllers/interfaces/i_workout_controller.dart';
 import '../../../controllers/interfaces/i_workout_execution_controller.dart';

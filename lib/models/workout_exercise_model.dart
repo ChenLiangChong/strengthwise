@@ -1,6 +1,4 @@
 import 'exercise_model.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 /// 訓練動作配置模型
 ///

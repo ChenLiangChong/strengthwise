@@ -5,6 +5,8 @@ import '../services/error_handling_service.dart';
 import 'main_home_page.dart';
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -96,15 +98,37 @@ class _LoginPageState extends State<LoginPage> {
           MaterialPageRoute(builder: (_) => const MainHomePage()),
         );
       } else if (mounted) {
+        final errorMsg = _authController.errorMessage ?? 'Google 登入失敗';
+        // 檢查是否為模擬器相關錯誤
+        String displayMsg = errorMsg;
+        if (errorMsg.contains('模擬器') || errorMsg.contains('真實設備')) {
+          displayMsg = 'Google 登入在模擬器上不可用。\n請使用真實設備測試，或使用下方的電子郵件登入功能。';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_authController.errorMessage ?? 'Google 登入失敗，請稍後再試'),
-            backgroundColor: Colors.red[700],
+            content: Text(displayMsg),
+            backgroundColor: Colors.orange[700],
+            duration: const Duration(seconds: 5),
           ),
         );
       }
     } catch (e) {
-      _errorService.handleError(context, e);
+      // 處理模擬器相關錯誤
+      String errorMsg = e.toString();
+      if (errorMsg.contains('模擬器') || errorMsg.contains('真實設備')) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Google 登入在模擬器上不可用。\n請使用真實設備測試，或使用下方的電子郵件登入功能。'),
+              backgroundColor: Colors.orange[700],
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      } else {
+        _errorService.handleError(context, e);
+      }
     } finally {
       if (mounted) {
         setState(() {

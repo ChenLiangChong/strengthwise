@@ -135,7 +135,7 @@ class NoteService implements INoteService {
   /// 管理筆記緩存大小
   void _manageNoteCache() {
     if (_noteCache.length > _noteCacheLimit) {
-      _logDebug('筆記緩存超出限制 (${_noteCache.length}/${_noteCacheLimit})，進行清理');
+      _logDebug('筆記緩存超出限制 (${_noteCache.length}/$_noteCacheLimit)，進行清理');
       
       // 簡單策略：直接清空緩存
       _noteCache.clear();
@@ -367,7 +367,7 @@ class NoteService implements INoteService {
           _userNotesCache = _userNotesCache!
               .map((n) => n.id == note.id ? updatedNote : n)
               .toList()
-            ..sort((a, b) => b.updatedAt!.compareTo(a.updatedAt!)); // 重新按更新時間排序
+            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)); // 重新按更新時間排序
             
           _userNotesCacheTime = now;
         }

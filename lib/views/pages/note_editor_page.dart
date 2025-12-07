@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import '../../models/note_model.dart';
 import '../../controllers/interfaces/i_note_controller.dart';
 import '../../services/error_handling_service.dart';

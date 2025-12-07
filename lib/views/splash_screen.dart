@@ -30,7 +30,7 @@ class _SplashScreenState extends State<SplashScreen> {
         );
       } else {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => LoginPage()),
+          MaterialPageRoute(builder: (_) => const LoginPage()),
         );
       }
     });
@@ -38,18 +38,18 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // 您可以使用自己的Logo图片
-            const FlutterLogo(size: 100),
-            const SizedBox(height: 30),
-            const CircularProgressIndicator(),
-            const SizedBox(height: 20),
-            const Text('歡迎使用', style: TextStyle(fontSize: 20)),
+            FlutterLogo(size: 100),
+            SizedBox(height: 30),
+            CircularProgressIndicator(),
+            SizedBox(height: 20),
+            Text('歡迎使用', style: TextStyle(fontSize: 20)),
           ],
         ),
       ),

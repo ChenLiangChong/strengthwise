@@ -281,39 +281,38 @@ class ExerciseService implements IExerciseService {
       // 確保類型條件始終應用
       if (selectedType.isNotEmpty) {
         query = query.where('type', isEqualTo: selectedType);
-        _logDebug('添加查詢條件: type=${selectedType}');
+        _logDebug('添加查詢條件: type=$selectedType');
       }
       
       // 確保身體部位條件始終應用
       if (selectedBodyPart.isNotEmpty) {
         query = query.where('bodyParts', arrayContains: selectedBodyPart);
-        _logDebug('添加查詢條件: bodyParts包含${selectedBodyPart}');
+        _logDebug('添加查詢條件: bodyParts包含$selectedBodyPart');
       }
       
       // 添加其他層級條件
       if (level >= 2 && selectedLevel1.isNotEmpty) {
         query = query.where('level1', isEqualTo: selectedLevel1);
-        _logDebug('添加查詢條件: level1=${selectedLevel1}');
+        _logDebug('添加查詢條件: level1=$selectedLevel1');
       }
       
       if (level >= 3 && selectedLevel2.isNotEmpty) {
         query = query.where('level2', isEqualTo: selectedLevel2);
-        _logDebug('添加查詢條件: level2=${selectedLevel2}');
+        _logDebug('添加查詢條件: level2=$selectedLevel2');
       }
       
       if (level >= 4 && selectedLevel3.isNotEmpty) {
         query = query.where('level3', isEqualTo: selectedLevel3);
-        _logDebug('添加查詢條件: level3=${selectedLevel3}');
+        _logDebug('添加查詢條件: level3=$selectedLevel3');
       }
       
       if (level >= 5 && selectedLevel4.isNotEmpty) {
         query = query.where('level4', isEqualTo: selectedLevel4);
-        _logDebug('添加查詢條件: level4=${selectedLevel4}');
+        _logDebug('添加查詢條件: level4=$selectedLevel4');
       }
       
       // 輸出完整查詢條件用於調試
-      _logDebug('完整查詢條件: 查詢level${level}, type=${selectedType}, bodyPart=${selectedBodyPart}, ' +
-                'level1=${selectedLevel1}, level2=${selectedLevel2}, level3=${selectedLevel3}, level4=${selectedLevel4}');
+      _logDebug('完整查詢條件: 查詢level$level, type=$selectedType, bodyPart=$selectedBodyPart, ' 'level1=$selectedLevel1, level2=$selectedLevel2, level3=$selectedLevel3, level4=$selectedLevel4');
       
       // 執行查詢，添加超時處理
       final querySnapshot = await query

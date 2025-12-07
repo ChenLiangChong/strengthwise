@@ -605,7 +605,7 @@ class ExerciseController extends ChangeNotifier implements IExerciseController {
 
       
 
-      final cacheKey = 'level${level}_${typeValue}_${bodyPartValue}_${level1Value}_${level2Value}_${level3Value}_${level4Value}';
+      final cacheKey = 'level${level}_${typeValue}_${bodyPartValue}_${level1Value}_${level2Value}_${level3Value}_$level4Value';
 
       logDebug('使用與服務層一致的緩存鍵: $cacheKey');
 
@@ -789,7 +789,7 @@ class ExerciseController extends ChangeNotifier implements IExerciseController {
 
       
 
-      final cacheKey = 'exercises_${selectedType}_${selectedBodyPart}_${level1Value}_${level2Value}_${level3Value}_${level4Value}_${level5Value}';
+      final cacheKey = 'exercises_${selectedType}_${selectedBodyPart}_${level1Value}_${level2Value}_${level3Value}_${level4Value}_$level5Value';
 
       logDebug('使用與服務層一致的緩存鍵: $cacheKey');
 

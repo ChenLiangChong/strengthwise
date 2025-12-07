@@ -31,16 +31,16 @@ class BookingService implements IBookingService {
   bool get isInitialized => _isInitialized;
   
   // 緩存
-  Map<String, List<Map<String, dynamic>>> _bookingsCache = {};
-  Map<String, DateTime> _bookingsCacheTime = {};
-  Map<String, Map<String, dynamic>> _bookingDetailsCache = {};
-  Map<String, List<Map<String, dynamic>>> _availableSlotsCache = {};
-  Map<String, DateTime> _availableSlotsCacheTime = {};
+  final Map<String, List<Map<String, dynamic>>> _bookingsCache = {};
+  final Map<String, DateTime> _bookingsCacheTime = {};
+  final Map<String, Map<String, dynamic>> _bookingDetailsCache = {};
+  final Map<String, List<Map<String, dynamic>>> _availableSlotsCache = {};
+  final Map<String, DateTime> _availableSlotsCacheTime = {};
   Timer? _cacheClearTimer;
   
   // 事件監聽器
   final StreamController<Map<String, dynamic>> _bookingUpdateController = StreamController<Map<String, dynamic>>.broadcast();
-  List<StreamSubscription> _activeSubscriptions = [];
+  final List<StreamSubscription> _activeSubscriptions = [];
   
   /// 創建服務實例
   /// 
@@ -57,6 +57,7 @@ class BookingService implements IBookingService {
   /// 初始化服務
   /// 
   /// 設置環境配置並初始化緩存系統
+  @override
   Future<void> initialize({Environment environment = Environment.development}) async {
     // 如果已經初始化，直接返回，不要拋出錯誤
     if (_isInitialized) return;
@@ -303,7 +304,7 @@ class BookingService implements IBookingService {
       return [];
     }
     
-    final cacheKey = 'user_${currentUserId}';
+    final cacheKey = 'user_$currentUserId';
     
     // 檢查緩存是否有效（如果啟用）
     if (_useCache && 
@@ -367,7 +368,7 @@ class BookingService implements IBookingService {
       return [];
     }
     
-    final cacheKey = 'coach_${currentUserId}';
+    final cacheKey = 'coach_$currentUserId';
     
     // 檢查緩存是否有效（如果啟用）
     if (_useCache && 
@@ -817,7 +818,7 @@ class BookingService implements IBookingService {
       
       final slots = querySnapshot.docs
           .map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
+            final data = doc.data();
             data['id'] = doc.id;
             return data;
           })

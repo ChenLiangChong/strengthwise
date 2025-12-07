@@ -136,7 +136,7 @@ class WorkoutService implements IWorkoutService {
   /// 管理記錄緩存大小
   void _manageRecordCacheSize() {
     if (_recordCache.length > _recordCacheLimit) {
-      _logDebug('記錄緩存超出限制 (${_recordCache.length}/${_recordCacheLimit})，進行清理');
+      _logDebug('記錄緩存超出限制 (${_recordCache.length}/$_recordCacheLimit)，進行清理');
       
       // 保留最近使用的記錄，刪除多餘的
       final keysToRemove = _recordCache.keys.toList().sublist(0, _recordCache.length - _recordCacheLimit);
@@ -151,7 +151,7 @@ class WorkoutService implements IWorkoutService {
   /// 管理模板緩存大小
   void _manageTemplateCacheSize() {
     if (_templateCache.length > _templateCacheLimit) {
-      _logDebug('模板緩存超出限制 (${_templateCache.length}/${_templateCacheLimit})，進行清理');
+      _logDebug('模板緩存超出限制 (${_templateCache.length}/$_templateCacheLimit)，進行清理');
       
       // 保留最近使用的模板，刪除多餘的
       final keysToRemove = _templateCache.keys.toList().sublist(0, _templateCache.length - _templateCacheLimit);

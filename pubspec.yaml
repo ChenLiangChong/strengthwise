@@ -20,7 +20,7 @@ dependencies:
   get_it: ^7.6.0
   shared_preferences: ^2.1.2
   image_picker: ^0.8.7+5
-  intl: ^0.18.1
+  intl: ^0.20.2
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   table_calendar: ^3.0.9
@@ -32,6 +32,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  devtools_mcp_extension: ^0.1.0
 
 flutter:
   uses-material-design: true

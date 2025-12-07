@@ -17,7 +17,7 @@ class BookingController extends ChangeNotifier implements IBookingController {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isInitialized = false;
-  Completer<void> _initCompleter = Completer<void>();
+  final Completer<void> _initCompleter = Completer<void>();
   
   // 數據緩存
   List<Map<String, dynamic>>? _userBookingsCache;

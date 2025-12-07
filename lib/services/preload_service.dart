@@ -40,7 +40,7 @@ class PreloadService {
   static int _totalTasks = 0;
   static int _completedTasks = 0;
   static bool _isPreloading = false;
-  static Set<String> _failedTasks = {};
+  static final Set<String> _failedTasks = {};
   
   // 用戶使用習慣追蹤
   static Map<String, int> _exerciseTypeUsageCount = {};

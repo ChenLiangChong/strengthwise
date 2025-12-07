@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:async';
 import '../models/user_model.dart';
 import '../services/interfaces/i_auth_service.dart';
@@ -80,6 +79,7 @@ class AuthController extends ChangeNotifier implements IAuthController {
   }
   
   /// 釋放資源
+  @override
   Future<void> dispose() async {
     try {
       // 取消狀態監聽
@@ -220,7 +220,36 @@ class AuthController extends ChangeNotifier implements IAuthController {
       _handleError('登入失敗，請檢查您的電子郵件和密碼');
       return false;
     } catch (e) {
-      _handleError('電子郵件登入錯誤', originalError: e);
+      // 檢查是否為憑證錯誤
+      final errorStr = e.toString();
+      if (errorStr.contains('invalid-credential') || 
+          errorStr.contains('wrong-password') ||
+          errorStr.contains('user-not-found')) {
+        _handleError('電子郵件或密碼不正確', originalError: e);
+      } else if (errorStr.contains('PigeonUserDetails') || 
+                 errorStr.contains('is not a subtype')) {
+        // 類型轉換錯誤，但可能已經登入成功，嘗試從服務獲取當前用戶
+        try {
+          await Future.delayed(const Duration(milliseconds: 500));
+          final currentUser = _authService.getCurrentUser();
+          if (currentUser != null) {
+            _user = UserModel(
+              uid: currentUser['uid'],
+              email: currentUser['email'],
+              displayName: currentUser['displayName'] ?? '',
+              photoURL: currentUser['photoURL'] ?? '',
+            );
+            _isLoading = false;
+            notifyListeners();
+            return true;
+          }
+        } catch (_) {
+          // 如果獲取失敗，繼續顯示錯誤
+        }
+        _handleError('登入成功但載入用戶資料時出現問題，請重試', originalError: e);
+      } else {
+        _handleError('電子郵件登入錯誤', originalError: e);
+      }
       return false;
     }
   }
@@ -282,7 +311,13 @@ class AuthController extends ChangeNotifier implements IAuthController {
       _handleError("Google 登入失敗");
       return false;
     } catch (e) {
-      _handleError("Google 登入錯誤", originalError: e);
+      // 檢查是否為模擬器相關錯誤
+      final errorStr = e.toString();
+      if (errorStr.contains('模擬器') || errorStr.contains('真實設備')) {
+        _handleError("Google 登入在模擬器上不可用。請使用真實設備測試，或使用電子郵件登入功能。", originalError: e);
+      } else {
+        _handleError("Google 登入錯誤", originalError: e);
+      }
       return false;
     }
   }

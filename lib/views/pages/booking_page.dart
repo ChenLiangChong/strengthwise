@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'workout/plan_editor_page.dart';
@@ -640,7 +639,7 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
             children: [
-              Text('過濾：', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('過濾：', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(width: 8),
               FilterChip(
                 label: const Text('自主訓練'),

@@ -54,7 +54,7 @@ class _MainHomePageState extends State<MainHomePage> {
     // 檢查用戶是否已登入
     final userData = _authService.getCurrentUser();
     if (userData == null) {
-      return LoginPage();
+      return const LoginPage();
     }
     
     return Scaffold(

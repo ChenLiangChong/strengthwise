@@ -3,7 +3,7 @@ import 'dart:async';
 import '../models/note_model.dart';
 import '../services/interfaces/i_note_service.dart';
 import '../services/error_handling_service.dart';
-import '../services/service_locator.dart' show Environment, serviceLocator;
+import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_note_controller.dart';
 
 /// 筆記控制器實現

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../models/custom_exercise_model.dart';
-import '../../models/exercise_model.dart';
 import '../../controllers/interfaces/i_custom_exercise_controller.dart';
 import '../../services/error_handling_service.dart';
 import '../../services/service_locator.dart';

@@ -208,6 +208,16 @@ class AuthWrapper implements IAuthService {
         'photoURL': user.photoURL ?? '',
       };
     } catch (e) {
+      // 檢查是否為模擬器相關錯誤
+      final errorStr = e.toString();
+      if (errorStr.contains('12500') || 
+          errorStr.contains('SERVICE_INVALID') ||
+          errorStr.contains('GooglePlayServicesNotAvailableException') ||
+          errorStr.contains('Google Play Store')) {
+        _logError('Google登入錯誤: 在模擬器上 Google 登入可能無法正常工作。請使用真實設備或使用電子郵件登入。錯誤詳情: $e');
+        // 拋出更明確的錯誤，讓上層可以顯示友好提示
+        throw Exception('Google 登入在模擬器上不可用。請使用真實設備測試，或使用電子郵件登入功能。');
+      }
       _logError('Google登入錯誤: $e');
       return null;
     }
@@ -217,25 +227,65 @@ class AuthWrapper implements IAuthService {
   Future<Map<String, dynamic>?> signInWithEmail(String email, String password) async {
     _ensureInitialized();
     try {
-      final userCredential = await _auth.signInWithEmailAndPassword(
+      // 先執行登入
+      await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       
-      final user = userCredential.user;
+      // 等待一小段時間，確保用戶數據已完全加載
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      // 從 currentUser 獲取用戶資料，而不是從 userCredential
+      // 這樣可以避免內部類型轉換問題
+      final user = _auth.currentUser;
       if (user == null) {
         _logError('電子郵件登入後無法獲取用戶資料');
         return null;
+      }
+      
+      // 如果用戶數據還沒完全載入，重試幾次
+      int retryCount = 0;
+      while (user.uid.isEmpty && retryCount < 3) {
+        await Future.delayed(const Duration(milliseconds: 200));
+        retryCount++;
       }
       
       _logDebug('電子郵件登入成功: ${user.uid}');
       return {
         'uid': user.uid,
         'email': user.email ?? '',
-        'displayName': user.displayName,
-        'photoURL': user.photoURL,
+        'displayName': user.displayName ?? '',
+        'photoURL': user.photoURL ?? '',
       };
     } catch (e) {
+      // 檢查是否為憑證錯誤
+      final errorStr = e.toString();
+      if (errorStr.contains('invalid-credential') || 
+          errorStr.contains('wrong-password') ||
+          errorStr.contains('user-not-found')) {
+        _logError('電子郵件登入錯誤: 憑證無效或用戶不存在');
+        rethrow; // 重新拋出以便上層處理
+      }
+      
+      // 檢查是否為類型轉換錯誤（這通常是暫時的）
+      if (errorStr.contains('PigeonUserDetails') || 
+          errorStr.contains('is not a subtype')) {
+        _logError('電子郵件登入錯誤: 用戶數據載入問題，嘗試重試');
+        // 嘗試從 currentUser 獲取
+        await Future.delayed(const Duration(milliseconds: 500));
+        final user = _auth.currentUser;
+        if (user != null && user.uid.isNotEmpty) {
+          _logDebug('重試成功，從 currentUser 獲取資料: ${user.uid}');
+          return {
+            'uid': user.uid,
+            'email': user.email ?? '',
+            'displayName': user.displayName ?? '',
+            'photoURL': user.photoURL ?? '',
+          };
+        }
+      }
+      
       _logError('電子郵件登入錯誤: $e');
       return null;
     }
@@ -245,12 +295,17 @@ class AuthWrapper implements IAuthService {
   Future<Map<String, dynamic>?> registerWithEmail(String email, String password) async {
     _ensureInitialized();
     try {
-      final userCredential = await _auth.createUserWithEmailAndPassword(
+      // 先執行註冊
+      await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
       
-      final user = userCredential.user;
+      // 等待一小段時間，確保用戶數據已完全加載
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      // 從 currentUser 獲取用戶資料，而不是從 userCredential
+      final user = _auth.currentUser;
       if (user == null) {
         _logError('電子郵件註冊後無法獲取用戶資料');
         return null;
@@ -260,10 +315,29 @@ class AuthWrapper implements IAuthService {
       return {
         'uid': user.uid,
         'email': user.email ?? '',
-        'displayName': user.displayName,
-        'photoURL': user.photoURL,
+        'displayName': user.displayName ?? '',
+        'photoURL': user.photoURL ?? '',
       };
     } catch (e) {
+      // 檢查是否為類型轉換錯誤
+      final errorStr = e.toString();
+      if (errorStr.contains('PigeonUserDetails') || 
+          errorStr.contains('is not a subtype')) {
+        _logError('電子郵件註冊錯誤: 用戶數據載入問題，嘗試重試');
+        // 嘗試從 currentUser 獲取
+        await Future.delayed(const Duration(milliseconds: 500));
+        final user = _auth.currentUser;
+        if (user != null && user.uid.isNotEmpty) {
+          _logDebug('重試成功，從 currentUser 獲取資料: ${user.uid}');
+          return {
+            'uid': user.uid,
+            'email': user.email ?? '',
+            'displayName': user.displayName ?? '',
+            'photoURL': user.photoURL ?? '',
+          };
+        }
+      }
+      
       _logError('電子郵件註冊錯誤: $e');
       return null;
     }

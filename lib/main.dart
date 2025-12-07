@@ -6,8 +6,6 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'views/splash_screen.dart';
 import 'services/service_locator.dart';
-import 'controllers/workout_execution_controller.dart';
-import 'controllers/interfaces/i_workout_execution_controller.dart';
 
 /// 應用程式入口
 void main() {

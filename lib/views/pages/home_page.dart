@@ -340,7 +340,7 @@ class _HomePageState extends State<HomePage> {
               LinearProgressIndicator(
                 value: progress,
                 backgroundColor: Colors.grey[200],
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
               ),
               const SizedBox(height: 4),
               Text(

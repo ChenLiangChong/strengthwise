@@ -4,7 +4,7 @@ import '../models/workout_template_model.dart';
 import '../models/workout_record_model.dart';
 import '../services/interfaces/i_workout_service.dart';
 import '../services/error_handling_service.dart';
-import '../services/service_locator.dart' show Environment, serviceLocator;
+import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_workout_controller.dart';
 
 /// 訓練計畫控制器實現
