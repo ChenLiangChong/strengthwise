@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../models/user_model.dart';
@@ -7,10 +8,11 @@ import '../../services/interfaces/i_user_service.dart';
 import '../../services/service_locator.dart';
 import '../login_page.dart';
 import 'profile_settings_page.dart';
+import 'migration_test_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
-  
+
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
@@ -19,19 +21,19 @@ class _ProfilePageState extends State<ProfilePage> {
   late final IUserService _userService;
   late final IAuthService _authService;
   final _formKey = GlobalKey<FormState>();
-  
+
   UserModel? _userProfile;
   bool _isLoading = true;
   bool _isSaving = false;
   File? _avatarFile;
-  
+
   // 表單控制器
   final TextEditingController _displayNameController = TextEditingController();
   final TextEditingController _nicknameController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
-  
+
   String? _gender;
   bool _isCoach = false;
   bool _isStudent = true;
@@ -44,7 +46,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _authService = serviceLocator<IAuthService>();
     _loadUserProfile();
   }
-  
+
   @override
   void dispose() {
     _displayNameController.dispose();
@@ -54,14 +56,14 @@ class _ProfilePageState extends State<ProfilePage> {
     _ageController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _loadUserProfile() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     final userProfile = await _userService.getCurrentUserProfile();
-    
+
     if (userProfile != null) {
       setState(() {
         _userProfile = userProfile;
@@ -75,67 +77,71 @@ class _ProfilePageState extends State<ProfilePage> {
         _isStudent = userProfile.isStudent ?? true;
       });
     }
-    
+
     setState(() {
       _isLoading = false;
     });
   }
-  
+
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    
+
     if (pickedFile != null) {
       setState(() {
         _avatarFile = File(pickedFile.path);
       });
     }
   }
-  
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    
+
     setState(() {
       _isSaving = true;
     });
-    
+
     final success = await _userService.updateUserProfile(
       displayName: _displayNameController.text,
       nickname: _nicknameController.text,
       gender: _gender,
-      height: _heightController.text.isNotEmpty ? double.parse(_heightController.text) : null,
-      weight: _weightController.text.isNotEmpty ? double.parse(_weightController.text) : null,
-      age: _ageController.text.isNotEmpty ? int.parse(_ageController.text) : null,
+      height: _heightController.text.isNotEmpty
+          ? double.parse(_heightController.text)
+          : null,
+      weight: _weightController.text.isNotEmpty
+          ? double.parse(_weightController.text)
+          : null,
+      age: _ageController.text.isNotEmpty
+          ? int.parse(_ageController.text)
+          : null,
       isCoach: _isCoach,
       isStudent: _isStudent,
       avatarFile: _avatarFile,
     );
-    
+
     setState(() {
       _isSaving = false;
     });
-    
+
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('個人資料已保存'))
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('個人資料已保存')));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('保存失敗，請稍後再試'))
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('保存失敗，請稍後再試')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final userData = _authService.getCurrentUser();
-    
+
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -147,11 +153,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 CircleAvatar(
                   radius: 40,
                   backgroundColor: Colors.grey[300],
-                  backgroundImage: _userProfile?.photoURL != null 
-                      ? NetworkImage(_userProfile!.photoURL!) 
+                  backgroundImage: _userProfile?.photoURL != null
+                      ? NetworkImage(_userProfile!.photoURL!)
                       : null,
-                  child: _userProfile?.photoURL == null 
-                      ? const Icon(Icons.person, size: 40, color: Colors.grey) 
+                  child: _userProfile?.photoURL == null
+                      ? const Icon(Icons.person, size: 40, color: Colors.grey)
                       : null,
                 ),
                 const SizedBox(width: 20),
@@ -160,7 +166,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _userProfile?.nickname ?? _userProfile?.displayName ?? _userProfile?.email ?? '用戶名稱',
+                        _userProfile?.nickname ??
+                            _userProfile?.displayName ??
+                            _userProfile?.email ??
+                            '用戶名稱',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -178,6 +187,19 @@ class _ProfilePageState extends State<ProfilePage> {
                           '年齡: ${_userProfile!.age} 歲',
                           style: TextStyle(
                             color: Colors.grey[600],
+                          ),
+                        ),
+                      if (_userProfile?.bio != null && _userProfile!.bio!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Text(
+                            _userProfile!.bio!,
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                     ],
@@ -198,6 +220,51 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ],
             ),
+            
+            // 新增：詳細資訊卡片
+            if (_userProfile != null) ...[
+              const SizedBox(height: 20),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '詳細資訊',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Divider(),
+                      if (_userProfile!.birthDate != null)
+                        _buildInfoRow(
+                          '生日',
+                          '${_userProfile!.birthDate!.year}/${_userProfile!.birthDate!.month}/${_userProfile!.birthDate!.day}',
+                        ),
+                      if (_userProfile!.height != null)
+                        _buildInfoRow('身高', '${_userProfile!.height} cm'),
+                      if (_userProfile!.weight != null)
+                        _buildInfoRow('體重', '${_userProfile!.weight} kg'),
+                      if (_userProfile!.unitSystem != null)
+                        _buildInfoRow(
+                          '單位系統',
+                          _userProfile!.unitSystem == 'metric' ? '公制' : '英制',
+                        ),
+                      _buildInfoRow(
+                        '角色',
+                        [
+                          if (_userProfile!.isCoach) '教練',
+                          if (_userProfile!.isStudent) '學員',
+                        ].join(' / '),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            
             const SizedBox(height: 30),
             // 功能菜單
             Expanded(
@@ -246,6 +313,21 @@ class _ProfilePageState extends State<ProfilePage> {
                     title: '身體數據',
                     onTap: () {},
                   ),
+                  // 開發模式：遷移測試入口
+                  if (kDebugMode) ...[
+                    const Divider(),
+                    _buildMenuItem(
+                      icon: Icons.bug_report,
+                      title: '遷移測試（開發用）',
+                      onTap: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const MigrationTestPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                   const Divider(),
                   _buildMenuItem(
                     icon: Icons.logout,
@@ -281,7 +363,7 @@ class _ProfilePageState extends State<ProfilePage> {
       onTap: onTap,
     );
   }
-  
+
   Widget _buildRoleMenuItem({
     required String title,
     required bool value,
@@ -290,8 +372,33 @@ class _ProfilePageState extends State<ProfilePage> {
     return SwitchListTile(
       title: Text(title),
       value: value,
-      activeColor: Colors.green,
+      activeThumbColor: Colors.green,
       onChanged: onChanged,
     );
   }
-} 
+  
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

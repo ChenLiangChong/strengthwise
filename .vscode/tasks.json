@@ -1,0 +1,55 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Flutter: Run (Debug)",
+            "type": "shell",
+            "command": "flutter",
+            "args": [
+                "run",
+                "-d",
+                "emulator-5554"
+            ],
+            "options": {
+                "env": {
+                    "ANDROID_HOME": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk",
+                    "ANDROID_SDK_ROOT": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk",
+                    "PATH": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk\\platform-tools;C:\\Program Files\\Git\\cmd;C:\\Windows\\System32;${env:PATH}"
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Flutter: Run (Release)",
+            "type": "shell",
+            "command": "flutter",
+            "args": [
+                "run",
+                "--release",
+                "-d",
+                "emulator-5554"
+            ],
+            "options": {
+                "env": {
+                    "ANDROID_HOME": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk",
+                    "ANDROID_SDK_ROOT": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk",
+                    "PATH": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk\\platform-tools;C:\\Program Files\\Git\\cmd;C:\\Windows\\System32;${env:PATH}"
+                }
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

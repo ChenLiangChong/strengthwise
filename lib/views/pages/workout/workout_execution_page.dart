@@ -34,6 +34,9 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   final TextEditingController _newExerciseWeightController = TextEditingController(text: '0');
   final TextEditingController _newExerciseRestController = TextEditingController(text: '60');
   
+  // 訓練備註控制器
+  final TextEditingController _workoutNotesController = TextEditingController();
+  
   @override
   void initState() {
     super.initState();
@@ -70,7 +73,21 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   // 加載訓練計畫
   Future<void> _loadWorkoutPlan() async {
     await _executionController.loadWorkoutPlan(widget.workoutRecordId);
+    
+    // 載入備註到控制器
+    _workoutNotesController.text = _executionController.getNotes();
+    
     setState(() {}); // 觸發重新構建
+  }
+  
+  @override
+  void dispose() {
+    _newExerciseSetsController.dispose();
+    _newExerciseRepsController.dispose();
+    _newExerciseWeightController.dispose();
+    _newExerciseRestController.dispose();
+    _workoutNotesController.dispose();
+    super.dispose();
   }
   
   // 顯示無法修改的提示消息
@@ -386,6 +403,25 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                 );
               },
             ),
+            // 新增：增加組數按鈕
+            if (_executionController.canModify())
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('增加組數'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.green,
+                    ),
+                    onPressed: () {
+                      _executionController.addSetToExercise(index, context: context);
+                      setState(() {}); // 觸發重新構建
+                    },
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -602,24 +638,39 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     final isSaving = _executionController.isSaving;
     final exerciseRecords = _executionController.getExerciseRecords();
     
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_executionController.getPlanTitle()),
-        actions: [
-          // 設置訓練時間按鈕
-          IconButton(
-            icon: const Icon(Icons.access_time),
-            onPressed: _setTrainingHour,
-            tooltip: '設置訓練時間',
-          ),
-          // 完成訓練按鈕
-          IconButton(
-            icon: const Icon(Icons.done_all),
-            onPressed: _saveWorkoutRecord,
-            tooltip: '完成訓練',
-          ),
-        ],
-      ),
+    return PopScope(
+      canPop: false,  // 攔截返回
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        
+        // 如果有未保存的變更，自動保存
+        if (_executionController.isDataChanged && _executionController.canModify()) {
+          await _executionController.saveWorkoutRecord(context: context);
+        }
+        
+        // 返回上一頁
+        if (context.mounted) {
+          Navigator.of(context).pop(true);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_executionController.getPlanTitle()),
+          actions: [
+            // 設置訓練時間按鈕
+            IconButton(
+              icon: const Icon(Icons.access_time),
+              onPressed: _setTrainingHour,
+              tooltip: '設置訓練時間',
+            ),
+            // 完成訓練按鈕
+            IconButton(
+              icon: const Icon(Icons.done_all),
+              onPressed: _saveWorkoutRecord,
+              tooltip: '完成訓練',
+            ),
+          ],
+        ),
       body: isLoading || isSaving
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -702,7 +753,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                         const SizedBox(height: 16),
                         // 備註輸入框
                         TextField(
-                          controller: TextEditingController(text: _executionController.getNotes()),
+                          controller: _workoutNotesController,
                           decoration: const InputDecoration(
                             labelText: '訓練備註',
                             border: OutlineInputBorder(),
@@ -762,14 +813,15 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                 ),
               ],
             ),
-      // 添加運動的浮動按鈕
-      floatingActionButton: !_executionController.isPastDate() && exerciseRecords.isNotEmpty
-          ? FloatingActionButton(
-              onPressed: _addNewExercise,
-              backgroundColor: Colors.green,
-              child: const Icon(Icons.add),
-            )
-          : null,
+        // 添加運動的浮動按鈕
+        floatingActionButton: !_executionController.isPastDate() && exerciseRecords.isNotEmpty
+            ? FloatingActionButton(
+                onPressed: _addNewExercise,
+                backgroundColor: Colors.green,
+                child: const Icon(Icons.add),
+              )
+            : null,
+      ),
     );
   }
 } 

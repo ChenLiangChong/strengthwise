@@ -20,8 +20,11 @@ abstract class IUserService {
     double? height,
     double? weight,
     int? age,
+    DateTime? birthDate,  // 新增：生日
     bool? isCoach,
     bool? isStudent,
+    String? bio,          // 新增：個人簡介
+    String? unitSystem,   // 新增：單位系統
     File? avatarFile,
   });
   

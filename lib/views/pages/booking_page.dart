@@ -43,9 +43,6 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
   Map<DateTime, List<Map<String, dynamic>>> _trainings = {};
   List<Map<String, dynamic>> _selectedDayTrainings = [];
   
-  // 訓練記錄相關變數
-  Map<DateTime, List<Map<String, dynamic>>> _workoutRecords = {};
-  
   // 預約相關變數
   Map<DateTime, List<Map<String, dynamic>>> _bookings = {};
   List<Map<String, dynamic>> _selectedDayBookings = [];
@@ -53,7 +50,6 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
   // 訓練計劃過濾
   bool _showSelfPlans = true;  // 顯示自主訓練計劃
   bool _showTrainerPlans = true;  // 顯示教練創建的計劃
-  bool _showRecords = true;  // 顯示訓練記錄
   bool _showBookings = true;  // 顯示預約
 
   @override
@@ -71,9 +67,6 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
     
     // 載入訓練計劃數據
     _loadTrainingPlans();
-    
-    // 載入訓練記錄數據
-    _loadWorkoutRecords();
   }
   
   Future<void> _safeInitialize() async {
@@ -165,7 +158,6 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
       if (_isInitialized) {
         _loadBookings();
         _loadTrainingPlans();
-        _loadWorkoutRecords();
       }
     }
   }
@@ -319,67 +311,6 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
     }
   }
   
-  // 載入訓練記錄數據
-  Future<void> _loadWorkoutRecords() async {
-    if (!mounted) return;
-    
-    setState(() {
-      _isLoading = true;
-    });
-    
-    try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) {
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-      
-      // 獲取該用戶的所有訓練記錄
-      final snapshot = await FirebaseFirestore.instance
-          .collection('workoutRecords')
-          .where('userId', isEqualTo: userId)
-          .orderBy('date', descending: true)
-          .get();
-      
-      final records = <DateTime, List<Map<String, dynamic>>>{};
-      
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        data['dataType'] = 'record'; // 標記數據類型為訓練記錄
-        
-        if (data['date'] is Timestamp) {
-          final timestamp = data['date'] as Timestamp;
-          final date = timestamp.toDate();
-          final day = DateTime(date.year, date.month, date.day);
-          
-          if (records[day] == null) {
-            records[day] = [];
-          }
-          
-          records[day]!.add(data);
-        }
-      }
-      
-      if (!mounted) return;
-      
-      setState(() {
-        _workoutRecords = records;
-        _updateSelectedDayData();
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      
-      setState(() {
-        _isLoading = false;
-      });
-      
-      print('[BOOKING PAGE] 載入訓練記錄失敗: $e');
-    }
-  }
   
   // 更新選定日期的數據
   void _updateSelectedDayData() {
@@ -418,9 +349,6 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
           break;
         case 'trainer':
           _showTrainerPlans = !_showTrainerPlans;
-          break;
-        case 'records':
-          _showRecords = !_showRecords;
           break;
         case 'bookings':
           _showBookings = !_showBookings;
@@ -518,6 +446,58 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
       _loadTrainingPlans();
     }
   }
+  
+  // 刪除訓練計畫
+  Future<void> _deleteTrainingPlan(String planId, String planTitle) async {
+    if (!mounted) return;
+    
+    // 顯示確認對話框
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('刪除訓練計畫'),
+        content: Text('確定要刪除「$planTitle」嗎？此操作無法復原。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('刪除'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmed != true || !mounted) return;
+    
+    try {
+      // 刪除 workoutPlans 集合中的訓練計畫
+      await FirebaseFirestore.instance
+          .collection('workoutPlans')
+          .doc(planId)
+          .delete();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('訓練計畫已刪除')),
+        );
+        
+        // 重新加載訓練計畫
+        _loadTrainingPlans();
+      }
+    } catch (e) {
+      print('[BOOKING PAGE] 刪除訓練計畫失敗: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('刪除失敗: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -582,11 +562,6 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
               }
             }
             
-            // 添加訓練記錄
-            if (_showRecords) {
-              final records = _workoutRecords[normalizedDay] ?? [];
-              allEvents.addAll(records);
-            }
             
             // 添加預約
             if (_showBookings) {
@@ -658,14 +633,6 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
               ),
               const SizedBox(width: 8),
               FilterChip(
-                label: const Text('訓練記錄'),
-                selected: _showRecords,
-                onSelected: (_) => _toggleFilter('records'),
-                selectedColor: Colors.purple.withOpacity(0.2),
-                checkmarkColor: Colors.purple,
-              ),
-              const SizedBox(width: 8),
-              FilterChip(
                 label: const Text('預約'),
                 selected: _showBookings,
                 onSelected: (_) => _toggleFilter('bookings'),
@@ -684,20 +651,13 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
     );
   }
   
-  // 構建選定日期的列表，包含訓練計劃、訓練記錄和預約
+  // 構建選定日期的列表，包含訓練計劃和預約
   Widget _buildSelectedDayList(bool isCoachMode) {
     // 合併所有選定日期的數據
     final List<Map<String, dynamic>> allItems = [];
     
-    // 添加訓練計劃
+    // 添加訓練計劃（已統一，不再需要單獨的訓練記錄）
     allItems.addAll(_selectedDayTrainings);
-    
-    // 添加訓練記錄
-    if (_showRecords) {
-      final selectedDay = DateTime(_selectedDay.year, _selectedDay.month, _selectedDay.day);
-      final records = _workoutRecords[selectedDay] ?? [];
-      allItems.addAll(records);
-    }
     
     // 添加預約
     allItems.addAll(_selectedDayBookings);
@@ -717,10 +677,7 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
         final item = allItems[index];
         
         // 根據數據類型構建不同的卡片
-        final dataType = item['dataType'] as String? ?? '';
-        if (dataType == 'record') {
-          return _buildWorkoutRecordCard(item);
-        } else if (item.containsKey('status')) { // 預約有status字段
+        if (item.containsKey('status')) { // 預約有status字段
           return _buildBookingCard(item, isUserMode: !isCoachMode);
         } else {
           return _buildTrainingCard(item);
@@ -768,6 +725,7 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -782,8 +740,18 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                       style: TextStyle(
                         color: Colors.purple,
                         fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
                     ),
+                  ),
+                  // 刪除按鈕
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    color: Colors.red,
+                    onPressed: () => _deleteTrainingPlan(record['id'], title),
+                    tooltip: '刪除訓練記錄',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
@@ -848,9 +816,19 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
       }
     }
     
-    // 根據計劃類型設置顏色
-    Color typeColor = planType == 'self' ? Colors.green : Colors.blue;
-    String typeText = planType == 'self' ? '自主訓練' : '教練計劃';
+    // 根據完成狀態和計劃類型設置顏色和文字
+    Color typeColor;
+    String typeText;
+    
+    if (completed) {
+      // 已完成的訓練顯示紫色「已完成」標籤
+      typeColor = Colors.purple;
+      typeText = '已完成';
+    } else {
+      // 未完成的訓練根據類型顯示
+      typeColor = planType == 'self' ? Colors.green : Colors.blue;
+      typeText = planType == 'self' ? '自主訓練' : '教練計劃';
+    }
     
     // 計算進度
     int totalExercises = exercises.length;
@@ -880,6 +858,7 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -894,8 +873,18 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                       style: TextStyle(
                         color: typeColor,
                         fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
                     ),
+                  ),
+                  // 刪除按鈕
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    color: Colors.red,
+                    onPressed: () => _deleteTrainingPlan(training['id'], title),
+                    tooltip: '刪除訓練計畫',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),

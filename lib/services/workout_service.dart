@@ -172,8 +172,8 @@ class WorkoutService implements IWorkoutService {
   // 獲取訓練模板集合引用
   CollectionReference get _templatesRef => _firestore.collection('workoutTemplates');
   
-  // 獲取訓練記錄集合引用
-  CollectionReference get _recordsRef => _firestore.collection('workoutRecords');
+  // 獲取訓練計畫集合引用（包含模板和已完成的記錄）
+  CollectionReference get _plansRef => _firestore.collection('workoutPlans');
   
   @override
   Future<List<WorkoutTemplate>> getUserTemplates() async {
@@ -188,12 +188,14 @@ class WorkoutService implements IWorkoutService {
       _logDebug('獲取用戶訓練模板');
       final querySnapshot = await _templatesRef
           .where('userId', isEqualTo: currentUserId)
-          .orderBy('updatedAt', descending: true)
           .get();
       
       final templates = querySnapshot.docs
           .map((doc) => WorkoutTemplate.fromFirestore(doc))
           .toList();
+      
+      // 在客戶端按更新時間排序
+      templates.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       
       // 更新緩存
       if (_cacheTemplates) {
@@ -207,6 +209,7 @@ class WorkoutService implements IWorkoutService {
       return templates;
     } catch (e) {
       _logError('獲取訓練模板失敗: $e');
+      print('[WorkoutService] 詳細錯誤: $e');
       return [];
     }
   }
@@ -326,15 +329,51 @@ class WorkoutService implements IWorkoutService {
     }
     
     try {
-      _logDebug('獲取用戶訓練記錄');
-      final querySnapshot = await _recordsRef
-          .where('userId', isEqualTo: currentUserId)
-          .orderBy('date', descending: true)
+      _logDebug('從 workoutPlans 獲取用戶已完成的訓練記錄');
+      final querySnapshot = await _plansRef
+          .where('traineeId', isEqualTo: currentUserId)
+          .where('completed', isEqualTo: true)
           .get();
       
-      final records = querySnapshot.docs
-          .map((doc) => WorkoutRecord.fromFirestore(doc.data() as Map<String, dynamic>, doc.id))
-          .toList();
+      // 將 workoutPlans 數據轉換為 WorkoutRecord 格式
+      final records = <WorkoutRecord>[];
+      for (var doc in querySnapshot.docs) {
+        try {
+          final data = doc.data() as Map<String, dynamic>;
+          
+          // 獲取日期
+          DateTime date;
+          if (data['completedDate'] != null) {
+            date = (data['completedDate'] as Timestamp).toDate();
+          } else if (data['scheduledDate'] != null) {
+            date = (data['scheduledDate'] as Timestamp).toDate();
+          } else {
+            date = DateTime.now();
+          }
+          
+          // 構建 WorkoutRecord（使用 workoutPlans 的數據結構）
+          final record = WorkoutRecord(
+            id: doc.id,
+            workoutPlanId: doc.id,
+            userId: data['userId'] ?? data['traineeId'] ?? currentUserId,
+            date: date,
+            exerciseRecords: (data['exercises'] as List<dynamic>? ?? [])
+                .map((e) => ExerciseRecord.fromJson(e as Map<String, dynamic>))
+                .toList(),
+            notes: data['note'] ?? data['description'] ?? '',
+            completed: true,
+            createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? date,
+            trainingTime: (data['trainingTime'] as Timestamp?)?.toDate(),
+          );
+          
+          records.add(record);
+        } catch (e) {
+          _logError('解析訓練記錄失敗: $e');
+        }
+      }
+      
+      // 按日期排序
+      records.sort((a, b) => b.date.compareTo(a.date));
       
       // 更新緩存
       if (_cacheRecords) {
@@ -363,14 +402,39 @@ class WorkoutService implements IWorkoutService {
         return _recordCache[recordId];
       }
       
-      _logDebug('從數據庫獲取記錄: $recordId');
-      final docSnapshot = await _recordsRef.doc(recordId).get();
+      _logDebug('從 workoutPlans 獲取記錄: $recordId');
+      final docSnapshot = await _plansRef.doc(recordId).get();
       if (!docSnapshot.exists) {
         _logDebug('記錄不存在: $recordId');
         return null;
       }
       
-      final record = WorkoutRecord.fromFirestore(docSnapshot.data() as Map<String, dynamic>, recordId);
+      final data = docSnapshot.data() as Map<String, dynamic>;
+      
+      // 獲取日期
+      DateTime date;
+      if (data['completedDate'] != null) {
+        date = (data['completedDate'] as Timestamp).toDate();
+      } else if (data['scheduledDate'] != null) {
+        date = (data['scheduledDate'] as Timestamp).toDate();
+      } else {
+        date = DateTime.now();
+      }
+      
+      // 構建 WorkoutRecord
+      final record = WorkoutRecord(
+        id: recordId,
+        workoutPlanId: recordId,
+        userId: data['userId'] ?? data['traineeId'] ?? '',
+        date: date,
+        exerciseRecords: (data['exercises'] as List<dynamic>? ?? [])
+            .map((e) => ExerciseRecord.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        notes: data['note'] ?? data['description'] ?? '',
+        completed: data['completed'] ?? false,
+        createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? date,
+        trainingTime: (data['trainingTime'] as Timestamp?)?.toDate(),
+      );
       
       // 更新緩存
       if (_cacheRecords) {
@@ -395,12 +459,30 @@ class WorkoutService implements IWorkoutService {
     }
     
     try {
-      _logDebug('創建新的訓練記錄');
-      final recordData = record.toJson();
-      final docRef = await _recordsRef.add(recordData);
+      _logDebug('在 workoutPlans 創建新的訓練記錄');
+      
+      // 轉換為 workoutPlans 格式
+      final planData = {
+        'userId': currentUserId,
+        'traineeId': currentUserId,
+        'creatorId': currentUserId,
+        'title': record.notes.isNotEmpty ? record.notes : '訓練記錄',
+        'description': record.notes,
+        'note': record.notes,
+        'planType': 'self',
+        'scheduledDate': Timestamp.fromDate(record.date),
+        'completedDate': record.completed ? Timestamp.fromDate(record.date) : null,
+        'exercises': record.exerciseRecords.map((e) => e.toJson()).toList(),
+        'completed': record.completed,
+        'createdAt': Timestamp.fromDate(record.createdAt),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'trainingTime': record.trainingTime != null ? Timestamp.fromDate(record.trainingTime!) : null,
+      };
+      
+      final docRef = await _plansRef.add(planData);
       
       // 獲取完整的記錄，包括自動生成的字段
-      final newRecord = await getRecordById(docRef.id) ?? record;
+      final newRecord = await getRecordById(docRef.id) ?? record.copyWith(id: docRef.id);
       
       // 更新緩存
       if (_cacheRecords) {
@@ -421,8 +503,22 @@ class WorkoutService implements IWorkoutService {
     _ensureInitialized();
     
     try {
-      _logDebug('更新訓練記錄: ${record.id}');
-      await _recordsRef.doc(record.id).update(record.toJson());
+      _logDebug('更新 workoutPlans 的訓練記錄: ${record.id}');
+      
+      // 轉換為 workoutPlans 格式
+      final planData = {
+        'title': record.notes.isNotEmpty ? record.notes : '訓練記錄',
+        'description': record.notes,
+        'note': record.notes,
+        'scheduledDate': Timestamp.fromDate(record.date),
+        'completedDate': record.completed ? Timestamp.fromDate(record.date) : null,
+        'exercises': record.exerciseRecords.map((e) => e.toJson()).toList(),
+        'completed': record.completed,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'trainingTime': record.trainingTime != null ? Timestamp.fromDate(record.trainingTime!) : null,
+      };
+      
+      await _plansRef.doc(record.id).update(planData);
       
       // 更新緩存
       if (_cacheRecords) {
@@ -442,8 +538,8 @@ class WorkoutService implements IWorkoutService {
     _ensureInitialized();
     
     try {
-      _logDebug('刪除訓練記錄: $recordId');
-      await _recordsRef.doc(recordId).delete();
+      _logDebug('從 workoutPlans 刪除訓練記錄: $recordId');
+      await _plansRef.doc(recordId).delete();
       
       // 從緩存中移除
       if (_cacheRecords) {

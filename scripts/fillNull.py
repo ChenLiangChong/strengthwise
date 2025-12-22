@@ -4,10 +4,10 @@ import re
 from deep_translator import GoogleTranslator
 import time
 
-# 載入CSV文件
-print("正在讀取CSV文件...")
+# 載入CSV檔案
+print("正在讀取CSV檔案...")
 df = pd.read_csv('exercises.csv')
-original_df = df.copy()  # 保存原始資料用於比較
+original_df = df.copy()  # 儲存原始資料用於比較
 
 print(f"資料總行數: {len(df)}")
 for column in df.columns:
@@ -55,7 +55,7 @@ missing_english = df['英文翻譯'].isna()
 if missing_english.any():
     print(f"\n開始處理英文翻譯，缺失值數量: {missing_english.sum()}")
     
-    # 創建中文到英文的映射字典
+    # 建立中文到英文的對應字典
     chinese_to_english = {}
     for name, eng in zip(df['Name'], df['英文翻譯']):
         if pd.notna(name) and pd.notna(eng):
@@ -64,9 +64,9 @@ if missing_english.any():
     # 英文翻譯逐一處理
     for idx in df[missing_english].index:
         chinese_name = df.loc[idx, 'Name']
-        # 檢查是否為有效字符串
+        # 檢查是否為有效字串
         if not isinstance(chinese_name, str):
-            print(f"跳過無效名稱 (NaN 或非字符串值)")
+            print(f"跳過無效名稱 (NaN 或非字串值)")
             continue
         
         # 如果已經有相同動作的翻譯
@@ -87,7 +87,7 @@ if missing_english.any():
                 df.loc[idx, '英文翻譯'] = " ".join(translated_words)
                 print(f"組合翻譯: {chinese_name} -> {df.loc[idx, '英文翻譯']}")
             else:
-                # 如果無法從現有資料推斷，則使用基本映射
+                # 如果無法從現有資料推斷，則使用基本對應
                 basic_translations = {
                     '啞鈴': 'Dumbbell',
                     '槓鈴': 'Barbell',
@@ -125,7 +125,7 @@ missing_bodypart = df['部位'].isna()
 if missing_bodypart.any():
     print(f"\n開始處理部位欄位，缺失值數量: {missing_bodypart.sum()}")
     
-    # 創建查詢字典，根據已有數據推斷
+    # 建立查詢字典，根據已有資料推斷
     name_to_bodypart = {}
     for name, part in zip(df['Name'], df['部位']):
         if pd.notna(part) and pd.notna(name):
@@ -134,9 +134,9 @@ if missing_bodypart.any():
     # 填充空值
     for idx in df[missing_bodypart].index:
         name = df.loc[idx, 'Name']
-        # 檢查是否為有效字符串
+        # 檢查是否為有效字串
         if not isinstance(name, str):
-            print(f"跳過無效部位名稱 (NaN 或非字符串值)")
+            print(f"跳過無效部位名稱 (NaN 或非字串值)")
             continue
         
         if name in name_to_bodypart:
@@ -163,7 +163,7 @@ missing_type = df['重訓／有氧／伸展'].isna()
 if missing_type.any():
     print(f"\n開始處理重訓／有氧／伸展欄位，缺失值數量: {missing_type.sum()}")
     
-    # 創建查詢字典
+    # 建立查詢字典
     name_to_type = {}
     for name, ex_type in zip(df['Name'], df['重訓／有氧／伸展']):
         if pd.notna(ex_type) and pd.notna(name):
@@ -172,9 +172,9 @@ if missing_type.any():
     # 填充空值
     for idx in df[missing_type].index:
         name = df.loc[idx, 'Name']
-        # 檢查是否為有效字符串
+        # 檢查是否為有效字串
         if not isinstance(name, str):
-            print(f"跳過無效類型名稱 (NaN 或非字符串值)")
+            print(f"跳過無效類型名稱 (NaN 或非字串值)")
             continue
         
         if name in name_to_type:
@@ -210,7 +210,7 @@ missing_equipment = df['器材'].isna()
 if missing_equipment.any():
     print(f"\n開始處理器材欄位，缺失值數量: {missing_equipment.sum()}")
     
-    # 創建查詢字典
+    # 建立查詢字典
     name_to_equipment = {}
     for name, equip in zip(df['Name'], df['器材']):
         if pd.notna(equip) and pd.notna(name):
@@ -219,9 +219,9 @@ if missing_equipment.any():
     # 填充空值
     for idx in df[missing_equipment].index:
         name = df.loc[idx, 'Name']
-        # 檢查是否為有效字符串
+        # 檢查是否為有效字串
         if not isinstance(name, str):
-            print(f"跳過無效器材名稱 (NaN 或非字符串值)")
+            print(f"跳過無效器材名稱 (NaN 或非字串值)")
             continue
         
         if name in name_to_equipment:
@@ -271,9 +271,9 @@ if missing_joint.any():
     # 填充空值
     for idx in df[missing_joint].index:
         name = df.loc[idx, 'Name']
-        # 檢查是否為有效字符串
+        # 檢查是否為有效字串
         if not isinstance(name, str):
-            print(f"跳過無效關節名稱 (NaN 或非字符串值)")
+            print(f"跳過無效關節名稱 (NaN 或非字串值)")
             continue
         
         bodypart = df.loc[idx, '部位']
@@ -305,7 +305,7 @@ if missing_joint.any():
         print(f"找不到相關關節類型，默認設為多關節: {name}")
 
 # 在儲存更新的CSV之前，修改欄位名稱以匹配Firebase結構
-# 將欄位名稱映射到Firebase字段名稱
+# 將欄位名稱對應到Firebase欄位名稱
 column_mapping = {
     'Name': 'name',
     '英文翻譯': 'nameEn',
@@ -315,7 +315,7 @@ column_mapping = {
     '單關節／多關節': 'jointType'
 }
 
-# 重命名欄位
+# 重新命名欄位
 df = df.rename(columns=column_mapping)
 
 # 處理階層化的名稱
@@ -326,19 +326,19 @@ df['level4'] = ""        # 第四層分類
 df['level5'] = ""        # 第五層分類
 df['actionName'] = ""    # 最末層動作名稱
 
-# 從名稱中提取分類信息
+# 從名稱中提取分類資訊
 def extract_categories(name):
     if not isinstance(name, str):
         return "", "", "", "", "", ""
     
-    # 將全角斜杠替換為半角斜杠以統一處理
+    # 將全角斜線替換為半角斜線以統一處理
     name = name.replace("／", "/")
     
     parts = name.split('/')
     # 清理分割後的部分
     clean_parts = [part.strip() for part in parts if part.strip()]
     
-    # 初始化所有層級和動作名稱為空字符串
+    # 初始化所有層級和動作名稱為空字串
     category_levels = ["", "", "", "", ""]  # 5層分類
     action_name = ""
     
@@ -358,7 +358,7 @@ def extract_categories(name):
     level1, level2, level3, level4, level5 = category_levels
     return level1, level2, level3, level4, level5, action_name
 
-# 應用提取函數
+# 套用提取函數
 for idx, row in df.iterrows():
     level1, level2, level3, level4, level5, action_name = extract_categories(row['name'])
     df.at[idx, 'level1'] = level1
@@ -368,12 +368,12 @@ for idx, row in df.iterrows():
     df.at[idx, 'level5'] = level5
     df.at[idx, 'actionName'] = action_name
 
-# 添加缺少的欄位
+# 新增缺少的欄位
 df['description'] = ""  # 空描述
 df['imageUrl'] = ""     # 空圖片URL
-df['videoUrl'] = ""     # 空視頻URL
+df['videoUrl'] = ""     # 空影片URL
 import datetime
-df['createdAt'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # 當前時間作為創建時間
+df['createdAt'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # 當前時間作為建立時間
 
 # 刪除不需要的欄位
 if '健身App' in df.columns:
@@ -382,7 +382,7 @@ if '健身App' in df.columns:
 
 # 儲存更新後的CSV
 df.to_csv('exercises_updated.csv', index=False, encoding='utf-8-sig')
-print("\n更新完成！新文件已儲存為 'exercises_updated.csv'")
+print("\n更新完成！新檔案已儲存為 'exercises_updated.csv'")
 
 # 顯示更新後的情況
 print("\n更新後的資料情況:")
@@ -392,11 +392,11 @@ for column in df.columns:
 
 # 顯示資料變化
 print("\n資料變化統計:")
-# 創建反向映射（新列名到舊列名）
+# 建立反向對應（新列名到舊列名）
 reverse_mapping = {v: k for k, v in column_mapping.items()}
 
 for column in df.columns:
-    # 檢查是否為新添加的欄位
+    # 檢查是否為新增的欄位
     if column in ['description', 'imageUrl', 'videoUrl', 'createdAt', 'level1', 'level2', 'level3', 'level4', 'level5', 'actionName']:
         print(f"{column}: 新增欄位")
         continue

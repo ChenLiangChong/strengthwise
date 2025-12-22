@@ -108,21 +108,13 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     _setLoading(true);
     
     try {
-      // 首先嘗試從 workoutPlans 集合獲取數據
-      DocumentSnapshot planDoc = await FirebaseFirestore.instance
+      // 從 workoutPlans 集合獲取數據
+      final planDoc = await FirebaseFirestore.instance
           .collection('workoutPlans')
           .doc(workoutRecordId)
           .get();
-      
-      // 如果 workoutPlans 中找不到，嘗試從 workoutRecords 中獲取（向後兼容）
-      if (!planDoc.exists) {
-        planDoc = await FirebaseFirestore.instance
-            .collection('workoutRecords')
-            .doc(workoutRecordId)
-            .get();
-      }
 
-      // 如果仍然找不到，拋出錯誤
+      // 如果找不到，拋出錯誤
       if (!planDoc.exists) {
         throw Exception('無法找到訓練計劃');
       }
@@ -193,13 +185,22 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
             final targetWeight = (exercise['targetWeight'] as num?)?.toDouble() ?? 0.0;
             final restTime = (exercise['restTime'] as num?)?.toInt() ?? 60;
             
+            // 檢查是否有保存的組數狀態
+            final savedSets = exercise['sets'] as List<dynamic>?;
+            
             for (int i = 0; i < targetSets; i++) {
+              // 如果有保存的狀態，使用保存的 completed 值
+              bool completed = false;
+              if (savedSets != null && i < savedSets.length && savedSets[i] is Map<String, dynamic>) {
+                completed = (savedSets[i] as Map<String, dynamic>)['completed'] ?? false;
+              }
+              
               setsRecords.add(SetRecord(
                 setNumber: i + 1,
                 reps: targetReps,
                 weight: targetWeight,
                 restTime: restTime,
-                completed: false,
+                completed: completed,
                 note: '',
               ));
             }
@@ -254,13 +255,16 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
                       exercise['actionName'] ?? 
                       '未命名運動';
           
+          // 檢查是否所有組數都已完成（優先使用計算值）
+          final exerciseCompleted = setsRecords.isNotEmpty && setsRecords.every((set) => set.completed);
+          
           // 創建運動記錄
           exerciseRecords.add(ExerciseRecord(
             exerciseId: exercise['exerciseId'] ?? '',
             exerciseName: name,
             sets: setsRecords,
             notes: exercise['notes'] ?? exercise['note'] ?? '',
-            completed: exercise['completed'] ?? false,
+            completed: exerciseCompleted,  // 根據實際組數狀態計算
           ));
         }
       } catch (e) {
@@ -345,7 +349,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   
   /// 切換組數完成狀態
   @override
-  void toggleSetCompletion(int exerciseIndex, int setIndex, {BuildContext? context}) {
+  void toggleSetCompletion(int exerciseIndex, int setIndex, {BuildContext? context}) async {
     if (!canModify()) {
       if (context != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -377,13 +381,52 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     _isDataChanged = true;
     notifyListeners();
     
-    if (context != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('已更新組數狀態，完成訓練後將保存所有更改'),
-          duration: Duration(seconds: 1),
-        ),
-      );
+    // 自動保存打勾狀態到 Firebase
+    await _autoSaveCheckboxState();
+  }
+  
+  /// 自動保存打勾狀態（不顯示「完成訓練」提示）
+  Future<void> _autoSaveCheckboxState() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+      
+      // 計算整體完成狀態
+      final overallCompleted = allExercisesCompleted();
+      
+      // 更新 workoutPlans 集合中的組數狀態
+      final planDoc = await FirebaseFirestore.instance
+          .collection('workoutPlans')
+          .doc(_workoutRecordId)
+          .get();
+          
+      if (planDoc.exists) {
+        await FirebaseFirestore.instance
+            .collection('workoutPlans')
+            .doc(_workoutRecordId)
+            .update({
+              'completed': overallCompleted,  // 更新整體完成狀態
+              'exercises': _exerciseRecords.map((exercise) => {
+                'exerciseId': exercise.exerciseId,
+                'exerciseName': exercise.exerciseName,
+                'completed': exercise.completed,
+                'sets': exercise.sets.map((set) => {
+                  'setNumber': set.setNumber,
+                  'reps': set.reps,
+                  'weight': set.weight,
+                  'restTime': set.restTime,
+                  'completed': set.completed,
+                  'note': set.note,
+                }).toList(),
+              }).toList(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+      }
+      
+      _isDataChanged = false;
+    } catch (e) {
+      // 靜默失敗，不影響用戶體驗
+      print('[自動保存] 保存打勾狀態失敗: $e');
     }
   }
   
@@ -553,6 +596,61 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     }
   }
   
+  /// 新增組數到指定運動
+  @override
+  Future<void> addSetToExercise(int exerciseIndex, {BuildContext? context}) async {
+    if (!canModify()) {
+      if (context != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_getPastDateMessage())),
+        );
+      }
+      return;
+    }
+    
+    if (exerciseIndex >= _exerciseRecords.length) return;
+    
+    final exercise = _exerciseRecords[exerciseIndex];
+    
+    // 複製最後一組的數據作為新組的預設值
+    final lastSet = exercise.sets.isNotEmpty 
+        ? exercise.sets.last 
+        : SetRecord(
+            setNumber: 1,
+            reps: 10,
+            weight: 0.0,
+            restTime: 60,
+            completed: false,
+            note: '',
+          );
+    
+    // 創建新的組數記錄
+    final newSet = SetRecord(
+      setNumber: exercise.sets.length + 1,
+      reps: lastSet.reps,
+      weight: lastSet.weight,
+      restTime: lastSet.restTime,
+      completed: false,
+      note: '',
+    );
+    
+    // 更新運動記錄
+    final updatedSets = List<SetRecord>.from(exercise.sets)..add(newSet);
+    _exerciseRecords[exerciseIndex] = exercise.copyWith(sets: updatedSets);
+    
+    _isDataChanged = true;
+    notifyListeners();
+    
+    // 自動保存新增的組數
+    await _autoSaveCheckboxState();
+    
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('已新增第 ${newSet.setNumber} 組')),
+      );
+    }
+  }
+  
   /// 刪除訓練動作
   @override
   Future<void> deleteExercise(int exerciseIndex, {BuildContext? context}) async {
@@ -686,47 +784,43 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
         'muscleGroups': _extractMuscleGroups(),
       };
       
-      // 首先檢查 workoutRecords 中是否已存在此訓練記錄
-      final existingRecordDoc = await FirebaseFirestore.instance
-          .collection('workoutRecords')
-          .doc(_workoutRecordId)
-          .get();
-          
-      if (existingRecordDoc.exists) {
-        // 如果記錄已存在，則更新它
-        await FirebaseFirestore.instance
-            .collection('workoutRecords')
-            .doc(_workoutRecordId)
-            .update(recordData);
-      } else {
-        // 如果記錄不存在，則創建新記錄
-        // 添加創建時間字段（僅新記錄需要）
-        recordData['createdAt'] = Timestamp.now();
-        
-        await FirebaseFirestore.instance
-            .collection('workoutRecords')
-            .add(recordData);
-      }
-      
-      // 如果這是基於訓練計劃的訓練，更新計劃的完成狀態
-      // 首先檢查 workoutPlans 中是否存在此計劃
+      // 統一保存到 workoutPlans 集合（不再使用 workoutRecords）
       final planDoc = await FirebaseFirestore.instance
           .collection('workoutPlans')
           .doc(_workoutRecordId)
           .get();
           
       if (planDoc.exists) {
+        // 計算整體完成狀態
+        final overallCompleted = allExercisesCompleted();
+        
+        // 更新訓練計畫，包含所有訓練記錄數據
         await FirebaseFirestore.instance
             .collection('workoutPlans')
             .doc(_workoutRecordId)
             .update({
-              'completed': true,
-              'completedDate': Timestamp.now(),
+              'completed': overallCompleted,  // 根據實際狀態設置
+              'completedDate': overallCompleted ? Timestamp.now() : null,  // 只有真正完成時才設置完成日期
               'exercises': _exerciseRecords.map((exercise) => {
                 'exerciseId': exercise.exerciseId,
                 'exerciseName': exercise.exerciseName,
                 'completed': exercise.completed,
+                // 保存詳細的組數狀態
+                'sets': exercise.sets.map((set) => {
+                  'setNumber': set.setNumber,
+                  'reps': set.reps,
+                  'weight': set.weight,
+                  'restTime': set.restTime,
+                  'completed': set.completed,
+                  'note': set.note,
+                }).toList(),
               }).toList(),
+              // 保存訓練記錄的統計數據
+              'totalExercises': _exerciseRecords.length,
+              'totalSets': calculateTotalSets(),
+              'totalVolume': calculateTotalVolume(),
+              'note': _notesController.text,  // ✅ 添加：保存訓練備註
+              'updatedAt': Timestamp.now(),
             });
       }
       

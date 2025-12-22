@@ -3,7 +3,7 @@ import '../../models/custom_exercise_model.dart';
 
 class CustomExerciseDialog extends StatefulWidget {
   final CustomExercise? exercise; // 如果是编辑现有动作则提供，否则为null
-  final Function(String name) onSubmit;
+  final Future<void> Function(String name) onSubmit;
   
   const CustomExerciseDialog({
     super.key,
@@ -18,6 +18,7 @@ class CustomExerciseDialog extends StatefulWidget {
 class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
   late TextEditingController _nameController;
   final _formKey = GlobalKey<FormState>();
+  bool _isSubmitting = false;
   
   @override
   void initState() {
@@ -66,13 +67,40 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
           child: const Text('取消'),
         ),
         ElevatedButton(
-          onPressed: () {
+          onPressed: _isSubmitting ? null : () async {
             if (_formKey.currentState!.validate()) {
-              widget.onSubmit(_nameController.text.trim());
-              Navigator.of(context).pop();
+              setState(() {
+                _isSubmitting = true;
+              });
+              
+              try {
+                // 等待操作完成
+                await widget.onSubmit(_nameController.text.trim());
+                
+                // 操作成功後再關閉 Dialog
+                if (mounted) {
+                  Navigator.of(context).pop();
+                }
+              } catch (e) {
+                // 如果出錯，恢復按鈕狀態
+                if (mounted) {
+                  setState(() {
+                    _isSubmitting = false;
+                  });
+                }
+              }
             }
           },
-          child: Text(isEditing ? '更新' : '新增'),
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text(isEditing ? '更新' : '新增'),
         ),
       ],
     );

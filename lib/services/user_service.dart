@@ -229,8 +229,11 @@ class UserService implements IUserService {
     double? height,
     double? weight,
     int? age,
+    DateTime? birthDate,  // 新增：生日
     bool? isCoach,
     bool? isStudent,
+    String? bio,          // 新增：個人簡介
+    String? unitSystem,   // 新增：單位系統
     File? avatarFile,
   }) async {
     _ensureInitialized();
@@ -289,8 +292,11 @@ class UserService implements IUserService {
         'height': height ?? currentProfile.height,
         'weight': weight ?? currentProfile.weight,
         'age': age ?? currentProfile.age,
+        'birthDate': birthDate ?? currentProfile.birthDate,  // 新增：生日
         'isCoach': isCoach ?? currentProfile.isCoach,
         'isStudent': isStudent ?? currentProfile.isStudent,
+        'bio': bio ?? currentProfile.bio,                    // 新增：個人簡介
+        'unitSystem': unitSystem ?? currentProfile.unitSystem, // 新增：單位系統
         'email': currentProfile.email,
         'profileUpdatedAt': FieldValue.serverTimestamp(),
       };

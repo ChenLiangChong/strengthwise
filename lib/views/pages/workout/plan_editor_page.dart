@@ -30,17 +30,18 @@ class PlanEditorPage extends StatefulWidget {
 class _PlanEditorPageState extends State<PlanEditorPage> {
   late final IWorkoutController _workoutController;
   late final ErrorHandlingService _errorService;
-  
+
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  
+
   List<exercise_models.WorkoutExercise> _exercises = [];
   bool _isLoading = false;
   String? _selectedPlanType;
-  
+
   // 修改：使用 DateTime 替代 int
-  DateTime _trainingTime = DateTime.now().copyWith(hour: 8, minute: 0, second: 0, millisecond: 0, microsecond: 0);
-  
+  DateTime _trainingTime = DateTime.now()
+      .copyWith(hour: 8, minute: 0, second: 0, millisecond: 0, microsecond: 0);
+
   // 訓練計畫類型
   final List<String> _planTypes = [
     '力量訓練',
@@ -54,25 +55,26 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   @override
   void initState() {
     super.initState();
-    
+
     // 從服務定位器獲取依賴
     _workoutController = serviceLocator<IWorkoutController>();
     _errorService = serviceLocator<ErrorHandlingService>();
-    
+
     // 如果提供了計劃類型，設置默認值
     if (widget.planType != null) {
       // 注意: 這裡的 planType 是用於 Firebase 存儲的值 ("self" 或 "trainer")
       // 而 _selectedPlanType 是界面顯示的訓練類型 (力量訓練, 有氧訓練等)
       // 我們在保存時會保存兩種值
     }
-    
-    // 检查是否是过去的日期
+
+    // 檢查是否是過去的日期
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final selectedDate = DateTime(widget.selectedDate.year, widget.selectedDate.month, widget.selectedDate.day);
-    
+    final selectedDate = DateTime(widget.selectedDate.year,
+        widget.selectedDate.month, widget.selectedDate.day);
+
     if (selectedDate.isBefore(today)) {
-      // 使用 Future.microtask 确保在 initState 之后显示错误提示并返回
+      // 使用 Future.microtask 確保在 initState 之後顯示錯誤提示並返回
       Future.microtask(() {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -84,7 +86,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       });
       return;
     }
-    
+
     if (widget.planId != null) {
       _loadExistingPlan();
     }
@@ -107,7 +109,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         _titleController.text = data['title'] ?? '';
         _descriptionController.text = data['description'] ?? '';
         _selectedPlanType = data['planType'];
-        
+
         // 加載訓練時間，如果存在
         if (data['trainingTime'] != null) {
           _trainingTime = (data['trainingTime'] as Timestamp).toDate();
@@ -121,7 +123,8 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         // 載入訓練動作
         final exercisesData = data['exercises'] as List<dynamic>? ?? [];
         _exercises = exercisesData
-            .map((e) => exercise_models.WorkoutExercise.fromFirestore(e as Map<String, dynamic>))
+            .map((e) => exercise_models.WorkoutExercise.fromFirestore(
+                e as Map<String, dynamic>))
             .toList();
       }
     } catch (e) {
@@ -156,17 +159,19 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
       // 將現有的訓練界面類型 (力量訓練等) 映射到系統標記類型 (self/trainer)
       final actualPlanType = widget.planType ?? 'self'; // 預設為自主訓練
-      
+
       // 創建訓練計畫數據
       final recordData = {
         // 根據新的集合結構添加字段
+        'userId': userId, // 向後相容，同時添加 userId
         'creatorId': userId, // 創建者就是當前用戶
         'traineeId': userId, // 預設情況下，訓練計劃是給自己的
         'title': _titleController.text,
         'description': _descriptionController.text,
         'uiPlanType': _selectedPlanType, // 界面顯示的訓練類型 (力量訓練等)
         'planType': actualPlanType, // 系統標記的計劃類型 (self/trainer)
-        'scheduledDate': Timestamp.fromDate(widget.selectedDate), // 改用 scheduledDate
+        'scheduledDate':
+            Timestamp.fromDate(widget.selectedDate), // 改用 scheduledDate
         'exercises': _exercises.map((e) => e.toJson()).toList(),
         'completed': false,
         'trainingTime': Timestamp.fromDate(_trainingTime),
@@ -184,7 +189,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         });
       } else {
         // 創建新記錄
-        await FirebaseFirestore.instance.collection('workoutPlans').add(recordData); // 改用 workoutPlans 集合
+        await FirebaseFirestore.instance
+            .collection('workoutPlans')
+            .add(recordData); // 改用 workoutPlans 集合
       }
 
       // 返回行事曆頁面
@@ -224,7 +231,8 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       }
 
       // 顯示模板名稱輸入框
-      TextEditingController templateNameController = TextEditingController(text: _titleController.text);
+      TextEditingController templateNameController =
+          TextEditingController(text: _titleController.text);
       final templateName = await showDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
@@ -265,7 +273,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         throw Exception('用戶未登入');
       }
 
-      // 創建模板數據 (直接存儲在 workoutPlans 集合中)
+      // 創建模板數據 (存儲在 workoutTemplates 集合中)
       final templateData = {
         'userId': userId,
         'title': templateName,
@@ -279,9 +287,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
       print('準備保存模板: $templateName');
       await FirebaseFirestore.instance
-          .collection('workoutPlans')
+          .collection('workoutTemplates')
           .add(templateData);
-      print('模板已保存: $templateName');
+      print('模板已保存到 workoutTemplates 集合: $templateName');
 
       setState(() {
         _isLoading = false;
@@ -295,11 +303,11 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     } catch (e, stackTrace) {
       print('保存模板錯誤: $e');
       print('錯誤堆棧: $stackTrace');
-      
+
       setState(() {
         _isLoading = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('保存模板失敗: $e')),
@@ -337,7 +345,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
             _trainingTime = template.trainingTime!;
           }
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('已加載模板: ${template.title}')),
         );
@@ -369,12 +377,16 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   // 編輯訓練動作設置
   void _editExerciseSettings(int index) {
     final exercise = _exercises[index];
-    
+
     // 創建臨時控制器
-    final setsController = TextEditingController(text: exercise.sets.toString());
-    final repsController = TextEditingController(text: exercise.reps.toString());
-    final weightController = TextEditingController(text: exercise.weight.toString());
-    final restTimeController = TextEditingController(text: exercise.restTime.toString());
+    final setsController =
+        TextEditingController(text: exercise.sets.toString());
+    final repsController =
+        TextEditingController(text: exercise.reps.toString());
+    final weightController =
+        TextEditingController(text: exercise.weight.toString());
+    final restTimeController =
+        TextEditingController(text: exercise.restTime.toString());
     final notesController = TextEditingController(text: exercise.notes);
 
     showDialog(
@@ -409,7 +421,8 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                   labelText: '建議重量 (kg)',
                   border: OutlineInputBorder(),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
               ),
               const SizedBox(height: 10),
               TextField(
@@ -446,7 +459,10 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
               int? restTime = int.tryParse(restTimeController.text);
 
               // 驗證輸入
-              if (sets == null || reps == null || weight == null || restTime == null) {
+              if (sets == null ||
+                  reps == null ||
+                  weight == null ||
+                  restTime == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('請輸入有效的數值')),
                 );
@@ -499,7 +515,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     // 獲取當前選中的小時和分鐘
     int selectedHour = _trainingTime.hour;
     int selectedMinute = _trainingTime.minute;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -513,7 +529,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                 children: [
                   const Text('請選擇訓練時間', style: TextStyle(fontSize: 16)),
                   const SizedBox(height: 20),
-                  
+
                   // 顯示當前選擇的時間
                   Text(
                     '${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')}',
@@ -523,7 +539,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // 時間選擇區
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -533,7 +549,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Text('小時', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            const Text('小時',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 10),
                             Container(
                               height: 200,
@@ -549,22 +567,23 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                     selectedHour = index;
                                   });
                                 },
-                                controller: FixedExtentScrollController(initialItem: selectedHour),
+                                controller: FixedExtentScrollController(
+                                    initialItem: selectedHour),
                                 children: List.generate(24, (index) {
                                   return Container(
                                     alignment: Alignment.center,
                                     decoration: BoxDecoration(
-                                      color: selectedHour == index 
-                                        ? Colors.blue.withOpacity(0.1) 
-                                        : Colors.transparent,
+                                      color: selectedHour == index
+                                          ? Colors.blue.withOpacity(0.1)
+                                          : Colors.transparent,
                                     ),
                                     child: Text(
                                       index.toString().padLeft(2, '0'),
                                       style: TextStyle(
                                         fontSize: 18,
-                                        fontWeight: selectedHour == index 
-                                          ? FontWeight.bold 
-                                          : FontWeight.normal,
+                                        fontWeight: selectedHour == index
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
                                       ),
                                     ),
                                   );
@@ -574,15 +593,17 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(width: 20),
-                      
+
                       // 分鐘選擇（只有0和30兩個選項）
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Text('分鐘', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            const Text('分鐘',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 10),
                             Container(
                               height: 200,
@@ -603,20 +624,21 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                       height: 80,
                                       alignment: Alignment.center,
                                       decoration: BoxDecoration(
-                                        color: selectedMinute == 0 
-                                          ? Colors.blue.withOpacity(0.1) 
-                                          : Colors.transparent,
+                                        color: selectedMinute == 0
+                                            ? Colors.blue.withOpacity(0.1)
+                                            : Colors.transparent,
                                         border: Border(
-                                          bottom: BorderSide(color: Colors.grey.shade300),
+                                          bottom: BorderSide(
+                                              color: Colors.grey.shade300),
                                         ),
                                       ),
                                       child: Text(
                                         '00',
                                         style: TextStyle(
                                           fontSize: 18,
-                                          fontWeight: selectedMinute == 0 
-                                            ? FontWeight.bold 
-                                            : FontWeight.normal,
+                                          fontWeight: selectedMinute == 0
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
                                         ),
                                       ),
                                     ),
@@ -631,17 +653,17 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                       height: 80,
                                       alignment: Alignment.center,
                                       decoration: BoxDecoration(
-                                        color: selectedMinute == 30 
-                                          ? Colors.blue.withOpacity(0.1) 
-                                          : Colors.transparent,
+                                        color: selectedMinute == 30
+                                            ? Colors.blue.withOpacity(0.1)
+                                            : Colors.transparent,
                                       ),
                                       child: Text(
                                         '30',
                                         style: TextStyle(
                                           fontSize: 18,
-                                          fontWeight: selectedMinute == 30 
-                                            ? FontWeight.bold 
-                                            : FontWeight.normal,
+                                          fontWeight: selectedMinute == 30
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
                                         ),
                                       ),
                                     ),
@@ -669,12 +691,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
               // 更新選中的訓練時間
               final now = DateTime.now();
               _trainingTime = DateTime(
-                now.year, 
-                now.month, 
-                now.day, 
-                selectedHour, 
-                selectedMinute
-              );
+                  now.year, now.month, now.day, selectedHour, selectedMinute);
               setState(() {}); // 更新外部狀態
               Navigator.pop(context);
             },
@@ -725,7 +742,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // 添加訓練時間選擇
                   Row(
                     children: [
@@ -745,12 +762,14 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                       ),
                       const SizedBox(width: 8),
                       TextButton.icon(
-                        onPressed: _selectTrainingTime,  // 更新方法名
-                        icon: const Icon(Icons.edit_calendar_outlined, size: 16),
+                        onPressed: _selectTrainingTime, // 更新方法名
+                        icon:
+                            const Icon(Icons.edit_calendar_outlined, size: 16),
                         label: const Text('修改時間'),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.blue,
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
@@ -775,7 +794,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                       labelText: '訓練類型',
                       border: OutlineInputBorder(),
                     ),
-                    value: _selectedPlanType,
+                    initialValue: _selectedPlanType,
                     items: _planTypes.map((String type) {
                       return DropdownMenuItem<String>(
                         value: type,
@@ -832,16 +851,20 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                 leading: const Icon(Icons.drag_handle),
                                 title: Text(
                                   exercise.actionName ?? exercise.name,
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('${exercise.sets}組 x ${exercise.reps}次 | ${exercise.weight}kg'),
+                                    Text(
+                                        '${exercise.sets}組 x ${exercise.reps}次 | ${exercise.weight}kg'),
                                     Text('休息: ${exercise.restTime}秒'),
-                                    if (exercise.notes.isNotEmpty) 
-                                      Text('備註: ${exercise.notes}', 
-                                        style: const TextStyle(fontStyle: FontStyle.italic),
+                                    if (exercise.notes.isNotEmpty)
+                                      Text(
+                                        '備註: ${exercise.notes}',
+                                        style: const TextStyle(
+                                            fontStyle: FontStyle.italic),
                                       ),
                                   ],
                                 ),
@@ -849,11 +872,14 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.edit, color: Colors.blue),
-                                      onPressed: () => _editExerciseSettings(index),
+                                      icon: const Icon(Icons.edit,
+                                          color: Colors.blue),
+                                      onPressed: () =>
+                                          _editExerciseSettings(index),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      icon: const Icon(Icons.delete,
+                                          color: Colors.red),
                                       onPressed: () => _removeExercise(index),
                                     ),
                                   ],
@@ -888,4 +914,4 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     _descriptionController.dispose();
     super.dispose();
   }
-} 
+}

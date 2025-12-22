@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/workout_template_model.dart';
 import '../../../controllers/interfaces/i_workout_controller.dart';
 import '../../../services/error_handling_service.dart';
@@ -14,18 +16,18 @@ class TemplateManagementPage extends StatefulWidget {
 class _TemplateManagementPageState extends State<TemplateManagementPage> {
   late final IWorkoutController _workoutController;
   late final ErrorHandlingService _errorService;
-  
+
   List<WorkoutTemplate> _templates = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    
+
     // 從服務定位器獲取依賴
     _workoutController = serviceLocator<IWorkoutController>();
     _errorService = serviceLocator<ErrorHandlingService>();
-    
+
     _loadTemplates();
   }
 
@@ -37,7 +39,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
     try {
       // 使用控制器加載模板
       final templates = await _workoutController.loadUserTemplates();
-      
+
       setState(() {
         _templates = templates;
         _isLoading = false;
@@ -56,7 +58,8 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
   Future<void> _duplicateTemplate(WorkoutTemplate template) async {
     try {
       // 顯示輸入對話框讓用戶修改新模板的名稱
-      TextEditingController titleController = TextEditingController(text: '${template.title} - 副本');
+      TextEditingController titleController =
+          TextEditingController(text: '${template.title} - 副本');
       final newTitle = await showDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
@@ -95,7 +98,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      
+
       // 使用控制器創建模板
       await _workoutController.createTemplate(newTemplate);
 
@@ -137,38 +140,52 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
     }
   }
 
-  // 直接從模板創建訓練記錄
-  Future<void> _createWorkoutRecordFromTemplate(WorkoutTemplate template) async {
+  // 直接從模板創建訓練計畫
+  Future<void> _createWorkoutRecordFromTemplate(
+      WorkoutTemplate template) async {
     try {
       // 獲取當前日期（僅日期部分）
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      
+
       // 顯示日期選擇器，只允許選擇當天及未來的日期
       final selectedDate = await showDatePicker(
         context: context,
         initialDate: today,
-        firstDate: today,  // 修改為從當天開始
+        firstDate: today, // 修改為從當天開始
         lastDate: today.add(const Duration(days: 30)),
       );
-      
+
       if (selectedDate == null) return;
-      
-      // 使用控制器從模板創建訓練記錄
-      // 首先創建包含日期的WorkoutRecord對象
-      final record = await _workoutController.createRecordFromTemplate(template.id);
-      
-      // 使用特定日期更新記錄
-      final updatedRecord = record.copyWith(
-        date: selectedDate,
-      );
-      
-      // 更新記錄
-      await _workoutController.updateRecord(updatedRecord);
-      
+
+      // 獲取當前用戶 ID
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('未登入');
+      }
+
+      // 直接在 workoutPlans 創建訓練計畫
+      final planData = {
+        'userId': userId,
+        'traineeId': userId,
+        'creatorId': userId,
+        'title': template.title,
+        'description': template.description,
+        'planType': 'self',
+        'scheduledDate': Timestamp.fromDate(selectedDate),
+        'exercises': template.exercises.map((e) => e.toJson()).toList(),
+        'completed': false,
+        'createdAt': Timestamp.now(),
+        'updatedAt': Timestamp.now(),
+      };
+
+      await FirebaseFirestore.instance.collection('workoutPlans').add(planData);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${selectedDate.month}月${selectedDate.day}日的訓練已安排')),
+          SnackBar(
+              content:
+                  Text('${selectedDate.month}月${selectedDate.day}日的訓練已安排')),
         );
       }
     } catch (e) {
@@ -232,7 +249,8 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
                               value: 'create_record',
                               child: Row(
                                 children: [
-                                  Icon(Icons.fitness_center, color: Colors.green),
+                                  Icon(Icons.fitness_center,
+                                      color: Colors.green),
                                   SizedBox(width: 8),
                                   Text('安排訓練'),
                                 ],
@@ -254,7 +272,8 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
                                 children: [
                                   Icon(Icons.delete, color: Colors.red),
                                   SizedBox(width: 8),
-                                  Text('刪除', style: TextStyle(color: Colors.red)),
+                                  Text('刪除',
+                                      style: TextStyle(color: Colors.red)),
                                 ],
                               ),
                             ),
@@ -262,7 +281,8 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
                           onSelected: (value) async {
                             switch (value) {
                               case 'create_record':
-                                await _createWorkoutRecordFromTemplate(template);
+                                await _createWorkoutRecordFromTemplate(
+                                    template);
                                 break;
                               case 'duplicate':
                                 await _duplicateTemplate(template);
@@ -283,4 +303,4 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
                 ),
     );
   }
-} 
+}

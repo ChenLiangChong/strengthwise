@@ -33,8 +33,11 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
+  final TextEditingController _bioController = TextEditingController();  // 新增：個人簡介
   
   String? _gender;
+  DateTime? _birthDate;  // 新增：生日
+  String _unitSystem = 'metric';  // 新增：單位系統（預設公制）
   bool _isCoach = false;
   bool _isStudent = true;
 
@@ -52,6 +55,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     _heightController.dispose();
     _weightController.dispose();
     _ageController.dispose();
+    _bioController.dispose();  // 新增
     super.dispose();
   }
   
@@ -71,6 +75,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         _heightController.text = userProfile.height?.toString() ?? '';
         _weightController.text = userProfile.weight?.toString() ?? '';
         _ageController.text = userProfile.age?.toString() ?? '';
+        _bioController.text = userProfile.bio ?? '';  // 新增：個人簡介
+        _birthDate = userProfile.birthDate;  // 新增：生日
+        _unitSystem = userProfile.unitSystem ?? 'metric';  // 新增：單位系統
         _isCoach = userProfile.isCoach ?? false;
         _isStudent = userProfile.isStudent ?? true;
       });
@@ -116,6 +123,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
       height: _heightController.text.isNotEmpty ? double.parse(_heightController.text) : null,
       weight: _weightController.text.isNotEmpty ? double.parse(_weightController.text) : null,
       age: _ageController.text.isNotEmpty ? int.parse(_ageController.text) : null,
+      birthDate: _birthDate,  // 新增：生日
+      bio: _bioController.text.isNotEmpty ? _bioController.text : null,  // 新增：個人簡介
+      unitSystem: _unitSystem,  // 新增：單位系統
       isCoach: _isCoach,
       isStudent: _isStudent,
       avatarFile: _avatarFile,
@@ -351,6 +361,91 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                   }
                   return null;
                 },
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // 生日
+              InkWell(
+                onTap: () async {
+                  final DateTime? picked = await showDatePicker(
+                    context: context,
+                    initialDate: _birthDate ?? DateTime.now().subtract(const Duration(days: 365 * 25)),
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime.now(),
+                    helpText: '選擇生日',
+                    cancelText: '取消',
+                    confirmText: '確定',
+                  );
+                  if (picked != null && picked != _birthDate) {
+                    setState(() {
+                      _birthDate = picked;
+                    });
+                  }
+                },
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: '生日',
+                    border: OutlineInputBorder(),
+                    helperText: '可選',
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                  child: Text(
+                    _birthDate != null
+                        ? '${_birthDate!.year}年${_birthDate!.month}月${_birthDate!.day}日'
+                        : '點擊選擇生日',
+                    style: TextStyle(
+                      color: _birthDate != null ? Colors.black : Colors.grey,
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // 個人簡介
+              TextFormField(
+                controller: _bioController,
+                decoration: const InputDecoration(
+                  labelText: '個人簡介',
+                  border: OutlineInputBorder(),
+                  helperText: '可選 - 介紹您自己，讓其他人更了解您',
+                  alignLabelWithHint: true,
+                ),
+                maxLines: 4,
+                maxLength: 200,
+                keyboardType: TextInputType.multiline,
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // 單位系統選擇
+              const Text('單位系統', style: TextStyle(fontSize: 16)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Radio<String>(
+                    value: 'metric',
+                    groupValue: _unitSystem,
+                    onChanged: (value) {
+                      setState(() {
+                        _unitSystem = value!;
+                      });
+                    },
+                  ),
+                  const Text('公制 (kg, cm)'),
+                  const SizedBox(width: 20),
+                  Radio<String>(
+                    value: 'imperial',
+                    groupValue: _unitSystem,
+                    onChanged: (value) {
+                      setState(() {
+                        _unitSystem = value!;
+                      });
+                    },
+                  ),
+                  const Text('英制 (lb, in)'),
+                ],
               ),
               
               const SizedBox(height: 20),

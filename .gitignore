@@ -47,6 +47,9 @@ app.*.map.json
 # Firebase 相關凭據
 strengthwise-91f02-firebase-adminsdk-fbsvc-f40743774e.json
 *-firebase-adminsdk-*.json
+*service-account*.json
+*firebase-service-account*.json
+strengthwise-service-account.json
 lib/firebase_options.dart
 **/google-services.json
 **/GoogleService-Info.plist
@@ -71,6 +74,12 @@ lib/firebase_options.dart
 *.csv
 *.xlsx
 *.xls
+
+# 分析結果文件（可重新生成）
+analysis/*.txt
+analysis/*.json
+analysis/*.md
+!analysis/README.md
 
 # 其他敏感信息
 **/private/

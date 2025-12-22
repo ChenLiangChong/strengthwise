@@ -384,13 +384,19 @@ class _ExercisesPageState extends State<ExercisesPage> {
     }
   }
   
-  void _navigateToCustomExercises() {
-    Navigator.push(
+  void _navigateToCustomExercises() async {
+    // 導航到自訂動作頁面並等待返回結果
+    final selectedExercise = await Navigator.push<Exercise>(
       context,
       MaterialPageRoute(
         builder: (context) => const CustomExercisesPage(),
       ),
     );
+    
+    // 如果用戶選擇了一個自訂動作，將其返回給調用頁面
+    if (selectedExercise != null && context.mounted) {
+      Navigator.pop(context, selectedExercise);
+    }
   }
   
   void _navigateBack() {
@@ -861,13 +867,19 @@ class _ExercisesPageState extends State<ExercisesPage> {
                           const Icon(Icons.info_outline),
                         ],
                       ),
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        // 導航到動作詳情頁面，並接收返回值
+                        final selectedExercise = await Navigator.push<Exercise>(
                           context,
                           MaterialPageRoute(
                             builder: (context) => ExerciseDetailPage(exercise: exercise),
                           ),
                         );
+                        
+                        // 如果用戶在詳情頁點擊了「添加到訓練計畫」，將選中的動作返回
+                        if (selectedExercise != null && context.mounted) {
+                          Navigator.pop(context, selectedExercise);
+                        }
                       },
                     ),
                   );

@@ -1,0 +1,54 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Flutter (Debug)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "debug",
+            "args": [
+                "-d",
+                "emulator-5554"
+            ],
+            "env": {
+                "ANDROID_HOME": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk",
+                "ANDROID_SDK_ROOT": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk",
+                "PATH": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk\\platform-tools;C:\\Windows\\System32;C:\\Windows;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Git\\bin;${env:PATH}"
+            }
+        },
+        {
+            "name": "Flutter (Release)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "release",
+            "args": [
+                "-d",
+                "emulator-5554"
+            ],
+            "env": {
+                "ANDROID_HOME": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk",
+                "ANDROID_SDK_ROOT": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk",
+                "PATH": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk\\platform-tools;C:\\Windows\\System32;C:\\Windows;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Git\\bin;${env:PATH}"
+            }
+        },
+        {
+            "name": "Flutter (Profile)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "profile",
+            "args": [
+                "-d",
+                "emulator-5554"
+            ],
+            "env": {
+                "ANDROID_HOME": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk",
+                "ANDROID_SDK_ROOT": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk",
+                "PATH": "C:\\Users\\charl\\AppData\\Local\\Android\\Sdk\\platform-tools;C:\\Windows\\System32;C:\\Windows;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Git\\bin;${env:PATH}"
+            }
+        }
+    ]
+}
+

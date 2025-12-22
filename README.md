@@ -1,117 +1,274 @@
 # StrengthWise 💪
 
-> Smart Strength Training Tracker built with Flutter & Firebase.
-> 基於 Flutter 與 Firebase 建構的智慧型重訓追蹤應用。
+> 智慧型重訓追蹤應用 - 用數據驅動你的訓練進步
 
-## 📖 專案簡介 (Introduction)
+一個基於 Flutter 與 Firebase 打造的跨平台健身訓練記錄 App，讓你輕鬆管理訓練計劃、記錄每一組動作，並透過數據分析追蹤你的肌力成長。
 
-**StrengthWise** 是一個跨平台的健身訓練紀錄 App。旨在幫助使用者科學化管理訓練課表、紀錄組數與重量，並透過數據分析追蹤肌力成長。
+[![Flutter](https://img.shields.io/badge/Flutter-3.16+-02569B?logo=flutter)](https://flutter.dev/)
+[![Firebase](https://img.shields.io/badge/Firebase-Latest-FFCA28?logo=firebase)](https://firebase.google.com/)
+[![Dart](https://img.shields.io/badge/Dart-3.1+-0175C2?logo=dart)](https://dart.dev/)
 
-本專案採用 **Flutter** 進行開發，並使用 **Firebase** 作為後端服務（Authentication, Firestore）。
+---
 
-## 🛠️ 技術架構 (Tech Stack)
+## ✨ 核心功能
 
-### 前端 (Mobile/Web)
-* **Framework**: [Flutter](https://flutter.dev/) (Dart)
-* **State Management**: *(需查看 lib 內容確認，通常是 Provider/Riverpod/Bloc)*
-* **UI Assets**: 存放於 `assets/images` 與 `signin-assets`
+### 🏋️ 訓練管理
+- **訓練計劃**：創建、編輯、刪除訓練計劃
+- **訓練模板**：保存常用的訓練計劃為模板，快速創建新計劃
+- **訓練執行**：實時記錄每一組的重量、次數、完成狀態
+- **自動保存**：訓練過程中自動保存進度，不怕資料遺失
 
-### 後端服務 (Backend & Cloud)
-* **Platform**: [Firebase](https://firebase.google.com/)
-* **Database**: Cloud Firestore (NoSQL)
-* **Auth**: Firebase Authentication
-* **Rules**: `firestore.rules` (資料庫安全規則)
+### 📊 數據記錄
+- **完整記錄**：記錄每次訓練的詳細數據
+- **訓練備註**：為每次訓練添加備註
+- **歷史查詢**：查看過往的訓練記錄
+- **統計分析**：（開發中）訓練頻率、訓練量趨勢、個人最佳記錄
 
-### 資料處理工具 (Data Tools)
-* **Python**: 用於資料清洗與批次匯入動作庫
-    * `import_exercises.py`: 匯入訓練動作數據
-    * `fillNull.py`: 資料欄位修補工具
+### 💪 運動庫
+- **豐富的運動庫**：內建數百種運動動作，涵蓋各大肌群
+- **階層式瀏覽**：依運動類型、身體部位、動作分類輕鬆查找
+- **自訂動作**：創建專屬的自訂動作
+- **動作詳情**：查看動作說明和教學
 
-## 🚀 快速開始 (Getting Started)
+### 🗓️ 行事曆
+- **月曆視圖**：一眼看清所有訓練安排
+- **快速創建**：點擊日期快速創建訓練計劃
+- **進度追蹤**：查看已完成和未完成的訓練
 
-### 1. 環境準備 (Prerequisites)
-確保你的開發環境已安裝：
-* [Flutter SDK](https://docs.flutter.dev/get-started/install) (最新穩定版)
-* [Firebase CLI](https://firebase.google.com/docs/cli)
-* Python 3.x (若需要執行資料處理腳本)
+---
 
-### 2. 安裝依賴 (Install Dependencies)
-```bash
-# 下載專案依賴套件
-flutter pub get
+## 🚀 快速開始
+
+### 環境需求
+
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) 3.16 或更高版本
+- [Dart SDK](https://dart.dev/get-dart) 3.1 或更高版本
+- [Firebase CLI](https://firebase.google.com/docs/cli)（用於部署規則）
+
+### 安裝步驟
+
+1. **Clone 專案**
+   ```bash
+   git clone https://github.com/yourusername/strengthwise.git
+   cd strengthwise
+   ```
+
+2. **安裝依賴**
+   ```bash
+   flutter pub get
+   ```
+
+3. **設定 Firebase**
+   - 在 [Firebase Console](https://console.firebase.google.com/) 創建新專案
+   - 下載 `google-services.json`（Android）和 `GoogleService-Info.plist`（iOS）
+   - 或執行 `flutterfire configure` 自動配置
+
+4. **執行應用**
+   ```bash
+   flutter run
+   ```
+
+---
+
+## 🏗️ 技術架構
+
+### 技術棧
+
+- **框架**：Flutter 3.16+
+- **語言**：Dart 3.1+
+- **後端**：Firebase (Auth, Firestore, Storage, Analytics)
+- **狀態管理**：Provider (ChangeNotifier)
+- **依賴注入**：GetIt (Service Locator Pattern)
+- **本地儲存**：Hive、SharedPreferences
+
+### 架構模式
+
+採用 **MVVM + Clean Architecture**，確保代碼清晰、易於維護：
 
 ```
-
-### 3. 設定 Firebase (Firebase Setup)
-
-本專案依賴 Firebase，請確保你擁有對應的 Firebase 專案權限，或建立一個新專案。
-
-1. 登入 Firebase:
-```bash
-firebase login
-
+View (UI 層)
+  ↓ Provider/Consumer
+Controller (業務邏輯層)
+  ↓ Service Interface
+Service (資料存取層)
+  ↓ Firestore/Firebase
+Model (資料模型層)
 ```
 
-
-2. 設定專案別名 (Alias):
-* 查看 `.firebaserc` 確認專案 ID，或執行 `flutterfire configure` 重新綁定你的專案。
-
-
-3. 部署 Firestore 規則 (可選):
-```bash
-firebase deploy --only firestore:rules
+### 專案結構
 
 ```
-
-
-*(詳細設定請參考專案內的 `FIRESTORE_SETUP.md`)*
-
-### 4. 啟動 App (Run App)
-
-```bash
-# 啟動模擬器或連接實機後執行
-flutter run
-
-```
-
-## 📂 專案結構說明 (Project Structure)
-
-```text
 strengthwise/
-├── lib/                 # Flutter 核心程式碼 (UI, Logic)
-├── assets/              # 靜態資源 (圖片, ICON)
-├── scripts/             # (建議將 Python 檔移入此處)
-│   ├── import_exercises.py  # 動作庫匯入腳本
-│   └── fillNull.py          # 資料清洗腳本
-├── firestore.rules      # Firestore 安全規則
-├── firebase.json        # Firebase 專案配置
-├── pubspec.yaml         # Dart 套件依賴清單
-└── README.md            # 專案說明文件
-
+├── lib/             # Flutter 核心程式碼
+│   ├── models/      # 資料模型
+│   ├── services/    # 服務層（資料存取）
+│   ├── controllers/ # 控制器層（業務邏輯）
+│   └── views/       # UI 層（頁面和元件）
+├── scripts/         # Python 和 Dart 工具腳本
+├── docs/            # 專案文檔
+├── assets/          # 靜態資源
+└── ...
 ```
 
-## 🐍 資料庫維護 (Data Maintenance)
+---
 
-若需要初始化動作庫（Exercises），請使用 Python 腳本：
+## 📱 功能截圖
 
-```bash
-# 安裝必要的 Python 套件 (如 firebase-admin)
-pip install firebase-admin
+<!-- TODO: 添加應用截圖 -->
 
-# 執行匯入
-python import_exercises.py
+---
 
-```
+## 🛠️ 開發
 
-## 📄 相關文件 (Docs)
+### 開發環境設定
 
-* **部署指南**: 請參閱 `快速部署指南.md`
-* **資料庫設定**: 請參閱 `FIRESTORE_SETUP.md`
+1. **安裝 Flutter**
+   ```bash
+   # 檢查環境
+   flutter doctor
+   ```
 
-## 🤝 貢獻指南 (Contributing)
+2. **設定 IDE**
+   - 推薦使用 VS Code 或 Android Studio
+   - 安裝 Flutter 和 Dart 插件
+
+3. **運行測試**
+   ```bash
+   flutter test
+   ```
+
+### 開發規範
+
+- **代碼風格**：遵循 Dart 官方風格指南
+- **註解**：關鍵邏輯使用繁體中文註解
+- **提交**：使用有意義的 commit message
+- **測試**：確保新功能有對應的測試
+
+詳細的開發規範請參考 [AGENTS.md](AGENTS.md)。
+
+---
+
+## 📂 資料庫結構
+
+使用 **Firebase Firestore** 作為資料庫，主要集合：
+
+| 集合 | 說明 |
+|------|------|
+| `users` | 用戶資料 |
+| `workoutPlans` | 訓練計劃和記錄（統一） |
+| `workoutTemplates` | 訓練模板 |
+| `exercises` | 公共運動庫 |
+| `customExercises` | 用戶自訂動作 |
+
+詳細設計請參考 [docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md)。
+
+---
+
+## 📖 文檔
+
+### 給開發者
+
+- **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - 專案架構和技術棧
+- **[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)** - 當前開發進度
+- **[docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md)** - 資料庫設計
+
+### 給 AI Agent
+
+- **[AGENTS.md](AGENTS.md)** - AI 開發指南
+- **[docs/README.md](docs/README.md)** - 文檔導航
+- **[docs/cursor_tasks/](docs/cursor_tasks/)** - 任務文檔
+
+---
+
+## 🗺️ 開發路線圖
+
+### ✅ 已完成（v1.0）
+
+- [x] 用戶登入/登出（Google Sign-In）
+- [x] 訓練計劃管理（創建、編輯、刪除）
+- [x] 訓練模板系統
+- [x] 訓練執行和記錄
+- [x] 運動庫瀏覽
+- [x] 自訂動作功能
+- [x] 行事曆視圖
+- [x] 個人資料編輯
+
+### 🚧 進行中（v1.1）
+
+- [ ] 訓練統計功能
+  - [ ] 訓練頻率統計
+  - [ ] 訓練量趨勢圖表
+  - [ ] 個人最佳記錄（PR）
+  - [ ] 各肌群訓練分布
+
+### 📅 計劃中（v2.0）
+
+- [ ] 體重追蹤
+- [ ] 體態照片記錄
+- [ ] 身體圍度測量
+- [ ] 數據匯出（CSV/PDF）
+- [ ] 訓練提醒通知
+
+### 🔮 未來計劃
+
+- [ ] 教練-學員雙邊平台
+- [ ] 預約系統
+- [ ] 教學筆記
+- [ ] 社交功能
+
+---
+
+## 🤝 貢獻
+
+歡迎貢獻！請遵循以下步驟：
 
 1. Fork 本專案
-2. 建立 Feature Branch (`git checkout -b feature/NewFeature`)
-3. Commit 修改 (`git commit -m 'Add NewFeature'`)
-4. Push 到 Branch (`git push origin feature/NewFeature`)
-5. 建立 Pull Request
+2. 創建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 開啟 Pull Request
+
+### 貢獻指南
+
+- 遵循專案的代碼風格
+- 添加適當的測試
+- 更新相關文檔
+- 確保所有測試通過
+
+---
+
+## 📄 授權
+
+本專案採用 MIT 授權 - 詳見 [LICENSE](LICENSE) 文件。
+
+---
+
+## 📞 聯繫方式
+
+如有問題或建議，歡迎：
+
+- 開 Issue
+- 發 Pull Request
+- 聯繫維護者
+
+---
+
+## 🙏 致謝
+
+- [Flutter](https://flutter.dev/) - 優秀的跨平台框架
+- [Firebase](https://firebase.google.com/) - 強大的後端服務
+- 所有貢獻者和用戶的支持
+
+---
+
+**打造屬於你的健身訓練系統，從 StrengthWise 開始！** 💪
+
+---
+
+<div align="center">
+
+Made with ❤️ by StrengthWise Team
+
+[⬆ 回到頂部](#strengthwise-)
+
+</div>

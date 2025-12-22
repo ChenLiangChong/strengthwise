@@ -14,6 +14,7 @@ import 'custom_exercise_service.dart';
 import 'exercise_service.dart';
 import 'note_service.dart';
 import 'user_service.dart';
+import 'user_migration_service.dart';
 import 'workout_service.dart';
 import 'error_handling_service.dart';
 import 'exercise_cache_service.dart';
@@ -129,6 +130,13 @@ void _registerServices() {
   // 用戶服務
   if (!serviceLocator.isRegistered<IUserService>()) {
     serviceLocator.registerLazySingleton<IUserService>(() => UserService(
+      errorService: serviceLocator<ErrorHandlingService>(),
+    ));
+  }
+  
+  // 用戶遷移服務
+  if (!serviceLocator.isRegistered<UserMigrationService>()) {
+    serviceLocator.registerLazySingleton<UserMigrationService>(() => UserMigrationService(
       errorService: serviceLocator<ErrorHandlingService>(),
     ));
   }

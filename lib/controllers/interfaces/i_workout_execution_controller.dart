@@ -79,6 +79,9 @@ abstract class IWorkoutExecutionController {
   /// 添加新訓練動作
   Future<void> addNewExercise(Exercise exercise, int sets, int reps, double weight, int restTime, {BuildContext? context});
   
+  /// 新增組數到指定運動
+  Future<void> addSetToExercise(int exerciseIndex, {BuildContext? context});
+  
   /// 刪除訓練動作
   Future<void> deleteExercise(int exerciseIndex, {BuildContext? context});
   

@@ -1,0 +1,98 @@
+# StrengthWise - 核心開發規範
+
+> 本文檔包含必須遵守的開發規則，AI 程式碼助手在修改程式碼時必須嚴格遵循。
+
+## 🚨 核心規則（必須遵守）
+
+### 1. 不破壞現有功能
+- ✅ **必須**：修改程式碼時，確保個人的健身記錄功能不受影響
+- ✅ **必須**：新功能與現有功能相容
+- ❌ **禁止**：刪除或破壞現有功能
+
+### 2. 型別安全
+- ✅ **必須**：所有 Firestore 操作透過 Model 類別的 `.fromMap()` 和 `.toMap()` 方法
+- ❌ **禁止**：直接操作 `Map<String, dynamic>`
+
+```dart
+// ✅ 正確
+final user = UserModel.fromMap(doc.data()!);
+await firestore.collection('users').doc(uid).set(user.toMap());
+
+// ❌ 錯誤
+await firestore.collection('users').doc(uid).set({'name': 'John'});
+```
+
+### 3. 依賴注入
+- ✅ **必須**：所有服務透過 `serviceLocator` 獲取
+- ✅ **必須**：控制器透過建構函式注入依賴（支援測試時 mock）
+
+```dart
+// ✅ 正確
+final workoutController = serviceLocator<IWorkoutController>();
+final workoutService = serviceLocator<IWorkoutService>();
+```
+
+### 4. 錯誤處理
+- ✅ **必須**：統一使用 `ErrorHandlingService` 記錄錯誤
+- ✅ **必須**：控制器層捕獲異常並轉換為使用者友善的錯誤訊息
+
+```dart
+try {
+  await _workoutService.createTemplate(template);
+} catch (e) {
+  _errorService.logError('建立訓練模板失敗: $e', type: 'WorkoutControllerError');
+  _handleError('建立訓練模板失敗', e);
+}
+```
+
+### 5. 註解規範
+- ✅ **必須**：關鍵業務邏輯新增**繁體中文註解**
+- ✅ **必須**：公共方法使用 Dart Doc 註解（`///`）
+- ✅ **必須**：所有程式碼註解、變數命名、使用者介面文字都使用**繁體中文**
+- ✅ **必須**：文件和 Markdown 檔案使用**繁體中文**
+
+### 6. 程式碼提交
+- ✅ **必須**：小步提交，每個功能完成後確保應用可編譯通過
+- ✅ **必須**：不破壞現有功能
+
+## 🗄️ 資料庫遷移規則
+
+### 使用者集合遷移
+- ⚠️ **重要**：專案正在從 `user`/`users` 雙集合遷移到統一 `users` 集合
+- ⚠️ **禁止**：刪除舊資料
+- ⚠️ **必須**：新程式碼需要相容舊資料結構
+- ⚠️ **必須**：漸進式重構，不要一次性大改
+
+### 資料庫操作規範
+- ✅ **必須**：使用統一的 `UserModel`（包含 `isCoach`, `isStudent` 欄位）
+- ✅ **必須**：向後相容舊的 `isTrainee`, `isTrainer` 欄位（如果存在）
+- ✅ **必須**：新建立的筆記必須包含 `appointmentId`（如果關聯到課程）
+
+## 🏗️ 架構規範
+
+### 分層架構
+- **View Layer**: UI 元件（`lib/views/`）
+- **Controller Layer**: 業務邏輯（`lib/controllers/`）
+- **Service Layer**: 資料存取（`lib/services/`）
+- **Model Layer**: 資料模型（`lib/models/`）
+
+### 服務註冊
+- **服務層**：註冊為 `LazySingleton`
+- **控制器層**：註冊為 `Factory`
+- **基礎服務**：`ErrorHandlingService` 註冊為 `Singleton`
+
+## 📝 狀態管理
+- ✅ **必須**：控制器繼承 `ChangeNotifier`，使用 `notifyListeners()` 通知 UI 更新
+- ✅ **必須**：UI 層使用 `Provider` 或 `Consumer` 監聽狀態變化
+
+## 🔍 偵錯與測試
+- ✅ **建議**：在關鍵路徑新增偵錯日誌（使用 `kDebugMode` 包裹）
+- ✅ **建議**：確保程式碼在修改後可以編譯通過
+
+---
+
+**参考文档**：
+- 详细架构说明：`AGENTS.md`
+- 项目背景：`docs/00_PROJECT_CONTEXT.md`
+- 数据库重构任务：`docs/01_TASK_DB_REFACTOR.md`
+
