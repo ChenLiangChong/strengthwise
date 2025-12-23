@@ -2,7 +2,7 @@
 
 > 專案文檔總覽，幫助快速找到需要的資訊
 
-**最後更新**：2024年12月22日
+**最後更新**：2024年12月23日（文檔已整合到核心文檔）
 
 ---
 
@@ -70,33 +70,89 @@
 
 ---
 
-## 🔧 輔助文檔
+## 🔧 配置與設定
 
-### 配置與設定
+### 環境配置
+- **[SETUP.md](SETUP.md)** - 完整環境配置指南
+  - Flutter 環境安裝
+  - Firebase 專案設定
+  - 開發工具配置
+  - 常見問題解決
+
+### Firebase 設定
 - **[FIREBASE_AUTH_SETUP.md](FIREBASE_AUTH_SETUP.md)** - Firebase 認證設定
 - **[FIRESTORE_SETUP.md](FIRESTORE_SETUP.md)** - Firestore 資料庫設定
-- **[README_環境設置.md](README_環境設置.md)** - 完整環境配置指南
-
-### AI 開發指南
-- **[AGENTS.md](../AGENTS.md)** - AI 助手開發指南
-- 完整的開發規範和技術細節
 
 ---
 
-## 📁 文檔結構
+## 📊 最近更新（2024-12-23）
+
+### 資料庫升級
+所有資料庫相關的更新已整合到核心文檔：
+
+- **[DATABASE_DESIGN.md](DATABASE_DESIGN.md)** - 查看完整的資料庫設計
+  - ✅ 動作分類系統升級（794 個動作）
+  - ✅ 新增專業 5 層分類結構
+  - ✅ 身體部位數據清理（合併重複項）
+
+- **[DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)** - 查看開發進度
+  - ✅ 新動作瀏覽 UI 實作記錄
+  - ✅ 資料庫架構改進記錄
+  - ✅ Bug 修復記錄
+
+### 相關腳本
+執行資料庫遷移的腳本說明：
+
+- **[scripts/README.md](../scripts/README.md)** - 所有腳本的使用說明
+  - `analyze_body_parts.py` - 身體部位分析
+  - `merge_body_parts.py` - 身體部位合併
+  - `reclassify_exercises.py` - 動作重新分類
+  - `update_exercise_classification.py` - 更新分類到 Firestore
+
+---
+
+## 🗂️ 歸檔文檔
+
+### [archive/](archive/) - 歷史記錄
+
+- **[CLEANUP_NOTES.md](archive/CLEANUP_NOTES.md)** - 清理筆記
+- 其他過時或已完成的文檔
+
+---
+
+## 📁 完整文檔結構
 
 ```
 docs/
-├── README.md                       ← 你在這裡
-├── PROJECT_OVERVIEW.md             ← 專案總覽（技術架構）
-├── DEVELOPMENT_STATUS.md           ← 開發狀態（當前進度）
-├── DATABASE_DESIGN.md              ← 資料庫設計（Firestore）
-├── STATISTICS_IMPLEMENTATION.md    ← 統計功能實作指南
-└── cursor_tasks/                   ← 雙邊平台任務（暫停）
-    ├── 02_TASK_RELATIONSHIPS.md   # 教練-學員綁定
-    ├── 03_TASK_BOOKING.md         # 預約系統
-    └── 04_TASK_TEACHING.md        # 教學筆記
+├── README.md                              ← 你在這裡（文檔導航）
+│
+├── 核心文檔
+│   ├── PROJECT_OVERVIEW.md                ← 專案總覽（技術架構）
+│   ├── DEVELOPMENT_STATUS.md              ← 開發狀態（包含最新更新記錄）
+│   ├── DATABASE_DESIGN.md                 ← 資料庫設計（包含新分類結構）
+│   └── STATISTICS_IMPLEMENTATION.md       ← 統計功能實作指南
+│
+├── 配置文檔
+│   ├── SETUP.md                           ← 環境配置指南
+│   ├── FIREBASE_AUTH_SETUP.md             ← Firebase 認證設定
+│   └── FIRESTORE_SETUP.md                 ← Firestore 設定
+│
+├── archive/                               ← 歷史歸檔
+│   ├── CLEANUP_NOTES.md                   ← 清理筆記
+│   └── DOCS_ORGANIZATION_SUMMARY.md       ← 文檔整理報告
+│
+└── cursor_tasks/                          ← 雙邊平台任務（暫停）
+    ├── 00_PROJECT_CONTEXT.md              ← 專案背景
+    ├── 01_TASK_DB_REFACTOR.md             ← 資料庫重構
+    ├── 02_TASK_RELATIONSHIPS.md           ← 教練-學員綁定
+    ├── 03_TASK_BOOKING.md                 ← 預約系統
+    └── 04_TASK_TEACHING.md                ← 教學筆記
 ```
+
+**注意**：所有資料庫遷移和 UI 更新的詳細記錄已整合到核心文檔中：
+- 資料庫相關 → `DATABASE_DESIGN.md` 和 `DEVELOPMENT_STATUS.md`
+- UI 更新 → `DEVELOPMENT_STATUS.md`
+- 腳本說明 → `../scripts/README.md`
 
 ---
 
@@ -117,16 +173,26 @@ docs/
 → 閱讀 `STATISTICS_IMPLEMENTATION.md`
 
 #### 實作新功能
-→ 先讀 `PROJECT_OVERVIEW.md`（了解規範）
-→ 再讀 `DATABASE_DESIGN.md`（設計數據結構）
-→ 參考 `DEVELOPMENT_STATUS.md`（確認不衝突）
+1. 先讀 `PROJECT_OVERVIEW.md`（了解規範）
+2. 再讀 `DATABASE_DESIGN.md`（設計數據結構）
+3. 參考 `DEVELOPMENT_STATUS.md`（確認不衝突）
 
 #### 修復 Bug
-→ 參考 `DEVELOPMENT_STATUS.md` 的「Bug 修復記錄」
-→ 查看 `PROJECT_OVERVIEW.md` 的「常見問題排查」
+1. 參考 `DEVELOPMENT_STATUS.md` 的「Bug 修復記錄」
+2. 查看 `PROJECT_OVERVIEW.md` 的「常見問題排查」
 
 #### 優化性能
 → 參考 `DATABASE_DESIGN.md` 的「性能優化策略」
+
+#### 查看最近的資料庫變更
+→ 查看 `DATABASE_DESIGN.md`（exercises 和 bodyParts 集合說明）
+→ 查看 `DEVELOPMENT_STATUS.md`（資料庫架構改進章節）
+
+#### 查看最近的 UI 更新
+→ 查看 `DEVELOPMENT_STATUS.md`（運動庫管理章節）
+
+#### 設定開發環境
+→ 閱讀 `SETUP.md`
 
 ---
 
@@ -142,6 +208,12 @@ docs/
 1. 直接編輯 Markdown 檔案
 2. 更新「最後更新」日期
 3. 提交 git commit
+
+### 文檔整合原則
+- **資料庫相關更新** → 整合到 `DATABASE_DESIGN.md` 和 `DEVELOPMENT_STATUS.md`
+- **UI 功能更新** → 整合到 `DEVELOPMENT_STATUS.md`
+- **腳本使用說明** → 整合到 `../scripts/README.md`
+- **過時文檔** → 移到 `archive/`
 
 ---
 
@@ -167,5 +239,19 @@ docs/
 
 ---
 
-**開始開發前，建議先閱讀 `PROJECT_OVERVIEW.md` 和 `DEVELOPMENT_STATUS.md`！**
+## 🎉 最近更新（2024-12-23）
 
+### ✅ 文檔整合完成
+- 將資料庫遷移記錄整合到 `DATABASE_DESIGN.md`
+- 將 UI 更新記錄整合到 `DEVELOPMENT_STATUS.md`
+- 簡化文檔結構，只保留核心文檔
+- 所有詳細資訊都在核心文檔中可查
+
+### ✅ 資料庫升級
+- **動作分類系統升級**：794 個動作重新分類（詳見 `DATABASE_DESIGN.md`）
+- **身體部位數據清理**：合併重複項目（詳見 `DATABASE_DESIGN.md`）
+- **新 UI 實作**：5 層分類導航系統（詳見 `DEVELOPMENT_STATUS.md`）
+
+---
+
+**開始開發前，建議先閱讀 `PROJECT_OVERVIEW.md` 和 `DEVELOPMENT_STATUS.md`！**

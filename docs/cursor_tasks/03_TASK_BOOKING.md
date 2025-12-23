@@ -385,3 +385,4 @@ match /appointments/{appointmentId} {
 - [ ] 時區正確處理
 - [ ] Firestore 規則正確設定
 
+

@@ -5,6 +5,9 @@ import 'exercise_detail_page.dart';
 import '../../services/exercise_cache_service.dart';
 import 'custom_exercises_page.dart';
 
+/// 動作瀏覽頁面 - 使用專業 5 層分類結構
+/// 1. 訓練類型 (trainingType) -> 2. 身體部位 (bodyPart) -> 3. 特定肌群 (specificMuscle)
+/// -> 4. 器材類別 (equipmentCategory) -> 5. 器材子類別 (equipmentSubcategory)
 class ExercisesPage extends StatefulWidget {
   const ExercisesPage({super.key});
 
@@ -14,48 +17,45 @@ class ExercisesPage extends StatefulWidget {
 
 class _ExercisesPageState extends State<ExercisesPage> {
   bool _isLoading = true;
-  String? _selectedType;
-  String? _selectedBodyPart;
-  String? _selectedLevel1;
-  String? _selectedLevel2;
-  String? _selectedLevel3;
-  String? _selectedLevel4;
-  String? _selectedLevel5;
-  List<String> _exerciseTypes = [];
+  
+  // 新的 5 層分類選擇
+  String? _selectedTrainingType;       // 訓練類型
+  String? _selectedBodyPart;           // 身體部位（主要肌群）
+  String? _selectedSpecificMuscle;     // 特定肌群
+  String? _selectedEquipmentCategory;  // 器材類別
+  String? _selectedEquipmentSubcategory; // 器材子類別
+  
+  // 各層級的選項列表
+  List<String> _trainingTypes = [];
   List<String> _bodyParts = [];
-  List<String> _level1Categories = [];
-  List<String> _level2Categories = [];
-  List<String> _level3Categories = [];
-  List<String> _level4Categories = [];
-  List<String> _level5Categories = [];
+  List<String> _specificMuscles = [];
+  List<String> _equipmentCategories = [];
+  List<String> _equipmentSubcategories = [];
   List<Exercise> _exercises = [];
   
-  int _currentStep = 0; // 當前導航步驟：0=類型, 1=身體部位, 2=level1, 3=level2...
+  int _currentStep = 0; // 當前導航步驟：0=訓練類型, 1=身體部位, 2=特定肌群, 3=器材類別, 4=器材子類別, 5=動作列表
 
   @override
   void initState() {
     super.initState();
-    // 清除所有緩存，確保每次啟動應用時獲取最新數據
     _logDebug('應用啟動：正在清除所有緩存...');
     
-    // 強制清除所有緩存，包括 SharedPreferences 和 Firestore 緩存
+    // 清除緩存並載入訓練類型
     ExerciseCacheService.clearCache().then((_) {
       _logDebug('緩存清除完成，開始加載訓練類型');
-      _loadExerciseTypes();
+      _loadTrainingTypes();
     }).catchError((error) {
       _logDebug('緩存清除失敗: $error');
-      // 即使緩存清除失敗，也繼續加載資料
-      _loadExerciseTypes();
+      _loadTrainingTypes();
     });
   }
   
-  // 用於調試的輔助方法
   void _logDebug(String message) {
-    print('[DEBUG] $message');
+    print('[動作瀏覽] $message');
   }
   
-  // 載入訓練類型
-  Future<void> _loadExerciseTypes() async {
+  /// 第1層：載入訓練類型
+  Future<void> _loadTrainingTypes() async {
     setState(() {
       _isLoading = true;
       _currentStep = 0;
@@ -63,20 +63,26 @@ class _ExercisesPageState extends State<ExercisesPage> {
     
     try {
       _logDebug('開始載入訓練類型...');
+      
+      // 從 exercise 集合直接提取所有訓練類型
       final querySnapshot = await FirebaseFirestore.instance
-          .collection('exerciseTypes')
-          .orderBy('name')
+          .collection('exercise')
           .get(const GetOptions(source: Source.server));
       
-      List<String> types = [];
+      Set<String> typesSet = {};
       for (var doc in querySnapshot.docs) {
-        types.add(doc['name'] as String);
+        final data = doc.data();
+        final trainingType = data['trainingType'] as String?;
+        if (trainingType != null && trainingType.isNotEmpty) {
+          typesSet.add(trainingType);
+        }
       }
       
-      _logDebug('成功載入 ${types.length} 個訓練類型');
+      List<String> types = typesSet.toList()..sort();
+      _logDebug('成功載入 ${types.length} 個訓練類型: ${types.join(", ")}');
       
       setState(() {
-        _exerciseTypes = types;
+        _trainingTypes = types;
         _isLoading = false;
       });
     } catch (e) {
@@ -84,10 +90,15 @@ class _ExercisesPageState extends State<ExercisesPage> {
       setState(() {
         _isLoading = false;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('載入訓練類型失敗: $e')),
+        );
+      }
     }
   }
   
-  // 載入身體部位
+  /// 第2層：載入身體部位（只顯示有動作的部位）
   Future<void> _loadBodyParts() async {
     setState(() {
       _isLoading = true;
@@ -95,18 +106,27 @@ class _ExercisesPageState extends State<ExercisesPage> {
     });
     
     try {
-      _logDebug('開始載入身體部位，選擇的訓練類型: $_selectedType');
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('bodyParts')
-          .orderBy('name')
-          .get(const GetOptions(source: Source.server));
+      _logDebug('開始載入身體部位，選擇的訓練類型: $_selectedTrainingType');
       
-      List<String> parts = [];
-      for (var doc in querySnapshot.docs) {
-        parts.add(doc['name'] as String);
+      Query query = FirebaseFirestore.instance.collection('exercise');
+      
+      if (_selectedTrainingType != null && _selectedTrainingType!.isNotEmpty) {
+        query = query.where('trainingType', isEqualTo: _selectedTrainingType);
       }
       
-      _logDebug('成功載入 ${parts.length} 個身體部位');
+      final querySnapshot = await query.get(const GetOptions(source: Source.server));
+      
+      Set<String> partsSet = {};
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final bodyPart = data['bodyPart'] as String?;
+        if (bodyPart != null && bodyPart.isNotEmpty) {
+          partsSet.add(bodyPart);
+        }
+      }
+      
+      List<String> parts = partsSet.toList()..sort();
+      _logDebug('成功載入 ${parts.length} 個身體部位（來自 ${querySnapshot.docs.length} 個動作）');
       
       setState(() {
         _bodyParts = parts;
@@ -120,216 +140,245 @@ class _ExercisesPageState extends State<ExercisesPage> {
     }
   }
   
-  // 通用載入分類方法
-  Future<void> _loadCategories(int level) async {
+  /// 第3層：載入特定肌群
+  Future<void> _loadSpecificMuscles() async {
     setState(() {
       _isLoading = true;
-      _currentStep = level + 1;
+      _currentStep = 2;
     });
     
-    _logDebug('開始載入Level$level分類');
-    _logDebug('目前選擇條件: type=$_selectedType, bodyPart=$_selectedBodyPart');
-    _logDebug('目前選擇層級: L1=$_selectedLevel1, L2=$_selectedLevel2, L3=$_selectedLevel3, L4=$_selectedLevel4, L5=$_selectedLevel5');
-    
-    // 先檢查是否有緩存
-    final cacheKey = 'level${level}_${_selectedType ?? ""}_${_selectedBodyPart ?? ""}_${_selectedLevel1 ?? ""}_${_selectedLevel2 ?? ""}_${_selectedLevel3 ?? ""}_${_selectedLevel4 ?? ""}';
-    _logDebug('緩存鍵: $cacheKey');
-    
-    // 首先检查是否应该强制从Firestore加载
-    bool forceLoad = false;
-    
-    // 先清除该级别的旧缓存，确保获取新数据
-    await ExerciseCacheService.clearCacheForKey('cat_$cacheKey');
-    _logDebug('已清除当前层级缓存');
-    
-    // 直接从Firestore获取数据，跳过缓存
     try {
-      // 構建基於層級的查詢
-      _logDebug('從Firestore查詢Level$level分類');
+      _logDebug('開始載入特定肌群，身體部位: $_selectedBodyPart');
+      
       Query query = FirebaseFirestore.instance.collection('exercise');
       
-      // 總是添加類型過濾條件，這是基本條件
-      if (_selectedType != null && _selectedType!.isNotEmpty) {
-        query = query.where('type', isEqualTo: _selectedType);
-        _logDebug('添加基本查詢條件: type=$_selectedType');
+      if (_selectedTrainingType != null) {
+        query = query.where('trainingType', isEqualTo: _selectedTrainingType);
+      }
+      if (_selectedBodyPart != null) {
+        query = query.where('bodyPart', isEqualTo: _selectedBodyPart);
       }
       
-      // 總是添加身體部位過濾條件，這是基本條件
-      if (_selectedBodyPart != null && _selectedBodyPart!.isNotEmpty) {
-        query = query.where('bodyParts', arrayContains: _selectedBodyPart);
-        _logDebug('添加基本查詢條件: bodyParts包含$_selectedBodyPart');
-      }
-      
-      // 根據當前要查詢的層級，添加所有前置層級的條件
-      if (level >= 2 && _selectedLevel1 != null && _selectedLevel1!.isNotEmpty) {
-        query = query.where('level1', isEqualTo: _selectedLevel1);
-        _logDebug('添加層級條件: level1=$_selectedLevel1');
-      }
-      
-      if (level >= 3 && _selectedLevel2 != null && _selectedLevel2!.isNotEmpty) {
-        query = query.where('level2', isEqualTo: _selectedLevel2);
-        _logDebug('添加層級條件: level2=$_selectedLevel2');
-      }
-      
-      if (level >= 4 && _selectedLevel3 != null && _selectedLevel3!.isNotEmpty) {
-        query = query.where('level3', isEqualTo: _selectedLevel3);
-        _logDebug('添加層級條件: level3=$_selectedLevel3');
-      }
-      
-      if (level >= 5 && _selectedLevel4 != null && _selectedLevel4!.isNotEmpty) {
-        query = query.where('level4', isEqualTo: _selectedLevel4);
-        _logDebug('添加層級條件: level4=$_selectedLevel4');
-      }
-      
-      // 執行查詢，獲取文檔 - 使用 Source.SERVER 確保從服務器獲取最新數據
       final querySnapshot = await query.get(const GetOptions(source: Source.server));
-      _logDebug('查詢到 ${querySnapshot.docs.length} 個文檔');
       
-      // 輸出一些文檔信息以供調試
-      if (querySnapshot.docs.isNotEmpty) {
-        final sampleDoc = querySnapshot.docs.first;
-        _logDebug('樣本文檔內容: id=${sampleDoc.id}, type=${sampleDoc['type']}, 層級=${sampleDoc['level1'] ?? ""}/${sampleDoc['level2'] ?? ""}/${sampleDoc['level3'] ?? ""}/${sampleDoc['level4'] ?? ""}/${sampleDoc['level5'] ?? ""}');
-      }
-      
-      // 從所有符合條件的文檔中提取目標層級的唯一值
-      Set<String> categories = {};
+      Set<String> musclesSet = {};
       for (var doc in querySnapshot.docs) {
-        final fieldName = 'level$level';
-        final category = doc[fieldName] as String? ?? '';
-        if (category.isNotEmpty) {
-          categories.add(category);
+        final data = doc.data() as Map<String, dynamic>;
+        final muscle = data['specificMuscle'] as String?;
+        if (muscle != null && muscle.isNotEmpty) {
+          musclesSet.add(muscle);
         }
       }
       
-      _logDebug('提取出 ${categories.length} 個不同的Level$level分類值: ${categories.join(", ")}');
+      List<String> muscles = musclesSet.toList()..sort();
+      _logDebug('成功載入 ${muscles.length} 個特定肌群');
       
-      // 更新狀態
       setState(() {
-        switch (level) {
-          case 1:
-            _level1Categories = categories.toList()..sort();
-            // 儲存到緩存
-            ExerciseCacheService.cacheCategories(cacheKey, _level1Categories);
-            break;
-          case 2:
-            _level2Categories = categories.toList()..sort();
-            // 儲存到緩存
-            ExerciseCacheService.cacheCategories(cacheKey, _level2Categories);
-            break;
-          case 3:
-            _level3Categories = categories.toList()..sort();
-            // 儲存到緩存
-            ExerciseCacheService.cacheCategories(cacheKey, _level3Categories);
-            break;
-          case 4:
-            _level4Categories = categories.toList()..sort();
-            // 儲存到緩存
-            ExerciseCacheService.cacheCategories(cacheKey, _level4Categories);
-            break;
-          case 5:
-            _level5Categories = categories.toList()..sort();
-            // 儲存到緩存
-            ExerciseCacheService.cacheCategories(cacheKey, _level5Categories);
-            break;
-        }
-        
+        _specificMuscles = muscles;
         _isLoading = false;
-        
-        // 如果該層級沒有分類，直接加載最終動作列表
-        if (categories.isEmpty) {
-          _logDebug('沒有發現層級 $level 的分類，直接載入動作列表');
-          _loadFinalExercises();
-        }
       });
+      
+      // 如果沒有特定肌群，直接載入器材類別
+      if (muscles.isEmpty) {
+        _logDebug('沒有特定肌群，直接載入器材類別');
+        _loadEquipmentCategories();
+      }
     } catch (e) {
-      _logDebug('載入分類失敗: $e');
+      _logDebug('載入特定肌群失敗: $e');
       setState(() {
         _isLoading = false;
       });
     }
   }
   
-  // 根據最後一級分類載入動作
-  Future<void> _loadFinalExercises() async {
+  /// 第4層：載入器材類別
+  Future<void> _loadEquipmentCategories() async {
     setState(() {
       _isLoading = true;
-      _currentStep = 7;
+      _currentStep = 3;
     });
     
-    // 构建缓存键，确保与所有的筛选条件关联
-    final cacheKey = 'exercises_${_selectedType ?? ""}_${_selectedBodyPart ?? ""}_${_selectedLevel1 ?? ""}_${_selectedLevel2 ?? ""}_${_selectedLevel3 ?? ""}_${_selectedLevel4 ?? ""}_${_selectedLevel5 ?? ""}';
-    _logDebug('最終動作緩存鍵: $cacheKey');
-    
-    // 清除该查询的旧缓存
-    await ExerciseCacheService.clearCacheForKey('ex_$cacheKey');
-    _logDebug('已清除最終動作緩存');
-    
     try {
-      _logDebug('從Firestore查詢最終動作');
+      _logDebug('開始載入器材類別');
+      
       Query query = FirebaseFirestore.instance.collection('exercise');
       
-      // 添加所有筛选条件
-      if (_selectedType != null && _selectedType!.isNotEmpty) {
-        query = query.where('type', isEqualTo: _selectedType);
-        _logDebug('添加查詢條件: type=$_selectedType');
+      if (_selectedTrainingType != null) {
+        query = query.where('trainingType', isEqualTo: _selectedTrainingType);
+      }
+      if (_selectedBodyPart != null) {
+        query = query.where('bodyPart', isEqualTo: _selectedBodyPart);
       }
       
-      if (_selectedBodyPart != null && _selectedBodyPart!.isNotEmpty) {
-        query = query.where('bodyParts', arrayContains: _selectedBodyPart);
-        _logDebug('添加查詢條件: bodyParts包含$_selectedBodyPart');
-      }
-      
-      if (_selectedLevel1 != null && _selectedLevel1!.isNotEmpty) {
-        query = query.where('level1', isEqualTo: _selectedLevel1);
-        _logDebug('添加查詢條件: level1=$_selectedLevel1');
-      }
-      
-      if (_selectedLevel2 != null && _selectedLevel2!.isNotEmpty) {
-        query = query.where('level2', isEqualTo: _selectedLevel2);
-        _logDebug('添加查詢條件: level2=$_selectedLevel2');
-      }
-      
-      if (_selectedLevel3 != null && _selectedLevel3!.isNotEmpty) {
-        query = query.where('level3', isEqualTo: _selectedLevel3);
-        _logDebug('添加查詢條件: level3=$_selectedLevel3');
-      }
-      
-      if (_selectedLevel4 != null && _selectedLevel4!.isNotEmpty) {
-        query = query.where('level4', isEqualTo: _selectedLevel4);
-        _logDebug('添加查詢條件: level4=$_selectedLevel4');
-      }
-      
-      if (_selectedLevel5 != null && _selectedLevel5!.isNotEmpty) {
-        query = query.where('level5', isEqualTo: _selectedLevel5);
-        _logDebug('添加查詢條件: level5=$_selectedLevel5');
-      }
-      
-      // 执行查询 - 强制使用 Source.SERVER 绕过缓存
       final querySnapshot = await query.get(const GetOptions(source: Source.server));
-      _logDebug('查詢到 ${querySnapshot.docs.length} 個最終動作');
       
+      // 客戶端過濾特定肌群
+      Set<String> categoriesSet = {};
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        
+        // 如果選擇了特定肌群，進行過濾
+        if (_selectedSpecificMuscle != null) {
+          final muscle = data['specificMuscle'] as String?;
+          if (muscle != _selectedSpecificMuscle) {
+            continue;
+          }
+        }
+        
+        final category = data['equipmentCategory'] as String?;
+        if (category != null && category.isNotEmpty) {
+          categoriesSet.add(category);
+        }
+      }
+      
+      List<String> categories = categoriesSet.toList()..sort();
+      _logDebug('成功載入 ${categories.length} 個器材類別');
+      
+      setState(() {
+        _equipmentCategories = categories;
+        _isLoading = false;
+      });
+      
+      // 如果沒有器材類別，直接載入動作列表
+      if (categories.isEmpty) {
+        _logDebug('沒有器材類別，直接載入動作列表');
+        _loadExercises();
+      }
+    } catch (e) {
+      _logDebug('載入器材類別失敗: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  
+  /// 第5層：載入器材子類別（可選）
+  Future<void> _loadEquipmentSubcategories() async {
+    setState(() {
+      _isLoading = true;
+      _currentStep = 4;
+    });
+    
+    try {
+      _logDebug('開始載入器材子類別');
+      
+      Query query = FirebaseFirestore.instance.collection('exercise');
+      
+      if (_selectedTrainingType != null) {
+        query = query.where('trainingType', isEqualTo: _selectedTrainingType);
+      }
+      if (_selectedBodyPart != null) {
+        query = query.where('bodyPart', isEqualTo: _selectedBodyPart);
+      }
+      
+      final querySnapshot = await query.get(const GetOptions(source: Source.server));
+      
+      // 客戶端過濾
+      Set<String> subcategoriesSet = {};
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        
+        // 過濾特定肌群
+        if (_selectedSpecificMuscle != null) {
+          final muscle = data['specificMuscle'] as String?;
+          if (muscle != _selectedSpecificMuscle) continue;
+        }
+        
+        // 過濾器材類別
+        if (_selectedEquipmentCategory != null) {
+          final category = data['equipmentCategory'] as String?;
+          if (category != _selectedEquipmentCategory) continue;
+        }
+        
+        final subcategory = data['equipmentSubcategory'] as String?;
+        if (subcategory != null && subcategory.isNotEmpty) {
+          subcategoriesSet.add(subcategory);
+        }
+      }
+      
+      List<String> subcategories = subcategoriesSet.toList()..sort();
+      _logDebug('成功載入 ${subcategories.length} 個器材子類別');
+      
+      setState(() {
+        _equipmentSubcategories = subcategories;
+        _isLoading = false;
+      });
+      
+      // 如果沒有子類別，直接載入動作列表
+      if (subcategories.isEmpty) {
+        _logDebug('沒有器材子類別，直接載入動作列表');
+        _loadExercises();
+      }
+    } catch (e) {
+      _logDebug('載入器材子類別失敗: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  
+  /// 最終：根據所有條件載入動作列表
+  Future<void> _loadExercises() async {
+    setState(() {
+      _isLoading = true;
+      _currentStep = 5;
+    });
+    
+    try {
+      _logDebug('開始載入最終動作列表');
+      _logDebug('篩選條件：訓練類型=$_selectedTrainingType, 身體部位=$_selectedBodyPart, 特定肌群=$_selectedSpecificMuscle, 器材類別=$_selectedEquipmentCategory, 器材子類別=$_selectedEquipmentSubcategory');
+      
+      Query query = FirebaseFirestore.instance.collection('exercise');
+      
+      // 添加所有 Firestore 可查詢的條件
+      if (_selectedTrainingType != null) {
+        query = query.where('trainingType', isEqualTo: _selectedTrainingType);
+      }
+      if (_selectedBodyPart != null) {
+        query = query.where('bodyPart', isEqualTo: _selectedBodyPart);
+      }
+      
+      final querySnapshot = await query.get(const GetOptions(source: Source.server));
+      
+      // 客戶端過濾其他條件
       List<Exercise> exercises = [];
       for (var doc in querySnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        
+        // 過濾特定肌群
+        if (_selectedSpecificMuscle != null) {
+          final muscle = data['specificMuscle'] as String?;
+          if (muscle != _selectedSpecificMuscle) continue;
+        }
+        
+        // 過濾器材類別
+        if (_selectedEquipmentCategory != null) {
+          final category = data['equipmentCategory'] as String?;
+          if (category != _selectedEquipmentCategory) continue;
+        }
+        
+        // 過濾器材子類別
+        if (_selectedEquipmentSubcategory != null) {
+          final subcategory = data['equipmentSubcategory'] as String?;
+          if (subcategory != _selectedEquipmentSubcategory) continue;
+        }
+        
         try {
           final exercise = Exercise.fromFirestore(doc);
-          _logDebug('處理動作: ID=${exercise.id}, name=${exercise.name}, actionName=${exercise.actionName}');
           exercises.add(exercise);
         } catch (e) {
           _logDebug('解析動作失敗: ${doc.id} - $e');
         }
       }
       
-      // 缓存结果供将来使用
-      if (exercises.isNotEmpty) {
-        ExerciseCacheService.cacheExercises(cacheKey, exercises);
-      }
+      _logDebug('成功載入 ${exercises.length} 個動作');
       
       setState(() {
         _exercises = exercises;
         _isLoading = false;
       });
     } catch (e) {
-      _logDebug('載入最終動作失敗: $e');
+      _logDebug('載入動作列表失敗: $e');
       setState(() {
         _isLoading = false;
       });
@@ -368,16 +417,12 @@ class _ExercisesPageState extends State<ExercisesPage> {
       case 1:
         return '選擇身體部位';
       case 2:
-        return '選擇第一層分類';
+        return '選擇特定肌群';
       case 3:
-        return '選擇第二層分類';
+        return '選擇器材類別';
       case 4:
-        return '選擇第三層分類';
+        return '選擇器材子類別';
       case 5:
-        return '選擇第四層分類';
-      case 6:
-        return '選擇第五層分類';
-      case 7:
         return '訓練動作列表';
       default:
         return '訓練動作庫';
@@ -385,7 +430,6 @@ class _ExercisesPageState extends State<ExercisesPage> {
   }
   
   void _navigateToCustomExercises() async {
-    // 導航到自訂動作頁面並等待返回結果
     final selectedExercise = await Navigator.push<Exercise>(
       context,
       MaterialPageRoute(
@@ -393,7 +437,6 @@ class _ExercisesPageState extends State<ExercisesPage> {
       ),
     );
     
-    // 如果用戶選擇了一個自訂動作，將其返回給調用頁面
     if (selectedExercise != null && context.mounted) {
       Navigator.pop(context, selectedExercise);
     }
@@ -402,49 +445,45 @@ class _ExercisesPageState extends State<ExercisesPage> {
   void _navigateBack() {
     setState(() {
       switch (_currentStep) {
-        case 1: // 返回到訓練類型選擇
-          _selectedType = null;
+        case 1: // 返回到訓練類型
+          _selectedTrainingType = null;
           _currentStep = 0;
           break;
-        case 2: // 返回到身體部位選擇
+        case 2: // 返回到身體部位
           _selectedBodyPart = null;
+          _selectedSpecificMuscle = null;
           _currentStep = 1;
+          _loadBodyParts();
           break;
-        case 3: // 返回到level1選擇
-          _selectedLevel1 = null;
+        case 3: // 返回到特定肌群
+          _selectedSpecificMuscle = null;
+          _selectedEquipmentCategory = null;
           _currentStep = 2;
+          _loadSpecificMuscles();
           break;
-        case 4: // 返回到level2選擇
-          _selectedLevel2 = null;
+        case 4: // 返回到器材類別
+          _selectedEquipmentCategory = null;
+          _selectedEquipmentSubcategory = null;
           _currentStep = 3;
+          _loadEquipmentCategories();
           break;
-        case 5: // 返回到level3選擇
-          _selectedLevel3 = null;
-          _currentStep = 4;
-          break;
-        case 6: // 返回到level4選擇
-          _selectedLevel4 = null;
-          _currentStep = 5;
-          break;
-        case 7: // 從最終動作列表返回
-          if (_selectedLevel5 != null) {
-            _selectedLevel5 = null;
-            _currentStep = 6;
-          } else if (_selectedLevel4 != null) {
-            _selectedLevel4 = null;
-            _currentStep = 5;
-          } else if (_selectedLevel3 != null) {
-            _selectedLevel3 = null;
+        case 5: // 返回到器材子類別或器材類別
+          if (_selectedEquipmentSubcategory != null) {
+            _selectedEquipmentSubcategory = null;
             _currentStep = 4;
-          } else if (_selectedLevel2 != null) {
-            _selectedLevel2 = null;
+            _loadEquipmentSubcategories();
+          } else if (_selectedEquipmentCategory != null) {
+            _selectedEquipmentCategory = null;
             _currentStep = 3;
-          } else if (_selectedLevel1 != null) {
-            _selectedLevel1 = null;
+            _loadEquipmentCategories();
+          } else if (_selectedSpecificMuscle != null) {
+            _selectedSpecificMuscle = null;
             _currentStep = 2;
+            _loadSpecificMuscles();
           } else {
             _selectedBodyPart = null;
             _currentStep = 1;
+            _loadBodyParts();
           }
           break;
       }
@@ -454,73 +493,81 @@ class _ExercisesPageState extends State<ExercisesPage> {
   Widget _buildCurrentStep() {
     switch (_currentStep) {
       case 0:
-        return _buildTypeSelection();
+        return _buildSelection(
+          title: '請選擇訓練類型:',
+          items: _trainingTypes,
+          selectedValue: _selectedTrainingType,
+          onSelect: (value) {
+            setState(() => _selectedTrainingType = value);
+            _loadBodyParts();
+          },
+        );
       case 1:
-        return _buildBodyPartSelection();
+        return _buildSelection(
+          title: '請選擇身體部位:',
+          subtitle: '已選擇：$_selectedTrainingType',
+          items: _bodyParts,
+          selectedValue: _selectedBodyPart,
+          onSelect: (value) {
+            setState(() => _selectedBodyPart = value);
+            _loadSpecificMuscles();
+          },
+        );
       case 2:
-        return _buildLevel1Selection();
+        return _buildSelection(
+          title: '請選擇特定肌群:',
+          subtitle: _getSelectionPathText(),
+          items: _specificMuscles,
+          selectedValue: _selectedSpecificMuscle,
+          onSelect: (value) {
+            setState(() => _selectedSpecificMuscle = value);
+            _loadEquipmentCategories();
+          },
+          showSkipButton: true,
+          onSkip: _loadEquipmentCategories,
+        );
       case 3:
-        return _buildLevel2Selection();
+        return _buildSelection(
+          title: '請選擇器材類別:',
+          subtitle: _getSelectionPathText(),
+          items: _equipmentCategories,
+          selectedValue: _selectedEquipmentCategory,
+          onSelect: (value) {
+            setState(() => _selectedEquipmentCategory = value);
+            _loadEquipmentSubcategories();
+          },
+          showSkipButton: true,
+          onSkip: _loadExercises,
+        );
       case 4:
-        return _buildLevel3Selection();
+        return _buildSelection(
+          title: '請選擇器材子類別:',
+          subtitle: _getSelectionPathText(),
+          items: _equipmentSubcategories,
+          selectedValue: _selectedEquipmentSubcategory,
+          onSelect: (value) {
+            setState(() => _selectedEquipmentSubcategory = value);
+            _loadExercises();
+          },
+          showSkipButton: true,
+          onSkip: _loadExercises,
+        );
       case 5:
-        return _buildLevel4Selection();
-      case 6:
-        return _buildLevel5Selection();
-      case 7:
         return _buildExerciseList();
       default:
         return const SizedBox.shrink();
     }
   }
   
-  Widget _buildTypeSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            '請選擇訓練類型:',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: _exerciseTypes.length,
-            itemBuilder: (context, index) {
-              final type = _exerciseTypes[index];
-              final isSelected = type == _selectedType;
-              
-              return Card(
-                elevation: isSelected ? 4 : 1,
-                color: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
-                margin: const EdgeInsets.only(bottom: 8.0),
-                child: ListTile(
-                  title: Text(
-                    type,
-                    style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {
-                    setState(() {
-                      _selectedType = type;
-                    });
-                    _loadBodyParts();
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildBodyPartSelection() {
+  Widget _buildSelection({
+    required String title,
+    String? subtitle,
+    required List<String> items,
+    String? selectedValue,
+    required Function(String) onSelect,
+    bool showSkipButton = false,
+    VoidCallback? onSkip,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -529,79 +576,24 @@ class _ExercisesPageState extends State<ExercisesPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '已選擇訓練類型: $_selectedType',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '請選擇身體部位:',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: _bodyParts.length,
-            itemBuilder: (context, index) {
-              final bodyPart = _bodyParts[index];
-              final isSelected = bodyPart == _selectedBodyPart;
-              
-              return Card(
-                elevation: isSelected ? 4 : 1,
-                color: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
-                margin: const EdgeInsets.only(bottom: 8.0),
-                child: ListTile(
-                  title: Text(
-                    bodyPart,
-                    style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
+              if (subtitle != null) ...[
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
                   ),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {
-                    setState(() {
-                      _selectedBodyPart = bodyPart;
-                    });
-                    _loadCategories(1);
-                  },
                 ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildCategorySelectionList(List<String> categories, String header, String selectedValue, Function(String) onSelectCategory) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+                const SizedBox(height: 8),
+              ],
               Text(
-                _getSelectionPathText(),
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                header,
+                title,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ],
           ),
         ),
-        if (categories.isEmpty)
+        if (items.isEmpty)
           Expanded(
             child: Center(
               child: Column(
@@ -619,21 +611,10 @@ class _ExercisesPageState extends State<ExercisesPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '請嘗試選擇其他條件',
+                    '將自動進入下一步',
                     style: TextStyle(
                       color: Colors.grey[600],
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.list),
-                    label: const Text('查看所有符合條件的訓練'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    ),
-                    onPressed: () {
-                      _loadFinalExercises();
-                    },
                   ),
                 ],
               ),
@@ -643,10 +624,10 @@ class _ExercisesPageState extends State<ExercisesPage> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16.0),
-              itemCount: categories.length,
+              itemCount: items.length,
               itemBuilder: (context, index) {
-                final category = categories[index];
-                final isSelected = category == selectedValue;
+                final item = items[index];
+                final isSelected = item == selectedValue;
                 
                 return Card(
                   elevation: isSelected ? 4 : 1,
@@ -654,30 +635,28 @@ class _ExercisesPageState extends State<ExercisesPage> {
                   margin: const EdgeInsets.only(bottom: 8.0),
                   child: ListTile(
                     title: Text(
-                      category,
+                      item,
                       style: TextStyle(
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () => onSelectCategory(category),
+                    onTap: () => onSelect(item),
                   ),
                 );
               },
             ),
           ),
-        if (categories.isNotEmpty)
+        if (showSkipButton && items.isNotEmpty && onSkip != null)
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: ElevatedButton.icon(
-              icon: const Icon(Icons.list),
-              label: const Text('跳過分類，直接顯示所有動作'),
+              icon: const Icon(Icons.skip_next),
+              label: const Text('跳過此分類，直接查看動作'),
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(50),
               ),
-              onPressed: () {
-                _loadFinalExercises();
-              },
+              onPressed: onSkip,
             ),
           ),
       ],
@@ -686,85 +665,13 @@ class _ExercisesPageState extends State<ExercisesPage> {
   
   String _getSelectionPathText() {
     List<String> parts = [];
-    if (_selectedType != null) parts.add(_selectedType!);
+    if (_selectedTrainingType != null) parts.add(_selectedTrainingType!);
     if (_selectedBodyPart != null) parts.add(_selectedBodyPart!);
-    if (_selectedLevel1 != null) parts.add(_selectedLevel1!);
-    if (_selectedLevel2 != null) parts.add(_selectedLevel2!);
-    if (_selectedLevel3 != null) parts.add(_selectedLevel3!);
-    if (_selectedLevel4 != null) parts.add(_selectedLevel4!);
-    if (_selectedLevel5 != null) parts.add(_selectedLevel5!);
+    if (_selectedSpecificMuscle != null) parts.add(_selectedSpecificMuscle!);
+    if (_selectedEquipmentCategory != null) parts.add(_selectedEquipmentCategory!);
+    if (_selectedEquipmentSubcategory != null) parts.add(_selectedEquipmentSubcategory!);
     
-    return '已選擇: ${parts.join(' > ')}';
-  }
-  
-  Widget _buildLevel1Selection() {
-    return _buildCategorySelectionList(
-      _level1Categories,
-      '請選擇第一層分類:',
-      _selectedLevel1 ?? '',
-      (category) {
-        setState(() {
-          _selectedLevel1 = category;
-        });
-        _loadCategories(2);
-      }
-    );
-  }
-  
-  Widget _buildLevel2Selection() {
-    return _buildCategorySelectionList(
-      _level2Categories,
-      '請選擇第二層分類:',
-      _selectedLevel2 ?? '',
-      (category) {
-        setState(() {
-          _selectedLevel2 = category;
-        });
-        _loadCategories(3);
-      }
-    );
-  }
-  
-  Widget _buildLevel3Selection() {
-    return _buildCategorySelectionList(
-      _level3Categories,
-      '請選擇第三層分類:',
-      _selectedLevel3 ?? '',
-      (category) {
-        setState(() {
-          _selectedLevel3 = category;
-        });
-        _loadCategories(4);
-      }
-    );
-  }
-  
-  Widget _buildLevel4Selection() {
-    return _buildCategorySelectionList(
-      _level4Categories,
-      '請選擇第四層分類:',
-      _selectedLevel4 ?? '',
-      (category) {
-        setState(() {
-          _selectedLevel4 = category;
-        });
-        _loadCategories(5);
-      }
-    );
-  }
-  
-  Widget _buildLevel5Selection() {
-    return _buildCategorySelectionList(
-      _level5Categories,
-      '請選擇第五層分類:',
-      _selectedLevel5 ?? '',
-      (category) {
-        setState(() {
-          _selectedLevel5 = category;
-        });
-        _loadFinalExercises();
-      }
-    );
+    return parts.isEmpty ? '' : '已選擇：${parts.join(' > ')}';
   }
   
   Widget _buildExerciseList() {
@@ -780,11 +687,12 @@ class _ExercisesPageState extends State<ExercisesPage> {
                 _getSelectionPathText(),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
+                  color: Colors.grey,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                '符合條件的訓練動作:',
+                '符合條件的訓練動作 (${_exercises.length}):',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ],
@@ -797,8 +705,8 @@ class _ExercisesPageState extends State<ExercisesPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(
-                      Icons.info_outline,
-                      size: 48,
+                      Icons.fitness_center_outlined,
+                      size: 64,
                       color: Colors.grey,
                     ),
                     const SizedBox(height: 16),
@@ -808,7 +716,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '請嘗試選擇其他條件',
+                      '請嘗試調整篩選條件',
                       style: TextStyle(
                         color: Colors.grey[600],
                       ),
@@ -822,17 +730,30 @@ class _ExercisesPageState extends State<ExercisesPage> {
                 itemBuilder: (context, index) {
                   final exercise = _exercises[index];
                   
-                  // 優先使用actionName，如果為空則使用name
+                  // 優先使用 actionName，如果為空則使用 name
                   final displayName = (exercise.actionName != null && exercise.actionName!.isNotEmpty) 
                       ? exercise.actionName! 
                       : exercise.name;
                   
-                  // 獲取所有非空的身體部位
-                  final bodyParts = exercise.bodyParts.where((part) => part.isNotEmpty).toList();
-                  final bodyPartsText = bodyParts.isNotEmpty ? bodyParts.join(', ') : '無指定部位';
+                  // 使用新的分類信息構建副標題
+                  final subtitleParts = <String>[];
                   
-                  // 獲取器材信息，如果為空則顯示"徒手"
-                  final equipment = exercise.equipment.isNotEmpty ? exercise.equipment : '徒手';
+                  // 從 Firestore 讀取新欄位（暫時用舊欄位代替，等 Model 更新後會自動使用）
+                  if (_selectedSpecificMuscle != null) {
+                    subtitleParts.add('肌群：$_selectedSpecificMuscle');
+                  } else if (_selectedBodyPart != null) {
+                    subtitleParts.add('部位：$_selectedBodyPart');
+                  }
+                  
+                  if (_selectedEquipmentSubcategory != null) {
+                    subtitleParts.add('器材：$_selectedEquipmentSubcategory');
+                  } else if (_selectedEquipmentCategory != null) {
+                    subtitleParts.add('類別：$_selectedEquipmentCategory');
+                  } else if (exercise.equipment.isNotEmpty) {
+                    subtitleParts.add('器材：${exercise.equipment}');
+                  } else {
+                    subtitleParts.add('器材：徒手');
+                  }
                   
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8.0),
@@ -840,27 +761,24 @@ class _ExercisesPageState extends State<ExercisesPage> {
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       title: Text(
                         displayName,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('訓練部位: $bodyPartsText'),
-                            Text('所需器材: $equipment'),
-                          ],
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
+                      subtitle: subtitleParts.isNotEmpty
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(subtitleParts.join(' • ')),
+                            )
+                          : null,
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // 添加選擇按鈕
                           IconButton(
                             icon: const Icon(Icons.add_circle, color: Colors.green),
                             tooltip: '選擇此動作',
                             onPressed: () {
-                              // 直接返回所選動作
                               Navigator.pop(context, exercise);
                             },
                           ),
@@ -868,7 +786,6 @@ class _ExercisesPageState extends State<ExercisesPage> {
                         ],
                       ),
                       onTap: () async {
-                        // 導航到動作詳情頁面，並接收返回值
                         final selectedExercise = await Navigator.push<Exercise>(
                           context,
                           MaterialPageRoute(
@@ -876,7 +793,6 @@ class _ExercisesPageState extends State<ExercisesPage> {
                           ),
                         );
                         
-                        // 如果用戶在詳情頁點擊了「添加到訓練計畫」，將選中的動作返回
                         if (selectedExercise != null && context.mounted) {
                           Navigator.pop(context, selectedExercise);
                         }
@@ -889,13 +805,4 @@ class _ExercisesPageState extends State<ExercisesPage> {
       ],
     );
   }
-  
-  void _navigateToExerciseDetail(Exercise exercise) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ExerciseDetailPage(exercise: exercise),
-      ),
-    );
-  }
-} 
+}

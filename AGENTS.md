@@ -2,7 +2,7 @@
 
 > AI 程式碼助手的完整開發指南
 
-**最後更新**：2024年12月22日
+**最後更新**：2024年12月23日
 
 ---
 
@@ -204,6 +204,11 @@ TextField(
 
 **目標**：完善單機版功能
 
+**最近完成**（2024-12-23）：
+- ✅ 動作分類系統升級（794 個動作重新分類）
+- ✅ 新動作瀏覽 UI（5 層專業分類導航）
+- ✅ 身體部位數據清理（合併重複項）
+
 **當前任務**：實作統計功能
 - 訓練頻率統計
 - 訓練量趨勢圖表
@@ -211,6 +216,7 @@ TextField(
 
 **參考文檔**：
 - `docs/DEVELOPMENT_STATUS.md` - 了解整體進度
+- `docs/DATABASE_DESIGN.md` - 查看新的動作分類結構
 - `docs/STATISTICS_IMPLEMENTATION.md` - 實作細節
 
 ---
@@ -220,12 +226,19 @@ TextField(
 ### 核心文檔
 - `docs/README.md` - 文檔導航
 - `docs/PROJECT_OVERVIEW.md` - 專案總覽
-- `docs/DEVELOPMENT_STATUS.md` - 開發狀態
-- `docs/DATABASE_DESIGN.md` - 資料庫設計
+- `docs/DEVELOPMENT_STATUS.md` - 開發狀態（包含最新的資料庫升級記錄）
+- `docs/DATABASE_DESIGN.md` - 資料庫設計（包含新的動作分類結構）
 
 ### 任務文檔
 - `docs/STATISTICS_IMPLEMENTATION.md` - 統計功能實作
 - `docs/cursor_tasks/` - 雙邊平台任務（暫停）
+
+### 腳本文檔
+- `scripts/README.md` - 所有腳本的使用說明
+- `scripts/analyze_body_parts.py` - 身體部位分析
+- `scripts/merge_body_parts.py` - 身體部位合併
+- `scripts/reclassify_exercises.py` - 動作重新分類
+- `scripts/update_exercise_classification.py` - 更新分類到 Firestore
 
 ---
 

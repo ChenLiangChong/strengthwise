@@ -285,3 +285,4 @@ match /invitations/{inviteCode} {
 - [ ] Firestore 規則正確設定
 - [ ] 錯誤情況正確處理
 
+

@@ -42,15 +42,23 @@ class Exercise {
   final String id;            // 唯一標識符
   final String name;          // 動作名稱
   final String nameEn;        // 英文名稱
-  final List<String> bodyParts; // 鍛鍊部位
-  final String type;          // 訓練類型
-  final String equipment;     // 所需器材
+  final List<String> bodyParts; // 鍛鍊部位（舊欄位，向後相容）
+  final String type;          // 訓練類型（舊欄位，向後相容）
+  final String equipment;     // 所需器材（舊欄位，向後相容）
   final String jointType;     // 關節類型
-  final String level1;        // 一級分類
-  final String level2;        // 二級分類
-  final String level3;        // 三級分類
-  final String level4;        // 四級分類
-  final String level5;        // 五級分類
+  final String level1;        // 一級分類（舊欄位，向後相容）
+  final String level2;        // 二級分類（舊欄位，向後相容）
+  final String level3;        // 三級分類（舊欄位，向後相容）
+  final String level4;        // 四級分類（舊欄位，向後相容）
+  final String level5;        // 五級分類（舊欄位，向後相容）
+  
+  // 新的專業 5 層分類欄位（2024-12-23 新增）
+  final String trainingType;          // 訓練類型（重訓/有氧/伸展/功能性訓練）
+  final String bodyPart;              // 身體部位（主要肌群）
+  final String specificMuscle;        // 特定肌群（例如：上胸、闊背肌、股四頭）
+  final String equipmentCategory;     // 器材類別（自由重量/機械式/徒手/功能性訓練）
+  final String equipmentSubcategory;  // 器材子類別（啞鈴/槓鈴/Cable滑輪等）
+  
   final String? actionName;   // 動作名稱別名
   final String description;   // 動作描述
   final String imageUrl;      // 圖片URL
@@ -72,6 +80,12 @@ class Exercise {
     required this.level3,
     required this.level4,
     required this.level5,
+    // 新的專業分類欄位
+    this.trainingType = '',
+    this.bodyPart = '',
+    this.specificMuscle = '',
+    this.equipmentCategory = '',
+    this.equipmentSubcategory = '',
     this.actionName,
     required this.description,
     this.imageUrl = '',
@@ -97,6 +111,12 @@ class Exercise {
       level3: data['level3'] ?? '',
       level4: data['level4'] ?? '',
       level5: data['level5'] ?? '',
+      // 新的專業分類欄位
+      trainingType: data['trainingType'] ?? '',
+      bodyPart: data['bodyPart'] ?? '',
+      specificMuscle: data['specificMuscle'] ?? '',
+      equipmentCategory: data['equipmentCategory'] ?? '',
+      equipmentSubcategory: data['equipmentSubcategory'] ?? '',
       actionName: data['actionName'] ?? '',
       description: data['description'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
@@ -120,6 +140,12 @@ class Exercise {
       'level3': level3,
       'level4': level4,
       'level5': level5,
+      // 新的專業分類欄位
+      'trainingType': trainingType,
+      'bodyPart': bodyPart,
+      'specificMuscle': specificMuscle,
+      'equipmentCategory': equipmentCategory,
+      'equipmentSubcategory': equipmentSubcategory,
       'actionName': actionName,
       'description': description,
       'imageUrl': imageUrl,
@@ -145,6 +171,12 @@ class Exercise {
       'level3': level3,
       'level4': level4,
       'level5': level5,
+      // 新的專業分類欄位
+      'trainingType': trainingType,
+      'bodyPart': bodyPart,
+      'specificMuscle': specificMuscle,
+      'equipmentCategory': equipmentCategory,
+      'equipmentSubcategory': equipmentSubcategory,
       'description': description,
       'imageUrl': imageUrl,
       'videoUrl': videoUrl,
@@ -169,6 +201,12 @@ class Exercise {
       level3: json['level3'] ?? '',
       level4: json['level4'] ?? '',
       level5: json['level5'] ?? '',
+      // 新的專業分類欄位
+      trainingType: json['trainingType'] ?? '',
+      bodyPart: json['bodyPart'] ?? '',
+      specificMuscle: json['specificMuscle'] ?? '',
+      equipmentCategory: json['equipmentCategory'] ?? '',
+      equipmentSubcategory: json['equipmentSubcategory'] ?? '',
       description: json['description'] ?? '',
       imageUrl: json['imageUrl'] ?? '',
       videoUrl: json['videoUrl'] ?? '',
@@ -193,6 +231,11 @@ class Exercise {
     String? level3,
     String? level4,
     String? level5,
+    String? trainingType,
+    String? bodyPart,
+    String? specificMuscle,
+    String? equipmentCategory,
+    String? equipmentSubcategory,
     String? actionName,
     String? description,
     String? imageUrl,
@@ -213,6 +256,11 @@ class Exercise {
       level3: level3 ?? this.level3,
       level4: level4 ?? this.level4,
       level5: level5 ?? this.level5,
+      trainingType: trainingType ?? this.trainingType,
+      bodyPart: bodyPart ?? this.bodyPart,
+      specificMuscle: specificMuscle ?? this.specificMuscle,
+      equipmentCategory: equipmentCategory ?? this.equipmentCategory,
+      equipmentSubcategory: equipmentSubcategory ?? this.equipmentSubcategory,
       actionName: actionName ?? this.actionName,
       description: description ?? this.description,
       imageUrl: imageUrl ?? this.imageUrl,
