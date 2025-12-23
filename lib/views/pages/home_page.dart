@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../services/error_handling_service.dart';
 import '../../services/service_locator.dart';
 import 'workout/workout_execution_page.dart';
+import 'statistics_page_v2.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -241,6 +242,20 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Strength Wise'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const StatisticsPageV2(),
+                ),
+              );
+            },
+            tooltip: '訓練統計',
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {

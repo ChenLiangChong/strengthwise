@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'interfaces/i_auth_service.dart';
 import 'interfaces/i_booking_service.dart';
@@ -8,6 +9,7 @@ import 'interfaces/i_exercise_service.dart';
 import 'interfaces/i_note_service.dart';
 import 'interfaces/i_user_service.dart';
 import 'interfaces/i_workout_service.dart';
+import 'interfaces/i_statistics_service.dart';
 import 'auth_wrapper.dart';
 import 'booking_service.dart';
 import 'custom_exercise_service.dart';
@@ -16,6 +18,7 @@ import 'note_service.dart';
 import 'user_service.dart';
 import 'user_migration_service.dart';
 import 'workout_service.dart';
+import 'statistics_service.dart';
 import 'error_handling_service.dart';
 import 'exercise_cache_service.dart';
 import 'preload_service.dart';
@@ -26,6 +29,7 @@ import '../controllers/interfaces/i_exercise_controller.dart';
 import '../controllers/interfaces/i_note_controller.dart';
 import '../controllers/interfaces/i_workout_controller.dart';
 import '../controllers/interfaces/i_workout_execution_controller.dart';
+import '../controllers/interfaces/i_statistics_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/booking_controller.dart';
 import '../controllers/custom_exercise_controller.dart';
@@ -33,6 +37,7 @@ import '../controllers/exercise_controller.dart';
 import '../controllers/note_controller.dart';
 import '../controllers/workout_controller.dart';
 import '../controllers/workout_execution_controller.dart';
+import '../controllers/statistics_controller.dart';
 
 /// 全局服務定位器，用於依賴注入和服務管理
 final GetIt serviceLocator = GetIt.instance;
@@ -147,6 +152,15 @@ void _registerServices() {
       errorService: serviceLocator<ErrorHandlingService>(),
     ));
   }
+  
+  // 統計服務
+  if (!serviceLocator.isRegistered<IStatisticsService>()) {
+    serviceLocator.registerLazySingleton<IStatisticsService>(() => StatisticsService(
+      firestore: FirebaseFirestore.instance,
+      errorService: serviceLocator<ErrorHandlingService>(),
+      exerciseService: serviceLocator<IExerciseService>(),
+    ));
+  }
 }
 
 /// 註冊所有控制器
@@ -202,6 +216,14 @@ void _registerControllers() {
   // 注册工作执行控制器
   if (!serviceLocator.isRegistered<IWorkoutExecutionController>()) {
     serviceLocator.registerFactory<IWorkoutExecutionController>(() => WorkoutExecutionController());
+  }
+
+  // 統計控制器
+  if (!serviceLocator.isRegistered<IStatisticsController>()) {
+    serviceLocator.registerFactory<IStatisticsController>(() => StatisticsController(
+      statisticsService: serviceLocator<IStatisticsService>(),
+      errorService: serviceLocator<ErrorHandlingService>(),
+    ));
   }
 }
 

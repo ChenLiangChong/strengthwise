@@ -4,6 +4,7 @@ import '../../controllers/interfaces/i_note_controller.dart';
 import '../../services/error_handling_service.dart';
 import '../../services/service_locator.dart';
 import 'note_editor_page.dart';
+import 'statistics_page_v2.dart';
 
 class RecordsPage extends StatefulWidget {
   const RecordsPage({super.key});
@@ -112,6 +113,20 @@ class _RecordsPageState extends State<RecordsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('訓練記錄'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const StatisticsPageV2(),
+                ),
+              );
+            },
+            tooltip: '訓練統計',
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
