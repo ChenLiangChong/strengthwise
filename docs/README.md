@@ -1,256 +1,191 @@
-# StrengthWise - 文檔導航
+# StrengthWise 文檔
 
-> 專案文檔總覽，幫助快速找到需要的資訊
+> 專案完整文檔導航
 
-**最後更新**：2024年12月23日（文檔已整合到核心文檔）
-
----
-
-## 📚 核心文檔
-
-### 1. [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) - 專案總覽
-**必讀** - 了解專案的技術架構、開發規範、核心概念
-
-**包含內容**：
-- 專案簡介和定位
-- 技術棧（Flutter + Firebase）
-- MVVM + Clean Architecture 架構
-- 目錄結構
-- 開發規範（型別安全、依賴注入、錯誤處理）
-- 命名規範
-- 常見問題排查
-
-**適合**：新加入的開發者、需要了解整體架構時
+**最後更新**：2024年12月23日
 
 ---
 
-### 2. [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md) - 開發狀態
-**常用** - 查看當前進度、已完成功能、下一步計劃
+## 📖 核心文檔
 
-**包含內容**：
-- 當前開發目標
-- 已完成功能列表（v1.0）
-- 重要 Bug 修復記錄
-- 資料庫架構改進
-- 待完成功能
-- 開發時間線
-- 下一步行動
+### 1. [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)
+**專案架構和技術棧總覽**
 
-**適合**：日常開發、了解進度、規劃工作
+包含：
+- 專案簡介和目標
+- 技術架構（MVVM + Clean Architecture）
+- 技術棧（Flutter、Firebase、GetIt）
+- 專案結構說明
+- 開發環境設置
 
----
-
-### 3. [DATABASE_DESIGN.md](DATABASE_DESIGN.md) - 資料庫設計
-**參考** - Firestore 資料庫結構和查詢策略
-
-**包含內容**：
-- 集合總覽
-- 每個集合的詳細結構
-- 索引設計
-- 常用查詢模式
-- 性能優化策略
-- 注意事項
-
-**適合**：實作新功能、查詢資料庫、優化性能時
+**適合對象**：新加入的開發者、需要了解整體架構的人
 
 ---
 
-### 4. [STATISTICS_IMPLEMENTATION.md](STATISTICS_IMPLEMENTATION.md) - 統計功能實作
-**目標** - 下一步開發計劃
+### 2. [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)
+**當前開發進度和計劃**
 
-**包含內容**：
-- 統計功能需求
-- 實作計劃（3 階段）
-- 需要的套件（fl_chart）
-- UI 設計草圖
-- 查詢策略
-- 驗收標準
+包含：
+- 已完成功能清單
+- 當前開發任務（統計系統、UI 美化）
+- 下一步計劃（力量進步收藏功能）
+- Bug 修復記錄
 
-**適合**：開始開發統計功能時
+**適合對象**：需要了解專案進度、規劃開發任務的人
 
 ---
 
-## 🔧 配置與設定
+### 3. [DATABASE_DESIGN.md](DATABASE_DESIGN.md)
+**Firestore 資料庫設計**
 
-### 環境配置
-- **[SETUP.md](SETUP.md)** - 完整環境配置指南
-  - Flutter 環境安裝
-  - Firebase 專案設定
-  - 開發工具配置
-  - 常見問題解決
+包含：
+- 所有集合的結構說明
+- 欄位定義和約定
+- 5 層動作分類系統
+- 查詢模式和索引策略
 
-### Firebase 設定
-- **[FIREBASE_AUTH_SETUP.md](FIREBASE_AUTH_SETUP.md)** - Firebase 認證設定
-- **[FIRESTORE_SETUP.md](FIRESTORE_SETUP.md)** - Firestore 資料庫設定
+**適合對象**：需要操作資料庫、設計新功能的開發者
 
 ---
 
-## 📊 最近更新（2024-12-23）
+### 4. [STATISTICS_IMPLEMENTATION.md](STATISTICS_IMPLEMENTATION.md)
+**統計功能實作指南**
 
-### 資料庫升級
-所有資料庫相關的更新已整合到核心文檔：
+包含：
+- 基礎統計功能（頻率、趨勢、分布、PR）
+- 專業統計功能（力量進步、肌群平衡、訓練日曆、完成率）
+- 技術實作細節（~5,180 行代碼）
+- UI 設計和圖表（fl_chart）
 
-- **[DATABASE_DESIGN.md](DATABASE_DESIGN.md)** - 查看完整的資料庫設計
-  - ✅ 動作分類系統升級（794 個動作）
-  - ✅ 新增專業 5 層分類結構
-  - ✅ 身體部位數據清理（合併重複項）
-
-- **[DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)** - 查看開發進度
-  - ✅ 新動作瀏覽 UI 實作記錄
-  - ✅ 資料庫架構改進記錄
-  - ✅ Bug 修復記錄
-
-### 相關腳本
-執行資料庫遷移的腳本說明：
-
-- **[scripts/README.md](../scripts/README.md)** - 所有腳本的使用說明
-  - `analyze_body_parts.py` - 身體部位分析
-  - `merge_body_parts.py` - 身體部位合併
-  - `reclassify_exercises.py` - 動作重新分類
-  - `update_exercise_classification.py` - 更新分類到 Firestore
+**適合對象**：實作或維護統計功能的開發者
 
 ---
 
-## 🗂️ 歸檔文檔
+### 5. [TODO_STRENGTH_PROGRESS_FAVORITES.md](TODO_STRENGTH_PROGRESS_FAVORITES.md)
+**力量進步收藏功能設計**
 
-### [archive/](archive/) - 歷史記錄
+包含：
+- 功能需求和使用者故事
+- UI 設計草圖（3 種情境）
+- 技術實作方案
+- 分階段實作步驟
+- 數據儲存方案對比
 
-- **[CLEANUP_NOTES.md](archive/CLEANUP_NOTES.md)** - 清理筆記
-- 其他過時或已完成的文檔
+**適合對象**：實作力量進步收藏功能的開發者
 
 ---
 
-## 📁 完整文檔結構
+## 🚧 任務文檔
 
-```
-docs/
-├── README.md                              ← 你在這裡（文檔導航）
-│
-├── 核心文檔
-│   ├── PROJECT_OVERVIEW.md                ← 專案總覽（技術架構）
-│   ├── DEVELOPMENT_STATUS.md              ← 開發狀態（包含最新更新記錄）
-│   ├── DATABASE_DESIGN.md                 ← 資料庫設計（包含新分類結構）
-│   └── STATISTICS_IMPLEMENTATION.md       ← 統計功能實作指南
-│
-├── 配置文檔
-│   ├── SETUP.md                           ← 環境配置指南
-│   ├── FIREBASE_AUTH_SETUP.md             ← Firebase 認證設定
-│   └── FIRESTORE_SETUP.md                 ← Firestore 設定
-│
-├── archive/                               ← 歷史歸檔
-│   ├── CLEANUP_NOTES.md                   ← 清理筆記
-│   └── DOCS_ORGANIZATION_SUMMARY.md       ← 文檔整理報告
-│
-└── cursor_tasks/                          ← 雙邊平台任務（暫停）
-    ├── 00_PROJECT_CONTEXT.md              ← 專案背景
-    ├── 01_TASK_DB_REFACTOR.md             ← 資料庫重構
-    ├── 02_TASK_RELATIONSHIPS.md           ← 教練-學員綁定
-    ├── 03_TASK_BOOKING.md                 ← 預約系統
-    └── 04_TASK_TEACHING.md                ← 教學筆記
-```
+### [cursor_tasks/](cursor_tasks/)
+**雙邊平台（教練-學員）功能開發任務**
 
-**注意**：所有資料庫遷移和 UI 更新的詳細記錄已整合到核心文檔中：
-- 資料庫相關 → `DATABASE_DESIGN.md` 和 `DEVELOPMENT_STATUS.md`
-- UI 更新 → `DEVELOPMENT_STATUS.md`
-- 腳本說明 → `../scripts/README.md`
+⚠️ **狀態**：暫停開發（專注單機版功能）
+
+包含：
+- 資料庫重構計劃
+- 關係管理設計
+- 預約系統設計
+- 教學功能設計
+
+**適合對象**：未來開發雙邊平台功能時參考
 
 ---
 
 ## 🎯 快速導航
 
-### 我想...
+### 我想要...
 
-#### 了解專案整體架構
-→ 閱讀 `PROJECT_OVERVIEW.md`
+**了解專案** → [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)
 
-#### 知道當前開發到哪裡
-→ 閱讀 `DEVELOPMENT_STATUS.md`
+**開始開發** → [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md) + [DATABASE_DESIGN.md](DATABASE_DESIGN.md)
 
-#### 查詢資料庫結構
-→ 閱讀 `DATABASE_DESIGN.md`
+**實作統計功能** → [STATISTICS_IMPLEMENTATION.md](STATISTICS_IMPLEMENTATION.md)
 
-#### 開始開發統計功能
-→ 閱讀 `STATISTICS_IMPLEMENTATION.md`
+**實作收藏功能** → [TODO_STRENGTH_PROGRESS_FAVORITES.md](TODO_STRENGTH_PROGRESS_FAVORITES.md)
 
-#### 實作新功能
-1. 先讀 `PROJECT_OVERVIEW.md`（了解規範）
-2. 再讀 `DATABASE_DESIGN.md`（設計數據結構）
-3. 參考 `DEVELOPMENT_STATUS.md`（確認不衝突）
+**修改資料庫** → [DATABASE_DESIGN.md](DATABASE_DESIGN.md)
 
-#### 修復 Bug
-1. 參考 `DEVELOPMENT_STATUS.md` 的「Bug 修復記錄」
-2. 查看 `PROJECT_OVERVIEW.md` 的「常見問題排查」
-
-#### 優化性能
-→ 參考 `DATABASE_DESIGN.md` 的「性能優化策略」
-
-#### 查看最近的資料庫變更
-→ 查看 `DATABASE_DESIGN.md`（exercises 和 bodyParts 集合說明）
-→ 查看 `DEVELOPMENT_STATUS.md`（資料庫架構改進章節）
-
-#### 查看最近的 UI 更新
-→ 查看 `DEVELOPMENT_STATUS.md`（運動庫管理章節）
-
-#### 設定開發環境
-→ 閱讀 `SETUP.md`
+**查看進度** → [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)
 
 ---
 
-## 📝 文檔維護規範
+## 📂 文檔結構
 
-### 更新時機
-- **DEVELOPMENT_STATUS.md**：每完成一個功能/修復一個 Bug
-- **DATABASE_DESIGN.md**：每次修改資料庫結構
-- **PROJECT_OVERVIEW.md**：很少更新（只在架構變更時）
-- **STATISTICS_IMPLEMENTATION.md**：統計功能開發期間
+```
+docs/
+├── README.md                              # 📖 本文檔（導航）
+├── PROJECT_OVERVIEW.md                    # 🏗️ 專案架構總覽
+├── DEVELOPMENT_STATUS.md                  # 📊 開發狀態和進度
+├── DATABASE_DESIGN.md                     # 🗄️ 資料庫設計
+├── STATISTICS_IMPLEMENTATION.md           # 📈 統計功能實作
+├── TODO_STRENGTH_PROGRESS_FAVORITES.md    # 📝 待辦：收藏功能
+└── cursor_tasks/                          # 🚧 雙邊平台任務（暫停）
+    ├── 00_PROJECT_CONTEXT.md
+    ├── 01_TASK_DB_REFACTOR.md
+    ├── 02_TASK_RELATIONSHIPS.md
+    ├── 03_TASK_BOOKING.md
+    ├── 04_TASK_TEACHING.md
+    └── README.md
+```
 
-### 更新方式
-1. 直接編輯 Markdown 檔案
-2. 更新「最後更新」日期
-3. 提交 git commit
+---
 
-### 文檔整合原則
-- **資料庫相關更新** → 整合到 `DATABASE_DESIGN.md` 和 `DEVELOPMENT_STATUS.md`
-- **UI 功能更新** → 整合到 `DEVELOPMENT_STATUS.md`
-- **腳本使用說明** → 整合到 `../scripts/README.md`
-- **過時文檔** → 移到 `archive/`
+## 📌 文檔維護規範
+
+### 更新頻率
+- `DEVELOPMENT_STATUS.md`：每完成一個功能後更新
+- `DATABASE_DESIGN.md`：資料庫結構變更後立即更新
+- `PROJECT_OVERVIEW.md`：架構重大變更時更新
+- `TODO_*.md`：功能完成後刪除或歸檔
+- 其他文檔：按需更新
+
+### 文檔格式
+- 使用 Markdown 格式
+- 使用繁體中文
+- 包含目錄（對於長文檔）
+- 使用清晰的標題層級
+- 包含程式碼範例（如適用）
+
+### 清理原則
+- 定期刪除重複文檔
+- 整合相似內容
+- 只保留核心文檔（見上方結構）
+- 臨時文檔完成後立即刪除
 
 ---
 
 ## 🔗 外部資源
 
-### 專案相關
+### 開發相關
 - [Flutter 官方文檔](https://flutter.dev/docs)
 - [Firebase 官方文檔](https://firebase.google.com/docs)
 - [Provider 套件](https://pub.dev/packages/provider)
 - [GetIt 套件](https://pub.dev/packages/get_it)
 
-### UI 相關
+### UI/圖表相關
 - [fl_chart 文檔](https://pub.dev/packages/fl_chart)
 - [Material Design](https://material.io/design)
-
----
-
-## 💬 問題與反饋
-
-如果文檔有任何問題、建議或需要補充的內容，請：
-1. 直接編輯對應的 Markdown 檔案
-2. 或在開發會議中提出
 
 ---
 
 ## 🎉 最近更新（2024-12-23）
 
 ### ✅ 文檔整合完成
-- 將資料庫遷移記錄整合到 `DATABASE_DESIGN.md`
-- 將 UI 更新記錄整合到 `DEVELOPMENT_STATUS.md`
-- 簡化文檔結構，只保留核心文檔
+- 刪除重複的統計系統總結文檔（3 個）
+- 刪除基礎設置文檔（3 個）
+- 簡化文檔結構，只保留 7 個核心文檔
 - 所有詳細資訊都在核心文檔中可查
 
-### ✅ 資料庫升級
-- **動作分類系統升級**：794 個動作重新分類（詳見 `DATABASE_DESIGN.md`）
-- **身體部位數據清理**：合併重複項目（詳見 `DATABASE_DESIGN.md`）
-- **新 UI 實作**：5 層分類導航系統（詳見 `DEVELOPMENT_STATUS.md`）
+### ✅ 專業級統計系統
+- **階段 1**：動作分類系統升級（794 個動作）
+- **階段 2**：專業統計功能（~5,180 行代碼）
+- **階段 3**：UI 美化（趨勢圖、力量進步、個人記錄）
+- **階段 4**：測試數據生成（6 次訓練記錄）
+
+### ⏳ 下一步
+- 實作力量進步收藏功能
+- 詳見 `TODO_STRENGTH_PROGRESS_FAVORITES.md`
 
 ---
 
