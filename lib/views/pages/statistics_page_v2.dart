@@ -257,48 +257,86 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
     );
   }
 
-  /// 訓練量趨勢圖卡片
+  /// 訓練量趨勢圖卡片（美化版）
   Widget _buildVolumeTrendCard(List<TrainingVolumePoint> history) {
     if (history.isEmpty) return const SizedBox();
 
+    // 找出最大值用於設置 Y 軸範圍
+    final maxVolume = history.map((p) => p.totalVolume).reduce((a, b) => a > b ? a : b);
+    final maxY = (maxVolume * 1.2).ceilToDouble(); // 增加 20% 留白
+
     return Card(
+      elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.show_chart, size: 20),
-                SizedBox(width: 8),
-                Text('訓練量趨勢', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.show_chart, size: 20, color: Colors.blue),
+                ),
+                const SizedBox(width: 12),
+                const Text('訓練量趨勢', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             SizedBox(
-              height: 200,
+              height: 220,
               child: LineChart(
                 LineChartData(
-                  gridData: const FlGridData(show: true, drawVerticalLine: false),
+                  minY: 0,
+                  maxY: maxY,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: maxY / 4,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: Colors.grey.withOpacity(0.2),
+                        strokeWidth: 1,
+                      );
+                    },
+                  ),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 40,
+                        reservedSize: 45,
+                        interval: maxY / 4,
                         getTitlesWidget: (value, meta) {
                           if (value >= 1000) {
-                            return Text('${(value / 1000).toStringAsFixed(0)}k');
+                            return Text(
+                              '${(value / 1000).toStringAsFixed(1)}k',
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            );
                           }
-                          return Text(value.toInt().toString());
+                          return Text(
+                            value.toInt().toString(),
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          );
                         },
                       ),
                     ),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
+                        reservedSize: 30,
                         getTitlesWidget: (value, meta) {
                           if (value.toInt() >= 0 && value.toInt() < history.length) {
-                            return Text(history[value.toInt()].formattedDate);
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                history[value.toInt()].formattedDate,
+                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              ),
+                            );
                           }
                           return const Text('');
                         },
@@ -307,22 +345,61 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                     topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
-                  borderData: FlBorderData(show: false),
+                  borderData: FlBorderData(
+                    show: true,
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
+                      left: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
+                    ),
+                  ),
                   lineBarsData: [
                     LineChartBarData(
                       spots: history.asMap().entries.map((e) {
                         return FlSpot(e.key.toDouble(), e.value.totalVolume);
                       }).toList(),
                       isCurved: true,
+                      curveSmoothness: 0.35,
                       color: Colors.blue,
-                      barWidth: 3,
-                      dotData: const FlDotData(show: true),
+                      barWidth: 4,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) {
+                          return FlDotCirclePainter(
+                            radius: 6,
+                            color: Colors.white,
+                            strokeWidth: 3,
+                            strokeColor: Colors.blue,
+                          );
+                        },
+                      ),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: Colors.blue.withOpacity(0.1),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.blue.withOpacity(0.3),
+                            Colors.blue.withOpacity(0.05),
+                          ],
+                        ),
                       ),
                     ),
                   ],
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipColor: (touchedSpot) => Colors.blueGrey.withOpacity(0.8),
+                      getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                        return touchedBarSpots.map((barSpot) {
+                          final point = history[barSpot.x.toInt()];
+                          return LineTooltipItem(
+                            '${point.formattedDate}\n${(point.totalVolume / 1000).toStringAsFixed(1)}k kg',
+                            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -377,31 +454,174 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
     );
   }
 
-  /// 個人記錄卡片
+  /// 個人記錄卡片（按身體部位分類，只顯示每個部位的最高紀錄）
   Widget _buildPersonalRecordsCard(List<PersonalRecord> records) {
     if (records.isEmpty) return const SizedBox();
 
+    // 按身體部位分組，每個部位只保留最高重量的記錄
+    final Map<String, PersonalRecord> bestByBodyPart = {};
+    for (var pr in records) {
+      if (!bestByBodyPart.containsKey(pr.bodyPart) || 
+          pr.maxWeight > bestByBodyPart[pr.bodyPart]!.maxWeight) {
+        bestByBodyPart[pr.bodyPart] = pr;
+      }
+    }
+
+    // 轉換為列表並按重量排序
+    final topRecords = bestByBodyPart.values.toList()
+      ..sort((a, b) => b.maxWeight.compareTo(a.maxWeight));
+
     return Card(
+      elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.emoji_events, size: 20),
-                SizedBox(width: 8),
-                Text('個人最佳記錄', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.emoji_events, size: 20, color: Colors.amber),
+                ),
+                const SizedBox(width: 12),
+                const Text('個人最佳記錄', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                Text(
+                  '各部位 Top 1',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
               ],
             ),
             const SizedBox(height: 16),
-            ...records.take(5).map((pr) => ListTile(
-              leading: Icon(pr.isNew ? Icons.new_releases : Icons.fitness_center, 
-                          color: pr.isNew ? Colors.amber : Colors.grey),
-              title: Text(pr.exerciseName),
-              subtitle: Text(pr.bodyPart),
-              trailing: Text(pr.formattedWeight, style: const TextStyle(fontWeight: FontWeight.bold)),
-            )),
+            ...topRecords.take(6).map((pr) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: pr.isNew
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.amber.withOpacity(0.1),
+                            Colors.orange.withOpacity(0.05),
+                          ],
+                        )
+                      : null,
+                  border: Border.all(
+                    color: pr.isNew ? Colors.amber.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
+                    width: pr.isNew ? 2 : 1,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: _getBodyPartColor(pr.bodyPart).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        _getBodyPartIcon(pr.bodyPart),
+                        color: _getBodyPartColor(pr.bodyPart),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  pr.exerciseName,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (pr.isNew) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'NEW',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _getBodyPartColor(pr.bodyPart).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  pr.bodyPart,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: _getBodyPartColor(pr.bodyPart),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                pr.formattedDate,
+                                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${pr.maxWeight.toStringAsFixed(1)}',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: _getBodyPartColor(pr.bodyPart),
+                          ),
+                        ),
+                        Text(
+                          'kg × ${pr.reps}',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
           ],
         ),
       ),
@@ -463,52 +683,192 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
   /// 力量進步 Tab
   Widget _buildStrengthProgressTab(StatisticsData data) {
     if (data.strengthProgress.isEmpty) {
-      return const Center(child: Text('還沒有足夠的數據顯示力量進步'));
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.fitness_center, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text('還沒有足夠的數據顯示力量進步'),
+          ],
+        ),
+      );
     }
 
-    return ListView.builder(
+    // 按身體部位分組
+    final Map<String, List<ExerciseStrengthProgress>> groupedByBodyPart = {};
+    for (var progress in data.strengthProgress) {
+      groupedByBodyPart.putIfAbsent(progress.bodyPart, () => []);
+      groupedByBodyPart[progress.bodyPart]!.add(progress);
+    }
+
+    // 排序：按訓練量降序
+    final sortedBodyParts = groupedByBodyPart.keys.toList()
+      ..sort((a, b) {
+        final volumeA = groupedByBodyPart[a]!.fold<double>(0, (sum, p) => sum + p.totalSets * p.averageWeight);
+        final volumeB = groupedByBodyPart[b]!.fold<double>(0, (sum, p) => sum + p.totalSets * p.averageWeight);
+        return volumeB.compareTo(volumeA);
+      });
+
+    return ListView(
       padding: const EdgeInsets.all(16),
-      itemCount: data.strengthProgress.length,
-      itemBuilder: (context, index) {
-        final progress = data.strengthProgress[index];
-        return _buildStrengthProgressCard(progress);
-      },
+      children: [
+        // 說明卡片
+        Card(
+          color: Colors.blue.withOpacity(0.1),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Colors.blue),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('力量進步追蹤', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(
+                        '選擇身體部位查看該部位的動作力量進步曲線',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // 按身體部位分類顯示
+        ...sortedBodyParts.map((bodyPart) {
+          final exercises = groupedByBodyPart[bodyPart]!;
+          return _buildBodyPartStrengthSection(bodyPart, exercises);
+        }),
+      ],
     );
   }
 
-  Widget _buildStrengthProgressCard(ExerciseStrengthProgress progress) {
+  /// 身體部位力量進步區塊
+  Widget _buildBodyPartStrengthSection(String bodyPart, List<ExerciseStrengthProgress> exercises) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: exercises.length <= 3, // 如果動作少於3個就預設展開
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _getBodyPartColor(bodyPart).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(_getBodyPartIcon(bodyPart), color: _getBodyPartColor(bodyPart)),
+          ),
+          title: Text(
+            bodyPart,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(
+            '${exercises.length} 個動作',
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          ),
+          children: exercises.map((progress) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _buildStrengthProgressCard(progress),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  /// 根據身體部位返回顏色
+  Color _getBodyPartColor(String bodyPart) {
+    if (bodyPart.contains('胸')) return Colors.red;
+    if (bodyPart.contains('背')) return Colors.blue;
+    if (bodyPart.contains('腿')) return Colors.green;
+    if (bodyPart.contains('肩')) return Colors.orange;
+    if (bodyPart.contains('手')) return Colors.purple;
+    if (bodyPart.contains('核心') || bodyPart.contains('腹')) return Colors.teal;
+    return Colors.grey;
+  }
+
+  /// 根據身體部位返回圖標
+  IconData _getBodyPartIcon(String bodyPart) {
+    if (bodyPart.contains('胸')) return Icons.fitness_center;
+    if (bodyPart.contains('背')) return Icons.accessibility_new;
+    if (bodyPart.contains('腿')) return Icons.directions_run;
+    if (bodyPart.contains('肩')) return Icons.sports_martial_arts;
+    if (bodyPart.contains('手')) return Icons.sports_handball;
+    if (bodyPart.contains('核心') || bodyPart.contains('腹')) return Icons.self_improvement;
+    return Icons.fitness_center;
+  }
+
+  Widget _buildStrengthProgressCard(ExerciseStrengthProgress progress) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(progress.exerciseName, 
-                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      Text(progress.bodyPart, style: const TextStyle(color: Colors.grey)),
+                      Text(
+                        progress.exerciseName,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _getBodyPartColor(progress.bodyPart).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              progress.bodyPart,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: _getBodyPartColor(progress.bodyPart),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: progress.hasProgress ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              progress.formattedProgress,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: progress.hasProgress ? Colors.green : Colors.grey,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: progress.hasProgress ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    progress.formattedProgress,
-                    style: TextStyle(
-                      color: progress.hasProgress ? Colors.green : Colors.grey,
-                      fontWeight: FontWeight.bold,
-                    ),
                   ),
                 ),
               ],
