@@ -76,7 +76,22 @@
 
 ---
 
-### 6. [UI_UX_GUIDELINES.md](UI_UX_GUIDELINES.md) ⭐ 新增
+### 6. [database_migration_implementation.md](database_migration_implementation.md) ⭐ 新增
+**資料庫遷移實作指南**
+
+包含：
+- 完整 PostgreSQL Schema 設計（8 個表格 + RLS 策略）
+- Python 遷移腳本（完整 ETL 流程）
+- Flutter 整合方案（supabase-flutter + 離線優先）
+- 環境變數配置和安全性設置
+- 效能優化策略（索引、查詢優化）
+- 遷移路線圖（5 週計劃）
+
+**適合對象**：執行資料庫遷移、重構 Service 層的開發者
+
+---
+
+### 7. [UI_UX_GUIDELINES.md](UI_UX_GUIDELINES.md) ⭐ 新增
 **UI/UX 設計規範**
 
 包含：
@@ -95,7 +110,7 @@
 
 ---
 
-### 7. [STATISTICS_IMPLEMENTATION.md](STATISTICS_IMPLEMENTATION.md)
+### 8. [STATISTICS_IMPLEMENTATION.md](STATISTICS_IMPLEMENTATION.md)
 **統計功能實作指南**
 
 包含：

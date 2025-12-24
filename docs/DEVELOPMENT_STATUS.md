@@ -202,42 +202,74 @@
 
 ## ✅ 最新完成
 
-### 2024-12-25：資料庫遷移評估 📊
+### 2024-12-25：資料庫遷移實作啟動 🚀
 
-**交付物**：完整的資料庫遷移評估報告 ✅
+**決策**：確定採用 **完全遷移到 Supabase PostgreSQL** 方案
 
 **完成內容**：
-- ✅ **資料庫匯出工具**
+- ✅ **資料庫遷移可行性評估**
   - 創建 `scripts/export_database_structure.py`（340 行）
-  - 從 Firebase 直接匯出實際資料結構
-  - 遞迴解析巢狀欄位（96 個欄位）
-  - 分析 6 個集合、868 個文檔
+  - 分析 6 個集合、868 個文檔、96 個欄位
+  - 成本對比（Firestore vs Supabase）
   
-- ✅ **成本分析與估算**
-  - 查詢模式分析（載入訓練計劃、動作庫、登入）
-  - 成本估算（1000 用戶：$11-50/月）
-  - Firestore vs Supabase 對比
-  - 長期成本預測
-
-- ✅ **遷移建議**
-  - 短期方案：混合架構（2-3 天，降低 60% 成本）
-  - 長期方案：Supabase PostgreSQL（12-18 天，$25 固定月費）
-  - 詳細實作步驟和風險評估
+- ✅ **Supabase 專案設置**
+  - 專案 ID: `strengthwise-91f02`
+  - 取得 Secret Key: `sb_secret_hvuMcQXsDcbLUhNLRPfPMQ_-3-5AmXq`
+  - 環境變數配置方案設計
+  
+- ✅ **PostgreSQL Schema 設計**（完整）
+  - 8 個正規化表格設計
+  - Row Level Security (RLS) 策略
+  - 索引優化策略
+  - 外鍵關聯定義
+  
+- ✅ **Python 遷移腳本編寫**
+  - 完整 ETL 流程（Extract-Transform-Load）
+  - 批次寫入優化（100 筆/批）
+  - 串流解析大型 JSON
+  - 冪等性設計（可重複執行）
+  
+- ✅ **Flutter 整合方案設計**
+  - supabase-flutter SDK 整合
+  - Service 層重構方案
+  - 查詢優化策略
+  - 離線優先架構設計（SQLite + PowerSync）
 
 **產出文檔**：
-- `docs/database_migration_analysis.md` - 完整評估報告（910 行）
-- `database_export_for_migration.json` - 原始資料（5545 行）
-- `scripts/export_database_structure.py` - 可重複執行的匯出工具
+- `docs/database_migration_analysis.md` - 評估報告（950 行）
+- `docs/database_migration_implementation.md` - **實作指南**（⭐ 新增，2200+ 行）
+- `scripts/migrate_to_supabase.py` - **遷移腳本**（待執行）
+- `data/database/database_export_for_migration.json` - 完整資料結構
 
-**核心發現**：
-1. **Exercise 集合（794 個）**：靜態資料，建議打包進 App（每月省 $19.2）
-2. **WorkoutPlans 集合**：歷史記錄累積，成本會線性增長
-3. **Firestore 限制**：不支援複雜查詢、成本不可預測
+**PostgreSQL Schema（8 個表格）**：
+1. `users` - 用戶資料（支援教練/學員角色）
+2. `exercises` - 動作庫（794 個系統動作 + 用戶自定義）
+3. `workout_plans` - 訓練計劃
+4. `workout_exercises` - 計劃中的動作
+5. `workout_sets` - 組數記錄
+6. `body_parts` - 身體部位
+7. `exercise_types` - 動作類型
+8. `notes` - 筆記
 
-**下一步**：
-- 📧 將報告傳送給資料庫專家討論
-- 🎯 決定採用混合架構或完全遷移
-- 📝 制定詳細的遷移計劃和時程
+**遷移路線圖（Week 1-5）**：
+- ⏳ **Week 1-2**: 地基工程
+  - [ ] 執行 Supabase Schema Migration
+  - [ ] 執行資料遷移腳本
+  - [ ] 驗證資料完整性
+- [ ] **Week 3-4**: Flutter 整合
+  - [ ] 重構 Service 層（使用 Supabase Client）
+  - [ ] 實作離線優先架構（SQLite + PowerSync）
+  - [ ] 測試與驗證
+- [ ] **Week 5**: 部署與驗證
+  - [ ] 灰度發布
+  - [ ] 效能監控
+  - [ ] 正式上線
+
+**核心優勢**：
+- 💰 成本可預測：$25/月（支援到 10K 用戶）
+- 🚀 完整 SQL 支援：JOIN、聚合函數、複雜查詢
+- ⚡ 效能更好：索引優化、查詢計劃
+- 📴 離線優先：本地 SQLite + 背景同步
 
 ---
 
