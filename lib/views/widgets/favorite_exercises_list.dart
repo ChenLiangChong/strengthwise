@@ -3,6 +3,7 @@ import '../../models/favorite_exercise_model.dart';
 import '../../models/statistics_model.dart';
 import '../../services/interfaces/i_favorites_service.dart';
 import '../../services/service_locator.dart';
+import 'mini_line_chart.dart';
 
 /// 收藏動作列表組件
 /// 
@@ -266,7 +267,9 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
               if (hasProgress) ...[
                 const SizedBox(height: 12),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // 進步百分比標籤
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
@@ -296,13 +299,29 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      '最大重量: ${progress.formattedCurrentMax}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    // 最大重量文字
+                    Expanded(
+                      child: Text(
+                        '最大: ${progress.formattedCurrentMax}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
+                    // 迷你曲線圖
+                    if (progress.history.length >= 2)
+                      MiniLineChart(
+                        dataPoints: progress.history,
+                        width: 100,
+                        height: 40,
+                        lineColor: isPositive 
+                            ? Theme.of(context).colorScheme.secondary 
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                        fillColor: isPositive 
+                            ? Theme.of(context).colorScheme.secondary 
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                   ],
                 ),
               ] else ...[

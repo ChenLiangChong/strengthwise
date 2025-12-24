@@ -3,6 +3,7 @@ import '../../models/custom_exercise_model.dart';
 import '../../controllers/interfaces/i_custom_exercise_controller.dart';
 import '../../services/error_handling_service.dart';
 import '../../services/service_locator.dart';
+import '../../utils/snackbar_helper.dart';
 import '../widgets/custom_exercise_dialog.dart';
 
 class CustomExercisesPage extends StatefulWidget {
@@ -70,9 +71,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
                 _exercises.insert(0, newExercise);
               });
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('成功添加自訂動作')),
-              );
+              SnackBarHelper.showSuccess(context, '成功添加自訂動作');
             } catch (e) {
               if (!mounted) return;
 
@@ -110,9 +109,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
                 });
               }
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('成功更新自訂動作')),
-              );
+              SnackBarHelper.showSuccess(context, '成功更新自訂動作');
             } catch (e) {
               if (!mounted) return;
 
@@ -134,9 +131,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
         _exercises.removeWhere((e) => e.id == exerciseId);
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('成功刪除自訂動作')),
-      );
+      SnackBarHelper.showSuccess(context, '成功刪除自訂動作');
     } catch (e) {
       if (!mounted) return;
 

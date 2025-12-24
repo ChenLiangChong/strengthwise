@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/interfaces/i_auth_service.dart';
 import '../services/service_locator.dart';
 import 'login_page.dart';
@@ -44,6 +45,7 @@ class _MainHomePageState extends State<MainHomePage> {
   }
 
   void _onItemTapped(int index) {
+    HapticFeedback.selectionClick(); // 觸覺回饋
     setState(() {
       _selectedIndex = index;
     });

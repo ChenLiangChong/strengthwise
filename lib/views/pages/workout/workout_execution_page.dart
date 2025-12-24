@@ -6,6 +6,7 @@ import '../../../controllers/interfaces/i_workout_execution_controller.dart';
 import '../../../services/error_handling_service.dart';
 import '../../../services/service_locator.dart';
 import '../../../themes/app_theme.dart';
+import '../../../utils/snackbar_helper.dart';
 import '../../widgets/exercise_card.dart';
 import '../exercises_page.dart';
 
@@ -102,22 +103,16 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   // 顯示無法修改的提示消息
   void _showCannotEditMessage() {
     if (_executionController.isPastDate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('無法編輯過去的訓練記錄')),
-      );
+      SnackBarHelper.showWarning(context, '無法編輯過去的訓練記錄');
     }
   }
 
   // 顯示無法勾選完成的提示消息
   void _showCannotToggleCompletionMessage() {
     if (_executionController.isFutureDate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('未來的訓練無法勾選完成，請在訓練當天標記')),
-      );
+      SnackBarHelper.showWarning(context, '未來的訓練無法勾選完成，請在訓練當天標記');
     } else if (_executionController.isPastDate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('無法修改過去的訓練記錄')),
-      );
+      SnackBarHelper.showWarning(context, '無法修改過去的訓練記錄');
     }
   }
 
@@ -514,9 +509,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     final canModifyTime = !_executionController.isPastDate(); // 過去的訓練不能修改時間
 
     if (!canModifyTime) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('無法修改過去訓練的時間')),
-      );
+      SnackBarHelper.showWarning(context, '無法修改過去訓練的時間');
       return;
     }
 
@@ -672,7 +665,10 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
             // 完成訓練按鈕
             IconButton(
               icon: const Icon(Icons.done_all),
-              onPressed: _saveWorkoutRecord,
+              onPressed: () {
+                HapticFeedback.mediumImpact(); // 觸覺回饋
+                _saveWorkoutRecord();
+              },
               tooltip: '完成訓練',
             ),
           ],
