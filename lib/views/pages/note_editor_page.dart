@@ -260,7 +260,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
           _buildColorCircle(Colors.black),
           _buildColorCircle(Colors.red),
           _buildColorCircle(Colors.blue),
-          _buildColorCircle(Colors.green),
+          _buildColorCircle(Theme.of(context).colorScheme.secondary),
           // 線條粗細選擇
           DropdownButton<double>(
             value: _currentStrokeWidth,
@@ -297,7 +297,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
           color: color,
           shape: BoxShape.circle,
           border: Border.all(
-            color: _currentColor == color ? Colors.grey.shade600 : Colors.grey.shade300,
+                  color: _currentColor == color ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.outlineVariant,
             width: _currentColor == color ? 3 : 1,
           ),
         ),

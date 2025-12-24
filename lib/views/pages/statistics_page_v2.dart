@@ -20,7 +20,8 @@ class StatisticsPageV2 extends StatefulWidget {
   State<StatisticsPageV2> createState() => _StatisticsPageV2State();
 }
 
-class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerProviderStateMixin {
+class _StatisticsPageV2State extends State<StatisticsPageV2>
+    with SingleTickerProviderStateMixin {
   late IStatisticsController _controller;
   late TabController _tabController;
 
@@ -93,7 +94,8 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const Icon(Icons.error_outline,
+                        size: 64, color: Colors.red),
                     const SizedBox(height: 16),
                     Text(controller.errorMessage!),
                     const SizedBox(height: 16),
@@ -108,15 +110,21 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
 
             final data = controller.statisticsData;
             if (data == null || !data.hasData) {
-              return const Center(
+              return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.fitness_center, size: 64, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text('還沒有訓練記錄'),
-                    SizedBox(height: 8),
-                    Text('開始訓練後就能看到統計數據了！', style: TextStyle(color: Colors.grey)),
+                    Icon(Icons.fitness_center,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(height: 16),
+                    const Text('還沒有訓練記錄'),
+                    const SizedBox(height: 8),
+                    Text('開始訓練後就能看到統計數據了！',
+                        style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
                   ],
                 ),
               );
@@ -170,7 +178,8 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
   }
 
   /// 概覽 Tab
-  Widget _buildOverviewTab(StatisticsData data, IStatisticsController controller) {
+  Widget _buildOverviewTab(
+      StatisticsData data, IStatisticsController controller) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -179,19 +188,19 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
           // 訓練頻率卡片
           _buildFrequencyCard(data.frequency),
           const SizedBox(height: 16),
-          
+
           // 訓練量趨勢圖
           _buildVolumeTrendCard(data.volumeHistory),
           const SizedBox(height: 16),
-          
+
           // 身體部位分布
           _buildBodyPartDistributionCard(data.bodyPartStats),
           const SizedBox(height: 16),
-          
+
           // 個人記錄
           _buildPersonalRecordsCard(data.personalRecords),
           const SizedBox(height: 16),
-          
+
           // 訓練建議
           if (controller.suggestions.isNotEmpty)
             _buildSuggestionsCard(controller.suggestions),
@@ -212,7 +221,9 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
               children: [
                 Icon(Icons.fitness_center, size: 20),
                 SizedBox(width: 8),
-                Text('本週訓練', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('本週訓練',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 16),
@@ -245,18 +256,26 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
     );
   }
 
-  Widget _buildFrequencyStat(IconData icon, String value, String label, String? comparison) {
+  Widget _buildFrequencyStat(
+      IconData icon, String value, String label, String? comparison) {
     return Column(
       children: [
         Icon(icon, color: Colors.blue, size: 32),
         const SizedBox(height: 8),
-        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(value,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         if (comparison != null && comparison != '0')
-          Text(comparison, style: TextStyle(
-            color: comparison.startsWith('+') ? Colors.green : Colors.red,
-            fontSize: 12,
-          )),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(comparison,
+              style: TextStyle(
+                color: comparison.startsWith('+')
+                    ? Theme.of(context).colorScheme.secondary
+                    : Colors.red,
+                fontSize: 12,
+              )),
+        Text(label,
+            style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );
   }
@@ -266,7 +285,8 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
     if (history.isEmpty) return const SizedBox();
 
     // 找出最大值用於設置 Y 軸範圍
-    final maxVolume = history.map((p) => p.totalVolume).reduce((a, b) => a > b ? a : b);
+    final maxVolume =
+        history.map((p) => p.totalVolume).reduce((a, b) => a > b ? a : b);
     final maxY = (maxVolume * 1.2).ceilToDouble(); // 增加 20% 留白
 
     return Card(
@@ -284,10 +304,13 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                     color: Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.show_chart, size: 20, color: Colors.blue),
+                  child: const Icon(Icons.show_chart,
+                      size: 20, color: Colors.blue),
                 ),
                 const SizedBox(width: 12),
-                const Text('訓練量趨勢', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text('訓練量趨勢',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 20),
@@ -303,7 +326,10 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                     horizontalInterval: maxY / 4,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
-                        color: Colors.grey.withOpacity(0.2),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withOpacity(0.2),
                         strokeWidth: 1,
                       );
                     },
@@ -318,12 +344,20 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                           if (value >= 1000) {
                             return Text(
                               '${(value / 1000).toStringAsFixed(1)}k',
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant),
                             );
                           }
                           return Text(
                             value.toInt().toString(),
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant),
                           );
                         },
                       ),
@@ -333,12 +367,17 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                         showTitles: true,
                         reservedSize: 30,
                         getTitlesWidget: (value, meta) {
-                          if (value.toInt() >= 0 && value.toInt() < history.length) {
+                          if (value.toInt() >= 0 &&
+                              value.toInt() < history.length) {
                             return Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: Text(
                                 history[value.toInt()].formattedDate,
-                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant),
                               ),
                             );
                           }
@@ -346,14 +385,26 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                         },
                       ),
                     ),
-                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
                   ),
                   borderData: FlBorderData(
                     show: true,
                     border: Border(
-                      bottom: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
-                      left: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
+                      bottom: BorderSide(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant
+                              .withOpacity(0.2),
+                          width: 1),
+                      left: BorderSide(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant
+                              .withOpacity(0.2),
+                          width: 1),
                     ),
                   ),
                   lineBarsData: [
@@ -392,13 +443,16 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                   ],
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
-                      getTooltipColor: (touchedSpot) => Colors.blueGrey.withOpacity(0.8),
+                      getTooltipColor: (touchedSpot) =>
+                          Colors.blueGrey.withOpacity(0.8),
                       getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                         return touchedBarSpots.map((barSpot) {
                           final point = history[barSpot.x.toInt()];
                           return LineTooltipItem(
                             '${point.formattedDate}\n${(point.totalVolume / 1000).toStringAsFixed(1)}k kg',
-                            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
                           );
                         }).toList();
                       },
@@ -427,31 +481,37 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
               children: [
                 Icon(Icons.pie_chart, size: 20),
                 SizedBox(width: 8),
-                Text('肌群訓練分布', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('肌群訓練分布',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 16),
             ...stats.take(5).map((stat) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(stat.bodyPart, style: const TextStyle(fontWeight: FontWeight.w500)),
-                      Text('${stat.formattedVolume}  ${stat.formattedPercentage}'),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(stat.bodyPart,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w500)),
+                          Text(
+                              '${stat.formattedVolume}  ${stat.formattedPercentage}'),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      LinearProgressIndicator(
+                        value: stat.percentage,
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceVariant,
+                        minHeight: 8,
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  LinearProgressIndicator(
-                    value: stat.percentage,
-                    backgroundColor: Colors.grey[200],
-                    minHeight: 8,
-                  ),
-                ],
-              ),
-            )),
+                )),
           ],
         ),
       ),
@@ -465,7 +525,7 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
     // 按身體部位分組，每個部位只保留最高重量的記錄
     final Map<String, PersonalRecord> bestByBodyPart = {};
     for (var pr in records) {
-      if (!bestByBodyPart.containsKey(pr.bodyPart) || 
+      if (!bestByBodyPart.containsKey(pr.bodyPart) ||
           pr.maxWeight > bestByBodyPart[pr.bodyPart]!.maxWeight) {
         bestByBodyPart[pr.bodyPart] = pr;
       }
@@ -490,14 +550,19 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                     color: Colors.amber.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.emoji_events, size: 20, color: Colors.amber),
+                  child: const Icon(Icons.emoji_events,
+                      size: 20, color: Colors.amber),
                 ),
                 const SizedBox(width: 12),
-                const Text('個人最佳記錄', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text('個人最佳記錄',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const Spacer(),
                 Text(
                   '各部位 Top 1',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -513,12 +578,20 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                           end: Alignment.bottomRight,
                           colors: [
                             Colors.amber.withOpacity(0.1),
-                            Colors.orange.withOpacity(0.05),
+                            Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(0.05),
                           ],
                         )
                       : null,
                   border: Border.all(
-                    color: pr.isNew ? Colors.amber.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
+                    color: pr.isNew
+                        ? Colors.amber.withOpacity(0.3)
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withOpacity(0.2),
                     width: pr.isNew ? 2 : 1,
                   ),
                   borderRadius: BorderRadius.circular(12),
@@ -559,7 +632,8 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                               if (pr.isNew) ...[
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: Colors.amber,
                                     borderRadius: BorderRadius.circular(4),
@@ -580,9 +654,11 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: _getBodyPartColor(pr.bodyPart).withOpacity(0.1),
+                                  color: _getBodyPartColor(pr.bodyPart)
+                                      .withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -597,7 +673,11 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                               const SizedBox(width: 8),
                               Text(
                                 pr.formattedDate,
-                                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant),
                               ),
                             ],
                           ),
@@ -618,7 +698,11 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                         ),
                         Text(
                           'kg × ${pr.reps}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -644,18 +728,20 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
               children: [
                 Icon(Icons.lightbulb, size: 20),
                 SizedBox(width: 8),
-                Text('訓練建議', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('訓練建議',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 16),
             ...suggestions.map((suggestion) => ListTile(
-              leading: Icon(
-                _getSuggestionIcon(suggestion.type),
-                color: _getSuggestionColor(suggestion.type),
-              ),
-              title: Text(suggestion.title),
-              subtitle: Text(suggestion.description),
-            )),
+                  leading: Icon(
+                    _getSuggestionIcon(suggestion.type),
+                    color: _getSuggestionColor(suggestion.type),
+                  ),
+                  title: Text(suggestion.title),
+                  subtitle: Text(suggestion.description),
+                )),
           ],
         ),
       ),
@@ -676,11 +762,11 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
   Color _getSuggestionColor(SuggestionType type) {
     switch (type) {
       case SuggestionType.warning:
-        return Colors.orange;
+        return Theme.of(context).colorScheme.primary;
       case SuggestionType.info:
         return Colors.blue;
       case SuggestionType.success:
-        return Colors.green;
+        return Theme.of(context).colorScheme.secondary;
     }
   }
 
@@ -703,11 +789,11 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
   Color _getBodyPartColor(String bodyPart) {
     if (bodyPart.contains('胸')) return Colors.red;
     if (bodyPart.contains('背')) return Colors.blue;
-    if (bodyPart.contains('腿')) return Colors.green;
-    if (bodyPart.contains('肩')) return Colors.orange;
-    if (bodyPart.contains('手')) return Colors.purple;
+    if (bodyPart.contains('腿')) return Theme.of(context).colorScheme.secondary;
+    if (bodyPart.contains('肩')) return Theme.of(context).colorScheme.primary;
+    if (bodyPart.contains('手')) return Theme.of(context).colorScheme.primary;
     if (bodyPart.contains('核心') || bodyPart.contains('腹')) return Colors.teal;
-    return Colors.grey;
+    return Theme.of(context).colorScheme.onSurfaceVariant;
   }
 
   /// 根據身體部位返回圖標
@@ -717,15 +803,20 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
     if (bodyPart.contains('腿')) return Icons.directions_run;
     if (bodyPart.contains('肩')) return Icons.sports_martial_arts;
     if (bodyPart.contains('手')) return Icons.sports_handball;
-    if (bodyPart.contains('核心') || bodyPart.contains('腹')) return Icons.self_improvement;
+    if (bodyPart.contains('核心') || bodyPart.contains('腹'))
+      return Icons.self_improvement;
     return Icons.fitness_center;
   }
 
   Widget _buildStatItem(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(value,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(label,
+            style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );
   }
@@ -752,80 +843,98 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                   Row(
                     children: [
                       Icon(
-                        balance.isPushPullBalanced ? Icons.check_circle : Icons.warning,
-                        color: balance.isPushPullBalanced ? Colors.green : Colors.orange,
+                        balance.isPushPullBalanced
+                            ? Icons.check_circle
+                            : Icons.warning,
+                        color: balance.isPushPullBalanced
+                            ? Theme.of(context).colorScheme.secondary
+                            : Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(width: 8),
-                      Text(balance.balanceStatus, 
-                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(balance.balanceStatus,
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   if (balance.recommendations.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    const Text('建議：', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('建議：',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     ...balance.recommendations.map((rec) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.arrow_right, size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(rec)),
-                        ],
-                      ),
-                    )),
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.arrow_right, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(rec)),
+                            ],
+                          ),
+                        )),
                   ],
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // 肌群分布
           ...balance.stats.map((stat) => Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(stat.category.emoji, style: const TextStyle(fontSize: 24)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(stat.category.displayName, 
-                                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            Text('${stat.formattedVolume}  ${stat.formattedPercentage}', 
-                                 style: const TextStyle(color: Colors.grey)),
-                          ],
-                        ),
+                      Row(
+                        children: [
+                          Text(stat.category.emoji,
+                              style: const TextStyle(fontSize: 24)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(stat.category.displayName,
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold)),
+                                Text(
+                                    '${stat.formattedVolume}  ${stat.formattedPercentage}',
+                                    style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      LinearProgressIndicator(
+                        value: stat.percentage,
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceVariant,
+                        minHeight: 8,
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: stat.topExercises
+                            .map((ex) => Chip(
+                                  label: Text(ex,
+                                      style: const TextStyle(fontSize: 12)),
+                                  padding: EdgeInsets.zero,
+                                  labelPadding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
+                                ))
+                            .toList(),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  LinearProgressIndicator(
-                    value: stat.percentage,
-                    backgroundColor: Colors.grey[200],
-                    minHeight: 8,
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: stat.topExercises.map((ex) => Chip(
-                      label: Text(ex, style: const TextStyle(fontSize: 12)),
-                      padding: EdgeInsets.zero,
-                      labelPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    )).toList(),
-                  ),
-                ],
-              ),
-            ),
-          )),
+                ),
+              )),
         ],
       ),
     );
@@ -846,21 +955,31 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
           // 統計卡片
           Row(
             children: [
-              Expanded(child: _buildCalendarStatCard('訓練天數', calendar.trainingDays.toString(), Icons.fitness_center)),
+              Expanded(
+                  child: _buildCalendarStatCard('訓練天數',
+                      calendar.trainingDays.toString(), Icons.fitness_center)),
               const SizedBox(width: 8),
-              Expanded(child: _buildCalendarStatCard('最長連續', '${calendar.maxStreak} 天', Icons.local_fire_department)),
+              Expanded(
+                  child: _buildCalendarStatCard('最長連續',
+                      '${calendar.maxStreak} 天', Icons.local_fire_department)),
             ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _buildCalendarStatCard('當前連續', '${calendar.currentStreak} 天', Icons.trending_up)),
+              Expanded(
+                  child: _buildCalendarStatCard('當前連續',
+                      '${calendar.currentStreak} 天', Icons.trending_up)),
               const SizedBox(width: 8),
-              Expanded(child: _buildCalendarStatCard('平均訓練量', '${calendar.averageVolume.toStringAsFixed(0)} kg', Icons.show_chart)),
+              Expanded(
+                  child: _buildCalendarStatCard(
+                      '平均訓練量',
+                      '${calendar.averageVolume.toStringAsFixed(0)} kg',
+                      Icons.show_chart)),
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // 熱力圖
           Card(
             child: Padding(
@@ -868,7 +987,9 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('訓練熱力圖', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text('訓練熱力圖',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   _buildHeatmap(calendar.days),
                 ],
@@ -888,8 +1009,13 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
           children: [
             Icon(icon, color: Colors.blue, size: 32),
             const SizedBox(height: 8),
-            Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            Text(value,
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
       ),
@@ -900,7 +1026,7 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
     // 按週分組
     final weeks = <List<TrainingCalendarDay>>[];
     List<TrainingCalendarDay> currentWeek = [];
-    
+
     for (var day in days) {
       currentWeek.add(day);
       if (currentWeek.length == 7) {
@@ -920,7 +1046,12 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
           children: ['日', '一', '二', '三', '四', '五', '六'].map((day) {
             return SizedBox(
               width: 40,
-              child: Center(child: Text(day, style: const TextStyle(fontSize: 12, color: Colors.grey))),
+              child: Center(
+                  child: Text(day,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant))),
             );
           }).toList(),
         ),
@@ -942,7 +1073,10 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('少', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            Text('少',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(width: 8),
             ...[0, 1, 2, 3, 4].map((level) {
               return Container(
@@ -956,7 +1090,10 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
               );
             }),
             const SizedBox(width: 8),
-            const Text('多', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            Text('多',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
       ],
@@ -965,7 +1102,7 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
 
   Widget _buildHeatmapCell(TrainingCalendarDay day) {
     return Tooltip(
-      message: day.hasWorkout 
+      message: day.hasWorkout
           ? '${day.formattedDate}\n訓練量: ${day.totalVolume.toStringAsFixed(0)} kg'
           : '${day.formattedDate}\n休息日',
       child: Container(
@@ -991,13 +1128,21 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
   }
 
   Color _getHeatmapColor(int intensity) {
+    final surfaceVariant = Theme.of(context).colorScheme.surfaceVariant;
+    final secondary = Theme.of(context).colorScheme.secondary;
     switch (intensity) {
-      case 0: return Colors.grey[200]!;
-      case 1: return Colors.green[100]!;
-      case 2: return Colors.green[300]!;
-      case 3: return Colors.green[500]!;
-      case 4: return Colors.green[700]!;
-      default: return Colors.grey[200]!;
+      case 0:
+        return surfaceVariant;
+      case 1:
+        return secondary.withOpacity(0.2);
+      case 2:
+        return secondary.withOpacity(0.5);
+      case 3:
+        return secondary.withOpacity(0.7);
+      case 4:
+        return secondary;
+      default:
+        return surfaceVariant;
     }
   }
 
@@ -1019,21 +1164,28 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  Text(completion.formattedCompletionRate, 
-                       style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
-                  const Text('總完成率', style: TextStyle(color: Colors.grey)),
+                  Text(completion.formattedCompletionRate,
+                      style: const TextStyle(
+                          fontSize: 48, fontWeight: FontWeight.bold)),
+                  Text('總完成率',
+                      style: TextStyle(
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant)),
                   const SizedBox(height: 16),
                   LinearProgressIndicator(
                     value: completion.completionRate,
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor:
+                        Theme.of(context).colorScheme.surfaceVariant,
                     minHeight: 12,
                   ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildStatItem('計劃組數', completion.totalPlannedSets.toString()),
-                      _buildStatItem('完成組數', completion.completedSets.toString()),
+                      _buildStatItem(
+                          '計劃組數', completion.totalPlannedSets.toString()),
+                      _buildStatItem(
+                          '完成組數', completion.completedSets.toString()),
                       _buildStatItem('失敗組數', completion.failedSets.toString()),
                     ],
                   ),
@@ -1042,15 +1194,17 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // 狀態評估
           if (completion.isExcellent)
-            _buildStatusCard('優秀！', '您的完成率非常高，保持下去！', Icons.emoji_events, Colors.green)
+            _buildStatusCard('優秀！', '您的完成率非常高，保持下去！', Icons.emoji_events,
+                Theme.of(context).colorScheme.secondary)
           else if (completion.needsAdjustment)
-            _buildStatusCard('需要調整', '完成率較低，建議調整訓練計劃或減輕重量', Icons.warning, Colors.orange),
-          
+            _buildStatusCard('需要調整', '完成率較低，建議調整訓練計劃或減輕重量', Icons.warning,
+                Theme.of(context).colorScheme.primary),
+
           const SizedBox(height: 16),
-          
+
           // 弱點動作
           if (completion.weakPoints.isNotEmpty)
             Card(
@@ -1059,12 +1213,16 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('需要關注的動作', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('需要關注的動作',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     ...completion.weakPoints.map((exercise) {
-                      final failedCount = completion.incompleteExercises[exercise] ?? 0;
+                      final failedCount =
+                          completion.incompleteExercises[exercise] ?? 0;
                       return ListTile(
-                        leading: const Icon(Icons.info_outline, color: Colors.orange),
+                        leading: Icon(Icons.info_outline,
+                            color: Theme.of(context).colorScheme.primary),
                         title: Text(exercise),
                         trailing: Text('$failedCount 組未完成'),
                       );
@@ -1078,7 +1236,8 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
     );
   }
 
-  Widget _buildStatusCard(String title, String message, IconData icon, Color color) {
+  Widget _buildStatusCard(
+      String title, String message, IconData icon, Color color) {
     return Card(
       color: color.withOpacity(0.1),
       child: Padding(
@@ -1091,7 +1250,11 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+                  Text(title,
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: color)),
                   const SizedBox(height: 4),
                   Text(message),
                 ],
@@ -1119,11 +1282,14 @@ class _StrengthProgressTabContent extends StatefulWidget {
   });
 
   @override
-  State<_StrengthProgressTabContent> createState() => _StrengthProgressTabContentState();
+  State<_StrengthProgressTabContent> createState() =>
+      _StrengthProgressTabContentState();
 }
 
-class _StrengthProgressTabContentState extends State<_StrengthProgressTabContent> {
-  final IFavoritesService _favoritesService = serviceLocator<IFavoritesService>();
+class _StrengthProgressTabContentState
+    extends State<_StrengthProgressTabContent> {
+  final IFavoritesService _favoritesService =
+      serviceLocator<IFavoritesService>();
   bool _hasFavorites = false;
 
   @override
@@ -1135,7 +1301,8 @@ class _StrengthProgressTabContentState extends State<_StrengthProgressTabContent
   /// 檢查是否有收藏
   Future<void> _checkFavorites() async {
     try {
-      final favorites = await _favoritesService.getFavoriteExercises(widget.userId);
+      final favorites =
+          await _favoritesService.getFavoriteExercises(widget.userId);
       setState(() => _hasFavorites = favorites.isNotEmpty);
     } catch (e) {
       // 忽略錯誤
@@ -1168,6 +1335,7 @@ class _StrengthProgressTabContentState extends State<_StrengthProgressTabContent
     return FavoriteExercisesList(
       userId: widget.userId,
       timeRange: widget.timeRange,
+      strengthProgress: widget.statisticsData.strengthProgress, // 傳入統計數據
       onExerciseTap: (exerciseId) {
         // 點擊收藏動作可以查看詳細
         _showExerciseDetails(exerciseId);
@@ -1181,7 +1349,8 @@ class _StrengthProgressTabContentState extends State<_StrengthProgressTabContent
 
   /// 顯示動作選擇頁面（全屏）
   void _showExerciseSelectionPage() {
-    Navigator.of(context).push(
+    Navigator.of(context)
+        .push(
       MaterialPageRoute(
         builder: (context) => Scaffold(
           appBar: AppBar(
@@ -1191,7 +1360,8 @@ class _StrengthProgressTabContentState extends State<_StrengthProgressTabContent
             userId: widget.userId,
             onExerciseSelected: (exercise) {
               // 導航到動作詳情頁面
-              Navigator.of(context).pushReplacement(
+              Navigator.of(context)
+                  .pushReplacement(
                 MaterialPageRoute(
                   builder: (context) => ExerciseStrengthDetailPage(
                     userId: widget.userId,
@@ -1200,7 +1370,8 @@ class _StrengthProgressTabContentState extends State<_StrengthProgressTabContent
                     timeRange: widget.timeRange,
                   ),
                 ),
-              ).then((_) {
+              )
+                  .then((_) {
                 // 從詳情頁返回後，重新檢查收藏狀態
                 _checkFavorites();
               });
@@ -1208,7 +1379,8 @@ class _StrengthProgressTabContentState extends State<_StrengthProgressTabContent
           ),
         ),
       ),
-    ).then((_) {
+    )
+        .then((_) {
       // 從選擇頁面返回後，重新檢查收藏狀態
       _checkFavorites();
     });
@@ -1244,7 +1416,9 @@ class _StrengthProgressTabContentState extends State<_StrengthProgressTabContent
                 const SizedBox(height: 4),
                 Text(
                   '提示：點擊右上角星號可以收藏常用動作',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -1257,7 +1431,8 @@ class _StrengthProgressTabContentState extends State<_StrengthProgressTabContent
             userId: widget.userId,
             onExerciseSelected: (exercise) {
               // 導航到動作詳情頁面（查看力量進步記錄）
-              Navigator.of(context).push(
+              Navigator.of(context)
+                  .push(
                 MaterialPageRoute(
                   builder: (context) => ExerciseStrengthDetailPage(
                     userId: widget.userId,
@@ -1266,7 +1441,8 @@ class _StrengthProgressTabContentState extends State<_StrengthProgressTabContent
                     timeRange: widget.timeRange,
                   ),
                 ),
-              ).then((_) {
+              )
+                  .then((_) {
                 // 從詳情頁返回後，重新檢查收藏狀態
                 _checkFavorites();
               });
@@ -1285,7 +1461,8 @@ class _StrengthProgressTabContentState extends State<_StrengthProgressTabContent
       orElse: () => widget.statisticsData.strengthProgress.first,
     );
 
-    Navigator.of(context).push(
+    Navigator.of(context)
+        .push(
       MaterialPageRoute(
         builder: (context) => ExerciseStrengthDetailPage(
           userId: widget.userId,
@@ -1294,10 +1471,10 @@ class _StrengthProgressTabContentState extends State<_StrengthProgressTabContent
           timeRange: widget.timeRange,
         ),
       ),
-    ).then((_) {
+    )
+        .then((_) {
       // 從詳情頁返回後，重新檢查收藏狀態
       _checkFavorites();
     });
   }
 }
-

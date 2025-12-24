@@ -108,7 +108,7 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(displayMsg),
-            backgroundColor: Colors.orange[700],
+            backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -121,7 +121,7 @@ class _LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Google 登入在模擬器上不可用。\n請使用真實設備測試，或使用下方的電子郵件登入功能。'),
-              backgroundColor: Colors.orange[700],
+              backgroundColor: Theme.of(context).colorScheme.error,
               duration: const Duration(seconds: 5),
             ),
           );

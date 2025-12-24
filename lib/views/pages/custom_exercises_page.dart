@@ -15,18 +15,18 @@ class CustomExercisesPage extends StatefulWidget {
 class _CustomExercisesPageState extends State<CustomExercisesPage> {
   late final ICustomExerciseController _controller;
   late final ErrorHandlingService _errorService;
-  
+
   List<CustomExercise> _exercises = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    
+
     // 從服務定位器獲取依賴
     _controller = serviceLocator<ICustomExerciseController>();
     _errorService = serviceLocator<ErrorHandlingService>();
-    
+
     _loadExercises();
   }
 
@@ -34,27 +34,27 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       final exercises = await _controller.getUserExercises();
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _exercises = exercises;
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
-      
+
       setState(() {
         _isLoading = false;
       });
-      
+
       _errorService.handleLoadingError(context, e);
     }
   }
-  
+
   Future<void> _addExercise() async {
     showDialog(
       context: context,
@@ -63,19 +63,19 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
           onSubmit: (name) async {
             try {
               final newExercise = await _controller.addExercise(name);
-              
+
               if (!mounted) return;
-              
+
               setState(() {
                 _exercises.insert(0, newExercise);
               });
-              
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('成功添加自訂動作')),
               );
             } catch (e) {
               if (!mounted) return;
-              
+
               _errorService.handleSavingError(context, e);
             }
           },
@@ -83,7 +83,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
       },
     );
   }
-  
+
   Future<void> _editExercise(CustomExercise exercise) async {
     showDialog(
       context: context,
@@ -93,9 +93,9 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
           onSubmit: (name) async {
             try {
               await _controller.updateExercise(exercise.id, name);
-              
+
               if (!mounted) return;
-              
+
               final index = _exercises.indexWhere((e) => e.id == exercise.id);
               if (index != -1) {
                 final updatedExercise = CustomExercise(
@@ -104,18 +104,18 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
                   userId: exercise.userId,
                   createdAt: exercise.createdAt,
                 );
-                
+
                 setState(() {
                   _exercises[index] = updatedExercise;
                 });
               }
-              
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('成功更新自訂動作')),
               );
             } catch (e) {
               if (!mounted) return;
-              
+
               _errorService.handleSavingError(context, e);
             }
           },
@@ -123,27 +123,27 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
       },
     );
   }
-  
+
   Future<void> _deleteExercise(String exerciseId) async {
     try {
       await _controller.deleteExercise(exerciseId);
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _exercises.removeWhere((e) => e.id == exerciseId);
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('成功刪除自訂動作')),
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       _errorService.handleError(context, e);
     }
   }
-  
+
   void _selectExercise(CustomExercise exercise) {
     final standardExercise = _controller.convertToExercise(exercise);
     Navigator.pop(context, standardExercise);
@@ -167,7 +167,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
       ),
     );
   }
-  
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -176,7 +176,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
           Icon(
             Icons.fitness_center,
             size: 64,
-            color: Colors.grey[400],
+            color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 16),
           Text(
@@ -184,7 +184,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -192,17 +192,22 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
             '點擊右下角按鈕添加',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
       ),
     );
   }
-  
+
   Widget _buildExerciseList() {
     return ListView.builder(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.only(
+        left: 8,
+        right: 8,
+        top: 8,
+        bottom: 96, // 增加底部填充，避免被 FAB 遮擋
+      ),
       itemCount: _exercises.length,
       itemBuilder: (context, index) {
         final exercise = _exercises[index];
@@ -222,7 +227,8 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete),
-                  onPressed: () => _showDeleteConfirmDialog(exercise.id, exercise.name),
+                  onPressed: () =>
+                      _showDeleteConfirmDialog(exercise.id, exercise.name),
                   tooltip: '刪除',
                 ),
               ],
@@ -232,12 +238,13 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
       },
     );
   }
-  
+
   String _formatDate(DateTime date) {
     return '${date.year}/${date.month}/${date.day}';
   }
-  
-  Future<void> _showDeleteConfirmDialog(String exerciseId, String exerciseName) async {
+
+  Future<void> _showDeleteConfirmDialog(
+      String exerciseId, String exerciseName) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -255,9 +262,9 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       _deleteExercise(exerciseId);
     }
   }
-} 
+}

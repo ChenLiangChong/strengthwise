@@ -13,6 +13,7 @@
 1. **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - 專案架構和技術棧
 2. **[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)** - 當前開發進度
 3. **[docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md)** - Firestore 資料庫設計
+4. **[docs/UI_UX_GUIDELINES.md](docs/UI_UX_GUIDELINES.md)** - UI/UX 設計規範（⭐ 新增）
 
 ---
 
@@ -62,6 +63,25 @@ try {
 - ✅ **必須**：關鍵業務邏輯加**繁體中文註解**
 - ✅ **必須**：公共方法使用 Dart Doc 註解（`///`）
 - ✅ **必須**：所有程式碼註解、變數命名、UI 文字都使用**繁體中文**
+
+### 6. 文檔管理規範 ⭐⭐
+- ❌ **禁止**：非必要情況下產生新的 Markdown 文檔
+- ✅ **必須**：新增文檔前先確認是否可以更新現有文檔
+- ✅ **必須**：臨時性、實驗性文檔在任務完成後應清理
+
+### 6. 文檔管理規範 ⭐⭐
+- ❌ **禁止**：非必要情況下產生新的 Markdown 文檔
+- ✅ **必須**：新增文檔前先確認是否可以更新現有文檔
+- ✅ **必須**：臨時性、實驗性文檔在任務完成後應清理
+
+### 7. UI/UX 設計規範 ⭐⭐
+- ✅ **必須**：遵循 `docs/UI_UX_GUIDELINES.md` 中的設計系統
+- ✅ **必須**：所有間距使用 8 點網格系統（8, 16, 24, 32...）
+- ✅ **必須**：觸控目標最小高度 48dp
+- ✅ **必須**：支援深色/淺色模式切換
+- ✅ **必須**：使用語意化色彩（Primary, Surface, OnSurface 等）
+- ✅ **建議**：關鍵操作加入觸覺回饋（HapticFeedback）
+
 
 ---
 
@@ -202,50 +222,82 @@ TextField(
 
 ## 🎯 當前開發重點
 
-**目標**：完善單機版功能
+**目標**：🎨 UI/UX 全面重設計（2024-12-25 開始）
+
+**當前階段**：✅ **配色系統最終定案**（準備進入 Week 3）
+
+### 📋 4 週執行計劃
+
+| 週次 | 階段 | 狀態 | 交付物 |
+|------|------|------|--------|
+| ~~Week 1~~ | ⚙️ 基礎建設 | ✅ **已完成** | 可切換深淺模式的主題系統 |
+| ~~Week 2~~ | 🎯 核心重構 | ✅ **已完成** | 全新的訓練記錄體驗 + 配色標準化 |
+| **Week 3** | 🗺️ 導航與框架 | ⏳ **準備開始** | 完整的 App 框架 |
+| Week 4 | ✨ 細節打磨 | ⏳ 待開始 | 市場級品質 UI/UX |
+
+**✅ Week 2 已完成**：
+- ✅ 卡片式訓練記錄 UI（ExerciseCard + SetInputRow）
+- ✅ JetBrains Mono 等寬字體整合
+- ✅ 配色系統最終定案（設計團隊簽署）
+- ✅ 全 App 配色標準化（8 個核心頁面）
+- ✅ 移除所有硬編碼顏色（~70 處修正）
+
+**🎉 重大里程碑**：
+從「通用 App」成功轉型為「品牌 App」，完成「打熬」專屬配色系統建立。
+
+**設計文檔**：
+- `docs/UI_UX_GUIDELINES.md` - 完整 UI/UX 規範
+- `docs/ui_prototype.html` - 互動原型
+
+---
 
 **最近完成**（2024-12-25）：
+- ✅ **配色系統最終定案**（2024-12-25 晚上）⭐⭐⭐
+  - 設計團隊正式簽署配色決策
+  - 實施 Sky-400 電光藍（深色主色）
+  - 實施 Slate-50 極致乾淨背景（淺色）
+  - 全 App 配色標準化（8 個核心頁面，~70 處修正）
+  - 從「通用 App」到「品牌 App」的轉型完成
+- ✅ **Week 2 核心組件**（2024-12-25）
+  - ExerciseCard + SetInputRow 卡片式 UI
+  - JetBrains Mono 等寬字體整合
+  - 智能數字格式化（20 而不是 20.000）
+  - WorkoutExecutionPage 完整重構
+- ✅ **Week 1 主題系統**（2024-12-25）
+  - Titanium Blue 配色方案
+  - Light/Dark/System 三種模式
+  - 完整的 Material 3 實作
+- ✅ **UI/UX 設計系統建立**（2024-12-25）
+  - 創建完整設計規範文檔（20,000+ 字）
+  - 定義 Kinetic 設計系統
+  - HTML 互動原型與 Flutter 實作指南
+  - 4 週執行路徑圖
 - ✅ **Google 登入 & 新用戶默認模板**（2024-12-24 深夜）
   - Google 登入修復（真實設備測試成功）
   - 新用戶自動獲得 5 天專業訓練模板
   - Release APK 構建與安裝（55.8 MB）
-  - 文檔整理和清理
 - ✅ **訓練模板系統完善**（2024-12-24 晚上）
-  - 簡化模板編輯器（移除複雜功能）
-  - 解決緩存刷新問題（編輯後立即更新）
-  - 完善訓練頁面功能（添加編輯選項、修正導航）
+  - 簡化模板編輯器、解決緩存刷新問題
 - ✅ **時間權限控制**（2024-12-24 晚上）
-  - 過去的訓練：只能查看，不能編輯/刪除
-  - 未來的訓練：可以編輯，不能勾選完成
-  - 今天的訓練：完整權限
-- ✅ **計劃編輯器每組單獨編輯功能**（2024-12-24）
-  - 支持 setTargets 欄位
-  - 內嵌式編輯 UI
-  - 與訓練執行頁面同步
-- ✅ **隱藏記錄頁面**（教練-學員版本功能）
-- ✅ **簡化首頁**（移除未完成的功能）
+  - 過去/現在/未來訓練的權限控制
 
 **基礎功能 v1.0**：✅ 已完成
 - ✅ 訓練模板系統（階段 8）
 - ✅ 時間權限控制（階段 9）
 - ✅ Google 登入（階段 10）
 
-**已知問題**（需優化）：
-詳見 `docs/DEVELOPMENT_STATUS.md`
-- 🔴 P0：FloatingActionButton 擋住內容
-- 🟡 P0：手機返回鍵導航問題
-- 🟡 P0：通知欄位置問題
-- 🔵 P1：力量進步頁面顯示小曲線
-- 🟡 P1：自訂動作錯誤處理
-
-**下一步**：
-1. **P0**：修復已知的 UI/UX 問題（FAB、返回鍵、通知欄）
-2. **P1**：力量進步頁面優化（卡片曲線預覽）
-3. **P2**：性能優化、錯誤處理完善
+**已順延的任務**：
+以下任務待 UI/UX 重設計完成後處理（詳見 `docs/DEVELOPMENT_STATUS.md`）
+- FloatingActionButton 擋住內容 → Week 3 解決
+- 手機返回鍵導航問題 → Week 3 解決
+- 通知欄位置問題 → Week 4 解決
+- 力量進步頁面優化 → UI 重構後評估
+- 自訂動作錯誤處理 → UI 重構後優化
 
 **參考文檔**：
 - `docs/DEVELOPMENT_STATUS.md` - 了解整體進度和已知問題
 - `docs/DATABASE_DESIGN.md` - 查看資料庫結構
+- `docs/UI_UX_GUIDELINES.md` - UI/UX 設計規範（⭐ 新增）
 - `docs/BUILD_RELEASE.md` - 構建和發布指南
 - `docs/GOOGLE_SIGNIN_COMPLETE_SETUP.md` - Google 登入配置
 
@@ -258,6 +310,7 @@ TextField(
 - `docs/PROJECT_OVERVIEW.md` - 專案架構總覽
 - `docs/DEVELOPMENT_STATUS.md` - 開發狀態和已知問題
 - `docs/DATABASE_DESIGN.md` - 資料庫設計（794 個動作）
+- `docs/UI_UX_GUIDELINES.md` - UI/UX 設計規範（⭐ 新增）
 - `docs/STATISTICS_IMPLEMENTATION.md` - 統計功能實作
 
 ### 操作指南
@@ -270,6 +323,14 @@ TextField(
 ### 腳本文檔
 - `scripts/README.md` - 所有腳本的使用說明
 - `scripts/generate_professional_training_data.py` - 生成訓練數據
+
+### 分析文檔
+- `analysis/README.md` - 專案分析文檔
+- `analysis/firestore_analysis.md` - Firestore 資料庫分析
+
+### 其他重要文檔
+- `PROJECT_SUMMARY.md` - 專案總結
+- `README.md` - 專案首頁
 
 ---
 

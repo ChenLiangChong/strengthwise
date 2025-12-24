@@ -177,11 +177,11 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (widget.isFirstTimeSetup)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 20.0),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20.0),
                   child: Text(
                     '請完成您的個人資料設置，以便我們能夠為您提供更好的服務',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                    style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ),
               
@@ -191,14 +191,14 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                   children: [
                     CircleAvatar(
                       radius: 50,
-                      backgroundColor: Colors.grey[300],
+                      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                       backgroundImage: _avatarFile != null 
                           ? FileImage(_avatarFile!) 
                           : (_userProfile?.photoURL != null 
                               ? NetworkImage(_userProfile!.photoURL!) as ImageProvider 
                               : null),
                       child: _avatarFile == null && _userProfile?.photoURL == null
-                          ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                          ? Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.onSurfaceVariant)
                           : null,
                     ),
                     Positioned(
@@ -395,7 +395,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                         ? '${_birthDate!.year}年${_birthDate!.month}月${_birthDate!.day}日'
                         : '點擊選擇生日',
                     style: TextStyle(
-                      color: _birthDate != null ? Colors.black : Colors.grey,
+                      color: _birthDate != null ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),

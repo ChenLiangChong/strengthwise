@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../models/favorite_exercise_model.dart';
 import '../../models/statistics_model.dart';
 import '../../services/interfaces/i_favorites_service.dart';
-import '../../services/interfaces/i_statistics_service.dart';
 import '../../services/service_locator.dart';
 
 /// 收藏動作列表組件
@@ -11,6 +10,7 @@ import '../../services/service_locator.dart';
 class FavoriteExercisesList extends StatefulWidget {
   final String userId;
   final TimeRange timeRange;
+  final List<ExerciseStrengthProgress> strengthProgress; // 接收外層的統計數據
   final Function(String exerciseId)? onExerciseTap;
   final VoidCallback? onAddMoreTap;
 
@@ -18,6 +18,7 @@ class FavoriteExercisesList extends StatefulWidget {
     Key? key,
     required this.userId,
     required this.timeRange,
+    required this.strengthProgress, // 新增參數
     this.onExerciseTap,
     this.onAddMoreTap,
   }) : super(key: key);
@@ -28,7 +29,6 @@ class FavoriteExercisesList extends StatefulWidget {
 
 class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
   final IFavoritesService _favoritesService = serviceLocator<IFavoritesService>();
-  final IStatisticsService _statisticsService = serviceLocator<IStatisticsService>();
   
   List<FavoriteExercise> _favorites = [];
   Map<String, ExerciseStrengthProgress> _progressMap = {};
@@ -38,6 +38,24 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
   void initState() {
     super.initState();
     _loadFavorites();
+  }
+
+  @override
+  void didUpdateWidget(FavoriteExercisesList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 當外層統計數據更新時，重新建立映射
+    if (oldWidget.strengthProgress != widget.strengthProgress) {
+      _buildProgressMap();
+    }
+  }
+
+  /// 建立力量進步映射
+  void _buildProgressMap() {
+    final Map<String, ExerciseStrengthProgress> progressMap = {};
+    for (var progress in widget.strengthProgress) {
+      progressMap[progress.exerciseId] = progress;
+    }
+    setState(() => _progressMap = progressMap);
   }
 
   /// 載入收藏列表
@@ -56,22 +74,11 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
         return;
       }
 
-      // 獲取力量進步數據
-      final progressList = await _statisticsService.getStrengthProgress(
-        widget.userId,
-        widget.timeRange,
-        limit: 100, // 獲取更多數據以匹配收藏
-      );
-
-      // 建立進度映射
-      final Map<String, ExerciseStrengthProgress> progressMap = {};
-      for (var progress in progressList) {
-        progressMap[progress.exerciseId] = progress;
-      }
+      // 使用外層傳入的力量進步數據
+      _buildProgressMap();
 
       setState(() {
         _favorites = favorites;
-        _progressMap = progressMap;
         _isLoading = false;
       });
     } catch (e) {
@@ -129,13 +136,13 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Spacer(),
-              TextButton.icon(
+              // 使用 IconButton 替代 TextButton.icon 避免佈局問題
+              IconButton(
                 onPressed: () => _showManageFavoritesDialog(),
-                icon: const Icon(Icons.settings, size: 16),
-                label: const Text('管理'),
-                style: TextButton.styleFrom(
-                  textStyle: const TextStyle(fontSize: 12),
-                ),
+                icon: const Icon(Icons.settings, size: 20),
+                tooltip: '管理收藏',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
               ),
             ],
           ),
@@ -211,7 +218,9 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
                           children: [
                             // 身體部位標籤
                             Container(
@@ -229,7 +238,6 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
                             // 最後訓練時間
                             Text(
                               favorite.lastViewedAt != null
@@ -237,7 +245,7 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
                                   : '尚未查看',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Colors.grey[600],
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -263,8 +271,8 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: isPositive
-                            ? Colors.green.withOpacity(0.1)
-                            : Colors.grey.withOpacity(0.1),
+                            ? Theme.of(context).colorScheme.secondary.withOpacity(0.1)
+                            : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -273,7 +281,7 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
                           Icon(
                             isPositive ? Icons.trending_up : Icons.trending_flat,
                             size: 16,
-                            color: isPositive ? Colors.green : Colors.grey,
+                            color: isPositive ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -281,7 +289,7 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: isPositive ? Colors.green : Colors.grey,
+                              color: isPositive ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -292,7 +300,7 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
                       '最大重量: ${progress.formattedCurrentMax}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -303,7 +311,7 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
                   '尚未有訓練記錄',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[500],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -368,11 +376,11 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
   Color _getBodyPartColor(String bodyPart) {
     if (bodyPart.contains('胸')) return Colors.red;
     if (bodyPart.contains('背')) return Colors.blue;
-    if (bodyPart.contains('腿')) return Colors.green;
-    if (bodyPart.contains('肩')) return Colors.orange;
-    if (bodyPart.contains('手')) return Colors.purple;
+    if (bodyPart.contains('腿')) return Theme.of(context).colorScheme.secondary;
+    if (bodyPart.contains('肩')) return Theme.of(context).colorScheme.primary;
+    if (bodyPart.contains('手')) return Theme.of(context).colorScheme.primary;
     if (bodyPart.contains('核心') || bodyPart.contains('腹')) return Colors.teal;
-    return Colors.grey;
+    return Theme.of(context).colorScheme.onSurfaceVariant;
   }
 }
 

@@ -8,6 +8,8 @@ import '../../services/error_handling_service.dart';
 import '../../services/service_locator.dart';
 import 'workout/workout_execution_page.dart';
 import 'statistics_page_v2.dart';
+import 'theme_test_page.dart'; // 臨時測試用
+import 'workout_ui_test_page.dart'; // Week 2 UI 測試
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -238,52 +240,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final user = _authController.user;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Strength Wise'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bar_chart),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const StatisticsPageV2(),
-                ),
-              );
-            },
-            tooltip: '訓練統計',
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await Future.wait([
-            _loadRecentWorkouts(),
-            _loadTodayPlans(),
-          ]);
-        },
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 用戶問候區域
-              _buildUserGreeting(user?.displayName ?? user?.nickname),
-
-              // 今日訓練計畫
-              _buildTodayPlans(),
-
-              // 最近訓練記錄
-              _buildRecentWorkouts(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUserGreeting(String? userName) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final brightness = Theme.of(context).brightness;
     final now = DateTime.now();
     final hour = now.hour;
 
@@ -296,45 +254,134 @@ class _HomePageState extends State<HomePage> {
       greeting = '晚安';
     }
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.green[400]!, Colors.green[700]!],
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                '$greeting，${userName ?? '健身愛好者'}',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+    return Scaffold(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await Future.wait([
+            _loadRecentWorkouts(),
+            _loadTodayPlans(),
+          ]);
+        },
+        child: CustomScrollView(
+          slivers: [
+            // SliverAppBar with gradient background
+            SliverAppBar(
+              expandedHeight: 140,
+              floating: false,
+              pinned: true,
+              backgroundColor: brightness == Brightness.light 
+                  ? colorScheme.primary  // 淺色模式：藍色
+                  : null,  // 深色模式：使用預設深色背景
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+                title: Text(
+                  'Strength Wise',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: brightness == Brightness.light
+                          ? [
+                              colorScheme.primary,
+                              colorScheme.primary.withOpacity(0.8),
+                            ]
+                          : [
+                              colorScheme.surface,
+                              colorScheme.surface.withOpacity(0.95),
+                            ],
+                    ),
+                  ),
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 56),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            '$greeting，${user?.displayName ?? user?.nickname ?? '健身愛好者'}',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            DateFormat('yyyy年MM月dd日 EEEE', 'zh_TW').format(now),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              const Spacer(),
-              const Icon(
-                Icons.fitness_center,
-                color: Colors.white,
-                size: 28,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            DateFormat('yyyy年MM月dd日 EEEE', 'zh_TW').format(now),
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.white,
+              actions: [
+                // 🏋️ Week 2 UI 測試按鈕（臨時）
+                IconButton(
+                  icon: const Icon(Icons.fitness_center, color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const WorkoutUITestPage(),
+                      ),
+                    );
+                  },
+                  tooltip: 'Week 2 UI 測試',
+                ),
+                // 🎨 主題測試按鈕（臨時）
+                IconButton(
+                  icon: const Icon(Icons.palette, color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ThemeTestPage(),
+                      ),
+                    );
+                  },
+                  tooltip: '主題測試',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.bar_chart, color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const StatisticsPageV2(),
+                      ),
+                    );
+                  },
+                  tooltip: '訓練統計',
+                ),
+              ],
             ),
-          ),
-        ],
+            // 今日訓練計畫
+            SliverToBoxAdapter(
+              child: _buildTodayPlans(),
+            ),
+            // 最近訓練記錄
+            SliverToBoxAdapter(
+              child: _buildRecentWorkouts(),
+            ),
+            // 底部填充，避免被底部導航遮擋
+            SliverPadding(
+              padding: const EdgeInsets.only(bottom: 24),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -377,14 +424,15 @@ class _HomePageState extends State<HomePage> {
           Icon(
             Icons.event_available,
             size: 48,
-            color: Colors.grey[400],
+            color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 16),
           Text(
             '今天還沒有安排訓練',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500, // 加粗以提升可讀性
             ),
           ),
         ],
@@ -428,14 +476,15 @@ class _HomePageState extends State<HomePage> {
                   Icon(
                     Icons.access_time,
                     size: 16,
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     timeInfo,
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const Spacer(),
@@ -445,15 +494,13 @@ class _HomePageState extends State<HomePage> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: completed
-                          ? Colors.purple.withOpacity(0.2)
-                          : Colors.green.withOpacity(0.2),
+                      color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       completed ? '已完成' : '待完成',
                       style: TextStyle(
-                        color: completed ? Colors.purple : Colors.green,
+                        color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -473,17 +520,18 @@ class _HomePageState extends State<HomePage> {
               Text(
                 '$exerciseCount 個動作',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               if (exerciseCount > 0) ...[
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
                   value: progress,
-                  backgroundColor: Colors.grey[200],
+                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    completed ? Colors.purple : Colors.green,
+                    Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -491,7 +539,8 @@ class _HomePageState extends State<HomePage> {
                   '完成度: ${(progress * 100).toInt()}%',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -539,14 +588,15 @@ class _HomePageState extends State<HomePage> {
           Icon(
             Icons.fitness_center,
             size: 48,
-            color: Colors.grey[400],
+            color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 16),
           Text(
             '還沒有訓練記錄',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
@@ -554,7 +604,7 @@ class _HomePageState extends State<HomePage> {
             '完成訓練後就能看到記錄了！',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -602,7 +652,7 @@ class _HomePageState extends State<HomePage> {
                     formattedDate,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey[700],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -618,7 +668,9 @@ class _HomePageState extends State<HomePage> {
                   ),
                   Icon(
                     completed ? Icons.check_circle : Icons.circle_outlined,
-                    color: completed ? Colors.purple : Colors.grey,
+                    color: completed 
+                        ? Theme.of(context).colorScheme.primary 
+                        : Theme.of(context).colorScheme.outline,
                   ),
                 ],
               ),
@@ -626,21 +678,25 @@ class _HomePageState extends State<HomePage> {
               Text(
                 '$exerciseCount 個動作',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 8),
               LinearProgressIndicator(
                 value: progress,
-                backgroundColor: Colors.grey[200],
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.purple),
+                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).colorScheme.primary,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 '完成度: ${(progress * 100).toInt()}%',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],

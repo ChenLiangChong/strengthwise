@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:provider/provider.dart';
 import '../../models/user_model.dart';
 import '../../services/interfaces/i_auth_service.dart';
 import '../../services/interfaces/i_user_service.dart';
 import '../../services/service_locator.dart';
+import '../../controllers/theme_controller.dart';
 import '../login_page.dart';
 import 'profile_settings_page.dart';
 import 'migration_test_page.dart';
@@ -20,23 +20,9 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   late final IUserService _userService;
   late final IAuthService _authService;
-  final _formKey = GlobalKey<FormState>();
 
   UserModel? _userProfile;
   bool _isLoading = true;
-  bool _isSaving = false;
-  File? _avatarFile;
-
-  // 表單控制器
-  final TextEditingController _displayNameController = TextEditingController();
-  final TextEditingController _nicknameController = TextEditingController();
-  final TextEditingController _heightController = TextEditingController();
-  final TextEditingController _weightController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
-
-  String? _gender;
-  bool _isCoach = false;
-  bool _isStudent = true;
 
   @override
   void initState() {
@@ -45,16 +31,6 @@ class _ProfilePageState extends State<ProfilePage> {
     _userService = serviceLocator<IUserService>();
     _authService = serviceLocator<IAuthService>();
     _loadUserProfile();
-  }
-
-  @override
-  void dispose() {
-    _displayNameController.dispose();
-    _nicknameController.dispose();
-    _heightController.dispose();
-    _weightController.dispose();
-    _ageController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadUserProfile() async {
@@ -67,14 +43,6 @@ class _ProfilePageState extends State<ProfilePage> {
     if (userProfile != null) {
       setState(() {
         _userProfile = userProfile;
-        _displayNameController.text = userProfile.displayName ?? '';
-        _nicknameController.text = userProfile.nickname ?? '';
-        _gender = userProfile.gender;
-        _heightController.text = userProfile.height?.toString() ?? '';
-        _weightController.text = userProfile.weight?.toString() ?? '';
-        _ageController.text = userProfile.age?.toString() ?? '';
-        _isCoach = userProfile.isCoach ?? false;
-        _isStudent = userProfile.isStudent ?? true;
       });
     }
 
@@ -83,61 +51,8 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      setState(() {
-        _avatarFile = File(pickedFile.path);
-      });
-    }
-  }
-
-  Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isSaving = true;
-    });
-
-    final success = await _userService.updateUserProfile(
-      displayName: _displayNameController.text,
-      nickname: _nicknameController.text,
-      gender: _gender,
-      height: _heightController.text.isNotEmpty
-          ? double.parse(_heightController.text)
-          : null,
-      weight: _weightController.text.isNotEmpty
-          ? double.parse(_weightController.text)
-          : null,
-      age: _ageController.text.isNotEmpty
-          ? int.parse(_ageController.text)
-          : null,
-      isCoach: _isCoach,
-      isStudent: _isStudent,
-      avatarFile: _avatarFile,
-    );
-
-    setState(() {
-      _isSaving = false;
-    });
-
-    if (success) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('個人資料已保存')));
-    } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('保存失敗，請稍後再試')));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final userData = _authService.getCurrentUser();
-
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -152,12 +67,14 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 CircleAvatar(
                   radius: 40,
-                  backgroundColor: Colors.grey[300],
+                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                   backgroundImage: _userProfile?.photoURL != null
                       ? NetworkImage(_userProfile!.photoURL!)
                       : null,
                   child: _userProfile?.photoURL == null
-                      ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                      ? Icon(Icons.person,
+                          size: 40,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)
                       : null,
                 ),
                 const SizedBox(width: 20),
@@ -179,23 +96,28 @@ class _ProfilePageState extends State<ProfilePage> {
                         Text(
                           '性別: ${_userProfile!.gender}',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       if (_userProfile?.age != null)
                         Text(
                           '年齡: ${_userProfile!.age} 歲',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
-                      if (_userProfile?.bio != null && _userProfile!.bio!.isNotEmpty)
+                      if (_userProfile?.bio != null &&
+                          _userProfile!.bio!.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4.0),
                           child: Text(
                             _userProfile!.bio!,
                             style: TextStyle(
-                              color: Colors.grey[700],
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                               fontSize: 14,
                             ),
                             maxLines: 2,
@@ -220,7 +142,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ],
             ),
-            
+
             // 新增：詳細資訊卡片
             if (_userProfile != null) ...[
               const SizedBox(height: 20),
@@ -264,7 +186,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ],
-            
+
             const SizedBox(height: 30),
             // 功能菜單
             Expanded(
@@ -313,6 +235,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     title: '身體數據',
                     onTap: () {},
                   ),
+                  const Divider(),
+                  // 主題切換選項
+                  _buildThemeSwitcher(context),
                   // 開發模式：遷移測試入口
                   if (kDebugMode) ...[
                     const Divider(),
@@ -356,7 +281,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return ListTile(
       leading: Icon(
         icon,
-        color: Colors.green,
+        color: Theme.of(context).colorScheme.primary,
       ),
       title: Text(title),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -372,11 +297,11 @@ class _ProfilePageState extends State<ProfilePage> {
     return SwitchListTile(
       title: Text(title),
       value: value,
-      activeThumbColor: Colors.green,
+      activeThumbColor: Theme.of(context).colorScheme.primary,
       onChanged: onChanged,
     );
   }
-  
+
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -386,7 +311,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             label,
             style: TextStyle(
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 14,
             ),
           ),
@@ -395,6 +320,99 @@ class _ProfilePageState extends State<ProfilePage> {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 主題切換組件
+  /// 
+  /// 提供三種模式切換：淺色、深色、跟隨系統
+  /// 使用 SegmentedButton 符合 Material 3 設計規範
+  Widget _buildThemeSwitcher(BuildContext context) {
+    final themeController = Provider.of<ThemeController>(context);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.palette_outlined,
+                size: 20,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '外觀主題',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment<ThemeMode>(
+                  value: ThemeMode.light,
+                  icon: Icon(Icons.wb_sunny, size: 18),
+                  label: Text('淺色'),
+                ),
+                ButtonSegment<ThemeMode>(
+                  value: ThemeMode.dark,
+                  icon: Icon(Icons.nightlight_round, size: 18),
+                  label: Text('深色'),
+                ),
+                ButtonSegment<ThemeMode>(
+                  value: ThemeMode.system,
+                  icon: Icon(Icons.phone_android, size: 18),
+                  label: Text('系統'),
+                ),
+              ],
+              selected: {themeController.themeMode},
+              onSelectionChanged: (Set<ThemeMode> newSelection) {
+                themeController.setThemeMode(newSelection.first);
+              },
+              style: ButtonStyle(
+                visualDensity: VisualDensity.comfortable,
+                backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                  (Set<WidgetState> states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return colorScheme.primary;
+                    }
+                    return colorScheme.surface;
+                  },
+                ),
+                foregroundColor: WidgetStateProperty.resolveWith<Color>(
+                  (Set<WidgetState> states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return colorScheme.onPrimary;
+                    }
+                    return colorScheme.onSurface;
+                  },
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              themeController.themeMode == ThemeMode.system
+                  ? '當前跟隨系統設定'
+                  : '當前使用${themeController.themeModeName}',
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],

@@ -48,7 +48,26 @@
 
 ---
 
-### 4. [STATISTICS_IMPLEMENTATION.md](STATISTICS_IMPLEMENTATION.md)
+### 4. [UI_UX_GUIDELINES.md](UI_UX_GUIDELINES.md) ⭐ 新增
+**UI/UX 設計規範**
+
+包含：
+- Kinetic 設計系統（字體、間距、圖標）
+- 語意化色彩系統（深色/淺色模式）
+- 核心視圖重塑方案（Dashboard、Logger、Library、Settings）
+- 技術實作指南（ThemeData、狀態管理）
+- 互動設計與微動畫（Haptics、Transitions）
+- 無障礙設計（對比度、動態字級）
+- 執行路徑圖（4 週計劃）
+- **附錄 A**：HTML 原型到 Flutter 實作指南（完整的 Widget 範例）
+
+**相關文件**：[ui_prototype.html](ui_prototype.html) - 互動式 UI 原型
+
+**適合對象**：實作 UI/UX 改版、建立設計系統的開發者
+
+---
+
+### 5. [STATISTICS_IMPLEMENTATION.md](STATISTICS_IMPLEMENTATION.md)
 **統計功能實作指南**
 
 包含：
@@ -63,7 +82,7 @@
 
 ## 🛠️ 操作指南
 
-### 5. [BUILD_RELEASE.md](BUILD_RELEASE.md)
+### 6. [BUILD_RELEASE.md](BUILD_RELEASE.md)
 **Release APK 構建和安裝指南**
 
 包含：
@@ -77,7 +96,7 @@
 
 ---
 
-### 6. [GOOGLE_SIGNIN_COMPLETE_SETUP.md](GOOGLE_SIGNIN_COMPLETE_SETUP.md)
+### 7. [GOOGLE_SIGNIN_COMPLETE_SETUP.md](GOOGLE_SIGNIN_COMPLETE_SETUP.md)
 **Google Sign-In 完整配置指南**
 
 包含：
@@ -115,6 +134,8 @@
 
 **開始開發** → [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md) + [DATABASE_DESIGN.md](DATABASE_DESIGN.md)
 
+**設計 UI/UX** → [UI_UX_GUIDELINES.md](UI_UX_GUIDELINES.md) ⭐ 新增
+
 **實作統計功能** → [STATISTICS_IMPLEMENTATION.md](STATISTICS_IMPLEMENTATION.md)
 
 **構建 APK** → [BUILD_RELEASE.md](BUILD_RELEASE.md)
@@ -137,6 +158,7 @@ docs/
 │   ├── PROJECT_OVERVIEW.md                # 🏗️ 專案架構總覽
 │   ├── DEVELOPMENT_STATUS.md              # 📊 開發狀態和已知問題
 │   ├── DATABASE_DESIGN.md                 # 🗄️ 資料庫設計
+│   ├── UI_UX_GUIDELINES.md                # 🎨 UI/UX 設計規範（⭐ 新增）
 │   └── STATISTICS_IMPLEMENTATION.md       # 📈 統計功能實作
 │
 ├── 操作指南/
@@ -194,6 +216,13 @@ docs/
 ---
 
 ## 🎉 最近更新（2024-12-25）
+
+### ⭐ UI/UX 設計規範發布（2024-12-25）
+- **新增文檔**：創建完整的 UI/UX 設計規範（UI_UX_GUIDELINES.md）
+- **設計系統**：定義 Kinetic 設計系統（字體、間距、圖標）
+- **雙模主題**：深色/淺色模式配色方案（Titanium Blue）
+- **技術實作**：ThemeData 架構、狀態管理、響應式佈局
+- **執行路徑**：4 週實施計劃，從基礎建設到細節打磨
 
 ### ✅ Google 登入 & 新用戶默認模板（2024-12-24 深夜）
 - **Google 登入修復**：修復類型轉換錯誤，在真實設備測試成功

@@ -695,10 +695,11 @@ class StatisticsService implements IStatisticsService {
           .where('completed', isEqualTo: true)
           .get();
 
-      _errorService.logError(
-        '查詢到 ${snapshot.docs.length} 個已完成的訓練 (userId: $userId)',
-        type: 'StatisticsDebug',
-      );
+      // 移除重複的 debug 日誌（性能優化）
+      // _errorService.logError(
+      //   '查詢到 ${snapshot.docs.length} 個已完成的訓練 (userId: $userId)',
+      //   type: 'StatisticsDebug',
+      // );
 
       // 解析並轉換為統一格式
       final List<_UnifiedWorkoutData> workouts = [];
@@ -717,10 +718,11 @@ class StatisticsService implements IStatisticsService {
         }
       }
 
-      _errorService.logError(
-        '過濾後剩餘 ${workouts.length} 個訓練',
-        type: 'StatisticsDebug',
-      );
+      // 移除重複的 debug 日誌（性能優化）
+      // _errorService.logError(
+      //   '過濾後剩餘 ${workouts.length} 個訓練',
+      //   type: 'StatisticsDebug',
+      // );
 
       return workouts;
     } catch (e) {

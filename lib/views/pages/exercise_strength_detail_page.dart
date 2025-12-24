@@ -158,7 +158,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
               Text(
                 _error,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey[600]),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
@@ -225,7 +225,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
                     '進步幅度',
                     progress.formattedProgress,
                     isPositive ? Icons.trending_up : Icons.trending_flat,
-                    isPositive ? Colors.green : Colors.grey,
+                    isPositive ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 Expanded(
@@ -246,7 +246,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
                     '總組數',
                     '${progress.totalSets}',
                     Icons.format_list_numbered,
-                    Colors.orange,
+                    Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 Expanded(
@@ -254,7 +254,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
                     '平均重量',
                     '${progress.averageWeight.toStringAsFixed(1)} kg',
                     Icons.balance,
-                    Colors.purple,
+                    Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ],
@@ -277,7 +277,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -307,7 +307,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
           child: Center(
             child: Text(
               '暫無歷史數據',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ),
         ),
@@ -337,7 +337,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
                     horizontalInterval: 10,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
-                        color: Colors.grey.withOpacity(0.2),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.2),
                         strokeWidth: 1,
                       );
                     },
@@ -515,7 +515,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
                           record.formattedDate,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -574,7 +574,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
                       record.formattedDate,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -585,7 +585,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
                       decoration: BoxDecoration(
                         color: record.isPR 
                             ? Colors.amber.withOpacity(0.1)
-                            : Colors.grey.withOpacity(0.05),
+                            : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(8),
                         border: record.isPR 
                             ? Border.all(color: Colors.amber.withOpacity(0.3))
@@ -610,7 +610,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
                             '1RM: ${record.estimatedOneRM.toStringAsFixed(0)}kg',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey[600],
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -627,7 +627,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
                   '還有 ${history.length - 10} 條記錄...',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[500],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),

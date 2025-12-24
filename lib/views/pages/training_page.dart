@@ -197,10 +197,10 @@ class _TrainingPageState extends State<TrainingPage> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('模板已更新'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Text('模板已更新'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -313,10 +313,10 @@ class _TrainingPageState extends State<TrainingPage> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('模板已創建'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Text('模板已創建'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -344,11 +344,12 @@ class _TrainingPageState extends State<TrainingPage> {
                   onRefresh: _loadTemplates,
                   child: _buildTemplateList(),
                 ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: _createNewTemplate,
-        icon: const Icon(Icons.add),
-        label: const Text('新模板'),
-        backgroundColor: Colors.green,
+        tooltip: '新模板',
+        backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+        foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -362,7 +363,7 @@ class _TrainingPageState extends State<TrainingPage> {
           Icon(
             Icons.fitness_center,
             size: 80,
-            color: Colors.grey[400],
+            color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 24),
           Text(
@@ -370,7 +371,7 @@ class _TrainingPageState extends State<TrainingPage> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 12),
@@ -378,7 +379,7 @@ class _TrainingPageState extends State<TrainingPage> {
             '創建模板後可以快速安排訓練',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 32),
@@ -387,7 +388,7 @@ class _TrainingPageState extends State<TrainingPage> {
             icon: const Icon(Icons.add),
             label: const Text('創建第一個模板'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ),
@@ -399,7 +400,12 @@ class _TrainingPageState extends State<TrainingPage> {
   /// 建構模板列表
   Widget _buildTemplateList() {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: 96, // 增加底部填充，避免被 FAB 遮擋
+      ),
       itemCount: _templates.length,
       itemBuilder: (context, index) {
         final template = _templates[index];
@@ -461,7 +467,7 @@ class _TrainingPageState extends State<TrainingPage> {
                             template.description,
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey[600],
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -490,7 +496,7 @@ class _TrainingPageState extends State<TrainingPage> {
                   _buildInfoChip(
                     icon: Icons.format_list_numbered,
                     label: '$exerciseCount 個動作',
-                    color: Colors.orange,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ],
               ),

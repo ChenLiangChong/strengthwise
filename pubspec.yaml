@@ -28,6 +28,7 @@ dependencies:
   firebase_crashlytics: ^3.5.7
   firebase_messaging: ^14.7.10
   fl_chart: ^1.1.1
+  google_fonts: ^6.2.0
 
 dev_dependencies:
   flutter_test:

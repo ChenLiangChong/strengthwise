@@ -132,20 +132,26 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.fitness_center,
                       size: 64,
-                      color: Colors.grey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       '還沒有訓練記錄',
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                      style: TextStyle(
+                          fontSize: 18,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       '完成訓練後，這裡會顯示統計數據',
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                      style: TextStyle(
+                          fontSize: 14,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -300,15 +306,17 @@ class _StatisticsPageState extends State<StatisticsPage> {
             comparison,
             style: TextStyle(
               fontSize: 12,
-              color: hasGrowth ? Colors.green : Colors.red,
+              color: hasGrowth
+                  ? Theme.of(context).colorScheme.secondary
+                  : Colors.red,
             ),
           ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
-            color: Colors.grey,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -326,9 +334,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
     }).toList();
 
     // 找出最大值用於 Y 軸範圍
-    final maxVolume = volumeHistory
-        .map((p) => p.totalVolume)
-        .reduce((a, b) => a > b ? a : b);
+    final maxVolume =
+        volumeHistory.map((p) => p.totalVolume).reduce((a, b) => a > b ? a : b);
 
     return Card(
       child: Padding(
@@ -362,7 +369,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         reservedSize: 40,
                         getTitlesWidget: (value, meta) {
                           if (value >= 1000) {
-                            return Text('${(value / 1000).toStringAsFixed(0)}k');
+                            return Text(
+                                '${(value / 1000).toStringAsFixed(0)}k');
                           }
                           return Text(value.toInt().toString());
                         },
@@ -378,7 +386,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
-                          if (value.toInt() >= 0 && 
+                          if (value.toInt() >= 0 &&
                               value.toInt() < volumeHistory.length) {
                             return Text(
                               volumeHistory[value.toInt()].formattedDate,
@@ -462,9 +470,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
                           const SizedBox(width: 16),
                           Text(
                             stat.formattedPercentage,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -472,7 +482,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       const SizedBox(height: 8),
                       LinearProgressIndicator(
                         value: stat.percentage,
-                        backgroundColor: Colors.grey[200],
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceVariant,
                         valueColor: AlwaysStoppedAnimation<Color>(
                           _getColorForBodyPart(stat.bodyPart),
                         ),
@@ -534,9 +545,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
                           const SizedBox(height: 4),
                           Text(
                             suggestion.description,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -564,7 +577,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
       '臀': Colors.pink,
       '全身': Colors.indigo,
     };
-    return colors[bodyPart] ?? Colors.grey;
+    return colors[bodyPart] ?? Theme.of(context).colorScheme.onSurfaceVariant;
   }
 
   /// 根據建議類型獲取圖標
@@ -587,7 +600,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
       case SuggestionType.info:
         return Colors.blue;
       case SuggestionType.success:
-        return Colors.green;
+        return Theme.of(context).colorScheme.secondary;
     }
   }
 
@@ -597,4 +610,3 @@ class _StatisticsPageState extends State<StatisticsPage> {
     super.dispose();
   }
 }
-

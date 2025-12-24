@@ -261,9 +261,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
 
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-            ),
+            style: ElevatedButton.styleFrom(),
             child: const Text('保存'),
           ),
         ],
@@ -324,7 +322,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                             Container(
                               height: 150,
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurfaceVariant),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: ListWheelScrollView.useDelegate(
@@ -369,7 +367,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                             Container(
                               height: 150,
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurfaceVariant),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
@@ -421,7 +419,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
               });
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            style: ElevatedButton.styleFrom(),
             child: const Text('確定'),
           ),
         ],
@@ -448,25 +446,41 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 模板名稱
+                  const Text(
+                    '模板名稱 *',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   TextField(
                     controller: _titleController,
                     decoration: const InputDecoration(
-                      labelText: '模板名稱 *',
                       border: OutlineInputBorder(),
                       hintText: '例如：推日 A',
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
                   // 訓練類型
+                  const Text(
+                    '訓練類型 *',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _selectedPlanType,
                     decoration: const InputDecoration(
-                      labelText: '訓練類型 *',
                       border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                     items: _planTypes.map((type) {
                       return DropdownMenuItem(value: type, child: Text(type));
@@ -477,53 +491,71 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                       });
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
                   // 描述
+                  const Text(
+                    '描述',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   TextField(
                     controller: _descriptionController,
                     decoration: const InputDecoration(
-                      labelText: '描述',
                       border: OutlineInputBorder(),
-                      hintText: '簡單描述這個訓練模板的特點',
+                      hintText: '時間不夠時的快速全身訓練方案',
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
-                    maxLines: 2,
+                    maxLines: 3,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
                   // 預設訓練時間
-                  ListTile(
-                    leading: const Icon(Icons.access_time),
-                    title: const Text('預設訓練時間'),
-                    subtitle: Text('${_trainingTime.hour.toString().padLeft(2, '0')}:${_trainingTime.minute.toString().padLeft(2, '0')}'),
-                    trailing: const Icon(Icons.edit),
-                    onTap: _selectTrainingTime,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: Colors.grey.shade300),
+                  const Text(
+                    '預設訓練時間',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: _selectTrainingTime,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Theme.of(context).colorScheme.outline),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.access_time, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${_trainingTime.hour.toString().padLeft(2, '0')}:${_trainingTime.minute.toString().padLeft(2, '0')}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const Spacer(),
+                          Icon(Icons.edit, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
 
                   // 動作列表標題
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        '訓練動作',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: _addExercise,
-                        icon: const Icon(Icons.add),
-                        label: const Text('添加動作'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                        ),
-                      ),
-                    ],
+                  const Text(
+                    '訓練動作',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
                   // 動作列表
                   if (_exercises.isEmpty)
@@ -532,11 +564,11 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                         padding: const EdgeInsets.all(32),
                         child: Column(
                           children: [
-                            Icon(Icons.fitness_center, size: 64, color: Colors.grey.shade400),
+                            Icon(Icons.fitness_center, size: 64, color: Theme.of(context).colorScheme.outline),
                             const SizedBox(height: 16),
                             Text(
                               '還沒有添加任何動作',
-                              style: TextStyle(color: Colors.grey.shade600),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                           ],
                         ),
@@ -568,12 +600,12 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                                 IconButton(
                                   icon: const Icon(Icons.edit, size: 20),
                                   onPressed: () => _editExerciseSettings(index),
-                                  color: Colors.blue,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.delete, size: 20),
                                   onPressed: () => _removeExercise(index),
-                                  color: Colors.red,
+                                  color: Theme.of(context).colorScheme.error,
                                 ),
                               ],
                             ),
@@ -581,6 +613,22 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                         );
                       },
                     ),
+                  const SizedBox(height: 16),
+                  
+                  // 添加動作按鈕（移到列表下方）
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      onPressed: _addExercise,
+                      icon: const Icon(Icons.add),
+                      label: const Text('添加動作'),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 96), // 底部留白，避免被導航欄遮擋
                 ],
               ),
             ),

@@ -330,7 +330,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                             Container(
                               height: 150,
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurfaceVariant),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: ListWheelScrollView.useDelegate(
@@ -375,7 +375,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                             Container(
                               height: 150,
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurfaceVariant),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
@@ -506,7 +506,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                     onTap: _selectTrainingTime,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: Colors.grey.shade300),
+                      side: BorderSide(color: Theme.of(context).colorScheme.outline),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -538,11 +538,11 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                         padding: const EdgeInsets.all(32),
                         child: Column(
                           children: [
-                            Icon(Icons.fitness_center, size: 64, color: Colors.grey.shade400),
+                            Icon(Icons.fitness_center, size: 64, color: Theme.of(context).colorScheme.outline),
                             const SizedBox(height: 16),
                             Text(
                               '還沒有添加任何動作',
-                              style: TextStyle(color: Colors.grey.shade600),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                           ],
                         ),

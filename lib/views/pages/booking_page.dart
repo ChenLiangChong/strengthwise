@@ -591,16 +591,16 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
           },
           calendarStyle: CalendarStyle(
             markersMaxCount: 4,
-            markerDecoration: const BoxDecoration(
-              color: Colors.green,
+            markerDecoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
               shape: BoxShape.circle,
             ),
             todayDecoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.3),
+              color: Theme.of(context).colorScheme.primaryContainer,
               shape: BoxShape.circle,
             ),
-            selectedDecoration: const BoxDecoration(
-              color: Colors.green,
+            selectedDecoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
               shape: BoxShape.circle,
             ),
           ),
@@ -620,8 +620,8 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                 label: const Text('自主訓練'),
                 selected: _showSelfPlans,
                 onSelected: (_) => _toggleFilter('self'),
-                selectedColor: Colors.green.withOpacity(0.2),
-                checkmarkColor: Colors.green,
+                selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                checkmarkColor: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: 8),
               FilterChip(
@@ -636,8 +636,8 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                 label: const Text('預約'),
                 selected: _showBookings,
                 onSelected: (_) => _toggleFilter('bookings'),
-                selectedColor: Colors.orange.withOpacity(0.2),
-                checkmarkColor: Colors.orange,
+                selectedColor: Theme.of(context).colorScheme.secondaryContainer,
+                checkmarkColor: Theme.of(context).colorScheme.secondary,
               ),
             ],
           ),
@@ -671,7 +671,12 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
     }
     
     return ListView.builder(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.only(
+        left: 8,
+        right: 8,
+        top: 8,
+        bottom: 96, // 增加底部填充，避免被 FAB 遮擋
+      ),
       itemCount: allItems.length,
       itemBuilder: (context, index) {
         final item = allItems[index];
@@ -732,13 +737,13 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.2),
+                      color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
+                    child: Text(
                       '已完成訓練',
                       style: TextStyle(
-                        color: Colors.purple,
+                        color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -758,11 +763,11 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.fitness_center, size: 16, color: Colors.grey),
+                  Icon(Icons.fitness_center, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Text(
                     '${exercises.length} 個動作',
-                    style: TextStyle(color: Colors.grey[700]),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -780,7 +785,7 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                   );
                 },
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.purple,
+                  foregroundColor: Theme.of(context).colorScheme.primary,
                 ),
                 child: const Text('查看訓練記錄'),
               ),
@@ -832,12 +837,14 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
     String typeText;
     
     if (completed) {
-      // 已完成的訓練顯示紫色「已完成」標籤
-      typeColor = Colors.purple;
+      // 已完成的訓練顯示 Secondary 色「已完成」標籤
+      typeColor = Theme.of(context).colorScheme.secondary;
       typeText = '已完成';
     } else {
       // 未完成的訓練根據類型顯示
-      typeColor = planType == 'self' ? Colors.green : Colors.blue;
+      typeColor = planType == 'self' 
+          ? Theme.of(context).colorScheme.primary 
+          : Theme.of(context).colorScheme.tertiary;
       typeText = planType == 'self' ? '自主訓練' : '教練計劃';
     }
     
@@ -904,7 +911,7 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(color: Colors.grey[700]),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -912,22 +919,22 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                  Icon(Icons.access_time, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Text(
                     timeInfo,
-                    style: TextStyle(color: Colors.grey[700]),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(Icons.fitness_center, size: 16, color: Colors.grey),
+                  Icon(Icons.fitness_center, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Text(
                     '${exercises.length} 個動作',
-                    style: TextStyle(color: Colors.grey[700]),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -937,11 +944,11 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.person, size: 16, color: Colors.grey),
+                    Icon(Icons.person, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Text(
                       '教練安排的計劃',
-                      style: TextStyle(color: Colors.grey[700]),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -952,11 +959,11 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.person, size: 16, color: Colors.grey),
+                    Icon(Icons.person, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Text(
                       '已分配給學員',
-                      style: TextStyle(color: Colors.grey[700]),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -966,9 +973,11 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
               const SizedBox(height: 8),
               LinearProgressIndicator(
                 value: progress,
-                backgroundColor: Colors.grey[200],
+                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                 valueColor: AlwaysStoppedAnimation(
-                  completed ? Colors.green : Colors.orange,
+                  completed 
+                      ? Theme.of(context).colorScheme.secondary 
+                      : Theme.of(context).colorScheme.primary,
                 ),
               ),
               
@@ -980,7 +989,9 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                   Text(
                     completed ? '已完成' : '進行中: $completedExercises/$totalExercises',
                     style: TextStyle(
-                      color: completed ? Colors.green : Colors.orange,
+                      color: completed 
+                          ? Theme.of(context).colorScheme.secondary 
+                          : Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1005,7 +1016,7 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64, color: Colors.grey),
+          Icon(icon, size: 64, color: Theme.of(context).colorScheme.outline),
           const SizedBox(height: 16),
           Text(
             title,
@@ -1015,7 +1026,7 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
+            style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
         ],
@@ -1101,22 +1112,22 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                Icon(Icons.access_time, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 4),
                 Text(
                   formattedDateTime,
-                  style: TextStyle(color: Colors.grey[700]),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.person, size: 16, color: Colors.grey),
+                Icon(Icons.person, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 4),
                 Text(
                   isUserMode ? '教練: $coachName' : '學生: $userName',
-                  style: TextStyle(color: Colors.grey[700]),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -1134,7 +1145,9 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                 if (status == 'pending' && !isUserMode)
                   TextButton(
                     onPressed: () => _confirmBooking(bookingId),
-                    style: TextButton.styleFrom(foregroundColor: Colors.green),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.secondary,
+                    ),
                     child: const Text('確認預約'),
                   ),
                 

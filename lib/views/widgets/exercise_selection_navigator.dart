@@ -5,7 +5,7 @@ import '../../services/interfaces/i_statistics_service.dart';
 import '../../services/service_locator.dart';
 
 /// 5 層分類導航組件（用於選擇有訓練記錄的動作）
-/// 
+///
 /// 只顯示使用者有訓練記錄的動作，支持收藏功能
 class ExerciseSelectionNavigator extends StatefulWidget {
   final String userId;
@@ -18,24 +18,28 @@ class ExerciseSelectionNavigator extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<ExerciseSelectionNavigator> createState() => _ExerciseSelectionNavigatorState();
+  State<ExerciseSelectionNavigator> createState() =>
+      _ExerciseSelectionNavigatorState();
 }
 
-class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator> {
-  final IFavoritesService _favoritesService = serviceLocator<IFavoritesService>();
-  final IStatisticsService _statisticsService = serviceLocator<IStatisticsService>();
+class _ExerciseSelectionNavigatorState
+    extends State<ExerciseSelectionNavigator> {
+  final IFavoritesService _favoritesService =
+      serviceLocator<IFavoritesService>();
+  final IStatisticsService _statisticsService =
+      serviceLocator<IStatisticsService>();
 
   int _currentStep = 0; // 0=訓練類型, 1=身體部位, 2=特定肌群, 3=器材類別, 4=動作列表
-  
+
   String? _selectedTrainingType;
   String? _selectedBodyPart;
   String? _selectedSpecificMuscle;
   String? _selectedEquipmentCategory;
-  
+
   List<String> _trainingTypes = [];
   List<String> _bodyParts = [];
   List<ExerciseWithRecord> _exercises = [];
-  
+
   Set<String> _favoriteIds = {};
   bool _isLoading = false;
 
@@ -109,8 +113,6 @@ class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator>
     }
   }
 
-
-
   /// 第5層：載入動作列表
   Future<void> _loadExercises() async {
     setState(() {
@@ -158,7 +160,8 @@ class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator>
   Future<void> _toggleFavorite(ExerciseWithRecord exercise) async {
     try {
       if (_favoriteIds.contains(exercise.exerciseId)) {
-        await _favoritesService.removeFavorite(widget.userId, exercise.exerciseId);
+        await _favoritesService.removeFavorite(
+            widget.userId, exercise.exerciseId);
         setState(() => _favoriteIds.remove(exercise.exerciseId));
       } else {
         await _favoritesService.addFavorite(
@@ -230,7 +233,7 @@ class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator>
         if (_currentStep > 0)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: Colors.grey[100],
+            color: Theme.of(context).colorScheme.surfaceVariant,
             child: Row(
               children: [
                 IconButton(
@@ -241,7 +244,9 @@ class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator>
                 Expanded(
                   child: Text(
                     _getBreadcrumbText(),
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -300,12 +305,16 @@ class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.info_outline, size: 64, color: Colors.grey),
+            Icon(Icons.info_outline,
+                size: 64,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             const Text('沒有可選項目'),
             if (subtitle != null) ...[
               const SizedBox(height: 8),
-              Text(subtitle, style: TextStyle(color: Colors.grey[600])),
+              Text(subtitle,
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ],
           ],
         ),
@@ -324,7 +333,9 @@ class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator>
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
           const SizedBox(height: 16),
@@ -344,13 +355,15 @@ class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator>
   /// 建立動作列表
   Widget _buildExerciseList() {
     if (_exercises.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.fitness_center, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('沒有找到動作'),
+            Icon(Icons.fitness_center,
+                size: 64,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            const SizedBox(height: 16),
+            const Text('沒有找到動作'),
           ],
         ),
       );
@@ -366,7 +379,9 @@ class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator>
         const SizedBox(height: 8),
         Text(
           '💡 數字表示你有訓練記錄的動作數量',
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 16),
         ..._exercises.map((exercise) => _buildExerciseCard(exercise)),
@@ -404,7 +419,8 @@ class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator>
                           '最後訓練: ${exercise.formattedLastTrainingDate}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -413,7 +429,9 @@ class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator>
                   IconButton(
                     icon: Icon(
                       exercise.isFavorite ? Icons.star : Icons.star_border,
-                      color: exercise.isFavorite ? Colors.amber : Colors.grey,
+                      color: exercise.isFavorite
+                          ? Colors.amber
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     onPressed: () => _toggleFavorite(exercise),
                     tooltip: exercise.isFavorite ? '取消收藏' : '收藏',
@@ -424,9 +442,11 @@ class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator>
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _getBodyPartColor(exercise.bodyPart).withOpacity(0.1),
+                      color:
+                          _getBodyPartColor(exercise.bodyPart).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -443,7 +463,7 @@ class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator>
                     '最大重量: ${exercise.formattedMaxWeight}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -467,11 +487,10 @@ class _ExerciseSelectionNavigatorState extends State<ExerciseSelectionNavigator>
   Color _getBodyPartColor(String bodyPart) {
     if (bodyPart.contains('胸')) return Colors.red;
     if (bodyPart.contains('背')) return Colors.blue;
-    if (bodyPart.contains('腿')) return Colors.green;
-    if (bodyPart.contains('肩')) return Colors.orange;
-    if (bodyPart.contains('手')) return Colors.purple;
+    if (bodyPart.contains('腿')) return Theme.of(context).colorScheme.secondary;
+    if (bodyPart.contains('肩')) return Theme.of(context).colorScheme.primary;
+    if (bodyPart.contains('手')) return Theme.of(context).colorScheme.primary;
     if (bodyPart.contains('核心') || bodyPart.contains('腹')) return Colors.teal;
-    return Colors.grey;
+    return Theme.of(context).colorScheme.onSurfaceVariant;
   }
 }
-

@@ -253,9 +253,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
               onPressed: () {
                 Navigator.pop(context, templateNameController.text);
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-              ),
+              style: ElevatedButton.styleFrom(),
               child: const Text('保存'),
             ),
           ],
@@ -377,11 +375,11 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   // 編輯單組數據
   void _editSet(int exerciseIndex, int setIndex) {
     final exercise = _exercises[exerciseIndex];
-    
+
     // 獲取當前組的數據
     int currentReps;
     double currentWeight;
-    
+
     if (exercise.setTargets != null && setIndex < exercise.setTargets!.length) {
       final target = exercise.setTargets![setIndex];
       currentReps = target['reps'] as int? ?? exercise.reps;
@@ -390,10 +388,11 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       currentReps = exercise.reps;
       currentWeight = exercise.weight;
     }
-    
+
     final repsController = TextEditingController(text: currentReps.toString());
-    final weightController = TextEditingController(text: currentWeight.toString());
-    
+    final weightController =
+        TextEditingController(text: currentWeight.toString());
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -416,7 +415,8 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                 labelText: '重量 (kg)',
                 border: OutlineInputBorder(),
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
             ),
           ],
         ),
@@ -429,59 +429,62 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
             onPressed: () {
               final reps = int.tryParse(repsController.text);
               final weight = double.tryParse(weightController.text);
-              
+
               if (reps == null || weight == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('請輸入有效的數值')),
                 );
                 return;
               }
-              
+
               setState(() {
                 // 確保 setTargets 存在
-                if (exercise.setTargets == null || exercise.setTargets!.isEmpty) {
+                if (exercise.setTargets == null ||
+                    exercise.setTargets!.isEmpty) {
                   // 創建新的 setTargets
                   final newSetTargets = List.generate(
                     exercise.sets,
                     (i) => {'reps': exercise.reps, 'weight': exercise.weight},
                   );
-                  _exercises[exerciseIndex] = exercise.copyWith(setTargets: newSetTargets);
+                  _exercises[exerciseIndex] =
+                      exercise.copyWith(setTargets: newSetTargets);
                 }
-                
+
                 // 更新指定組的數據
-                final updatedSetTargets = List<Map<String, dynamic>>.from(_exercises[exerciseIndex].setTargets!);
+                final updatedSetTargets = List<Map<String, dynamic>>.from(
+                    _exercises[exerciseIndex].setTargets!);
                 updatedSetTargets[setIndex] = {'reps': reps, 'weight': weight};
-                
+
                 _exercises[exerciseIndex] = _exercises[exerciseIndex].copyWith(
                   setTargets: updatedSetTargets,
                   reps: updatedSetTargets.first['reps'] as int,
                   weight: (updatedSetTargets.first['weight'] as num).toDouble(),
                 );
               });
-              
+
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            style: ElevatedButton.styleFrom(),
             child: const Text('確定'),
           ),
         ],
       ),
     );
   }
-  
+
   // 調整組數
   void _adjustSets(int exerciseIndex, int delta) {
     setState(() {
       final exercise = _exercises[exerciseIndex];
       final newSets = (exercise.sets + delta).clamp(1, 10);
-      
+
       if (newSets == exercise.sets) return;
-      
+
       List<Map<String, dynamic>> newSetTargets;
-      
+
       if (exercise.setTargets != null && exercise.setTargets!.isNotEmpty) {
         newSetTargets = List<Map<String, dynamic>>.from(exercise.setTargets!);
-        
+
         if (newSets > exercise.sets) {
           // 增加組數，複製最後一組
           final lastSet = newSetTargets.last;
@@ -499,21 +502,23 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           (i) => {'reps': exercise.reps, 'weight': exercise.weight},
         );
       }
-      
+
       _exercises[exerciseIndex] = exercise.copyWith(
         sets: newSets,
         setTargets: newSetTargets,
       );
     });
   }
-  
+
   // 批量編輯所有組
   void _batchEditSets(int exerciseIndex) {
     final exercise = _exercises[exerciseIndex];
-    
-    final repsController = TextEditingController(text: exercise.reps.toString());
-    final weightController = TextEditingController(text: exercise.weight.toString());
-    
+
+    final repsController =
+        TextEditingController(text: exercise.reps.toString());
+    final weightController =
+        TextEditingController(text: exercise.weight.toString());
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -521,9 +526,11 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               '這將應用到所有組',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 12),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -541,7 +548,8 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                 labelText: '重量 (kg)',
                 border: OutlineInputBorder(),
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
             ),
           ],
         ),
@@ -554,21 +562,21 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
             onPressed: () {
               final reps = int.tryParse(repsController.text);
               final weight = double.tryParse(weightController.text);
-              
+
               if (reps == null || weight == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('請輸入有效的數值')),
                 );
                 return;
               }
-              
+
               setState(() {
                 // 創建所有組的相同設定
                 final newSetTargets = List.generate(
                   exercise.sets,
                   (i) => {'reps': reps, 'weight': weight},
                 );
-                
+
                 _exercises[exerciseIndex] = exercise.copyWith(
                   sets: exercise.sets,
                   reps: reps,
@@ -576,10 +584,10 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                   setTargets: newSetTargets,
                 );
               });
-              
+
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            style: ElevatedButton.styleFrom(),
             child: const Text('確定'),
           ),
         ],
@@ -640,7 +648,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                             Container(
                               height: 200,
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
+                                border: Border.all(
+                                    color:
+                                        Theme.of(context).colorScheme.outline),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: ListWheelScrollView(
@@ -692,7 +702,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                             Container(
                               height: 200,
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
+                                border: Border.all(
+                                    color:
+                                        Theme.of(context).colorScheme.outline),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
@@ -713,7 +725,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                             : Colors.transparent,
                                         border: Border(
                                           bottom: BorderSide(
-                                              color: Colors.grey.shade300),
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .outline),
                                         ),
                                       ),
                                       child: Text(
@@ -833,14 +847,14 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                       Icon(
                         Icons.access_time,
                         size: 18,
-                        color: Colors.green.shade700,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         '訓練時間: ${DateFormat('HH:mm').format(_trainingTime)}',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.green.shade700,
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -938,14 +952,17 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                   children: [
                                     // 動作標題和操作按鈕
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                exercise.actionName ?? exercise.name,
+                                                exercise.actionName ??
+                                                    exercise.name,
                                                 style: const TextStyle(
                                                   fontSize: 18.0,
                                                   fontWeight: FontWeight.bold,
@@ -954,7 +971,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                               Text(
                                                 '${exercise.equipment} | ${exercise.bodyParts.join(", ")}',
                                                 style: TextStyle(
-                                                  color: Colors.grey.shade600,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
                                                   fontSize: 12,
                                                 ),
                                               ),
@@ -965,15 +984,19 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             IconButton(
-                                              icon: const Icon(Icons.copy, size: 20),
+                                              icon: const Icon(Icons.copy,
+                                                  size: 20),
                                               color: Colors.blue,
-                                              onPressed: () => _batchEditSets(index),
+                                              onPressed: () =>
+                                                  _batchEditSets(index),
                                               tooltip: '批量編輯',
                                             ),
                                             IconButton(
-                                              icon: const Icon(Icons.delete, size: 20),
+                                              icon: const Icon(Icons.delete,
+                                                  size: 20),
                                               color: Colors.red,
-                                              onPressed: () => _removeExercise(index),
+                                              onPressed: () =>
+                                                  _removeExercise(index),
                                               tooltip: '刪除動作',
                                             ),
                                           ],
@@ -993,8 +1016,13 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                         ),
                                         const Spacer(),
                                         IconButton(
-                                          icon: const Icon(Icons.remove_circle_outline),
-                                          color: exercise.sets > 1 ? Colors.red : Colors.grey,
+                                          icon: const Icon(
+                                              Icons.remove_circle_outline),
+                                          color: exercise.sets > 1
+                                              ? Colors.red
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
                                           onPressed: exercise.sets > 1
                                               ? () => _adjustSets(index, -1)
                                               : null,
@@ -1007,8 +1035,13 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                           ),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.add_circle_outline),
-                                          color: exercise.sets < 10 ? Colors.green : Colors.grey,
+                                          icon: const Icon(
+                                              Icons.add_circle_outline),
+                                          color: exercise.sets < 10
+                                              ? Colors.green
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
                                           onPressed: exercise.sets < 10
                                               ? () => _adjustSets(index, 1)
                                               : null,
@@ -1019,56 +1052,78 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                     // 每組詳情
                                     ListView.builder(
                                       shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
                                       itemCount: exercise.sets,
                                       itemBuilder: (context, setIndex) {
                                         // 獲取這一組的目標
                                         int targetReps;
                                         double targetWeight;
-                                        
-                                        if (exercise.setTargets != null && setIndex < exercise.setTargets!.length) {
-                                          final target = exercise.setTargets![setIndex];
-                                          targetReps = target['reps'] as int? ?? exercise.reps;
-                                          targetWeight = (target['weight'] as num?)?.toDouble() ?? exercise.weight;
+
+                                        if (exercise.setTargets != null &&
+                                            setIndex <
+                                                exercise.setTargets!.length) {
+                                          final target =
+                                              exercise.setTargets![setIndex];
+                                          targetReps = target['reps'] as int? ??
+                                              exercise.reps;
+                                          targetWeight =
+                                              (target['weight'] as num?)
+                                                      ?.toDouble() ??
+                                                  exercise.weight;
                                         } else {
                                           targetReps = exercise.reps;
                                           targetWeight = exercise.weight;
                                         }
-                                        
+
                                         return ListTile(
                                           contentPadding: EdgeInsets.zero,
                                           leading: CircleAvatar(
-                                            backgroundColor: Colors.green,
-                                            foregroundColor: Colors.white,
+                                            backgroundColor: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                            foregroundColor: Theme.of(context)
+                                                .colorScheme
+                                                .onPrimary,
                                             child: Text('${setIndex + 1}'),
                                           ),
                                           title: Text('第 ${setIndex + 1} 組'),
-                                          subtitle: Text('$targetReps 次 × $targetWeight kg'),
+                                          subtitle: Text(
+                                              '$targetReps 次 × $targetWeight kg'),
                                           trailing: IconButton(
                                             icon: const Icon(Icons.edit),
                                             color: Colors.blue,
-                                            onPressed: () => _editSet(index, setIndex),
+                                            onPressed: () =>
+                                                _editSet(index, setIndex),
                                             tooltip: '編輯',
                                           ),
                                         );
                                       },
                                     ),
                                     // 休息時間和備註
-                                    if (exercise.restTime != 90 || exercise.notes.isNotEmpty)
+                                    if (exercise.restTime != 90 ||
+                                        exercise.notes.isNotEmpty)
                                       Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           const Divider(),
                                           if (exercise.restTime != 90)
                                             Text(
                                               '休息: ${exercise.restTime}秒',
-                                              style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                                              style: TextStyle(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                  fontSize: 12),
                                             ),
                                           if (exercise.notes.isNotEmpty)
                                             Text(
                                               '備註: ${exercise.notes}',
                                               style: TextStyle(
-                                                color: Colors.grey.shade700,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
                                                 fontSize: 12,
                                                 fontStyle: FontStyle.italic,
                                               ),
@@ -1089,9 +1144,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                       onPressed: _addExercise,
                       icon: const Icon(Icons.add),
                       label: const Text('添加訓練動作'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                      ),
+                      style: ElevatedButton.styleFrom(),
                     ),
                   ),
                   const SizedBox(height: 50),

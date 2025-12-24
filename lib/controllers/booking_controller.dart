@@ -201,15 +201,16 @@ class BookingController extends ChangeNotifier implements IBookingController {
         
         final bookings = await _bookingService.getUserBookings();
         
-        // 按日期排序
-        bookings.sort((a, b) {
+        // 創建可變副本並按日期排序
+        final mutableBookings = List<Map<String, dynamic>>.from(bookings);
+        mutableBookings.sort((a, b) {
           final aTime = a['dateTime'] ?? a['date'];
           final bTime = b['dateTime'] ?? b['date'];
           if (aTime == null || bTime == null) return 0;
           return aTime.compareTo(bTime);
         });
         
-        _userBookingsCache = bookings;
+        _userBookingsCache = mutableBookings;
         _lastRefreshTime['userBookings'] = now;
         _setLoading(false);
       }
@@ -244,15 +245,16 @@ class BookingController extends ChangeNotifier implements IBookingController {
         
         final bookings = await _bookingService.getCoachBookings();
         
-        // 按日期排序
-        bookings.sort((a, b) {
+        // 創建可變副本並按日期排序
+        final mutableBookings = List<Map<String, dynamic>>.from(bookings);
+        mutableBookings.sort((a, b) {
           final aTime = a['dateTime'] ?? a['date'];
           final bTime = b['dateTime'] ?? b['date'];
           if (aTime == null || bTime == null) return 0;
           return aTime.compareTo(bTime);
         });
         
-        _coachBookingsCache = bookings;
+        _coachBookingsCache = mutableBookings;
         _lastRefreshTime['coachBookings'] = now;
         _setLoading(false);
       }

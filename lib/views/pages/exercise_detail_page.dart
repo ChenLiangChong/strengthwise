@@ -37,7 +37,7 @@ class ExerciseDetailPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 圖片部分
-            _buildExerciseImage(),
+            _buildExerciseImage(context),
             
             const SizedBox(height: 16),
             
@@ -62,21 +62,21 @@ class ExerciseDetailPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (exercise.type.isNotEmpty)
-                    _buildInfoRow('訓練類型', exercise.type),
+                    _buildInfoRow('訓練類型', exercise.type, context),
                   if (exercise.bodyParts.isNotEmpty)
-                    _buildInfoRow('訓練部位', exercise.bodyParts.join(', ')),
+                    _buildInfoRow('訓練部位', exercise.bodyParts.join(', '), context),
                   if (exercise.equipment.isNotEmpty)
-                    _buildInfoRow('所需器材', exercise.equipment),
+                    _buildInfoRow('所需器材', exercise.equipment, context),
                   if (exercise.level1.isNotEmpty)
-                    _buildInfoRow('分類 1', exercise.level1),
+                    _buildInfoRow('分類 1', exercise.level1, context),
                   if (exercise.level2.isNotEmpty)
-                    _buildInfoRow('分類 2', exercise.level2),
+                    _buildInfoRow('分類 2', exercise.level2, context),
                   if (exercise.level3.isNotEmpty)
-                    _buildInfoRow('分類 3', exercise.level3),
+                    _buildInfoRow('分類 3', exercise.level3, context),
                   if (exercise.level4.isNotEmpty)
-                    _buildInfoRow('分類 4', exercise.level4),
+                    _buildInfoRow('分類 4', exercise.level4, context),
                   if (exercise.level5.isNotEmpty)
-                    _buildInfoRow('分類 5', exercise.level5),
+                    _buildInfoRow('分類 5', exercise.level5, context),
                 ],
               ),
             ),
@@ -121,7 +121,7 @@ class ExerciseDetailPage extends StatelessWidget {
                 icon: const Icon(Icons.add_circle_outline),
                 label: const Text('添加到訓練計畫'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 onPressed: () {
@@ -136,7 +136,7 @@ class ExerciseDetailPage extends StatelessWidget {
     );
   }
   
-  Widget _buildExerciseImage() {
+  Widget _buildExerciseImage(BuildContext context) {
     try {
       if (exercise.imageUrl.isNotEmpty) {
         return Center(
@@ -152,7 +152,7 @@ class ExerciseDetailPage extends StatelessWidget {
                 return Container(
                   height: 200,
                   width: double.infinity,
-                  color: Colors.grey[200],
+                  color: Theme.of(context).colorScheme.surfaceVariant,
                   child: Center(
                     child: CircularProgressIndicator(
                       value: loadingProgress.expectedTotalBytes != null
@@ -167,7 +167,7 @@ class ExerciseDetailPage extends StatelessWidget {
                 return Container(
                   height: 200,
                   width: double.infinity,
-                  color: Colors.grey[300],
+                  color: Theme.of(context).colorScheme.surfaceVariant,
                   child: const Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -187,7 +187,7 @@ class ExerciseDetailPage extends StatelessWidget {
       return Container(
         height: 200,
         width: double.infinity,
-        color: Colors.grey[200],
+        color: Theme.of(context).colorScheme.surfaceVariant,
         child: const Center(
           child: Text('無圖片'),
         ),
@@ -205,7 +205,7 @@ class ExerciseDetailPage extends StatelessWidget {
     }
   }
   
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String value, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -215,9 +215,9 @@ class ExerciseDetailPage extends StatelessWidget {
             width: 100,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.grey,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),

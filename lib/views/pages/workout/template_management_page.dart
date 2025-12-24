@@ -284,12 +284,15 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
                       const Icon(
                         Icons.note_alt_outlined,
                         size: 64,
-                        color: Colors.grey,
+                        color: Color(0xFF94A3B8), // Slate-400
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         '還沒有保存的模板',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 24),
                       ElevatedButton(

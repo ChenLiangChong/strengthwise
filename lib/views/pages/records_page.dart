@@ -158,14 +158,14 @@ class _RecordsPageState extends State<RecordsPage> {
                 Icon(
                   Icons.note_alt_outlined,
                   size: 80,
-                  color: Colors.grey[400],
+                  color: Theme.of(context).colorScheme.outline,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   '還沒有訓練筆記',
                   style: TextStyle(
                     fontSize: 18,
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -173,7 +173,7 @@ class _RecordsPageState extends State<RecordsPage> {
                 Text(
                   '點擊底部的加號按鈕添加新筆記',
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -251,7 +251,7 @@ class _RecordsPageState extends State<RecordsPage> {
                         Text(
                           _formatDate(note.createdAt),
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontSize: 12,
                           ),
                         ),
@@ -263,7 +263,7 @@ class _RecordsPageState extends State<RecordsPage> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.grey[800],
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 14,
                       ),
                     ),
@@ -275,13 +275,13 @@ class _RecordsPageState extends State<RecordsPage> {
                           Icon(
                             Icons.draw,
                             size: 16,
-                            color: Colors.grey[600],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         const SizedBox(width: 8),
                         Icon(
                           Icons.text_fields,
                           size: 16,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ],
                     ),
