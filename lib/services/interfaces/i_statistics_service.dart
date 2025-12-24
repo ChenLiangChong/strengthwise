@@ -1,4 +1,5 @@
 import '../../models/statistics_model.dart';
+import '../../models/favorite_exercise_model.dart';
 
 /// 統計服務介面
 ///
@@ -93,5 +94,20 @@ abstract class IStatisticsService {
 
   /// 清除快取
   void clearCache();
+
+  /// 獲取有訓練記錄的動作列表（用於收藏功能）
+  ///
+  /// [userId] 用戶 ID
+  /// [trainingType] 訓練類型（可選）
+  /// [bodyPart] 身體部位（可選）
+  /// [specificMuscle] 特定肌群（可選）
+  /// [equipmentCategory] 器材類別（可選）
+  Future<List<ExerciseWithRecord>> getExercisesWithRecords(
+    String userId, {
+    String? trainingType,
+    String? bodyPart,
+    String? specificMuscle,
+    String? equipmentCategory,
+  });
 }
 

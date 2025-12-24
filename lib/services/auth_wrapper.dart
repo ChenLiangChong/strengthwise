@@ -5,6 +5,7 @@ import 'dart:async';
 import 'interfaces/i_auth_service.dart';
 import 'error_handling_service.dart';
 import 'user_migration_service.dart';
+import 'default_templates_service.dart';
 import 'service_locator.dart' show Environment, serviceLocator;
 
 /// 身份驗證服務的Firebase實現
@@ -211,8 +212,22 @@ class AuthWrapper implements IAuthService {
         idToken: googleAuth.idToken,
       );
 
-      // 嘗試登入但不使用返回值
-      await _auth.signInWithCredential(credential);
+      // 嘗試登入但不使用返回值（避免類型轉換問題）
+      try {
+        await _auth.signInWithCredential(credential);
+      } catch (signInError) {
+        // 忽略類型轉換錯誤，因為登入可能已經成功
+        final errorStr = signInError.toString();
+        if (errorStr.contains('PigeonUserDetails') || 
+            errorStr.contains('is not a subtype')) {
+          _logDebug('忽略類型轉換錯誤，嘗試從 currentUser 獲取資料');
+        } else {
+          rethrow;
+        }
+      }
+
+      // 等待一小段時間確保用戶數據已載入
+      await Future.delayed(const Duration(milliseconds: 300));
 
       // 直接從 currentUser 取得登入資訊
       final user = _auth.currentUser;
@@ -222,6 +237,18 @@ class AuthWrapper implements IAuthService {
       }
 
       _logDebug('Google登入成功: ${user.uid}');
+      
+      // 為新用戶創建默認訓練模板（異步，不阻塞登入流程）
+      // 服務內部會檢查是否已有模板，所以對現有用戶無影響
+      try {
+        final defaultTemplatesService = serviceLocator<DefaultTemplatesService>();
+        Future.microtask(() => defaultTemplatesService.createDefaultTemplatesForUser(user.uid));
+        _logDebug('已觸發默認模板檢查');
+      } catch (e) {
+        _logError('檢查默認模板時出錯: $e');
+        // 不影響登入流程
+      }
+      
       return {
         'uid': user.uid,
         'email': user.email ?? '',
@@ -240,6 +267,24 @@ class AuthWrapper implements IAuthService {
         // 拋出更明確的錯誤，讓上層可以顯示友好提示
         throw Exception('Google 登入在模擬器上不可用。請使用真實設備測試，或使用電子郵件登入功能。');
       }
+      
+      // 檢查是否為類型轉換錯誤但用戶已登入
+      if (errorStr.contains('PigeonUserDetails') || 
+          errorStr.contains('is not a subtype')) {
+        _logDebug('遇到類型轉換錯誤，檢查用戶是否已登入');
+        await Future.delayed(const Duration(milliseconds: 500));
+        final user = _auth.currentUser;
+        if (user != null) {
+          _logDebug('雖然有錯誤，但用戶已成功登入: ${user.uid}');
+          return {
+            'uid': user.uid,
+            'email': user.email ?? '',
+            'displayName': user.displayName ?? '',
+            'photoURL': user.photoURL ?? '',
+          };
+        }
+      }
+      
       _logError('Google登入錯誤: $e');
       return null;
     }
@@ -336,6 +381,17 @@ class AuthWrapper implements IAuthService {
       }
 
       _logDebug('電子郵件註冊成功: ${user.uid}');
+      
+      // 為新用戶創建默認訓練模板（異步，不阻塞註冊流程）
+      try {
+        final defaultTemplatesService = serviceLocator<DefaultTemplatesService>();
+        Future.microtask(() => defaultTemplatesService.createDefaultTemplatesForUser(user.uid));
+        _logDebug('已觸發默認模板創建');
+      } catch (e) {
+        _logError('創建默認模板時出錯: $e');
+        // 不影響註冊流程
+      }
+      
       return {
         'uid': user.uid,
         'email': user.email ?? '',

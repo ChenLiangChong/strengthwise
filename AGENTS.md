@@ -2,7 +2,7 @@
 
 > AI 程式碼助手的完整開發指南
 
-**最後更新**：2024年12月23日
+**最後更新**：2024年12月25日
 
 ---
 
@@ -204,59 +204,72 @@ TextField(
 
 **目標**：完善單機版功能
 
-**最近完成**（2024-12-23）：
-- ✅ 動作分類系統升級（794 個動作重新分類）
-- ✅ 新動作瀏覽 UI（5 層專業分類導航）
-- ✅ 身體部位數據清理（合併重複項）
-- ✅ **專業級統計系統**（~5,180 行代碼）
-  - 基礎統計：頻率、趨勢圖、身體部位分布、PR、建議
-  - 力量進步追蹤：每個動作的重量曲線、1RM 估算、PR 標記
-  - 肌群平衡分析：推/拉/腿比例、不平衡警告
-  - 訓練日曆熱力圖：GitHub 風格、連續天數統計
-  - 完成率統計：弱點動作識別、效率分析
-- ✅ **統計 UI 美化**（2024-12-23 下午）
-  - 訓練量趨勢圖美化（漸層填充、平滑曲線、觸摸提示）
-  - 力量進步按身體部位分組（可展開/收合、顏色編碼）
-  - 個人記錄重新設計（每個部位 Top 1、金色 NEW 標籤）
+**最近完成**（2024-12-25）：
+- ✅ **Google 登入 & 新用戶默認模板**（2024-12-24 深夜）
+  - Google 登入修復（真實設備測試成功）
+  - 新用戶自動獲得 5 天專業訓練模板
+  - Release APK 構建與安裝（55.8 MB）
+  - 文檔整理和清理
+- ✅ **訓練模板系統完善**（2024-12-24 晚上）
+  - 簡化模板編輯器（移除複雜功能）
+  - 解決緩存刷新問題（編輯後立即更新）
+  - 完善訓練頁面功能（添加編輯選項、修正導航）
+- ✅ **時間權限控制**（2024-12-24 晚上）
+  - 過去的訓練：只能查看，不能編輯/刪除
+  - 未來的訓練：可以編輯，不能勾選完成
+  - 今天的訓練：完整權限
+- ✅ **計劃編輯器每組單獨編輯功能**（2024-12-24）
+  - 支持 setTargets 欄位
+  - 內嵌式編輯 UI
+  - 與訓練執行頁面同步
+- ✅ **隱藏記錄頁面**（教練-學員版本功能）
+- ✅ **簡化首頁**（移除未完成的功能）
 
-**當前任務**：優化力量進步頁面 🚧
-- ✅ 統計核心功能完成
-- ✅ UI 美化完成
-- ⏳ **待實作**：力量進步收藏功能
-  - 使用者可標記喜愛的運動（顯示在頁面頂部）
-  - 未標記時顯示 5 層分類選擇頁面
-  - 只顯示有訓練記錄的動作
+**基礎功能 v1.0**：✅ 已完成
+- ✅ 訓練模板系統（階段 8）
+- ✅ 時間權限控制（階段 9）
+- ✅ Google 登入（階段 10）
+
+**已知問題**（需優化）：
+詳見 `docs/DEVELOPMENT_STATUS.md`
+- 🔴 P0：FloatingActionButton 擋住內容
+- 🟡 P0：手機返回鍵導航問題
+- 🟡 P0：通知欄位置問題
+- 🔵 P1：力量進步頁面顯示小曲線
+- 🟡 P1：自訂動作錯誤處理
 
 **下一步**：
-1. 實作力量進步收藏功能
-2. 測試並收集使用者反饋
-3. 根據反饋繼續優化
+1. **P0**：修復已知的 UI/UX 問題（FAB、返回鍵、通知欄）
+2. **P1**：力量進步頁面優化（卡片曲線預覽）
+3. **P2**：性能優化、錯誤處理完善
 
 **參考文檔**：
-- `docs/DEVELOPMENT_STATUS.md` - 了解整體進度
-- `docs/DATABASE_DESIGN.md` - 查看新的動作分類結構
-- `docs/STATISTICS_IMPLEMENTATION.md` - 實作細節
+- `docs/DEVELOPMENT_STATUS.md` - 了解整體進度和已知問題
+- `docs/DATABASE_DESIGN.md` - 查看資料庫結構
+- `docs/BUILD_RELEASE.md` - 構建和發布指南
+- `docs/GOOGLE_SIGNIN_COMPLETE_SETUP.md` - Google 登入配置
 
 ---
 
 ## 📚 相關文檔
 
 ### 核心文檔
-- `docs/README.md` - 文檔導航
-- `docs/PROJECT_OVERVIEW.md` - 專案總覽
-- `docs/DEVELOPMENT_STATUS.md` - 開發狀態（包含最新的資料庫升級記錄）
-- `docs/DATABASE_DESIGN.md` - 資料庫設計（包含新的動作分類結構）
+- `docs/README.md` - 文檔導航（必讀）
+- `docs/PROJECT_OVERVIEW.md` - 專案架構總覽
+- `docs/DEVELOPMENT_STATUS.md` - 開發狀態和已知問題
+- `docs/DATABASE_DESIGN.md` - 資料庫設計（794 個動作）
+- `docs/STATISTICS_IMPLEMENTATION.md` - 統計功能實作
+
+### 操作指南
+- `docs/BUILD_RELEASE.md` - Release APK 構建指南
+- `docs/GOOGLE_SIGNIN_COMPLETE_SETUP.md` - Google Sign-In 配置
 
 ### 任務文檔
-- `docs/STATISTICS_IMPLEMENTATION.md` - 統計功能實作
 - `docs/cursor_tasks/` - 雙邊平台任務（暫停）
 
 ### 腳本文檔
 - `scripts/README.md` - 所有腳本的使用說明
-- `scripts/analyze_body_parts.py` - 身體部位分析
-- `scripts/merge_body_parts.py` - 身體部位合併
-- `scripts/reclassify_exercises.py` - 動作重新分類
-- `scripts/update_exercise_classification.py` - 更新分類到 Firestore
+- `scripts/generate_professional_training_data.py` - 生成訓練數據
 
 ---
 

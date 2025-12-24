@@ -178,15 +178,43 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
           // 處理sets數據
           final setsRecords = <SetRecord>[];
           
-          if (exercise['targetSets'] != null) {
+          // 優先檢查是否有 setTargets（每組單獨設定）
+          if (exercise['setTargets'] != null && exercise['setTargets'] is List) {
+            final setTargetsList = exercise['setTargets'] as List<dynamic>;
+            final restTime = (exercise['restTime'] as num?)?.toInt() ?? 60;
+            
+            // 檢查是否有保存的組數狀態（只處理 List 類型）
+            final savedSets = exercise['sets'] is List ? exercise['sets'] as List<dynamic>? : null;
+            
+            for (int i = 0; i < setTargetsList.length; i++) {
+              final target = setTargetsList[i] as Map<String, dynamic>;
+              final targetReps = (target['reps'] as num?)?.toInt() ?? 10;
+              final targetWeight = (target['weight'] as num?)?.toDouble() ?? 0.0;
+              
+              // 如果有保存的狀態，使用保存的 completed 值
+              bool completed = false;
+              if (savedSets != null && i < savedSets.length && savedSets[i] is Map<String, dynamic>) {
+                completed = (savedSets[i] as Map<String, dynamic>)['completed'] ?? false;
+              }
+              
+              setsRecords.add(SetRecord(
+                setNumber: i + 1,
+                reps: targetReps,
+                weight: targetWeight,
+                restTime: restTime,
+                completed: completed,
+                note: '',
+              ));
+            }
+          } else if (exercise['targetSets'] != null) {
             // 新結構: 使用 targetSets, targetReps, targetWeight 字段
             final targetSets = (exercise['targetSets'] as num).toInt();
             final targetReps = (exercise['targetReps'] as num?)?.toInt() ?? 10;
             final targetWeight = (exercise['targetWeight'] as num?)?.toDouble() ?? 0.0;
             final restTime = (exercise['restTime'] as num?)?.toInt() ?? 60;
             
-            // 檢查是否有保存的組數狀態
-            final savedSets = exercise['sets'] as List<dynamic>?;
+            // 檢查是否有保存的組數狀態（只處理 List 類型）
+            final savedSets = exercise['sets'] is List ? exercise['sets'] as List<dynamic>? : null;
             
             for (int i = 0; i < targetSets; i++) {
               // 如果有保存的狀態，使用保存的 completed 值
@@ -327,6 +355,19 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   bool canModify() {
     // 如果是今天的訓練，允許修改
     return _isToday && !_isPastDate && !_isFutureDate;
+  }
+  
+  /// 檢查是否可以編輯（新增/刪除動作、調整重量組數）
+  /// 過去的訓練不能編輯，今天和未來的可以編輯
+  @override
+  bool canEdit() {
+    return !_isPastDate; // 只要不是過去的，都可以編輯
+  }
+  
+  /// 檢查是否可以勾選完成（只有今天的訓練可以勾選完成）
+  @override
+  bool canToggleCompletion() {
+    return _isToday; // 只有今天的訓練可以勾選完成
   }
   
   /// 檢查是否為過去的訓練

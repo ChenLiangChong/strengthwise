@@ -48,6 +48,13 @@ abstract class IWorkoutExecutionController {
   /// 檢查是否可以修改訓練
   bool canModify();
   
+  /// 檢查是否可以編輯（新增/刪除動作、調整重量組數）
+  /// 過去的訓練不能編輯，今天和未來的可以編輯
+  bool canEdit();
+  
+  /// 檢查是否可以勾選完成（只有今天的訓練可以勾選完成）
+  bool canToggleCompletion();
+  
   /// 檢查是否為過去的訓練
   bool isPastDate();
   

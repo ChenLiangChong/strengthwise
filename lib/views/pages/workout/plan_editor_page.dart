@@ -374,76 +374,51 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     }
   }
 
-  // 編輯訓練動作設置
-  void _editExerciseSettings(int index) {
-    final exercise = _exercises[index];
-
-    // 創建臨時控制器
-    final setsController =
-        TextEditingController(text: exercise.sets.toString());
-    final repsController =
-        TextEditingController(text: exercise.reps.toString());
-    final weightController =
-        TextEditingController(text: exercise.weight.toString());
-    final restTimeController =
-        TextEditingController(text: exercise.restTime.toString());
-    final notesController = TextEditingController(text: exercise.notes);
-
+  // 編輯單組數據
+  void _editSet(int exerciseIndex, int setIndex) {
+    final exercise = _exercises[exerciseIndex];
+    
+    // 獲取當前組的數據
+    int currentReps;
+    double currentWeight;
+    
+    if (exercise.setTargets != null && setIndex < exercise.setTargets!.length) {
+      final target = exercise.setTargets![setIndex];
+      currentReps = target['reps'] as int? ?? exercise.reps;
+      currentWeight = (target['weight'] as num?)?.toDouble() ?? exercise.weight;
+    } else {
+      currentReps = exercise.reps;
+      currentWeight = exercise.weight;
+    }
+    
+    final repsController = TextEditingController(text: currentReps.toString());
+    final weightController = TextEditingController(text: currentWeight.toString());
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('設置 ${exercise.actionName ?? exercise.name}'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: setsController,
-                decoration: const InputDecoration(
-                  labelText: '目標組數',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
+        title: Text('編輯第 ${setIndex + 1} 組'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: repsController,
+              decoration: const InputDecoration(
+                labelText: '次數',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: repsController,
-                decoration: const InputDecoration(
-                  labelText: '目標次數',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: weightController,
+              decoration: const InputDecoration(
+                labelText: '重量 (kg)',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: weightController,
-                decoration: const InputDecoration(
-                  labelText: '建議重量 (kg)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: restTimeController,
-                decoration: const InputDecoration(
-                  labelText: '休息時間 (秒)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: notesController,
-                decoration: const InputDecoration(
-                  labelText: '備註',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-            ],
-          ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -452,40 +427,160 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           ),
           ElevatedButton(
             onPressed: () {
-              // 解析輸入值
-              int? sets = int.tryParse(setsController.text);
-              int? reps = int.tryParse(repsController.text);
-              double? weight = double.tryParse(weightController.text);
-              int? restTime = int.tryParse(restTimeController.text);
-
-              // 驗證輸入
-              if (sets == null ||
-                  reps == null ||
-                  weight == null ||
-                  restTime == null) {
+              final reps = int.tryParse(repsController.text);
+              final weight = double.tryParse(weightController.text);
+              
+              if (reps == null || weight == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('請輸入有效的數值')),
                 );
                 return;
               }
-
-              // 更新動作設置
+              
               setState(() {
-                _exercises[index] = exercise.copyWith(
-                  sets: sets,
-                  reps: reps,
-                  weight: weight,
-                  restTime: restTime,
-                  notes: notesController.text,
+                // 確保 setTargets 存在
+                if (exercise.setTargets == null || exercise.setTargets!.isEmpty) {
+                  // 創建新的 setTargets
+                  final newSetTargets = List.generate(
+                    exercise.sets,
+                    (i) => {'reps': exercise.reps, 'weight': exercise.weight},
+                  );
+                  _exercises[exerciseIndex] = exercise.copyWith(setTargets: newSetTargets);
+                }
+                
+                // 更新指定組的數據
+                final updatedSetTargets = List<Map<String, dynamic>>.from(_exercises[exerciseIndex].setTargets!);
+                updatedSetTargets[setIndex] = {'reps': reps, 'weight': weight};
+                
+                _exercises[exerciseIndex] = _exercises[exerciseIndex].copyWith(
+                  setTargets: updatedSetTargets,
+                  reps: updatedSetTargets.first['reps'] as int,
+                  weight: (updatedSetTargets.first['weight'] as num).toDouble(),
                 );
               });
-
+              
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('確定'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // 調整組數
+  void _adjustSets(int exerciseIndex, int delta) {
+    setState(() {
+      final exercise = _exercises[exerciseIndex];
+      final newSets = (exercise.sets + delta).clamp(1, 10);
+      
+      if (newSets == exercise.sets) return;
+      
+      List<Map<String, dynamic>> newSetTargets;
+      
+      if (exercise.setTargets != null && exercise.setTargets!.isNotEmpty) {
+        newSetTargets = List<Map<String, dynamic>>.from(exercise.setTargets!);
+        
+        if (newSets > exercise.sets) {
+          // 增加組數，複製最後一組
+          final lastSet = newSetTargets.last;
+          for (int i = exercise.sets; i < newSets; i++) {
+            newSetTargets.add(Map<String, dynamic>.from(lastSet));
+          }
+        } else {
+          // 減少組數
+          newSetTargets = newSetTargets.sublist(0, newSets);
+        }
+      } else {
+        // 如果沒有 setTargets，創建新的
+        newSetTargets = List.generate(
+          newSets,
+          (i) => {'reps': exercise.reps, 'weight': exercise.weight},
+        );
+      }
+      
+      _exercises[exerciseIndex] = exercise.copyWith(
+        sets: newSets,
+        setTargets: newSetTargets,
+      );
+    });
+  }
+  
+  // 批量編輯所有組
+  void _batchEditSets(int exerciseIndex) {
+    final exercise = _exercises[exerciseIndex];
+    
+    final repsController = TextEditingController(text: exercise.reps.toString());
+    final weightController = TextEditingController(text: exercise.weight.toString());
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('批量編輯所有組'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              '這將應用到所有組',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
-            child: const Text('保存'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: repsController,
+              decoration: const InputDecoration(
+                labelText: '次數',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: weightController,
+              decoration: const InputDecoration(
+                labelText: '重量 (kg)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final reps = int.tryParse(repsController.text);
+              final weight = double.tryParse(weightController.text);
+              
+              if (reps == null || weight == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('請輸入有效的數值')),
+                );
+                return;
+              }
+              
+              setState(() {
+                // 創建所有組的相同設定
+                final newSetTargets = List.generate(
+                  exercise.sets,
+                  (i) => {'reps': reps, 'weight': weight},
+                );
+                
+                _exercises[exerciseIndex] = exercise.copyWith(
+                  sets: exercise.sets,
+                  reps: reps,
+                  weight: weight,
+                  setTargets: newSetTargets,
+                );
+              });
+              
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('確定'),
           ),
         ],
       ),
@@ -496,17 +591,6 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   void _removeExercise(int index) {
     setState(() {
       _exercises.removeAt(index);
-    });
-  }
-
-  // 重新排序訓練動作
-  void _reorderExercises(int oldIndex, int newIndex) {
-    setState(() {
-      if (newIndex > oldIndex) {
-        newIndex -= 1;
-      }
-      final item = _exercises.removeAt(oldIndex);
-      _exercises.insert(newIndex, item);
     });
   }
 
@@ -837,51 +921,160 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                             child: Text('尚未添加訓練動作'),
                           ),
                         )
-                      : ReorderableListView.builder(
+                      : ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _exercises.length,
-                          onReorder: _reorderExercises,
                           itemBuilder: (context, index) {
                             final exercise = _exercises[index];
                             return Card(
                               key: Key(exercise.id),
-                              margin: const EdgeInsets.symmetric(vertical: 4),
-                              child: ListTile(
-                                leading: const Icon(Icons.drag_handle),
-                                title: Text(
-                                  exercise.actionName ?? exercise.name,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                subtitle: Column(
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              color: Colors.green.shade50,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                        '${exercise.sets}組 x ${exercise.reps}次 | ${exercise.weight}kg'),
-                                    Text('休息: ${exercise.restTime}秒'),
-                                    if (exercise.notes.isNotEmpty)
-                                      Text(
-                                        '備註: ${exercise.notes}',
-                                        style: const TextStyle(
-                                            fontStyle: FontStyle.italic),
+                                    // 動作標題和操作按鈕
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                exercise.actionName ?? exercise.name,
+                                                style: const TextStyle(
+                                                  fontSize: 18.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              Text(
+                                                '${exercise.equipment} | ${exercise.bodyParts.join(", ")}',
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.copy, size: 20),
+                                              color: Colors.blue,
+                                              onPressed: () => _batchEditSets(index),
+                                              tooltip: '批量編輯',
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.delete, size: 20),
+                                              color: Colors.red,
+                                              onPressed: () => _removeExercise(index),
+                                              tooltip: '刪除動作',
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    const Divider(),
+                                    // 組數調整
+                                    Row(
+                                      children: [
+                                        const Text(
+                                          '訓練組數',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        IconButton(
+                                          icon: const Icon(Icons.remove_circle_outline),
+                                          color: exercise.sets > 1 ? Colors.red : Colors.grey,
+                                          onPressed: exercise.sets > 1
+                                              ? () => _adjustSets(index, -1)
+                                              : null,
+                                        ),
+                                        Text(
+                                          '${exercise.sets} 組',
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.add_circle_outline),
+                                          color: exercise.sets < 10 ? Colors.green : Colors.grey,
+                                          onPressed: exercise.sets < 10
+                                              ? () => _adjustSets(index, 1)
+                                              : null,
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // 每組詳情
+                                    ListView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      itemCount: exercise.sets,
+                                      itemBuilder: (context, setIndex) {
+                                        // 獲取這一組的目標
+                                        int targetReps;
+                                        double targetWeight;
+                                        
+                                        if (exercise.setTargets != null && setIndex < exercise.setTargets!.length) {
+                                          final target = exercise.setTargets![setIndex];
+                                          targetReps = target['reps'] as int? ?? exercise.reps;
+                                          targetWeight = (target['weight'] as num?)?.toDouble() ?? exercise.weight;
+                                        } else {
+                                          targetReps = exercise.reps;
+                                          targetWeight = exercise.weight;
+                                        }
+                                        
+                                        return ListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          leading: CircleAvatar(
+                                            backgroundColor: Colors.green,
+                                            foregroundColor: Colors.white,
+                                            child: Text('${setIndex + 1}'),
+                                          ),
+                                          title: Text('第 ${setIndex + 1} 組'),
+                                          subtitle: Text('$targetReps 次 × $targetWeight kg'),
+                                          trailing: IconButton(
+                                            icon: const Icon(Icons.edit),
+                                            color: Colors.blue,
+                                            onPressed: () => _editSet(index, setIndex),
+                                            tooltip: '編輯',
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    // 休息時間和備註
+                                    if (exercise.restTime != 90 || exercise.notes.isNotEmpty)
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Divider(),
+                                          if (exercise.restTime != 90)
+                                            Text(
+                                              '休息: ${exercise.restTime}秒',
+                                              style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                                            ),
+                                          if (exercise.notes.isNotEmpty)
+                                            Text(
+                                              '備註: ${exercise.notes}',
+                                              style: TextStyle(
+                                                color: Colors.grey.shade700,
+                                                fontSize: 12,
+                                                fontStyle: FontStyle.italic,
+                                              ),
+                                            ),
+                                        ],
                                       ),
-                                  ],
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit,
-                                          color: Colors.blue),
-                                      onPressed: () =>
-                                          _editExerciseSettings(index),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete,
-                                          color: Colors.red),
-                                      onPressed: () => _removeExercise(index),
-                                    ),
                                   ],
                                 ),
                               ),

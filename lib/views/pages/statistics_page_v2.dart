@@ -5,6 +5,10 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../models/statistics_model.dart';
 import '../../controllers/interfaces/i_statistics_controller.dart';
 import '../../services/service_locator.dart';
+import '../../services/interfaces/i_favorites_service.dart';
+import '../widgets/favorite_exercises_list.dart';
+import '../widgets/exercise_selection_navigator.dart';
+import 'exercise_strength_detail_page.dart';
 
 /// 統計頁面（專業版）
 ///
@@ -682,106 +686,16 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
 
   /// 力量進步 Tab
   Widget _buildStrengthProgressTab(StatisticsData data) {
-    if (data.strengthProgress.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.fitness_center, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('還沒有足夠的數據顯示力量進步'),
-          ],
-        ),
-      );
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return const Center(child: Text('請先登入'));
     }
 
-    // 按身體部位分組
-    final Map<String, List<ExerciseStrengthProgress>> groupedByBodyPart = {};
-    for (var progress in data.strengthProgress) {
-      groupedByBodyPart.putIfAbsent(progress.bodyPart, () => []);
-      groupedByBodyPart[progress.bodyPart]!.add(progress);
-    }
-
-    // 排序：按訓練量降序
-    final sortedBodyParts = groupedByBodyPart.keys.toList()
-      ..sort((a, b) {
-        final volumeA = groupedByBodyPart[a]!.fold<double>(0, (sum, p) => sum + p.totalSets * p.averageWeight);
-        final volumeB = groupedByBodyPart[b]!.fold<double>(0, (sum, p) => sum + p.totalSets * p.averageWeight);
-        return volumeB.compareTo(volumeA);
-      });
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // 說明卡片
-        Card(
-          color: Colors.blue.withOpacity(0.1),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                const Icon(Icons.info_outline, color: Colors.blue),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('力量進步追蹤', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text(
-                        '選擇身體部位查看該部位的動作力量進步曲線',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // 按身體部位分類顯示
-        ...sortedBodyParts.map((bodyPart) {
-          final exercises = groupedByBodyPart[bodyPart]!;
-          return _buildBodyPartStrengthSection(bodyPart, exercises);
-        }),
-      ],
-    );
-  }
-
-  /// 身體部位力量進步區塊
-  Widget _buildBodyPartStrengthSection(String bodyPart, List<ExerciseStrengthProgress> exercises) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: exercises.length <= 3, // 如果動作少於3個就預設展開
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: _getBodyPartColor(bodyPart).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(_getBodyPartIcon(bodyPart), color: _getBodyPartColor(bodyPart)),
-          ),
-          title: Text(
-            bodyPart,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text(
-            '${exercises.length} 個動作',
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-          ),
-          children: exercises.map((progress) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: _buildStrengthProgressCard(progress),
-            );
-          }).toList(),
-        ),
-      ),
+    return _StrengthProgressTabContent(
+      userId: user.uid,
+      statisticsData: data,
+      timeRange: _controller.timeRange,
+      onRefresh: () => _controller.refreshStatistics(),
     );
   }
 
@@ -805,137 +719,6 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
     if (bodyPart.contains('手')) return Icons.sports_handball;
     if (bodyPart.contains('核心') || bodyPart.contains('腹')) return Icons.self_improvement;
     return Icons.fitness_center;
-  }
-
-  Widget _buildStrengthProgressCard(ExerciseStrengthProgress progress) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        progress.exerciseName,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: _getBodyPartColor(progress.bodyPart).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              progress.bodyPart,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: _getBodyPartColor(progress.bodyPart),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: progress.hasProgress ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              progress.formattedProgress,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: progress.hasProgress ? Colors.green : Colors.grey,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // 力量曲線圖
-            SizedBox(
-              height: 150,
-              child: LineChart(
-                LineChartData(
-                  gridData: const FlGridData(show: true, drawVerticalLine: false),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, meta) => Text('${value.toInt()}kg'),
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          if (value.toInt() >= 0 && value.toInt() < progress.history.length) {
-                            return Text(progress.history[value.toInt()].formattedDate);
-                          }
-                          return const Text('');
-                        },
-                      ),
-                    ),
-                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: progress.history.asMap().entries.map((e) {
-                        return FlSpot(e.key.toDouble(), e.value.weight);
-                      }).toList(),
-                      isCurved: true,
-                      color: Colors.green,
-                      barWidth: 3,
-                      dotData: FlDotData(
-                        show: true,
-                        checkToShowDot: (spot, barData) {
-                          final index = spot.x.toInt();
-                          return progress.history[index].isPR;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem('當前最大', progress.formattedCurrentMax),
-                _buildStatItem('平均重量', '${progress.averageWeight.toStringAsFixed(1)} kg'),
-                _buildStatItem('總組數', progress.totalSets.toString()),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildStatItem(String label, String value) {
@@ -1318,6 +1101,203 @@ class _StatisticsPageV2State extends State<StatisticsPageV2> with SingleTickerPr
         ),
       ),
     );
+  }
+}
+
+/// 力量進步 Tab 內容組件（整合收藏功能）
+class _StrengthProgressTabContent extends StatefulWidget {
+  final String userId;
+  final StatisticsData statisticsData;
+  final TimeRange timeRange;
+  final VoidCallback? onRefresh;
+
+  const _StrengthProgressTabContent({
+    required this.userId,
+    required this.statisticsData,
+    required this.timeRange,
+    this.onRefresh,
+  });
+
+  @override
+  State<_StrengthProgressTabContent> createState() => _StrengthProgressTabContentState();
+}
+
+class _StrengthProgressTabContentState extends State<_StrengthProgressTabContent> {
+  final IFavoritesService _favoritesService = serviceLocator<IFavoritesService>();
+  bool _hasFavorites = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFavorites();
+  }
+
+  /// 檢查是否有收藏
+  Future<void> _checkFavorites() async {
+    try {
+      final favorites = await _favoritesService.getFavoriteExercises(widget.userId);
+      setState(() => _hasFavorites = favorites.isNotEmpty);
+    } catch (e) {
+      // 忽略錯誤
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 如果沒有力量進步數據，顯示選擇頁面
+    if (widget.statisticsData.strengthProgress.isEmpty) {
+      return ExerciseSelectionNavigator(
+        userId: widget.userId,
+        onExerciseSelected: (exerciseId) {
+          // 選擇動作後可以刷新數據
+          widget.onRefresh?.call();
+        },
+      );
+    }
+
+    // 如果有收藏，顯示收藏列表；否則顯示分類導航
+    if (_hasFavorites) {
+      return _buildWithFavorites();
+    } else {
+      return _buildWithSelection();
+    }
+  }
+
+  /// 建立帶收藏的視圖
+  Widget _buildWithFavorites() {
+    return FavoriteExercisesList(
+      userId: widget.userId,
+      timeRange: widget.timeRange,
+      onExerciseTap: (exerciseId) {
+        // 點擊收藏動作可以查看詳細
+        _showExerciseDetails(exerciseId);
+      },
+      onAddMoreTap: () {
+        // 導航到動作選擇頁面
+        _showExerciseSelectionPage();
+      },
+    );
+  }
+
+  /// 顯示動作選擇頁面（全屏）
+  void _showExerciseSelectionPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('選擇動作'),
+          ),
+          body: ExerciseSelectionNavigator(
+            userId: widget.userId,
+            onExerciseSelected: (exercise) {
+              // 導航到動作詳情頁面
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => ExerciseStrengthDetailPage(
+                    userId: widget.userId,
+                    exerciseId: exercise.exerciseId,
+                    exerciseName: exercise.exerciseName,
+                    timeRange: widget.timeRange,
+                  ),
+                ),
+              ).then((_) {
+                // 從詳情頁返回後，重新檢查收藏狀態
+                _checkFavorites();
+              });
+            },
+          ),
+        ),
+      ),
+    ).then((_) {
+      // 從選擇頁面返回後，重新檢查收藏狀態
+      _checkFavorites();
+    });
+  }
+
+  /// 建立帶選擇的視圖
+  Widget _buildWithSelection() {
+    return Column(
+      children: [
+        // 提示卡片
+        Card(
+          margin: const EdgeInsets.all(16),
+          color: Colors.blue.withOpacity(0.1),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.analytics, color: Colors.blue),
+                    SizedBox(width: 12),
+                    Text(
+                      '💪 查看動作進步',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '選擇動作，查看完整的力量進步曲線和訓練記錄',
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '提示：點擊右上角星號可以收藏常用動作',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // 分類導航
+        Expanded(
+          child: ExerciseSelectionNavigator(
+            userId: widget.userId,
+            onExerciseSelected: (exercise) {
+              // 導航到動作詳情頁面（查看力量進步記錄）
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ExerciseStrengthDetailPage(
+                    userId: widget.userId,
+                    exerciseId: exercise.exerciseId,
+                    exerciseName: exercise.exerciseName,
+                    timeRange: widget.timeRange,
+                  ),
+                ),
+              ).then((_) {
+                // 從詳情頁返回後，重新檢查收藏狀態
+                _checkFavorites();
+              });
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 顯示動作詳情
+  void _showExerciseDetails(String exerciseId) {
+    // 從 strengthProgress 中找到動作名稱
+    final progress = widget.statisticsData.strengthProgress.firstWhere(
+      (p) => p.exerciseId == exerciseId,
+      orElse: () => widget.statisticsData.strengthProgress.first,
+    );
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ExerciseStrengthDetailPage(
+          userId: widget.userId,
+          exerciseId: exerciseId,
+          exerciseName: progress.exerciseName,
+          timeRange: widget.timeRange,
+        ),
+      ),
+    ).then((_) {
+      // 從詳情頁返回後，重新檢查收藏狀態
+      _checkFavorites();
+    });
   }
 }
 

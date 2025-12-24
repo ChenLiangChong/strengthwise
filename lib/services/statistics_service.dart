@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/statistics_model.dart';
 import '../models/exercise_model.dart';
+import '../models/favorite_exercise_model.dart';
 import 'interfaces/i_statistics_service.dart';
 import 'interfaces/i_exercise_service.dart';
 import 'error_handling_service.dart';
@@ -542,7 +543,143 @@ class StatisticsService implements IStatisticsService {
     _exerciseCache.clear();
   }
 
+  @override
+  Future<List<ExerciseWithRecord>> getExercisesWithRecords(
+    String userId, {
+    String? trainingType,
+    String? bodyPart,
+    String? specificMuscle,
+    String? equipmentCategory,
+  }) async {
+    try {
+      // 獲取所有完成的訓練計劃
+      Query query = _firestore
+          .collection('workoutPlans')
+          .where('completed', isEqualTo: true);
+      
+      // 查詢使用者的訓練（同時查 traineeId 和 creatorId）
+      final traineeQuery = query.where('traineeId', isEqualTo: userId);
+      final creatorQuery = query.where('creatorId', isEqualTo: userId);
+      
+      final traineeSnapshot = await traineeQuery.get();
+      final creatorSnapshot = await creatorQuery.get();
+      
+      // 合併結果並去重
+      final allDocs = <String, QueryDocumentSnapshot>{};
+      for (var doc in traineeSnapshot.docs) {
+        allDocs[doc.id] = doc;
+      }
+      for (var doc in creatorSnapshot.docs) {
+        allDocs[doc.id] = doc;
+      }
+      
+      if (allDocs.isEmpty) {
+        return [];
+      }
+      
+      // 統計每個動作的訓練數據
+      final Map<String, _ExerciseRecordData> exerciseStats = {};
+      
+      for (var doc in allDocs.values) {
+        final data = doc.data() as Map<String, dynamic>;
+        final exercises = data['exercises'] as List<dynamic>? ?? [];
+        
+        for (var exerciseData in exercises) {
+          final exerciseMap = exerciseData as Map<String, dynamic>;
+          final exerciseId = exerciseMap['exerciseId'] as String?;
+          final exerciseName = exerciseMap['exerciseName'] as String? ?? '未知動作';
+          final sets = exerciseMap['sets'] as List<dynamic>? ?? [];
+          
+          if (exerciseId == null) continue;
+          
+          // 累計訓練數據
+          if (!exerciseStats.containsKey(exerciseId)) {
+            exerciseStats[exerciseId] = _ExerciseRecordData(
+              exerciseId: exerciseId,
+              exerciseName: exerciseName,
+              lastTrainingDate: (data['completedTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
+              maxWeight: 0,
+              totalSets: 0,
+            );
+          }
+          
+          final stat = exerciseStats[exerciseId]!;
+          stat.totalSets += sets.length;
+          
+          // 更新最後訓練日期
+          final completedTime = (data['completedTime'] as Timestamp?)?.toDate();
+          if (completedTime != null && completedTime.isAfter(stat.lastTrainingDate)) {
+            stat.lastTrainingDate = completedTime;
+          }
+          
+          // 計算最大重量
+          for (var set in sets) {
+            final setMap = set as Map<String, dynamic>;
+            final isCompleted = setMap['isCompleted'] as bool? ?? false;
+            if (isCompleted) {
+              final weight = (setMap['weight'] as num?)?.toDouble() ?? 0;
+              if (weight > stat.maxWeight) {
+                stat.maxWeight = weight;
+              }
+            }
+          }
+        }
+      }
+      
+      // 獲取動作分類信息並過濾
+      final List<ExerciseWithRecord> results = [];
+      
+      for (var stat in exerciseStats.values) {
+        // 獲取動作詳細信息
+        final exercise = await _getExerciseInfo(stat.exerciseId);
+        if (exercise == null) continue;
+        
+        // 根據篩選條件過濾
+        if (trainingType != null && exercise.trainingType != trainingType) continue;
+        if (bodyPart != null && exercise.bodyPart != bodyPart) continue;
+        if (specificMuscle != null && exercise.specificMuscle != specificMuscle) continue;
+        if (equipmentCategory != null && exercise.equipmentCategory != equipmentCategory) continue;
+        
+        results.add(ExerciseWithRecord(
+          exerciseId: stat.exerciseId,
+          exerciseName: stat.exerciseName,
+          bodyPart: exercise.bodyPart.isNotEmpty ? exercise.bodyPart : '其他',
+          lastTrainingDate: stat.lastTrainingDate,
+          maxWeight: stat.maxWeight,
+          totalSets: stat.totalSets,
+        ));
+      }
+      
+      // 按最後訓練日期排序（最近的在前）
+      results.sort((a, b) => b.lastTrainingDate.compareTo(a.lastTrainingDate));
+      
+      return results;
+    } catch (e) {
+      _errorService.logError('獲取有記錄的動作列表失敗: $e');
+      return [];
+    }
+  }
+
   // ========== 私有輔助方法 ==========
+
+  /// 獲取動作詳細信息（內部使用）
+  Future<Exercise?> _getExerciseInfo(String exerciseId) async {
+    // 檢查快取
+    if (_exerciseCache.containsKey(exerciseId)) {
+      return _exerciseCache[exerciseId];
+    }
+
+    // 從服務載入
+    try {
+      final exercise = await _exerciseService.getExerciseById(exerciseId);
+      if (exercise != null) {
+        _exerciseCache[exerciseId] = exercise;
+      }
+      return exercise;
+    } catch (e) {
+      return null;
+    }
+  }
 
   /// 查詢已完成的訓練（轉換為統一格式）
   Future<List<_UnifiedWorkoutData>> _getCompletedWorkouts(
@@ -1310,3 +1447,19 @@ class _MuscleGroupAccumulator {
   List<String> get topExercises => exercises.take(5).toList();
 }
 
+/// 動作訓練記錄數據（內部使用）
+class _ExerciseRecordData {
+  final String exerciseId;
+  final String exerciseName;
+  DateTime lastTrainingDate;
+  double maxWeight;
+  int totalSets;
+
+  _ExerciseRecordData({
+    required this.exerciseId,
+    required this.exerciseName,
+    required this.lastTrainingDate,
+    required this.maxWeight,
+    required this.totalSets,
+  });
+}

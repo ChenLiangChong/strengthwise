@@ -36,11 +36,11 @@ void main() {
           rethrow;
         }
       }
-      
+
       // 設置環境和初始化服務定位器
       setEnvironment(Environment.development);
       await setupServiceLocator();
-      
+
       // 啟動應用
       runApp(const MyApp());
     } catch (e) {
@@ -55,13 +55,16 @@ void main() {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    const Icon(Icons.error_outline,
+                        color: Colors.red, size: 48),
                     const SizedBox(height: 16),
                     const Text('應用初始化失敗',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        style: TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Text(e.toString(),
-                        style: const TextStyle(fontSize: 16), textAlign: TextAlign.center),
+                        style: const TextStyle(fontSize: 16),
+                        textAlign: TextAlign.center),
                   ],
                 ),
               ),

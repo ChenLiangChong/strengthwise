@@ -249,7 +249,15 @@ class BookingService implements IBookingService {
         _logDebug('教練預約監聽器設置成功');
       }
     } catch (e) {
-      _logError('設置預約監聽器失敗: $e');
+      // 檢查是否為權限錯誤（單機版不需要 bookings 功能）
+      final errorStr = e.toString();
+      if (errorStr.contains('PERMISSION_DENIED') || 
+          errorStr.contains('permission-denied') ||
+          errorStr.contains('Missing or insufficient permissions')) {
+        _logDebug('Bookings 集合無權限訪問（單機版模式），跳過監聽器設置');
+      } else {
+        _logError('設置預約監聽器失敗: $e');
+      }
     }
   }
   
@@ -347,7 +355,15 @@ class BookingService implements IBookingService {
       _logDebug('成功獲取 ${bookings.length} 個用戶預約');
       return bookings;
     } catch (e) {
-      _logError('獲取用戶預約失敗: $e');
+      // 檢查是否為權限錯誤（單機版不需要 bookings 功能）
+      final errorStr = e.toString();
+      if (errorStr.contains('PERMISSION_DENIED') || 
+          errorStr.contains('permission-denied') ||
+          errorStr.contains('Missing or insufficient permissions')) {
+        _logDebug('Bookings 集合無權限訪問（單機版模式），返回空列表');
+      } else {
+        _logError('獲取用戶預約失敗: $e');
+      }
       
       // 如果緩存可用但可能已過期，在發生錯誤時仍返回緩存數據
       if (_useCache && _bookingsCache.containsKey(cacheKey)) {
@@ -411,7 +427,15 @@ class BookingService implements IBookingService {
       _logDebug('成功獲取 ${bookings.length} 個教練預約');
       return bookings;
     } catch (e) {
-      _logError('獲取教練預約失敗: $e');
+      // 檢查是否為權限錯誤（單機版不需要 bookings 功能）
+      final errorStr = e.toString();
+      if (errorStr.contains('PERMISSION_DENIED') || 
+          errorStr.contains('permission-denied') ||
+          errorStr.contains('Missing or insufficient permissions')) {
+        _logDebug('Bookings 集合無權限訪問（單機版模式），返回空列表');
+      } else {
+        _logError('獲取教練預約失敗: $e');
+      }
       
       // 如果緩存可用但可能已過期，在發生錯誤時仍返回緩存數據
       if (_useCache && _bookingsCache.containsKey(cacheKey)) {

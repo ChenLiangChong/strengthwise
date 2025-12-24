@@ -805,14 +805,25 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
     final creatorId = training['creatorId'] as String?;
     final userId = FirebaseAuth.instance.currentUser?.uid;
     
-    String timeInfo = '全天';
+    // 判斷訓練計劃是否為過去的
+    bool isPastPlan = false;
+    DateTime? scheduledDate;
     if (training['scheduledDate'] != null) {
       final timestamp = training['scheduledDate'] as Timestamp;
-      final time = timestamp.toDate();
+      scheduledDate = timestamp.toDate();
       
+      // 比較日期（只比較年月日，不比較時間）
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final planDate = DateTime(scheduledDate.year, scheduledDate.month, scheduledDate.day);
+      isPastPlan = planDate.isBefore(today);
+    }
+    
+    String timeInfo = '全天';
+    if (scheduledDate != null) {
       // 只顯示時間部分，如果有
-      if (time.hour != 0 || time.minute != 0) {
-        timeInfo = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+      if (scheduledDate.hour != 0 || scheduledDate.minute != 0) {
+        timeInfo = '${scheduledDate.hour.toString().padLeft(2, '0')}:${scheduledDate.minute.toString().padLeft(2, '0')}';
       }
     }
     
@@ -877,15 +888,16 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                       ),
                     ),
                   ),
-                  // 刪除按鈕
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 20),
-                    color: Colors.red,
-                    onPressed: () => _deleteTrainingPlan(training['id'], title),
-                    tooltip: '刪除訓練計畫',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
+                  // 刪除按鈕（過去的訓練計劃不能刪除）
+                  if (!isPastPlan)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      color: Colors.red,
+                      onPressed: () => _deleteTrainingPlan(training['id'], title),
+                      tooltip: '刪除訓練計畫',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
                 ],
               ),
               if (description.isNotEmpty) ...[

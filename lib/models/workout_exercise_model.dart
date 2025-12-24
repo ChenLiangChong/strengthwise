@@ -11,11 +11,12 @@ class WorkoutExercise {
   final String equipment;        // 所需器材
   final List<String> bodyParts;  // 鍛鍊部位
   final int sets;                // 組數
-  final int reps;                // 次數
-  final double weight;           // 重量(kg)
+  final int reps;                // 次數（預設值，如果沒有 setTargets）
+  final double weight;           // 重量(kg)（預設值，如果沒有 setTargets）
   final int restTime;            // 休息時間（秒）
   final String notes;            // 備註
   final bool isCompleted;        // 是否完成
+  final List<Map<String, dynamic>>? setTargets; // 每組的詳細目標（教練功能）
 
   /// 創建一個訓練動作配置實例
   WorkoutExercise({
@@ -31,6 +32,7 @@ class WorkoutExercise {
     required this.restTime,
     this.notes = '',
     this.isCompleted = false,
+    this.setTargets, // 可選：每組的詳細目標
   });
 
   /// 從標準動作模型創建訓練動作配置
@@ -44,16 +46,16 @@ class WorkoutExercise {
       actionName: exercise.actionName,
       equipment: exercise.equipment,
       bodyParts: exercise.bodyParts,
-      sets: 3, // 預設值
+      sets: 4, // 預設值（調整為 4 組）
       reps: 10, // 預設值
       weight: 0, // 預設值
-      restTime: 60, // 預設休息時間60秒
+      restTime: 90, // 預設休息時間 90 秒
     );
   }
 
   /// 轉換為 JSON 數據格式
   Map<String, dynamic> toJson() {
-    return {
+    final json = {
       'id': id,
       'exerciseId': exerciseId,
       'name': name,
@@ -67,6 +69,13 @@ class WorkoutExercise {
       'notes': notes,
       'isCompleted': isCompleted,
     };
+    
+    // 如果有每組的詳細目標，則包含它
+    if (setTargets != null && setTargets!.isNotEmpty) {
+      json['setTargets'] = setTargets;
+    }
+    
+    return json;
   }
 
   /// 從 JSON 創建對象
@@ -84,6 +93,9 @@ class WorkoutExercise {
       restTime: json['restTime'] ?? 60,
       notes: json['notes'] ?? '',
       isCompleted: json['isCompleted'] ?? false,
+      setTargets: json['setTargets'] != null 
+          ? List<Map<String, dynamic>>.from(json['setTargets'])
+          : null,
     );
   }
 
@@ -102,6 +114,9 @@ class WorkoutExercise {
       restTime: data['restTime'] ?? 60,
       notes: data['notes'] ?? '',
       isCompleted: data['isCompleted'] ?? false,
+      setTargets: data['setTargets'] != null 
+          ? List<Map<String, dynamic>>.from(data['setTargets'])
+          : null,
     );
   }
   
@@ -124,6 +139,7 @@ class WorkoutExercise {
     int? restTime,
     String? notes,
     bool? isCompleted,
+    List<Map<String, dynamic>>? setTargets,
   }) {
     return WorkoutExercise(
       id: id ?? this.id,
@@ -138,6 +154,7 @@ class WorkoutExercise {
       restTime: restTime ?? this.restTime,
       notes: notes ?? this.notes,
       isCompleted: isCompleted ?? this.isCompleted,
+      setTargets: setTargets ?? this.setTargets,
     );
   }
   

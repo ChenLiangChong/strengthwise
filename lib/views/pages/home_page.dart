@@ -274,14 +274,8 @@ class _HomePageState extends State<HomePage> {
               // 今日訓練計畫
               _buildTodayPlans(),
 
-              // 今日統計
-              _buildDailyStats(),
-
               // 最近訓練記錄
               _buildRecentWorkouts(),
-
-              // 快捷操作
-              _buildQuickActions(),
             ],
           ),
         ),
@@ -508,90 +502,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildDailyStats() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '今日進度',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildStatCard('今日消耗', '650', '卡路里', Icons.local_fire_department,
-                  Colors.orange),
-              _buildStatCard('活動時間', '45', '分鐘', Icons.timer, Colors.blue),
-              _buildStatCard(
-                  '完成訓練', '1', '組', Icons.check_circle, Colors.green),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-      String title, String value, String unit, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 2),
-              Text(
-                unit,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildRecentWorkouts() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -640,11 +550,12 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: () {
-              // TODO: 導航到訓練頁面
-            },
-            child: const Text('開始訓練'),
+          Text(
+            '完成訓練後就能看到記錄了！',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
           ),
         ],
       ),
@@ -739,78 +650,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildQuickActions() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '快捷操作',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildActionButton(
-                '開始訓練',
-                Icons.fitness_center,
-                Colors.green,
-                () {
-                  // TODO: 導航到訓練頁面
-                },
-              ),
-              _buildActionButton(
-                '查看數據',
-                Icons.bar_chart,
-                Colors.blue,
-                () {
-                  // TODO: 導航到數據頁面
-                },
-              ),
-              _buildActionButton(
-                '訓練計畫',
-                Icons.calendar_today,
-                Colors.orange,
-                () {
-                  // TODO: 導航到訓練計畫頁面
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton(
-      String title, IconData icon, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

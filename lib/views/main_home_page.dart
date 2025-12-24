@@ -4,7 +4,7 @@ import '../services/service_locator.dart';
 import 'login_page.dart';
 import 'pages/home_page.dart';
 import 'pages/booking_page.dart';
-import 'pages/records_page.dart';
+// import 'pages/records_page.dart'; // 教練-學員版本功能：訓練記錄（暫時隱藏）
 import 'pages/profile_page.dart';
 import 'pages/training_page.dart';
 
@@ -36,8 +36,8 @@ class _MainHomePageState extends State<MainHomePage> {
       const BookingPage(),
       // 動作庫頁面改為訓練頁面
       const TrainingPage(),
-      // 記錄頁面
-      const RecordsPage(),
+      // 記錄頁面（教練-學員版本功能，暫時隱藏）
+      // const RecordsPage(),
       // 個人頁面
       const ProfilePage(),
     ];
@@ -83,10 +83,11 @@ class _MainHomePageState extends State<MainHomePage> {
               icon: Icon(Icons.fitness_center),
               label: '訓練',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.note_alt),
-              label: '記錄',
-            ),
+            // 教練-學員版本功能：訓練記錄（暫時隱藏）
+            // BottomNavigationBarItem(
+            //   icon: Icon(Icons.note_alt),
+            //   label: '記錄',
+            // ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person),
               label: '我的',

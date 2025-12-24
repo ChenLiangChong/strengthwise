@@ -386,3 +386,6 @@ match /appointments/{appointmentId} {
 - [ ] Firestore 規則正確設定
 
 
+
+
+

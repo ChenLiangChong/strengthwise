@@ -5,6 +5,7 @@ import '../../../models/workout_template_model.dart';
 import '../../../controllers/interfaces/i_workout_controller.dart';
 import '../../../services/error_handling_service.dart';
 import '../../../services/service_locator.dart';
+import 'template_editor_page.dart';
 
 class TemplateManagementPage extends StatefulWidget {
   const TemplateManagementPage({super.key});
@@ -31,14 +32,19 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
     _loadTemplates();
   }
 
-  Future<void> _loadTemplates() async {
+  /// 載入模板列表
+  /// 
+  /// [forceRefresh] 是否強制重新載入，忽略緩存（預設 false）
+  Future<void> _loadTemplates({bool forceRefresh = false}) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
       // 使用控制器加載模板
-      final templates = await _workoutController.loadUserTemplates();
+      final templates = forceRefresh 
+          ? await _workoutController.reloadTemplates()  // 強制重新載入
+          : await _workoutController.loadUserTemplates();  // 可能使用緩存
 
       setState(() {
         _templates = templates;
@@ -102,8 +108,8 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
       // 使用控制器創建模板
       await _workoutController.createTemplate(newTemplate);
 
-      // 重新加載模板列表
-      await _loadTemplates();
+      // 強制重新載入模板列表（忽略緩存）
+      await _loadTemplates(forceRefresh: true);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -141,6 +147,31 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
   }
 
   // 直接從模板創建訓練計畫
+  /// 編輯模板
+  Future<void> _editTemplate(WorkoutTemplate template) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TemplateEditorPage(template: template),
+      ),
+    );
+
+    if (result == true) {
+      // 強制重新載入模板列表（忽略緩存）
+      await _loadTemplates(forceRefresh: true);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('模板已更新'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _createWorkoutRecordFromTemplate(
       WorkoutTemplate template) async {
     try {
@@ -164,6 +195,10 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
         throw Exception('未登入');
       }
 
+      // 計算統計資料
+      final totalExercises = template.exercises.length;
+      final totalSets = template.exercises.fold<int>(0, (sum, exercise) => sum + exercise.sets);
+      
       // 直接在 workoutPlans 創建訓練計畫
       final planData = {
         'userId': userId,
@@ -171,10 +206,19 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
         'creatorId': userId,
         'title': template.title,
         'description': template.description,
-        'planType': 'self',
+        'planType': 'self', // 系統標記類型（自主訓練）
+        'uiPlanType': template.planType, // 界面顯示類型（從模板讀取）
         'scheduledDate': Timestamp.fromDate(selectedDate),
+        'completedDate': null, // 初始為 null，完成時才設置
+        'trainingTime': template.trainingTime != null 
+            ? Timestamp.fromDate(template.trainingTime!) 
+            : null, // 從模板讀取預設訓練時間
         'exercises': template.exercises.map((e) => e.toJson()).toList(),
         'completed': false,
+        'totalExercises': totalExercises, // 總運動數
+        'totalSets': totalSets, // 總組數
+        'totalVolume': 0.0, // 初始訓練量為 0，執行後才會有值
+        'note': '', // 初始備註為空
         'createdAt': Timestamp.now(),
         'updatedAt': Timestamp.now(),
       };
@@ -200,6 +244,35 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('訓練計劃模板'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TemplateEditorPage(),
+                ),
+              );
+              
+              if (result == true) {
+                // 強制重新載入模板列表（忽略緩存）
+                await _loadTemplates(forceRefresh: true);
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('模板已創建'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              }
+            },
+            tooltip: '新建模板',
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -257,6 +330,16 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
                               ),
                             ),
                             const PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit, color: Colors.blue),
+                                  SizedBox(width: 8),
+                                  Text('編輯'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
                               value: 'duplicate',
                               child: Row(
                                 children: [
@@ -284,6 +367,9 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
                                 await _createWorkoutRecordFromTemplate(
                                     template);
                                 break;
+                              case 'edit':
+                                await _editTemplate(template);
+                                break;
                               case 'duplicate':
                                 await _duplicateTemplate(template);
                                 break;
@@ -294,7 +380,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
                           },
                         ),
                         onTap: () {
-                          // 返回選擇的模板
+                          // 返回選擇的模板（用於創建訓練計劃）
                           Navigator.pop(context, template);
                         },
                       ),

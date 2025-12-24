@@ -5,7 +5,7 @@ import '../../models/workout_template_model.dart';
 import '../../controllers/interfaces/i_workout_controller.dart';
 import '../../services/error_handling_service.dart';
 import '../../services/service_locator.dart';
-import 'workout/plan_editor_page.dart';
+import 'workout/template_editor_page.dart';
 
 /// 訓練模板管理中心
 /// 
@@ -36,13 +36,19 @@ class _TrainingPageState extends State<TrainingPage> {
   }
   
   /// 載入所有模板
-  Future<void> _loadTemplates() async {
+  /// 載入模板列表
+  /// 
+  /// [forceRefresh] 是否強制重新載入，忽略緩存（預設 false）
+  Future<void> _loadTemplates({bool forceRefresh = false}) async {
     try {
       setState(() {
         _isLoading = true;
       });
       
-      final templates = await _workoutController.loadUserTemplates();
+      // 使用控制器加載模板
+      final templates = forceRefresh 
+          ? await _workoutController.reloadTemplates()  // 強制重新載入
+          : await _workoutController.loadUserTemplates();  // 可能使用緩存
       
       if (mounted) {
         setState(() {
@@ -101,7 +107,7 @@ class _TrainingPageState extends State<TrainingPage> {
               label: '查看',
               onPressed: () {
                 // 切換到行事曆頁面
-                DefaultTabController.of(context)?.animateTo(1); // 假設行事曆是第2個 tab
+                DefaultTabController.of(context).animateTo(1); // 假設行事曆是第2個 tab
               },
             ),
           ),
@@ -176,6 +182,31 @@ class _TrainingPageState extends State<TrainingPage> {
   }
   
   /// 刪除模板
+  /// 編輯模板
+  Future<void> _editTemplate(WorkoutTemplate template) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TemplateEditorPage(template: template),
+      ),
+    );
+
+    if (result == true) {
+      // 強制重新載入模板列表（忽略緩存）
+      await _loadTemplates(forceRefresh: true);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('模板已更新'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+  
   Future<void> _deleteTemplate(WorkoutTemplate template) async {
     // 確認對話框
     final confirmed = await showDialog<bool>(
@@ -246,6 +277,14 @@ class _TrainingPageState extends State<TrainingPage> {
             ),
             const Divider(),
             ListTile(
+              leading: const Icon(Icons.edit, color: Colors.blue),
+              title: const Text('編輯模板'),
+              onTap: () {
+                Navigator.pop(context);
+                _editTemplate(template);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
               title: const Text('刪除模板'),
               onTap: () {
@@ -260,20 +299,28 @@ class _TrainingPageState extends State<TrainingPage> {
   }
   
   /// 創建新模板
-  void _createNewTemplate() {
-    Navigator.push(
+  Future<void> _createNewTemplate() async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PlanEditorPage(
-          selectedDate: DateTime.now(),
-        ),
+        builder: (context) => const TemplateEditorPage(),
       ),
-    ).then((result) {
-      // 如果創建成功，重新載入模板列表
-      if (result == true) {
-        _loadTemplates();
+    );
+    
+    if (result == true) {
+      // 強制重新載入模板列表（忽略緩存）
+      await _loadTemplates(forceRefresh: true);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('模板已創建'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
-    });
+    }
   }
 
   @override

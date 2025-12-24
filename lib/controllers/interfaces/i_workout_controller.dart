@@ -5,8 +5,11 @@ import '../../models/workout_record_model.dart';
 /// 
 /// 定義與訓練計畫相關的業務邏輯操作。
 abstract class IWorkoutController {
-  /// 載入用戶訓練模板
+  /// 載入用戶訓練模板（可能使用緩存）
   Future<List<WorkoutTemplate>> loadUserTemplates();
+  
+  /// 強制重新載入訓練模板（忽略緩存）
+  Future<List<WorkoutTemplate>> reloadTemplates();
   
   /// 獲取特定訓練模板
   Future<WorkoutTemplate?> getTemplateById(String templateId);

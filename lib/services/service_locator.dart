@@ -10,6 +10,7 @@ import 'interfaces/i_note_service.dart';
 import 'interfaces/i_user_service.dart';
 import 'interfaces/i_workout_service.dart';
 import 'interfaces/i_statistics_service.dart';
+import 'interfaces/i_favorites_service.dart';
 import 'auth_wrapper.dart';
 import 'booking_service.dart';
 import 'custom_exercise_service.dart';
@@ -19,9 +20,11 @@ import 'user_service.dart';
 import 'user_migration_service.dart';
 import 'workout_service.dart';
 import 'statistics_service.dart';
+import 'favorites_service.dart';
 import 'error_handling_service.dart';
 import 'exercise_cache_service.dart';
 import 'preload_service.dart';
+import 'default_templates_service.dart';
 import '../controllers/interfaces/i_auth_controller.dart';
 import '../controllers/interfaces/i_booking_controller.dart';
 import '../controllers/interfaces/i_custom_exercise_controller.dart';
@@ -160,6 +163,18 @@ void _registerServices() {
       errorService: serviceLocator<ErrorHandlingService>(),
       exerciseService: serviceLocator<IExerciseService>(),
     ));
+  }
+  
+  // 收藏服務
+  if (!serviceLocator.isRegistered<IFavoritesService>()) {
+    serviceLocator.registerLazySingleton<IFavoritesService>(() => FavoritesService(
+      errorService: serviceLocator<ErrorHandlingService>(),
+    ));
+  }
+  
+  // 默認模板服務
+  if (!serviceLocator.isRegistered<DefaultTemplatesService>()) {
+    serviceLocator.registerLazySingleton<DefaultTemplatesService>(() => DefaultTemplatesService());
   }
 }
 

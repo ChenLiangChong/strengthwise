@@ -91,17 +91,25 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   }
   
   // 顯示無法修改的提示消息
-  void _showCannotModifyMessage() {
-    String message = '';
+  void _showCannotEditMessage() {
     if (_executionController.isPastDate()) {
-      message = '無法修改過去的訓練記錄';
-    } else if (_executionController.isFutureDate()) {
-      message = '無法修改未來的訓練記錄，請在訓練當天進行操作';
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('無法編輯過去的訓練記錄')),
+      );
     }
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+  }
+  
+  // 顯示無法勾選完成的提示消息
+  void _showCannotToggleCompletionMessage() {
+    if (_executionController.isFutureDate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('未來的訓練無法勾選完成，請在訓練當天標記')),
+      );
+    } else if (_executionController.isPastDate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('無法修改過去的訓練記錄')),
+      );
+    }
   }
   
   // 保存訓練記錄
@@ -114,9 +122,9 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   
   // 新增：添加新的訓練動作
   void _addNewExercise() async {
-    // 允許修改未來日期的訓練計劃，但僅限於添加新動作
-    if (_executionController.isPastDate()) {
-      _showCannotModifyMessage();
+    // 檢查是否可以編輯（過去的訓練不能編輯）
+    if (!_executionController.canEdit()) {
+      _showCannotEditMessage();
       return;
     }
     
@@ -230,9 +238,9 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   
   // 添加刪除運動的方法
   void _deleteExercise(int exerciseIndex) async {
-    // 如果是過去的訓練，不允許刪除
-    if (_executionController.isPastDate()) {
-      _showCannotModifyMessage();
+    // 檢查是否可以編輯（過去的訓練不能刪除）
+    if (!_executionController.canEdit()) {
+      _showCannotEditMessage();
       return;
     }
     
@@ -332,8 +340,8 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                         },
                         tooltip: '設為當前運動',
                       ),
-                    // 添加刪除按鈕
-                    if (!_executionController.isPastDate())
+                    // 添加刪除按鈕（過去的訓練不能刪除）
+                    if (_executionController.canEdit())
                       IconButton(
                         icon: const Icon(Icons.delete_outline),
                         color: Colors.red,
@@ -378,18 +386,22 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit),
-                        color: _executionController.canModify() ? Colors.blue : Colors.grey,
+                        color: _executionController.canEdit() ? Colors.blue : Colors.grey,
                         onPressed: () => _updateSetData(index, setIndex),
                         tooltip: '編輯組數',
                       ),
                       // 根據是否可以修改來顯示不同的完成狀態指示器
-                      if (!_executionController.canModify())
-                        Icon(
-                          set.completed ? Icons.check_circle : Icons.radio_button_unchecked,
-                          color: set.completed ? Colors.green : Colors.grey,
+                      if (!_executionController.canToggleCompletion())
+                        // 過去或未來的訓練：只顯示圖標，點擊顯示提示
+                        GestureDetector(
+                          onTap: _showCannotToggleCompletionMessage,
+                          child: Icon(
+                            set.completed ? Icons.check_circle : Icons.radio_button_unchecked,
+                            color: set.completed ? Colors.green : Colors.grey,
+                          ),
                         )
                       else
-                        // 當天可以修改勾選狀態
+                        // 今天的訓練：可以勾選完成
                         Checkbox(
                           value: set.completed,
                           activeColor: Colors.green,
@@ -403,8 +415,8 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                 );
               },
             ),
-            // 新增：增加組數按鈕
-            if (_executionController.canModify())
+            // 新增：增加組數按鈕（過去的訓練不能增加組數）
+            if (_executionController.canEdit())
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Align(
@@ -498,9 +510,9 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   
   // 更新一組訓練的實際數據
   void _updateSetData(int exerciseIndex, int setIndex) {
-    // 如果不是今天的訓練，不允許修改
-    if (!_executionController.canModify()) {
-      _showCannotModifyMessage();
+    // 檢查是否可以編輯（過去的訓練不能編輯）
+    if (!_executionController.canEdit()) {
+      _showCannotEditMessage();
       return;
     }
     
@@ -579,9 +591,9 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   
   // 添加運動備註
   void _addExerciseNote(int exerciseIndex) {
-    // 如果不是今天的訓練，不允許修改
-    if (!_executionController.canModify()) {
-      _showCannotModifyMessage();
+    // 檢查是否可以編輯（過去的訓練不能編輯）
+    if (!_executionController.canEdit()) {
+      _showCannotEditMessage();
       return;
     }
     
@@ -813,8 +825,8 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                 ),
               ],
             ),
-        // 添加運動的浮動按鈕
-        floatingActionButton: !_executionController.isPastDate() && exerciseRecords.isNotEmpty
+        // 添加運動的浮動按鈕（過去的訓練不能新增動作）
+        floatingActionButton: _executionController.canEdit() && exerciseRecords.isNotEmpty
             ? FloatingActionButton(
                 onPressed: _addNewExercise,
                 backgroundColor: Colors.green,

@@ -171,3 +171,6 @@ await firestore.collection('user').doc(uid).set(userModel.toMap());
 **完成後**：請更新 `docs/02_FIRESTORE_ANALYSIS.md` 標記遷移狀態。
 
 
+
+
+
