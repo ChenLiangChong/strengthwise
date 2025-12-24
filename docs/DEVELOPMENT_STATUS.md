@@ -202,6 +202,45 @@
 
 ## ✅ 最新完成
 
+### 2024-12-25：資料庫遷移評估 📊
+
+**交付物**：完整的資料庫遷移評估報告 ✅
+
+**完成內容**：
+- ✅ **資料庫匯出工具**
+  - 創建 `scripts/export_database_structure.py`（340 行）
+  - 從 Firebase 直接匯出實際資料結構
+  - 遞迴解析巢狀欄位（96 個欄位）
+  - 分析 6 個集合、868 個文檔
+  
+- ✅ **成本分析與估算**
+  - 查詢模式分析（載入訓練計劃、動作庫、登入）
+  - 成本估算（1000 用戶：$11-50/月）
+  - Firestore vs Supabase 對比
+  - 長期成本預測
+
+- ✅ **遷移建議**
+  - 短期方案：混合架構（2-3 天，降低 60% 成本）
+  - 長期方案：Supabase PostgreSQL（12-18 天，$25 固定月費）
+  - 詳細實作步驟和風險評估
+
+**產出文檔**：
+- `docs/database_migration_analysis.md` - 完整評估報告（910 行）
+- `database_export_for_migration.json` - 原始資料（5545 行）
+- `scripts/export_database_structure.py` - 可重複執行的匯出工具
+
+**核心發現**：
+1. **Exercise 集合（794 個）**：靜態資料，建議打包進 App（每月省 $19.2）
+2. **WorkoutPlans 集合**：歷史記錄累積，成本會線性增長
+3. **Firestore 限制**：不支援複雜查詢、成本不可預測
+
+**下一步**：
+- 📧 將報告傳送給資料庫專家討論
+- 🎯 決定採用混合架構或完全遷移
+- 📝 制定詳細的遷移計劃和時程
+
+---
+
 ### 2024-12-25：Week 4 完成！✨🎉
 
 **交付物**：市場級品質的 UI/UX ✅
@@ -499,7 +538,6 @@
   - 檢查所有創建 workoutPlans 的位置（3 處）
   - 檢查所有查詢 workoutPlans 的位置（6 處）
   - 檢查 Model 的 toMap/fromMap 方法
-  - 創建詳細審查報告（docs/CODE_AUDIT_REPORT.md）
 - ✅ **P0 問題修正**
   - 修正 plan_editor_page.dart 缺少的欄位
     - completedDate、totalExercises、totalSets、totalVolume、note
@@ -634,9 +672,9 @@
    - 移除「快捷操作」區塊（未實作的 TODO 按鈕）
    - 簡化空狀態提示（移除無功能按鈕）
    - 保留核心功能：問候、今日訓練、最近訓練、統計按鈕
-6. ✅ **Google 快速登入**（階段 13）
+5. **Google 快速登入**（階段 13）
    - Google Sign-In 功能已完整實現
-   - 創建設置指南文檔（`GOOGLE_SIGNIN_SETUP.md`）
+   - 創建設置指南文檔（`docs/GOOGLE_SIGNIN_COMPLETE_SETUP.md`）
    - 支援真實設備測試（模擬器有友善提示）
    - SHA-1 配置檢查清單
 
@@ -741,9 +779,6 @@
 2. **測試覆蓋率**
    - 當前主要靠手動測試
    - 建議：為核心功能添加單元測試
-3. **文檔同步**
-   - `CODE_AUDIT_REPORT.md` 需要更新（反映階段 8-9 的修改）
-   - 建議：完成 P0 任務後統一更新
 
 ### 性能考慮
 - ✅ 控制器緩存機制（5 分鐘）運作良好
@@ -895,9 +930,6 @@
 - `scripts/update_exercise_classification.py` - 更新資料庫
 - `scripts/analyze_exercises.py` - 數據分析
 
-**相關文檔**：
-- `CLASSIFICATION_UPDATE_SUMMARY.md` - 完整更新說明
-
 #### 2. 統一 workoutPlans 集合
 ```
 之前：
@@ -966,8 +998,7 @@ users（統一集合）
 - [ ] 根據使用者反饋優化收藏功能
 
 **參考文檔**：
-- `STATISTICS_IMPLEMENTATION.md` - 統計功能實作
-- `TODO_STRENGTH_PROGRESS_FAVORITES.md` - 收藏功能設計（已完成）
+- `docs/STATISTICS_IMPLEMENTATION.md` - 統計功能實作
 
 ### 中優先級：記錄功能 ⭐⭐
 
@@ -1121,7 +1152,6 @@ users（統一集合）
   - 修復假資料生成腳本（補充缺少欄位）
   - 生成一個月專業訓練數據（16 次訓練、漸進式超負荷）
   - 行事曆正確顯示訓練記錄
-  - 更新開發文檔
 
 ### 2024-12-23（晚上）
 - ✅ **力量進步收藏功能完整實作**
@@ -1133,7 +1163,6 @@ users（統一集合）
   - 整合到 `StrengthProgressPage`（力量進步 Tab）
   - 14 個單元測試全部通過
   - Bug 修復完成（不可變對象修改問題）
-  - 更新開發文檔
 
 ### 2024-12-23（下午）
 - ✅ 統計 UI 美化完成
@@ -1160,7 +1189,6 @@ users（統一集合）
 - ✅ 整理分析文件到 analysis/ 資料夾
 - ✅ 整理 Firebase 文檔到 docs/ 資料夾
 - ✅ 更新 .gitignore
-- 📝 計劃下一步統計功能
 
 ### 2024-12-20
 - 修復訓練備註無法保存
@@ -1287,14 +1315,17 @@ users（統一集合）
 ## 🔗 相關文檔
 
 ### **核心文檔**
-- `PROJECT_OVERVIEW.md` - 專案技術架構和開發規範
-- `DATABASE_DESIGN.md` - Firestore 資料庫結構
-- `STATISTICS_IMPLEMENTATION.md` - 統計功能實作指南
-- `README.md` - 文檔導航
+- `docs/PROJECT_OVERVIEW.md` - 專案技術架構和開發規範
+- `docs/PROJECT_SUMMARY.md` - 專案總結和快速開始
+- `docs/DATABASE_DESIGN.md` - Firestore 資料庫結構
+- `docs/database_migration_analysis.md` - 資料庫遷移評估報告
+- `docs/UI_UX_GUIDELINES.md` - UI/UX 設計規範
+- `docs/STATISTICS_IMPLEMENTATION.md` - 統計功能實作指南
+- `docs/README.md` - 文檔導航
 
 ### **操作指南**
-- `BUILD_RELEASE.md` - Release APK 構建和安裝指南
-- `GOOGLE_SIGNIN_COMPLETE_SETUP.md` - Google Sign-In 完整配置指南
+- `docs/BUILD_RELEASE.md` - Release APK 構建和安裝指南
+- `docs/GOOGLE_SIGNIN_COMPLETE_SETUP.md` - Google Sign-In 完整配置指南
 
 ---
 

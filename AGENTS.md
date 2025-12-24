@@ -308,8 +308,10 @@ TextField(
 ### 核心文檔
 - `docs/README.md` - 文檔導航（必讀）
 - `docs/PROJECT_OVERVIEW.md` - 專案架構總覽
+- `docs/PROJECT_SUMMARY.md` - 專案總結和快速開始
 - `docs/DEVELOPMENT_STATUS.md` - 開發狀態和已知問題
 - `docs/DATABASE_DESIGN.md` - 資料庫設計（794 個動作）
+- `docs/database_migration_analysis.md` - 資料庫遷移評估（⭐ 新增）
 - `docs/UI_UX_GUIDELINES.md` - UI/UX 設計規範（⭐ 新增）
 - `docs/STATISTICS_IMPLEMENTATION.md` - 統計功能實作
 
@@ -329,7 +331,6 @@ TextField(
 - `analysis/firestore_analysis.md` - Firestore 資料庫分析
 
 ### 其他重要文檔
-- `PROJECT_SUMMARY.md` - 專案總結
 - `README.md` - 專案首頁
 
 ---

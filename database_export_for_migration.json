@@ -1,0 +1,5545 @@
+{
+  "project_id": "strengthwise-91f02",
+  "export_time": "2025-12-25 05:06:28",
+  "collections": {
+    "users": {
+      "name": "users",
+      "document_count": 4,
+      "total_fields": 16,
+      "avg_fields_per_doc": 4.0,
+      "fields": {
+        "age": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 2,
+          "occurrence_rate": 50.0,
+          "null_count": 0,
+          "non_null_count": 2,
+          "null_rate": 0.0,
+          "sample_values": [
+            28,
+            28
+          ]
+        },
+        "uid": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 4,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 4,
+          "null_rate": 0.0,
+          "sample_values": [
+            "MmvGmxq15ZMNzAy67bRPhYVy6pG3",
+            "P5598FxYVpUBkSHwEVRLmK1HJlU2",
+            "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "zJ8UuJ3LUJSnkyxtf8One4YHRC72"
+          ]
+        },
+        "bio": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 2,
+          "occurrence_rate": 50.0,
+          "null_count": 0,
+          "non_null_count": 2,
+          "null_rate": 0.0,
+          "sample_values": [
+            "我是個好人",
+            "I am a good person"
+          ]
+        },
+        "displayName": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 4,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 4,
+          "null_rate": 0.0,
+          "sample_values": [
+            "良允陳",
+            "良允陳",
+            "良允陳",
+            "chienwei lai"
+          ]
+        },
+        "profileUpdatedAt": {
+          "types": [
+            "其他類型 (DatetimeWithNanoseconds)"
+          ],
+          "occurrence_count": 2,
+          "occurrence_rate": 50.0,
+          "null_count": 0,
+          "non_null_count": 2,
+          "null_rate": 0.0,
+          "sample_values": []
+        },
+        "height": {
+          "types": [
+            "浮點數 (float)"
+          ],
+          "occurrence_count": 2,
+          "occurrence_rate": 50.0,
+          "null_count": 0,
+          "non_null_count": 2,
+          "null_rate": 0.0,
+          "sample_values": [
+            178.0,
+            179.0
+          ]
+        },
+        "photoURL": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 4,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 4,
+          "null_rate": 0.0,
+          "sample_values": [
+            "https://lh3.googleusercontent.com/a/ACg8ocKH4HT0mLinvbfVzKegc0vyCErRJy1wxb2CfPBQhvwNFO1R4A=s96-c",
+            "https://lh3.googleusercontent.com/a/ACg8ocKH4HT0mLinvbfVzKegc0vyCErRJy1wxb2CfPBQhvwNFO1R4A=s96-c",
+            "https://lh3.googleusercontent.com/a/ACg8ocI1p8z_7X79OEIwe4ravfAZB7TIuXCv4NGuZ4gqhj0BMKzjpA=s96-c",
+            "https://lh3.googleusercontent.com/a/ACg8ocK_Ibdu1fWvpMbsE7rzR-3OJdhdKRP86vT6f8Ow6TFWcUGe6iE=s96-c"
+          ]
+        },
+        "birthDate": {
+          "types": [
+            "其他類型 (DatetimeWithNanoseconds)",
+            "空值 (null)"
+          ],
+          "occurrence_count": 2,
+          "occurrence_rate": 50.0,
+          "null_count": 1,
+          "non_null_count": 1,
+          "null_rate": 50.0,
+          "sample_values": []
+        },
+        "isStudent": {
+          "types": [
+            "布林值 (boolean)"
+          ],
+          "occurrence_count": 4,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 4,
+          "null_rate": 0.0,
+          "sample_values": [
+            true,
+            true,
+            true,
+            true
+          ]
+        },
+        "unitSystem": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 2,
+          "occurrence_rate": 50.0,
+          "null_count": 0,
+          "non_null_count": 2,
+          "null_rate": 0.0,
+          "sample_values": [
+            "metric",
+            "metric"
+          ]
+        },
+        "nickname": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 2,
+          "occurrence_rate": 50.0,
+          "null_count": 0,
+          "non_null_count": 2,
+          "null_rate": 0.0,
+          "sample_values": [
+            "夢行",
+            "Charlie"
+          ]
+        },
+        "email": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 4,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 4,
+          "null_rate": 0.0,
+          "sample_values": [
+            "charlie8519960414@gmail.com",
+            "charlie8519960414@gmail.com",
+            "charlie19960414@gmail.com",
+            "mark61102005@gmail.com"
+          ]
+        },
+        "isCoach": {
+          "types": [
+            "布林值 (boolean)"
+          ],
+          "occurrence_count": 4,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 4,
+          "null_rate": 0.0,
+          "sample_values": [
+            false,
+            false,
+            true,
+            false
+          ]
+        },
+        "profileCreatedAt": {
+          "types": [
+            "其他類型 (DatetimeWithNanoseconds)"
+          ],
+          "occurrence_count": 4,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 4,
+          "null_rate": 0.0,
+          "sample_values": []
+        },
+        "gender": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 2,
+          "occurrence_rate": 50.0,
+          "null_count": 0,
+          "non_null_count": 2,
+          "null_rate": 0.0,
+          "sample_values": [
+            "男",
+            "男"
+          ]
+        },
+        "weight": {
+          "types": [
+            "浮點數 (float)"
+          ],
+          "occurrence_count": 2,
+          "occurrence_rate": 50.0,
+          "null_count": 0,
+          "non_null_count": 2,
+          "null_rate": 0.0,
+          "sample_values": [
+            86.0,
+            85.0
+          ]
+        }
+      },
+      "sample_documents": [
+        {
+          "id": "MmvGmxq15ZMNzAy67bRPhYVy6pG3",
+          "data": {
+            "age": 28,
+            "uid": "MmvGmxq15ZMNzAy67bRPhYVy6pG3",
+            "bio": "我是個好人",
+            "displayName": "良允陳",
+            "profileUpdatedAt": "2025-12-24 16:17:43.955000+00:00",
+            "height": 178.0,
+            "photoURL": "https://lh3.googleusercontent.com/a/ACg8ocKH4HT0mLinvbfVzKegc0vyCErRJy1wxb2CfPBQhvwNFO1R4A=s96-c",
+            "birthDate": null,
+            "isStudent": true,
+            "unitSystem": "metric",
+            "nickname": "夢行",
+            "email": "charlie8519960414@gmail.com",
+            "isCoach": false,
+            "profileCreatedAt": "2025-12-24 15:56:27.271000+00:00",
+            "gender": "男",
+            "weight": 86.0
+          }
+        },
+        {
+          "id": "P5598FxYVpUBkSHwEVRLmK1HJlU2",
+          "data": {
+            "uid": "P5598FxYVpUBkSHwEVRLmK1HJlU2",
+            "photoURL": "https://lh3.googleusercontent.com/a/ACg8ocKH4HT0mLinvbfVzKegc0vyCErRJy1wxb2CfPBQhvwNFO1R4A=s96-c",
+            "displayName": "良允陳",
+            "isStudent": true,
+            "email": "charlie8519960414@gmail.com",
+            "isCoach": false,
+            "profileCreatedAt": "2025-12-24 15:41:27.833000+00:00"
+          }
+        },
+        {
+          "id": "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+          "data": {
+            "age": 28,
+            "uid": "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "displayName": "良允陳",
+            "bio": "I am a good person",
+            "height": 179.0,
+            "profileUpdatedAt": "2025-12-22 08:55:20.444000+00:00",
+            "photoURL": "https://lh3.googleusercontent.com/a/ACg8ocI1p8z_7X79OEIwe4ravfAZB7TIuXCv4NGuZ4gqhj0BMKzjpA=s96-c",
+            "birthDate": "1996-04-14 00:00:00+00:00",
+            "isStudent": true,
+            "unitSystem": "metric",
+            "nickname": "Charlie",
+            "email": "charlie19960414@gmail.com",
+            "isCoach": true,
+            "profileCreatedAt": "2025-03-04 16:39:50.653000+00:00",
+            "gender": "男",
+            "weight": 85.0
+          }
+        },
+        {
+          "id": "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+          "data": {
+            "uid": "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+            "photoURL": "https://lh3.googleusercontent.com/a/ACg8ocK_Ibdu1fWvpMbsE7rzR-3OJdhdKRP86vT6f8Ow6TFWcUGe6iE=s96-c",
+            "displayName": "chienwei lai",
+            "isStudent": true,
+            "email": "mark61102005@gmail.com",
+            "isCoach": false,
+            "profileCreatedAt": "2025-12-24 16:20:30.123000+00:00"
+          }
+        }
+      ],
+      "sample_doc_ids": [
+        "MmvGmxq15ZMNzAy67bRPhYVy6pG3",
+        "P5598FxYVpUBkSHwEVRLmK1HJlU2",
+        "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+        "zJ8UuJ3LUJSnkyxtf8One4YHRC72"
+      ]
+    },
+    "workoutPlans": {
+      "name": "workoutPlans",
+      "document_count": 54,
+      "total_fields": 42,
+      "avg_fields_per_doc": 0.78,
+      "fields": {
+        "exercises": {
+          "types": [
+            "陣列 (array<物件 (map/object)>)"
+          ],
+          "occurrence_count": 54,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 54,
+          "null_rate": 0.0,
+          "sample_values": [
+            "[陣列, 4 項]",
+            "[陣列, 1 項]",
+            "[陣列, 4 項]",
+            "[陣列, 2 項]",
+            "[陣列, 4 項]"
+          ]
+        },
+        "exercises[0].exerciseName": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 51,
+          "occurrence_rate": 94.44,
+          "null_count": 0,
+          "non_null_count": 51,
+          "null_rate": 0.0,
+          "sample_values": [
+            "推／胸推／地板臥推／槓鈴，推舉",
+            "下肢／硬舉系列／直膝挺髖／雙腳／啞鈴，前舉",
+            "下肢／深蹲系列／單腳蹲／啞鈴，前舉，單側蹲",
+            "推／胸推／地板臥推／槓鈴，推舉",
+            "推／胸推／地板臥推／槓鈴，推舉"
+          ]
+        },
+        "exercises[0].sets": {
+          "types": [
+            "整數 (integer)",
+            "陣列 (array<物件 (map/object)>)"
+          ],
+          "occurrence_count": 54,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 54,
+          "null_rate": 0.0,
+          "sample_values": [
+            "[陣列, 4 項]",
+            4,
+            "[陣列, 3 項]",
+            "[陣列, 4 項]",
+            "[陣列, 3 項]"
+          ]
+        },
+        "exercises[0].sets[0].reps": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 51,
+          "occurrence_rate": 94.44,
+          "null_count": 0,
+          "non_null_count": 51,
+          "null_rate": 0.0,
+          "sample_values": [
+            8,
+            8,
+            8,
+            10,
+            8
+          ]
+        },
+        "exercises[0].sets[0].completed": {
+          "types": [
+            "布林值 (boolean)"
+          ],
+          "occurrence_count": 51,
+          "occurrence_rate": 94.44,
+          "null_count": 0,
+          "non_null_count": 51,
+          "null_rate": 0.0,
+          "sample_values": [
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        },
+        "exercises[0].sets[0].timestamp": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 48,
+          "occurrence_rate": 88.89,
+          "null_count": 0,
+          "non_null_count": 48,
+          "null_rate": 0.0,
+          "sample_values": [
+            "2025-12-17T01:49:54.878514",
+            "2025-11-28T01:49:54.026194",
+            "2025-12-07T01:49:12.163440",
+            "2025-11-25T22:32:37.953707",
+            "2025-12-03T01:49:54.263832"
+          ]
+        },
+        "exercises[0].sets[0].setNumber": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 51,
+          "occurrence_rate": 94.44,
+          "null_count": 0,
+          "non_null_count": 51,
+          "null_rate": 0.0,
+          "sample_values": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        "exercises[0].sets[0].weight": {
+          "types": [
+            "整數 (integer)",
+            "浮點數 (float)"
+          ],
+          "occurrence_count": 51,
+          "occurrence_rate": 94.44,
+          "null_count": 0,
+          "non_null_count": 51,
+          "null_rate": 0.0,
+          "sample_values": [
+            65,
+            80,
+            75,
+            55,
+            60
+          ]
+        },
+        "exercises[0].completed": {
+          "types": [
+            "布林值 (boolean)"
+          ],
+          "occurrence_count": 51,
+          "occurrence_rate": 94.44,
+          "null_count": 0,
+          "non_null_count": 51,
+          "null_rate": 0.0,
+          "sample_values": [
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        },
+        "exercises[0].exerciseId": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 54,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 54,
+          "null_rate": 0.0,
+          "sample_values": [
+            "3zsvNeYy7QC4NNbfB8Cf",
+            "L5JDascIJDE0KbKv0cOA",
+            "2DeZfox55TfdzMzO4TX2",
+            "0cHIY1SKk1d4OYaQrA1t",
+            "3zsvNeYy7QC4NNbfB8Cf"
+          ]
+        },
+        "traineeId": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 54,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 54,
+          "null_rate": 0.0,
+          "sample_values": [
+            "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+            "MmvGmxq15ZMNzAy67bRPhYVy6pG3",
+            "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+            "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "UmtFu02WQ4QUoTV3x6AFRbd1ov52"
+          ]
+        },
+        "totalExercises": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 50,
+          "occurrence_rate": 92.59,
+          "null_count": 0,
+          "non_null_count": 50,
+          "null_rate": 0.0,
+          "sample_values": [
+            4,
+            4,
+            2,
+            4,
+            3
+          ]
+        },
+        "completedDate": {
+          "types": [
+            "其他類型 (DatetimeWithNanoseconds)"
+          ],
+          "occurrence_count": 50,
+          "occurrence_rate": 92.59,
+          "null_count": 0,
+          "non_null_count": 50,
+          "null_rate": 0.0,
+          "sample_values": []
+        },
+        "totalVolume": {
+          "types": [
+            "整數 (integer)",
+            "浮點數 (float)"
+          ],
+          "occurrence_count": 50,
+          "occurrence_rate": 92.59,
+          "null_count": 0,
+          "non_null_count": 50,
+          "null_rate": 0.0,
+          "sample_values": [
+            3354,
+            3740,
+            5805,
+            2930,
+            2844
+          ]
+        },
+        "planType": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 54,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 54,
+          "null_rate": 0.0,
+          "sample_values": [
+            "self",
+            "self",
+            "self",
+            "self",
+            "self"
+          ]
+        },
+        "creatorId": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 54,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 54,
+          "null_rate": 0.0,
+          "sample_values": [
+            "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+            "MmvGmxq15ZMNzAy67bRPhYVy6pG3",
+            "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+            "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "UmtFu02WQ4QUoTV3x6AFRbd1ov52"
+          ]
+        },
+        "updatedAt": {
+          "types": [
+            "其他類型 (DatetimeWithNanoseconds)"
+          ],
+          "occurrence_count": 52,
+          "occurrence_rate": 96.3,
+          "null_count": 0,
+          "non_null_count": 52,
+          "null_rate": 0.0,
+          "sample_values": []
+        },
+        "trainingTime": {
+          "types": [
+            "其他類型 (DatetimeWithNanoseconds)",
+            "空值 (null)"
+          ],
+          "occurrence_count": 54,
+          "occurrence_rate": 100.0,
+          "null_count": 3,
+          "non_null_count": 51,
+          "null_rate": 5.56,
+          "sample_values": []
+        },
+        "completed": {
+          "types": [
+            "布林值 (boolean)"
+          ],
+          "occurrence_count": 54,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 54,
+          "null_rate": 0.0,
+          "sample_values": [
+            true,
+            false,
+            true,
+            true,
+            true
+          ]
+        },
+        "uiPlanType": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 54,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 54,
+          "null_rate": 0.0,
+          "sample_values": [
+            "力量訓練",
+            "力量訓練",
+            "力量訓練",
+            "力量訓練",
+            "力量訓練"
+          ]
+        },
+        "scheduledDate": {
+          "types": [
+            "其他類型 (DatetimeWithNanoseconds)"
+          ],
+          "occurrence_count": 54,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 54,
+          "null_rate": 0.0,
+          "sample_values": []
+        },
+        "userId": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 54,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 54,
+          "null_rate": 0.0,
+          "sample_values": [
+            "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+            "MmvGmxq15ZMNzAy67bRPhYVy6pG3",
+            "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+            "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "UmtFu02WQ4QUoTV3x6AFRbd1ov52"
+          ]
+        },
+        "title": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 54,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 54,
+          "null_rate": 0.0,
+          "sample_values": [
+            "第4週 推日 A - 個人記錄挑戰",
+            "133",
+            "第1週 拉日 A - 背部基礎",
+            "第2週 腿日 A - 力量提升",
+            "第1週 推日 A - 胸肩適應"
+          ]
+        },
+        "createdAt": {
+          "types": [
+            "其他類型 (DatetimeWithNanoseconds)"
+          ],
+          "occurrence_count": 54,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 54,
+          "null_rate": 0.0,
+          "sample_values": []
+        },
+        "note": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 50,
+          "occurrence_rate": 92.59,
+          "null_count": 0,
+          "non_null_count": 50,
+          "null_rate": 0.0,
+          "sample_values": [
+            "訓練量: 3,354 kg",
+            "訓練量: 3,740 kg",
+            "訓練量: 5,805 kg",
+            "訓練量: 2,930 kg",
+            "訓練量: 2,844 kg"
+          ]
+        },
+        "totalSets": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 50,
+          "occurrence_rate": 92.59,
+          "null_count": 0,
+          "non_null_count": 50,
+          "null_rate": 0.0,
+          "sample_values": [
+            13,
+            13,
+            7,
+            12,
+            10
+          ]
+        },
+        "description": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 6,
+          "occurrence_rate": 11.11,
+          "null_count": 0,
+          "non_null_count": 6,
+          "null_rate": 0.0,
+          "sample_values": [
+            "",
+            "",
+            "時間不夠時的快速全身訓練方案",
+            "使用啞鈴和槓鈴進行肩部全面訓練",
+            "使用啞鈴和槓鈴進行肩部全面訓練"
+          ]
+        },
+        "exercises[0].reps": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 5.56,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            10,
+            10,
+            10
+          ]
+        },
+        "exercises[0].notes": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 5.56,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            "",
+            "",
+            "主要肩部訓練"
+          ]
+        },
+        "exercises[0].restTime": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 5.56,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            90,
+            90,
+            90
+          ]
+        },
+        "exercises[0].weight": {
+          "types": [
+            "浮點數 (float)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 5.56,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            0.0,
+            60.0,
+            20.0
+          ]
+        },
+        "exercises[0].id": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 5.56,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            "1766593889176",
+            "1766592944228",
+            "ex_1"
+          ]
+        },
+        "exercises[0].actionName": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 5.56,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            "自訂",
+            "雙手推舉，寬距",
+            "肩推"
+          ]
+        },
+        "exercises[0].isCompleted": {
+          "types": [
+            "布林值 (boolean)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 5.56,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            false,
+            false,
+            false
+          ]
+        },
+        "exercises[0].equipment": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 5.56,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            "自訂",
+            "啞鈴",
+            "彈力繩"
+          ]
+        },
+        "exercises[0].bodyParts": {
+          "types": [
+            "陣列 (array)",
+            "陣列 (array<字串 (string)>)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 5.56,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            "[陣列, 0 項]",
+            "[陣列, 1 項]",
+            "[陣列, 2 項]"
+          ]
+        },
+        "exercises[0].name": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 5.56,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            "自訂",
+            "推／胸推／仰臥姿／啞鈴，平板式／雙手推舉，寬距",
+            "推／肩推／直立式，彈力繩／單手"
+          ]
+        },
+        "exercises[0].setTargets": {
+          "types": [
+            "陣列 (array<物件 (map/object)>)"
+          ],
+          "occurrence_count": 1,
+          "occurrence_rate": 1.85,
+          "null_count": 0,
+          "non_null_count": 1,
+          "null_rate": 0.0,
+          "sample_values": [
+            "[陣列, 4 項]"
+          ]
+        },
+        "exercises[0].setTargets[0].reps": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 1,
+          "occurrence_rate": 1.85,
+          "null_count": 0,
+          "non_null_count": 1,
+          "null_rate": 0.0,
+          "sample_values": [
+            10
+          ]
+        },
+        "exercises[0].setTargets[0].weight": {
+          "types": [
+            "浮點數 (float)"
+          ],
+          "occurrence_count": 1,
+          "occurrence_rate": 1.85,
+          "null_count": 0,
+          "non_null_count": 1,
+          "null_rate": 0.0,
+          "sample_values": [
+            60.0
+          ]
+        },
+        "exercises[0].sets[0].restTime": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 5.56,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            120,
+            90,
+            120
+          ]
+        },
+        "exercises[0].sets[0].note": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 5.56,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            "",
+            "",
+            ""
+          ]
+        }
+      },
+      "sample_documents": [
+        {
+          "id": "3bL9FbX02R6QIkLHMVvQ",
+          "data": {
+            "exercises": [
+              {
+                "exerciseName": "推／胸推／地板臥推／槓鈴，推舉",
+                "sets": [
+                  {
+                    "reps": 8,
+                    "completed": true,
+                    "timestamp": "2025-12-17T01:49:54.878514",
+                    "setNumber": 1,
+                    "weight": 65
+                  },
+                  {
+                    "reps": 6,
+                    "completed": true,
+                    "timestamp": "2025-12-17T01:49:54.878514",
+                    "setNumber": 2,
+                    "weight": 70
+                  },
+                  {
+                    "reps": 4,
+                    "completed": true,
+                    "timestamp": "2025-12-17T01:49:54.878514",
+                    "setNumber": 3,
+                    "weight": 75
+                  },
+                  {
+                    "reps": 5,
+                    "completed": true,
+                    "timestamp": "2025-12-17T01:49:54.878514",
+                    "setNumber": 4,
+                    "weight": 70
+                  }
+                ],
+                "completed": true,
+                "exerciseId": "3zsvNeYy7QC4NNbfB8Cf"
+              },
+              {
+                "exerciseId": "5yNv0j7fdFEEpuLpA1x5",
+                "sets": [
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-12-17T01:49:54.878514",
+                    "setNumber": 1,
+                    "weight": 26
+                  },
+                  {
+                    "reps": 8,
+                    "completed": true,
+                    "timestamp": "2025-12-17T01:49:54.878514",
+                    "setNumber": 2,
+                    "weight": 28
+                  },
+                  {
+                    "reps": 8,
+                    "completed": true,
+                    "timestamp": "2025-12-17T01:49:54.878514",
+                    "setNumber": 3,
+                    "weight": 28
+                  }
+                ],
+                "completed": true,
+                "exerciseName": "推／胸推／地板臥推／啞鈴，交替推舉"
+              },
+              {
+                "exerciseName": "推／肩推／直立式，彈力繩／單手",
+                "sets": [
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-12-17T01:49:54.878514",
+                    "setNumber": 1,
+                    "weight": 22
+                  },
+                  {
+                    "reps": 8,
+                    "completed": true,
+                    "timestamp": "2025-12-17T01:49:54.878514",
+                    "setNumber": 2,
+                    "weight": 24
+                  },
+                  {
+                    "reps": 6,
+                    "completed": true,
+                    "timestamp": "2025-12-17T01:49:54.878514",
+                    "setNumber": 3,
+                    "weight": 26
+                  }
+                ],
+                "exerciseId": "6hvpsp4UIyWptRYJYL2l",
+                "completed": true
+              },
+              {
+                "exerciseName": "推／肩推／倒立式",
+                "sets": [
+                  {
+                    "reps": 12,
+                    "completed": true,
+                    "timestamp": "2025-12-17T01:49:54.878514",
+                    "setNumber": 1,
+                    "weight": 14
+                  },
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-12-17T01:49:54.878514",
+                    "setNumber": 2,
+                    "weight": 16
+                  },
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-12-17T01:49:54.878514",
+                    "setNumber": 3,
+                    "weight": 16
+                  }
+                ],
+                "completed": true,
+                "exerciseId": "6mMd1EMonuwNpujwiqlr"
+              }
+            ],
+            "traineeId": "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+            "totalExercises": 4,
+            "completedDate": "2025-12-17 01:49:54.878514+00:00",
+            "totalVolume": 3354,
+            "planType": "self",
+            "creatorId": "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+            "updatedAt": "2025-12-17 01:49:54.878514+00:00",
+            "trainingTime": "2025-12-17 00:19:54.878514+00:00",
+            "completed": true,
+            "uiPlanType": "力量訓練",
+            "scheduledDate": "2025-12-17 00:19:54.878514+00:00",
+            "userId": "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+            "title": "第4週 推日 A - 個人記錄挑戰",
+            "createdAt": "2025-12-17 00:19:54.878514+00:00",
+            "note": "訓練量: 3,354 kg",
+            "totalSets": 13
+          }
+        },
+        {
+          "id": "4JWwjAXuRacWeDCoVTp3",
+          "data": {
+            "description": "",
+            "exercises": [
+              {
+                "reps": 10,
+                "notes": "",
+                "restTime": 90,
+                "weight": 0.0,
+                "sets": 4,
+                "id": "1766593889176",
+                "actionName": "自訂",
+                "isCompleted": false,
+                "equipment": "自訂",
+                "exerciseId": "L5JDascIJDE0KbKv0cOA",
+                "bodyParts": [],
+                "name": "自訂"
+              }
+            ],
+            "completed": false,
+            "traineeId": "MmvGmxq15ZMNzAy67bRPhYVy6pG3",
+            "uiPlanType": "力量訓練",
+            "scheduledDate": "2025-12-24 16:27:05.034761+00:00",
+            "userId": "MmvGmxq15ZMNzAy67bRPhYVy6pG3",
+            "planType": "self",
+            "createdAt": "2025-12-24 16:31:38.344085+00:00",
+            "creatorId": "MmvGmxq15ZMNzAy67bRPhYVy6pG3",
+            "title": "133",
+            "trainingTime": "2025-12-25 00:00:00+00:00"
+          }
+        },
+        {
+          "id": "4mGrszc1Fhi8tgeXD8Va",
+          "data": {
+            "exercises": [
+              {
+                "completed": true,
+                "sets": [
+                  {
+                    "reps": 8,
+                    "completed": true,
+                    "timestamp": "2025-11-28T01:49:54.026194",
+                    "setNumber": 1,
+                    "weight": 80
+                  },
+                  {
+                    "reps": 6,
+                    "completed": true,
+                    "timestamp": "2025-11-28T01:49:54.026194",
+                    "setNumber": 2,
+                    "weight": 90
+                  },
+                  {
+                    "reps": 5,
+                    "completed": true,
+                    "timestamp": "2025-11-28T01:49:54.026194",
+                    "setNumber": 3,
+                    "weight": 100
+                  }
+                ],
+                "exerciseName": "下肢／硬舉系列／直膝挺髖／雙腳／啞鈴，前舉",
+                "exerciseId": "2DeZfox55TfdzMzO4TX2"
+              },
+              {
+                "completed": true,
+                "sets": [
+                  {
+                    "reps": 8,
+                    "completed": true,
+                    "timestamp": "2025-11-28T01:49:54.026194",
+                    "setNumber": 1,
+                    "weight": 0
+                  },
+                  {
+                    "reps": 7,
+                    "completed": true,
+                    "timestamp": "2025-11-28T01:49:54.026194",
+                    "setNumber": 2,
+                    "weight": 0
+                  },
+                  {
+                    "reps": 6,
+                    "completed": true,
+                    "timestamp": "2025-11-28T01:49:54.026194",
+                    "setNumber": 3,
+                    "weight": 0
+                  },
+                  {
+                    "reps": 5,
+                    "completed": true,
+                    "timestamp": "2025-11-28T01:49:54.026194",
+                    "setNumber": 4,
+                    "weight": 0
+                  }
+                ],
+                "exerciseId": "Eh6KPbv5fzn1kVlnmIVl",
+                "exerciseName": "TRX/引體向上"
+              },
+              {
+                "exerciseName": "拉／划船系列／單足立／啞鈴划船，單臂／同側，寬距",
+                "sets": [
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-11-28T01:49:54.026194",
+                    "setNumber": 1,
+                    "weight": 50
+                  },
+                  {
+                    "reps": 8,
+                    "completed": true,
+                    "timestamp": "2025-11-28T01:49:54.026194",
+                    "setNumber": 2,
+                    "weight": 55
+                  },
+                  {
+                    "reps": 8,
+                    "completed": true,
+                    "timestamp": "2025-11-28T01:49:54.026194",
+                    "setNumber": 3,
+                    "weight": 55
+                  }
+                ],
+                "exerciseId": "0K1ohnKBkP3CBriDuwpx",
+                "completed": true
+              },
+              {
+                "exerciseName": "拉／二頭彎舉／肩前肘固定，半固定器材／單手",
+                "sets": [
+                  {
+                    "reps": 12,
+                    "completed": true,
+                    "timestamp": "2025-11-28T01:49:54.026194",
+                    "setNumber": 1,
+                    "weight": 20
+                  },
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-11-28T01:49:54.026194",
+                    "setNumber": 2,
+                    "weight": 22
+                  },
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-11-28T01:49:54.026194",
+                    "setNumber": 3,
+                    "weight": 22
+                  }
+                ],
+                "exerciseId": "8WkB8x58YqYWHYorHJvE",
+                "completed": true
+              }
+            ],
+            "traineeId": "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+            "totalExercises": 4,
+            "completedDate": "2025-11-28 01:49:54.026194+00:00",
+            "totalVolume": 3740,
+            "planType": "self",
+            "creatorId": "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+            "updatedAt": "2025-11-28 01:49:54.026194+00:00",
+            "trainingTime": "2025-11-28 00:19:54.026194+00:00",
+            "completed": true,
+            "uiPlanType": "力量訓練",
+            "scheduledDate": "2025-11-28 00:19:54.026194+00:00",
+            "userId": "zJ8UuJ3LUJSnkyxtf8One4YHRC72",
+            "createdAt": "2025-11-28 00:19:54.026194+00:00",
+            "title": "第1週 拉日 A - 背部基礎",
+            "note": "訓練量: 3,740 kg",
+            "totalSets": 13
+          }
+        },
+        {
+          "id": "4ydqohwX6WU0JYZxA1IC",
+          "data": {
+            "exercises": [
+              {
+                "exerciseName": "下肢／深蹲系列／單腳蹲／啞鈴，前舉，單側蹲",
+                "sets": [
+                  {
+                    "reps": 8,
+                    "completed": true,
+                    "timestamp": "2025-12-07T01:49:12.163440",
+                    "setNumber": 1,
+                    "weight": 75
+                  },
+                  {
+                    "reps": 6,
+                    "completed": true,
+                    "timestamp": "2025-12-07T01:49:12.163440",
+                    "setNumber": 2,
+                    "weight": 80
+                  },
+                  {
+                    "reps": 5,
+                    "completed": true,
+                    "timestamp": "2025-12-07T01:49:12.163440",
+                    "setNumber": 3,
+                    "weight": 85
+                  },
+                  {
+                    "reps": 6,
+                    "completed": true,
+                    "timestamp": "2025-12-07T01:49:12.163440",
+                    "setNumber": 4,
+                    "weight": 80
+                  }
+                ],
+                "completed": true,
+                "exerciseId": "0cHIY1SKk1d4OYaQrA1t"
+              },
+              {
+                "exerciseId": "37HfmVRA1CLMcLN8JrNh",
+                "sets": [
+                  {
+                    "reps": 12,
+                    "completed": true,
+                    "timestamp": "2025-12-07T01:49:12.163440",
+                    "setNumber": 1,
+                    "weight": 110
+                  },
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-12-07T01:49:12.163440",
+                    "setNumber": 2,
+                    "weight": 120
+                  },
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-12-07T01:49:12.163440",
+                    "setNumber": 3,
+                    "weight": 130
+                  }
+                ],
+                "completed": true,
+                "exerciseName": "下肢／深蹲系列／跨側蹲／槓鈴，垂放，單側蹲"
+              }
+            ],
+            "traineeId": "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "totalVolume": 5805,
+            "completedDate": "2025-12-07 01:49:12.163440+00:00",
+            "totalExercises": 2,
+            "planType": "self",
+            "creatorId": "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "updatedAt": "2025-12-07 01:49:12.163440+00:00",
+            "trainingTime": "2025-12-07 00:19:12.163440+00:00",
+            "completed": true,
+            "uiPlanType": "力量訓練",
+            "scheduledDate": "2025-12-07 00:19:12.163440+00:00",
+            "userId": "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "createdAt": "2025-12-07 00:19:12.163440+00:00",
+            "title": "第2週 腿日 A - 力量提升",
+            "note": "訓練量: 5,805 kg",
+            "totalSets": 7
+          }
+        },
+        {
+          "id": "5XrXXzwPaPhJNgh3U5uj",
+          "data": {
+            "exercises": [
+              {
+                "completed": true,
+                "sets": [
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-11-25T22:32:37.953707",
+                    "setNumber": 1,
+                    "weight": 55
+                  },
+                  {
+                    "reps": 8,
+                    "completed": true,
+                    "timestamp": "2025-11-25T22:32:37.953707",
+                    "setNumber": 2,
+                    "weight": 60
+                  },
+                  {
+                    "reps": 8,
+                    "completed": true,
+                    "timestamp": "2025-11-25T22:32:37.953707",
+                    "setNumber": 3,
+                    "weight": 60
+                  }
+                ],
+                "exerciseId": "3zsvNeYy7QC4NNbfB8Cf",
+                "exerciseName": "推／胸推／地板臥推／槓鈴，推舉"
+              },
+              {
+                "exerciseId": "5yNv0j7fdFEEpuLpA1x5",
+                "sets": [
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-11-25T22:32:37.953707",
+                    "setNumber": 1,
+                    "weight": 20
+                  },
+                  {
+                    "reps": 8,
+                    "completed": true,
+                    "timestamp": "2025-11-25T22:32:37.953707",
+                    "setNumber": 2,
+                    "weight": 22
+                  },
+                  {
+                    "reps": 8,
+                    "completed": true,
+                    "timestamp": "2025-11-25T22:32:37.953707",
+                    "setNumber": 3,
+                    "weight": 22
+                  }
+                ],
+                "completed": true,
+                "exerciseName": "推／胸推／地板臥推／啞鈴，交替推舉"
+              },
+              {
+                "completed": true,
+                "sets": [
+                  {
+                    "reps": 12,
+                    "completed": true,
+                    "timestamp": "2025-11-25T22:32:37.953707",
+                    "setNumber": 1,
+                    "weight": 16
+                  },
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-11-25T22:32:37.953707",
+                    "setNumber": 2,
+                    "weight": 18
+                  },
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-11-25T22:32:37.953707",
+                    "setNumber": 3,
+                    "weight": 18
+                  }
+                ],
+                "exerciseName": "推／肩推／直立式，彈力繩／單手",
+                "exerciseId": "6hvpsp4UIyWptRYJYL2l"
+              },
+              {
+                "exerciseName": "推／肩推／倒立式",
+                "sets": [
+                  {
+                    "reps": 12,
+                    "completed": true,
+                    "timestamp": "2025-11-25T22:32:37.953707",
+                    "setNumber": 1,
+                    "weight": 8
+                  },
+                  {
+                    "reps": 12,
+                    "completed": true,
+                    "timestamp": "2025-11-25T22:32:37.953707",
+                    "setNumber": 2,
+                    "weight": 10
+                  },
+                  {
+                    "reps": 10,
+                    "completed": true,
+                    "timestamp": "2025-11-25T22:32:37.953707",
+                    "setNumber": 3,
+                    "weight": 10
+                  }
+                ],
+                "completed": true,
+                "exerciseId": "6mMd1EMonuwNpujwiqlr"
+              }
+            ],
+            "traineeId": "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "totalExercises": 4,
+            "completedDate": "2025-11-25 22:32:37.953707+00:00",
+            "totalVolume": 2930,
+            "planType": "self",
+            "creatorId": "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "updatedAt": "2025-11-25 22:32:37.953707+00:00",
+            "trainingTime": "2025-11-25 21:02:37.953707+00:00",
+            "completed": true,
+            "userId": "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "scheduledDate": "2025-11-25 21:02:37.953707+00:00",
+            "uiPlanType": "力量訓練",
+            "title": "第1週 推日 A - 胸肩適應",
+            "createdAt": "2025-11-25 21:02:37.953707+00:00",
+            "note": "訓練量: 2,930 kg",
+            "totalSets": 12
+          }
+        }
+      ],
+      "sample_doc_ids": [
+        "3bL9FbX02R6QIkLHMVvQ",
+        "4JWwjAXuRacWeDCoVTp3",
+        "4mGrszc1Fhi8tgeXD8Va",
+        "4ydqohwX6WU0JYZxA1IC",
+        "5XrXXzwPaPhJNgh3U5uj",
+        "731QknfeBO366DOHU9DL",
+        "7b7oKCsAhgCE12pSDLQ7",
+        "7s6ZncOKI0QAX88AE33B",
+        "84ZJyDEXMZDFwYuZIkvY",
+        "9OjveELiswF4LTNI5FHT"
+      ]
+    },
+    "exercise": {
+      "name": "exercise",
+      "document_count": 794,
+      "total_fields": 22,
+      "avg_fields_per_doc": 0.03,
+      "fields": {
+        "imageUrl": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        "type": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "重訓",
+            "重訓",
+            "重訓",
+            "重訓",
+            "重訓"
+          ]
+        },
+        "description": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        "videoUrl": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        "level3": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "",
+            "屈體式",
+            "單足立",
+            "",
+            "機械式"
+          ]
+        },
+        "equipment": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "徒手",
+            "Cable滑輪機",
+            "啞鈴",
+            "徒手",
+            "機械式"
+          ]
+        },
+        "apps": {
+          "types": [
+            "陣列 (array)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "[陣列, 0 項]",
+            "[陣列, 0 項]",
+            "[陣列, 0 項]",
+            "[陣列, 0 項]",
+            "[陣列, 0 項]"
+          ]
+        },
+        "level4": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "",
+            "半固定器材",
+            "啞鈴划船，單臂",
+            "",
+            ""
+          ]
+        },
+        "nameEn": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "Battle ropes/In and out waves",
+            "Pull/Reverse fly/Bent over/Pulley/Lunge steps, Alternating",
+            "Pull/Row/Single leg/Dumbbell/Wide grip, Ipsilateral barbell",
+            "Battle ropes/Figure 8 waves",
+            "Lower limbs/Leg curl/Machine/Sitting, Single leg"
+          ]
+        },
+        "level5": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        "bodyParts": {
+          "types": [
+            "陣列 (array)",
+            "陣列 (array<字串 (string)>)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "[陣列, 1 項]",
+            "[陣列, 1 項]",
+            "[陣列, 1 項]",
+            "[陣列, 1 項]",
+            "[陣列, 1 項]"
+          ]
+        },
+        "name": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "戰繩/內外波浪",
+            "拉／反向飛鳥／屈體式／半固定器材／弓箭步，交替",
+            "拉／划船系列／單足立／啞鈴划船，單臂／同側，寬距",
+            "戰繩/八字甩繩",
+            "下肢／腿部屈曲／機械式／坐姿，單腳"
+          ]
+        },
+        "equipmentSubcategory": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "自身體重",
+            "Cable滑輪",
+            "啞鈴",
+            "自身體重",
+            "固定器械"
+          ]
+        },
+        "level1": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "戰繩",
+            "拉",
+            "拉",
+            "戰繩",
+            "下肢"
+          ]
+        },
+        "equipmentCategory": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "徒手",
+            "機械式",
+            "自由重量",
+            "徒手",
+            "機械式"
+          ]
+        },
+        "specificMuscle": {
+          "types": [
+            "字串 (string)",
+            "空值 (null)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 7,
+          "non_null_count": 787,
+          "null_rate": 0.88,
+          "sample_values": [
+            "綜合訓練",
+            "後三角",
+            "闊背肌",
+            "綜合訓練",
+            "整體腿部"
+          ]
+        },
+        "actionName": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "內外波浪",
+            "弓箭步，交替",
+            "同側，寬距",
+            "八字甩繩",
+            "坐姿，單腳"
+          ]
+        },
+        "jointType": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "多關節",
+            "多關節",
+            "多關節",
+            "多關節",
+            "多關節"
+          ]
+        },
+        "createdAt": {
+          "types": [
+            "其他類型 (DatetimeWithNanoseconds)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": []
+        },
+        "trainingType": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "重訓",
+            "重訓",
+            "重訓",
+            "重訓",
+            "重訓"
+          ]
+        },
+        "level2": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "",
+            "反向飛鳥",
+            "划船系列",
+            "",
+            "腿部屈曲"
+          ]
+        },
+        "bodyPart": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 794,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 794,
+          "null_rate": 0.0,
+          "sample_values": [
+            "全身",
+            "肩",
+            "背",
+            "全身",
+            "腿"
+          ]
+        }
+      },
+      "sample_documents": [
+        {
+          "id": "03g9loX3XxvLPMsI0Qax",
+          "data": {
+            "imageUrl": "",
+            "type": "重訓",
+            "description": "",
+            "videoUrl": "",
+            "level3": "",
+            "equipment": "徒手",
+            "apps": [],
+            "level4": "",
+            "nameEn": "Battle ropes/In and out waves",
+            "level5": "",
+            "bodyParts": [
+              "全身"
+            ],
+            "name": "戰繩/內外波浪",
+            "equipmentSubcategory": "自身體重",
+            "level1": "戰繩",
+            "equipmentCategory": "徒手",
+            "specificMuscle": "綜合訓練",
+            "actionName": "內外波浪",
+            "jointType": "多關節",
+            "createdAt": "2025-03-01 18:51:49.265000+00:00",
+            "trainingType": "重訓",
+            "level2": "",
+            "bodyPart": "全身"
+          }
+        },
+        {
+          "id": "0A5921M6WAyUv7fXcA29",
+          "data": {
+            "imageUrl": "",
+            "type": "重訓",
+            "description": "",
+            "videoUrl": "",
+            "level3": "屈體式",
+            "equipment": "Cable滑輪機",
+            "apps": [],
+            "level4": "半固定器材",
+            "nameEn": "Pull/Reverse fly/Bent over/Pulley/Lunge steps, Alternating",
+            "level5": "",
+            "bodyParts": [
+              "肩"
+            ],
+            "name": "拉／反向飛鳥／屈體式／半固定器材／弓箭步，交替",
+            "equipmentSubcategory": "Cable滑輪",
+            "level1": "拉",
+            "equipmentCategory": "機械式",
+            "specificMuscle": "後三角",
+            "actionName": "弓箭步，交替",
+            "jointType": "多關節",
+            "createdAt": "2025-03-01 18:51:52.931000+00:00",
+            "trainingType": "重訓",
+            "level2": "反向飛鳥",
+            "bodyPart": "肩"
+          }
+        },
+        {
+          "id": "0K1ohnKBkP3CBriDuwpx",
+          "data": {
+            "imageUrl": "",
+            "type": "重訓",
+            "description": "",
+            "videoUrl": "",
+            "level3": "單足立",
+            "equipment": "啞鈴",
+            "apps": [],
+            "level4": "啞鈴划船，單臂",
+            "nameEn": "Pull/Row/Single leg/Dumbbell/Wide grip, Ipsilateral barbell",
+            "level5": "",
+            "bodyParts": [
+              "背"
+            ],
+            "name": "拉／划船系列／單足立／啞鈴划船，單臂／同側，寬距",
+            "equipmentSubcategory": "啞鈴",
+            "level1": "拉",
+            "equipmentCategory": "自由重量",
+            "specificMuscle": "闊背肌",
+            "actionName": "同側，寬距",
+            "jointType": "多關節",
+            "createdAt": "2025-03-01 18:51:52.931000+00:00",
+            "trainingType": "重訓",
+            "level2": "划船系列",
+            "bodyPart": "背"
+          }
+        },
+        {
+          "id": "0KtgJcOwEVsyE8YeDug0",
+          "data": {
+            "imageUrl": "",
+            "type": "重訓",
+            "description": "",
+            "videoUrl": "",
+            "level3": "",
+            "equipment": "徒手",
+            "apps": [],
+            "level4": "",
+            "nameEn": "Battle ropes/Figure 8 waves",
+            "level5": "",
+            "bodyParts": [
+              "全身"
+            ],
+            "name": "戰繩/八字甩繩",
+            "equipmentSubcategory": "自身體重",
+            "level1": "戰繩",
+            "equipmentCategory": "徒手",
+            "specificMuscle": "綜合訓練",
+            "actionName": "八字甩繩",
+            "jointType": "多關節",
+            "createdAt": "2025-03-01 18:51:49.265000+00:00",
+            "trainingType": "重訓",
+            "level2": "",
+            "bodyPart": "全身"
+          }
+        },
+        {
+          "id": "0LDuIgLkNq4FHo9CCgLE",
+          "data": {
+            "imageUrl": "",
+            "type": "重訓",
+            "description": "",
+            "videoUrl": "",
+            "level3": "機械式",
+            "equipment": "機械式",
+            "apps": [],
+            "level4": "",
+            "nameEn": "Lower limbs/Leg curl/Machine/Sitting, Single leg",
+            "level5": "",
+            "bodyParts": [
+              "腿"
+            ],
+            "name": "下肢／腿部屈曲／機械式／坐姿，單腳",
+            "equipmentSubcategory": "固定器械",
+            "level1": "下肢",
+            "equipmentCategory": "機械式",
+            "specificMuscle": "整體腿部",
+            "actionName": "坐姿，單腳",
+            "jointType": "多關節",
+            "createdAt": "2025-03-01 18:51:52.931000+00:00",
+            "trainingType": "重訓",
+            "level2": "腿部屈曲",
+            "bodyPart": "腿"
+          }
+        }
+      ],
+      "sample_doc_ids": [
+        "03g9loX3XxvLPMsI0Qax",
+        "0A5921M6WAyUv7fXcA29",
+        "0K1ohnKBkP3CBriDuwpx",
+        "0KtgJcOwEVsyE8YeDug0",
+        "0LDuIgLkNq4FHo9CCgLE",
+        "0RrJyyFHtD74r3yorad9",
+        "0TkbIQC0RO59KpkXFRqc",
+        "0UD3dhFWQUWGXRq1kWNF",
+        "0cHIY1SKk1d4OYaQrA1t",
+        "0eQhPYz3G0dOJMTusLso"
+      ]
+    },
+    "bodyParts": {
+      "name": "bodyParts",
+      "document_count": 8,
+      "total_fields": 3,
+      "avg_fields_per_doc": 0.38,
+      "fields": {
+        "description": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 8,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 8,
+          "null_rate": 0.0,
+          "sample_values": [
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        },
+        "count": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 8,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 8,
+          "null_rate": 0.0,
+          "sample_values": [
+            53,
+            95,
+            97,
+            50,
+            198
+          ]
+        },
+        "name": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 8,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 8,
+          "null_rate": 0.0,
+          "sample_values": [
+            "手",
+            "肩",
+            "胸",
+            "核心",
+            "腿"
+          ]
+        }
+      },
+      "sample_documents": [
+        {
+          "id": "1m6ZvsyrF4yJGeWwcID1",
+          "data": {
+            "description": "",
+            "count": 53,
+            "name": "手"
+          }
+        },
+        {
+          "id": "Awtjj1aPGR3BAbwru6Qc",
+          "data": {
+            "description": "",
+            "count": 95,
+            "name": "肩"
+          }
+        },
+        {
+          "id": "CHMU4cZYRaMsJhf7ve3C",
+          "data": {
+            "description": "",
+            "count": 97,
+            "name": "胸"
+          }
+        },
+        {
+          "id": "JiFl1tTuU7n2tIMwcjS4",
+          "data": {
+            "description": "",
+            "count": 50,
+            "name": "核心"
+          }
+        },
+        {
+          "id": "X0rpwOTKbcS4VFi2Ylt9",
+          "data": {
+            "description": "",
+            "count": 198,
+            "name": "腿"
+          }
+        }
+      ],
+      "sample_doc_ids": [
+        "1m6ZvsyrF4yJGeWwcID1",
+        "Awtjj1aPGR3BAbwru6Qc",
+        "CHMU4cZYRaMsJhf7ve3C",
+        "JiFl1tTuU7n2tIMwcjS4",
+        "X0rpwOTKbcS4VFi2Ylt9",
+        "Yk5EZw3QtAS6HXAH7HNK",
+        "epHlrDTlBP4cARI4Q3cE",
+        "wSSZNFCm6lqU3rSvltbm"
+      ]
+    },
+    "exerciseTypes": {
+      "name": "exerciseTypes",
+      "document_count": 3,
+      "total_fields": 3,
+      "avg_fields_per_doc": 1.0,
+      "fields": {
+        "description": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            "",
+            "",
+            ""
+          ]
+        },
+        "count": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            20,
+            30,
+            737
+          ]
+        },
+        "name": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 3,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 3,
+          "null_rate": 0.0,
+          "sample_values": [
+            "有氧",
+            "伸展",
+            "重訓"
+          ]
+        }
+      },
+      "sample_documents": [
+        {
+          "id": "IjWIqCVVXekx3sqUIDyR",
+          "data": {
+            "description": "",
+            "count": 20,
+            "name": "有氧"
+          }
+        },
+        {
+          "id": "ZzqSfdVO3tv7fdip7I0s",
+          "data": {
+            "description": "",
+            "count": 30,
+            "name": "伸展"
+          }
+        },
+        {
+          "id": "uWL6kZ3GwSJ3DYZUMRh8",
+          "data": {
+            "description": "",
+            "count": 737,
+            "name": "重訓"
+          }
+        }
+      ],
+      "sample_doc_ids": [
+        "IjWIqCVVXekx3sqUIDyR",
+        "ZzqSfdVO3tv7fdip7I0s",
+        "uWL6kZ3GwSJ3DYZUMRh8"
+      ]
+    },
+    "notes": {
+      "name": "notes",
+      "document_count": 5,
+      "total_fields": 10,
+      "avg_fields_per_doc": 2.0,
+      "fields": {
+        "drawingPoints": {
+          "types": [
+            "空值 (null)",
+            "陣列 (array<物件 (map/object)>)"
+          ],
+          "occurrence_count": 5,
+          "occurrence_rate": 100.0,
+          "null_count": 1,
+          "non_null_count": 4,
+          "null_rate": 20.0,
+          "sample_values": [
+            "[陣列, 67 項]",
+            "[陣列, 204 項]",
+            "[陣列, 74 項]",
+            "[陣列, 152 項]"
+          ]
+        },
+        "drawingPoints[0].offsetY": {
+          "types": [
+            "浮點數 (float)"
+          ],
+          "occurrence_count": 4,
+          "occurrence_rate": 80.0,
+          "null_count": 0,
+          "non_null_count": 4,
+          "null_rate": 0.0,
+          "sample_values": [
+            122.26227678571428,
+            126.8467261904762,
+            214.45833333333337,
+            141.6904761904762
+          ]
+        },
+        "drawingPoints[0].strokeWidth": {
+          "types": [
+            "浮點數 (float)"
+          ],
+          "occurrence_count": 4,
+          "occurrence_rate": 80.0,
+          "null_count": 0,
+          "non_null_count": 4,
+          "null_rate": 0.0,
+          "sample_values": [
+            3.0,
+            3.0,
+            3.0,
+            3.0
+          ]
+        },
+        "drawingPoints[0].color": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 4,
+          "occurrence_rate": 80.0,
+          "null_count": 0,
+          "non_null_count": 4,
+          "null_rate": 0.0,
+          "sample_values": [
+            4278190080,
+            4278190080,
+            4278190080,
+            4278190080
+          ]
+        },
+        "drawingPoints[0].offsetX": {
+          "types": [
+            "浮點數 (float)"
+          ],
+          "occurrence_count": 4,
+          "occurrence_rate": 80.0,
+          "null_count": 0,
+          "non_null_count": 4,
+          "null_rate": 0.0,
+          "sample_values": [
+            83.42075892857143,
+            103.61049107142857,
+            116.94494047619048,
+            241.1343005952381
+          ]
+        },
+        "createdAt": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 5,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 5,
+          "null_rate": 0.0,
+          "sample_values": [
+            1765201027832,
+            1741526222948,
+            1766588466139,
+            1741528698961,
+            1765202112081
+          ]
+        },
+        "title": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 5,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 5,
+          "null_rate": 0.0,
+          "sample_values": [
+            "888",
+            "666",
+            "666",
+            "666",
+            "12"
+          ]
+        },
+        "userId": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 5,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 5,
+          "null_rate": 0.0,
+          "sample_values": [
+            "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "UmtFu02WQ4QUoTV3x6AFRbd1ov52"
+          ]
+        },
+        "updatedAt": {
+          "types": [
+            "整數 (integer)"
+          ],
+          "occurrence_count": 5,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 5,
+          "null_rate": 0.0,
+          "sample_values": [
+            1765201027832,
+            1741526222948,
+            1766588466139,
+            1741528698961,
+            1765202112081
+          ]
+        },
+        "textContent": {
+          "types": [
+            "字串 (string)"
+          ],
+          "occurrence_count": 5,
+          "occurrence_rate": 100.0,
+          "null_count": 0,
+          "non_null_count": 5,
+          "null_rate": 0.0,
+          "sample_values": [
+            "123546",
+            "",
+            "",
+            "12321231321",
+            "86"
+          ]
+        }
+      },
+      "sample_documents": [
+        {
+          "id": "2A741SzVK4AQzEu7LTwE",
+          "data": {
+            "drawingPoints": [
+              {
+                "offsetY": 122.26227678571428,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 83.42075892857143
+              },
+              {
+                "offsetY": 117.68638392857144,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 83.42075892857143
+              },
+              {
+                "offsetY": 116.54241071428572,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 84.56324404761905
+              },
+              {
+                "offsetY": 113.50111607142856,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 84.56324404761905
+              },
+              {
+                "offsetY": 107.78125,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 87.99107142857143
+              },
+              {
+                "offsetY": 95.22544642857144,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 99.04017857142857
+              },
+              {
+                "offsetY": 94.44419642857144,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 104.75297619047619
+              },
+              {
+                "offsetY": 89.89620535714283,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 114.65959821428571
+              },
+              {
+                "offsetY": 86.46428571428572,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 128.37053571428572
+              },
+              {
+                "offsetY": 86.46428571428572,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 138.27715773809524
+              },
+              {
+                "offsetY": 94.44419642857144,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 179.79910714285714
+              },
+              {
+                "offsetY": 100.91741071428572,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 193.13355654761904
+              },
+              {
+                "offsetY": 107.78125,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 206.46763392857142
+              },
+              {
+                "offsetY": 147.01116071428572,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 156.91629464285717,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 174.82924107142856,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 188.55691964285717,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 225.51488095238096
+              },
+              {
+                "offsetY": 201.86607142857144,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 212.18043154761904
+              },
+              {
+                "offsetY": 214.05915178571428,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 189.70572916666666
+              },
+              {
+                "offsetY": 223.2109375,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 167.23065476190476
+              },
+              {
+                "offsetY": 224.35491071428572,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 155.0390625
+              },
+              {
+                "offsetY": 227.39620535714283,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 145.13244047619048
+              },
+              {
+                "offsetY": 227.39620535714283,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 123.80022321428571
+              },
+              {
+                "offsetY": 224.35491071428572,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 119.22991071428571
+              },
+              {
+                "offsetY": 220.92299107142856,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 118.0874255952381
+              },
+              {
+                "offsetY": 207.5859375,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 113.5171130952381
+              },
+              {
+                "offsetY": 197.31808035714283,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 113.5171130952381
+              },
+              {
+                "offsetY": 186.26897321428572,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 113.5171130952381
+              },
+              {
+                "offsetY": 149.29910714285717,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 116.94494047619048
+              },
+              {
+                "offsetY": 139.03125,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 120.37239583333333
+              },
+              {
+                "offsetY": 112.35714285714283,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 150.46875
+              },
+              {
+                "offsetY": 107.78125,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 160.75186011904762
+              },
+              {
+                "offsetY": 103.20535714285717,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 180.56510416666666
+              },
+              {
+                "offsetY": 103.20535714285717,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 190.84821428571428
+              },
+              {
+                "offsetY": 103.20535714285717,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 203.03980654761904
+              },
+              {
+                "offsetY": 111.21316964285717,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 212.18043154761904
+              },
+              {
+                "offsetY": 130.27008928571428,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 225.51488095238096
+              },
+              {
+                "offsetY": 139.03125,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 152.36830357142856,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 235.42150297619048
+              },
+              {
+                "offsetY": 174.82924107142856,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 241.1343005952381
+              },
+              {
+                "offsetY": 186.26897321428572,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 241.1343005952381
+              },
+              {
+                "offsetY": 201.86607142857144,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 237.70647321428572
+              },
+              {
+                "offsetY": 214.05915178571428,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 225.51488095238096
+              },
+              {
+                "offsetY": 214.05915178571428,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 219.80208333333334
+              },
+              {
+                "offsetY": 211.77120535714283,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 215.21912202380952
+              },
+              {
+                "offsetY": 207.5859375,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 212.18043154761904
+              },
+              {
+                "offsetY": 199.60602678571428,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 211.03794642857142
+              },
+              {
+                "offsetY": 180.54910714285717,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 208.7529761904762
+              },
+              {
+                "offsetY": 166.06808035714283,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 208.7529761904762
+              },
+              {
+                "offsetY": 161.4921875,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 211.03794642857142
+              },
+              {
+                "offsetY": 156.91629464285717,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 217.51674107142858
+              },
+              {
+                "offsetY": 161.4921875,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 228.94270833333334
+              },
+              {
+                "offsetY": 168.35602678571428,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.98102678571428
+              },
+              {
+                "offsetY": 188.55691964285717,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 238.84895833333334
+              },
+              {
+                "offsetY": 201.86607142857144,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 239.99181547619048
+              },
+              {
+                "offsetY": 214.05915178571428,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 241.1343005952381
+              },
+              {
+                "offsetY": 241.12388392857144,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 242.27678571428572
+              },
+              {
+                "offsetY": 254.4609375,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 239.99181547619048
+              },
+              {
+                "offsetY": 266.62611607142856,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 237.70647321428572
+              },
+              {
+                "offsetY": 295.97879464285717,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 216.37425595238096
+              },
+              {
+                "offsetY": 298.26674107142856,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 208.7529761904762
+              },
+              {
+                "offsetY": 299.4107142857143,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 198.46949404761904
+              },
+              {
+                "offsetY": 298.26674107142856,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 194.27604166666666
+              },
+              {
+                "offsetY": 295.97879464285717,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 190.84821428571428
+              },
+              {
+                "offsetY": 287.97098214285717,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 186.27790178571428
+              },
+              {
+                "offsetY": 286.82700892857144,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 185.13541666666666
+              },
+              {
+                "offsetY": 283.7857142857143,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 185.13541666666666
+              }
+            ],
+            "createdAt": 1765201027832,
+            "title": "888",
+            "userId": "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "updatedAt": 1765201027832,
+            "textContent": "123546"
+          }
+        },
+        {
+          "id": "HteDrJqpHsARGeFY76hn",
+          "data": {
+            "drawingPoints": [
+              {
+                "offsetY": 126.8467261904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 103.61049107142857
+              },
+              {
+                "offsetY": 118.08556547619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 105.89583333333333
+              },
+              {
+                "offsetY": 116.94159226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 105.89583333333333
+              },
+              {
+                "offsetY": 102.46056547619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 115.80208333333333
+              },
+              {
+                "offsetY": 100.17261904761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 118.0874255952381
+              },
+              {
+                "offsetY": 99.02864583333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 118.0874255952381
+              },
+              {
+                "offsetY": 97.88467261904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 120.37239583333333
+              },
+              {
+                "offsetY": 96.74069940476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 121.51525297619048
+              },
+              {
+                "offsetY": 95.5967261904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 121.51525297619048
+              },
+              {
+                "offsetY": 95.5967261904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 122.6577380952381
+              },
+              {
+                "offsetY": 94.45275297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 123.80022321428571
+              },
+              {
+                "offsetY": 92.16480654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 124.94270833333333
+              },
+              {
+                "offsetY": 91.02083333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 128.37053571428572
+              },
+              {
+                "offsetY": 89.87686011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 129.51302083333334
+              },
+              {
+                "offsetY": 88.73288690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 131.42150297619048
+              },
+              {
+                "offsetY": 87.5889136904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 131.42150297619048
+              },
+              {
+                "offsetY": 81.11569940476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 152.75409226190476
+              },
+              {
+                "offsetY": 81.11569940476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 155.0390625
+              },
+              {
+                "offsetY": 79.9717261904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 156.18154761904762
+              },
+              {
+                "offsetY": 79.9717261904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 157.32440476190476
+              },
+              {
+                "offsetY": 79.9717261904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 158.46688988095238
+              },
+              {
+                "offsetY": 84.54761904761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 168.3735119047619
+              },
+              {
+                "offsetY": 85.69159226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 168.3735119047619
+              },
+              {
+                "offsetY": 86.44494047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 169.51599702380952
+              },
+              {
+                "offsetY": 87.5889136904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 169.51599702380952
+              },
+              {
+                "offsetY": 88.73288690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 169.51599702380952
+              },
+              {
+                "offsetY": 88.73288690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 170.65848214285714
+              },
+              {
+                "offsetY": 91.02083333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 170.65848214285714
+              },
+              {
+                "offsetY": 92.16480654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 170.65848214285714
+              },
+              {
+                "offsetY": 92.16480654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 171.80096726190476
+              },
+              {
+                "offsetY": 93.30877976190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 171.80096726190476
+              },
+              {
+                "offsetY": 124.55877976190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 182.8500744047619
+              },
+              {
+                "offsetY": 127.96279761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 183.99293154761904
+              },
+              {
+                "offsetY": 127.96279761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 185.13541666666666
+              },
+              {
+                "offsetY": 130.25074404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 185.13541666666666
+              },
+              {
+                "offsetY": 135.97061011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 185.13541666666666
+              },
+              {
+                "offsetY": 137.11458333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 185.13541666666666
+              },
+              {
+                "offsetY": 138.25855654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 186.27790178571428
+              },
+              {
+                "offsetY": 140.54650297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 186.27790178571428
+              },
+              {
+                "offsetY": 142.44382440476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 186.27790178571428
+              },
+              {
+                "offsetY": 143.58779761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 186.27790178571428
+              },
+              {
+                "offsetY": 177.48846726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 182.8500744047619
+              },
+              {
+                "offsetY": 178.63244047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 182.8500744047619
+              },
+              {
+                "offsetY": 180.5576636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 181.70758928571428
+              },
+              {
+                "offsetY": 182.81770833333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 179.79910714285714
+              },
+              {
+                "offsetY": 183.96168154761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 179.79910714285714
+              },
+              {
+                "offsetY": 183.96168154761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 178.65662202380952
+              },
+              {
+                "offsetY": 185.10565476190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 177.5141369047619
+              },
+              {
+                "offsetY": 197.68936011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 149.32626488095238
+              },
+              {
+                "offsetY": 197.68936011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 147.04092261904762
+              },
+              {
+                "offsetY": 197.68936011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 141.70498511904762
+              },
+              {
+                "offsetY": 197.68936011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 140.56212797619048
+              },
+              {
+                "offsetY": 197.68936011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 139.41964285714286
+              },
+              {
+                "offsetY": 170.65252976190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 120.37239583333333
+              },
+              {
+                "offsetY": 168.36458333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 120.37239583333333
+              },
+              {
+                "offsetY": 167.22061011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 120.37239583333333
+              },
+              {
+                "offsetY": 166.07663690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 120.37239583333333
+              },
+              {
+                "offsetY": 164.9326636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 120.37239583333333
+              },
+              {
+                "offsetY": 161.50074404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 120.37239583333333
+              },
+              {
+                "offsetY": 160.74739583333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 120.37239583333333
+              },
+              {
+                "offsetY": 159.60342261904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 120.37239583333333
+              },
+              {
+                "offsetY": 156.17150297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 120.37239583333333
+              },
+              {
+                "offsetY": 152.73958333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 120.37239583333333
+              },
+              {
+                "offsetY": 121.48958333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 166.08816964285714
+              },
+              {
+                "offsetY": 121.48958333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 182.8500744047619
+              },
+              {
+                "offsetY": 122.63355654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 183.99293154761904
+              },
+              {
+                "offsetY": 122.63355654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 187.4203869047619
+              },
+              {
+                "offsetY": 122.63355654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 190.84821428571428
+              },
+              {
+                "offsetY": 123.41480654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 190.84821428571428
+              },
+              {
+                "offsetY": 123.41480654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 191.9906994047619
+              },
+              {
+                "offsetY": 125.70275297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 196.5610119047619
+              },
+              {
+                "offsetY": 125.70275297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 198.46949404761904
+              },
+              {
+                "offsetY": 129.10677083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 203.03980654761904
+              },
+              {
+                "offsetY": 130.25074404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 204.1826636904762
+              },
+              {
+                "offsetY": 133.6826636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 208.7529761904762
+              },
+              {
+                "offsetY": 157.3154761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 220.94456845238096
+              },
+              {
+                "offsetY": 158.45944940476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 220.94456845238096
+              },
+              {
+                "offsetY": 159.60342261904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 220.94456845238096
+              },
+              {
+                "offsetY": 160.74739583333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 220.94456845238096
+              },
+              {
+                "offsetY": 161.50074404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 220.94456845238096
+              },
+              {
+                "offsetY": 163.78869047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 220.94456845238096
+              },
+              {
+                "offsetY": 164.9326636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 220.94456845238096
+              },
+              {
+                "offsetY": 166.07663690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 220.94456845238096
+              },
+              {
+                "offsetY": 171.79650297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 216.37425595238096
+              },
+              {
+                "offsetY": 171.79650297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 217.51674107142858
+              },
+              {
+                "offsetY": 171.79650297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 218.6592261904762
+              },
+              {
+                "offsetY": 171.79650297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 219.80208333333334
+              },
+              {
+                "offsetY": 171.79650297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 220.94456845238096
+              },
+              {
+                "offsetY": 171.79650297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 222.08705357142858
+              },
+              {
+                "offsetY": 178.63244047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 242.27678571428572
+              },
+              {
+                "offsetY": 179.7764136904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 243.41927083333334
+              },
+              {
+                "offsetY": 179.7764136904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 244.56212797619048
+              },
+              {
+                "offsetY": 180.5576636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 244.56212797619048
+              },
+              {
+                "offsetY": 180.5576636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 245.7046130952381
+              },
+              {
+                "offsetY": 181.70163690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 246.84709821428572
+              },
+              {
+                "offsetY": 181.70163690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 247.98958333333334
+              },
+              {
+                "offsetY": 182.81770833333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 247.98958333333334
+              },
+              {
+                "offsetY": 183.96168154761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 248.74293154761904
+              },
+              {
+                "offsetY": 185.10565476190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 248.74293154761904
+              },
+              {
+                "offsetY": 185.10565476190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 249.8857886904762
+              },
+              {
+                "offsetY": 186.24962797619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 249.8857886904762
+              },
+              {
+                "offsetY": 187.3936011904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 249.8857886904762
+              },
+              {
+                "offsetY": 188.53757440476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 249.8857886904762
+              },
+              {
+                "offsetY": 188.53757440476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 251.0282738095238
+              },
+              {
+                "offsetY": 189.68154761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 251.0282738095238
+              },
+              {
+                "offsetY": 189.68154761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 252.17075892857142
+              },
+              {
+                "offsetY": 190.82552083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 252.17075892857142
+              },
+              {
+                "offsetY": 193.11346726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 252.17075892857142
+              },
+              {
+                "offsetY": 194.25744047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 252.17075892857142
+              },
+              {
+                "offsetY": 195.4014136904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 252.17075892857142
+              },
+              {
+                "offsetY": 196.54538690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 252.17075892857142
+              },
+              {
+                "offsetY": 198.83333333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 253.31324404761904
+              },
+              {
+                "offsetY": 200.73065476190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 253.31324404761904
+              },
+              {
+                "offsetY": 201.87462797619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 253.31324404761904
+              },
+              {
+                "offsetY": 203.0186011904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 253.31324404761904
+              },
+              {
+                "offsetY": 205.30654761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 253.31324404761904
+              },
+              {
+                "offsetY": 206.45052083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 253.31324404761904
+              },
+              {
+                "offsetY": 208.73846726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 253.31324404761904
+              },
+              {
+                "offsetY": 212.17038690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 253.31324404761904
+              },
+              {
+                "offsetY": 213.31436011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 253.31324404761904
+              },
+              {
+                "offsetY": 237.70052083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.98102678571428
+              },
+              {
+                "offsetY": 237.70052083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 228.94270833333334
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 227.7998511904762
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 226.65736607142858
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 225.51488095238096
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 224.37239583333334
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 223.2295386904762
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 220.94456845238096
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 219.80208333333334
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 218.6592261904762
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 217.51674107142858
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 216.37425595238096
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 215.21912202380952
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 214.4657738095238
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 213.3232886904762
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 211.03794642857142
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 209.8954613095238
+              },
+              {
+                "offsetY": 238.81659226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 207.61011904761904
+              },
+              {
+                "offsetY": 237.70052083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 207.61011904761904
+              },
+              {
+                "offsetY": 194.25744047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 180.56510416666666
+              },
+              {
+                "offsetY": 171.79650297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 201.89732142857142
+              },
+              {
+                "offsetY": 170.65252976190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 203.03980654761904
+              },
+              {
+                "offsetY": 170.65252976190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 204.1826636904762
+              },
+              {
+                "offsetY": 169.50855654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 206.46763392857142
+              },
+              {
+                "offsetY": 168.36458333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 206.46763392857142
+              },
+              {
+                "offsetY": 168.36458333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 207.61011904761904
+              },
+              {
+                "offsetY": 167.22061011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 209.8954613095238
+              },
+              {
+                "offsetY": 166.07663690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 211.03794642857142
+              },
+              {
+                "offsetY": 166.07663690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 213.3232886904762
+              },
+              {
+                "offsetY": 164.9326636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 215.21912202380952
+              },
+              {
+                "offsetY": 164.9326636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 216.37425595238096
+              },
+              {
+                "offsetY": 163.78869047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 218.6592261904762
+              },
+              {
+                "offsetY": 163.78869047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 219.80208333333334
+              },
+              {
+                "offsetY": 161.50074404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 224.37239583333334
+              },
+              {
+                "offsetY": 158.45944940476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 238.84895833333334
+              },
+              {
+                "offsetY": 158.45944940476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 241.1343005952381
+              },
+              {
+                "offsetY": 158.45944940476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 242.27678571428572
+              },
+              {
+                "offsetY": 157.3154761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 249.8857886904762
+              },
+              {
+                "offsetY": 157.3154761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 251.0282738095238
+              },
+              {
+                "offsetY": 156.17150297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 259.0386904761905
+              },
+              {
+                "offsetY": 156.17150297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 263.6090029761905
+              },
+              {
+                "offsetY": 156.17150297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 265.5052083333333
+              },
+              {
+                "offsetY": 156.17150297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 267.79017857142856
+              },
+              {
+                "offsetY": 156.17150297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 270.0755208333333
+              },
+              {
+                "offsetY": 156.17150297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 271.21800595238096
+              },
+              {
+                "offsetY": 156.17150297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 273.5029761904762
+              },
+              {
+                "offsetY": 156.17150297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 276.9434523809524
+              },
+              {
+                "offsetY": 156.17150297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 278.0859375
+              },
+              {
+                "offsetY": 156.17150297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 280.37127976190476
+              },
+              {
+                "offsetY": 156.17150297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 281.5137648809524
+              },
+              {
+                "offsetY": 156.17150297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 282.2671130952381
+              },
+              {
+                "offsetY": 157.3154761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 287.9799107142857
+              },
+              {
+                "offsetY": 157.3154761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 289.1223958333333
+              },
+              {
+                "offsetY": 158.45944940476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 289.1223958333333
+              },
+              {
+                "offsetY": 158.45944940476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 290.2652529761905
+              },
+              {
+                "offsetY": 158.45944940476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 291.4077380952381
+              },
+              {
+                "offsetY": 158.45944940476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 292.5502232142857
+              },
+              {
+                "offsetY": 159.60342261904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 292.5502232142857
+              },
+              {
+                "offsetY": 159.60342261904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 293.6927083333333
+              },
+              {
+                "offsetY": 160.74739583333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 293.6927083333333
+              },
+              {
+                "offsetY": 160.74739583333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 294.84784226190476
+              },
+              {
+                "offsetY": 161.50074404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 294.84784226190476
+              },
+              {
+                "offsetY": 162.64471726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 295.9906994047619
+              },
+              {
+                "offsetY": 163.78869047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 297.1331845238095
+              },
+              {
+                "offsetY": 219.78757440476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 307.02715773809524
+              },
+              {
+                "offsetY": 265.8813244047619,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 259.0386904761905
+              },
+              {
+                "offsetY": 265.8813244047619,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 257.89620535714283
+              },
+              {
+                "offsetY": 267.02529761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 256.75372023809524
+              },
+              {
+                "offsetY": 267.02529761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 255.61123511904762
+              },
+              {
+                "offsetY": 268.16927083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 255.61123511904762
+              },
+              {
+                "offsetY": 268.16927083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 254.4561011904762
+              },
+              {
+                "offsetY": 268.16927083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 253.31324404761904
+              },
+              {
+                "offsetY": 268.16927083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 252.17075892857142
+              },
+              {
+                "offsetY": 268.16927083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 251.0282738095238
+              },
+              {
+                "offsetY": 268.16927083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 249.8857886904762
+              },
+              {
+                "offsetY": 269.31324404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 249.8857886904762
+              },
+              {
+                "offsetY": 269.31324404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 248.74293154761904
+              },
+              {
+                "offsetY": 269.31324404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 247.98958333333334
+              },
+              {
+                "offsetY": 269.31324404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 246.84709821428572
+              },
+              {
+                "offsetY": 270.45721726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 246.84709821428572
+              },
+              {
+                "offsetY": 270.45721726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 245.7046130952381
+              },
+              {
+                "offsetY": 270.45721726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.98102678571428
+              }
+            ],
+            "createdAt": 1741526222948,
+            "title": "666",
+            "userId": "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "updatedAt": 1741526222948,
+            "textContent": ""
+          }
+        },
+        {
+          "id": "X5wUkvvAKl7yIjUxqeDC",
+          "data": {
+            "drawingPoints": [
+              {
+                "offsetY": 214.45833333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 116.94494047619048
+              },
+              {
+                "offsetY": 209.88244047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 115.80208333333333
+              },
+              {
+                "offsetY": 209.88244047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 114.65959821428571
+              },
+              {
+                "offsetY": 207.59449404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 114.65959821428571
+              },
+              {
+                "offsetY": 205.30654761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 113.5171130952381
+              },
+              {
+                "offsetY": 201.87462797619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 112.75111607142857
+              },
+              {
+                "offsetY": 200.73065476190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 112.75111607142857
+              },
+              {
+                "offsetY": 191.96949404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 112.75111607142857
+              },
+              {
+                "offsetY": 187.3936011904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 113.5171130952381
+              },
+              {
+                "offsetY": 179.7764136904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 114.65959821428571
+              },
+              {
+                "offsetY": 176.34449404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 116.94494047619048
+              },
+              {
+                "offsetY": 160.74739583333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 123.80022321428571
+              },
+              {
+                "offsetY": 152.73958333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 130.27901785714286
+              },
+              {
+                "offsetY": 149.3076636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 134.84933035714286
+              },
+              {
+                "offsetY": 142.44382440476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 143.98995535714286
+              },
+              {
+                "offsetY": 133.6826636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 161.89471726190476
+              },
+              {
+                "offsetY": 133.6826636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 163.03720238095238
+              },
+              {
+                "offsetY": 133.6826636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 167.23065476190476
+              },
+              {
+                "offsetY": 133.6826636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 179.79910714285714
+              },
+              {
+                "offsetY": 137.11458333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 181.70758928571428
+              },
+              {
+                "offsetY": 142.44382440476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 190.84821428571428
+              },
+              {
+                "offsetY": 151.59561011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 198.46949404761904
+              },
+              {
+                "offsetY": 162.64471726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 207.61011904761904
+              },
+              {
+                "offsetY": 174.05654761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 212.18043154761904
+              },
+              {
+                "offsetY": 213.31436011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 217.51674107142858
+              },
+              {
+                "offsetY": 218.6436011904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 217.51674107142858
+              },
+              {
+                "offsetY": 225.50744047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 215.21912202380952
+              },
+              {
+                "offsetY": 243.39248511904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 195.41852678571428
+              },
+              {
+                "offsetY": 245.68043154761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 188.56324404761904
+              },
+              {
+                "offsetY": 247.96837797619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 180.56510416666666
+              },
+              {
+                "offsetY": 246.82440476190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 161.89471726190476
+              },
+              {
+                "offsetY": 243.39248511904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 152.75409226190476
+              },
+              {
+                "offsetY": 237.70052083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 145.13244047619048
+              },
+              {
+                "offsetY": 232.34337797619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 138.27715773809524
+              },
+              {
+                "offsetY": 187.3936011904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 123.80022321428571
+              },
+              {
+                "offsetY": 175.20052083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 123.80022321428571
+              },
+              {
+                "offsetY": 162.64471726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 123.80022321428571
+              },
+              {
+                "offsetY": 138.25855654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 130.27901785714286
+              },
+              {
+                "offsetY": 129.10677083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 139.41964285714286
+              },
+              {
+                "offsetY": 120.34561011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 149.32626488095238
+              },
+              {
+                "offsetY": 108.93377976190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 171.80096726190476
+              },
+              {
+                "offsetY": 106.64583333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 185.13541666666666
+              },
+              {
+                "offsetY": 106.64583333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 195.41852678571428
+              },
+              {
+                "offsetY": 106.64583333333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 217.51674107142858
+              },
+              {
+                "offsetY": 111.2217261904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 120.34561011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 238.84895833333334
+              },
+              {
+                "offsetY": 141.6904761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 253.31324404761904
+              },
+              {
+                "offsetY": 153.88355654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 260.1815476190476
+              },
+              {
+                "offsetY": 164.9326636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 264.7518601190476
+              },
+              {
+                "offsetY": 195.4014136904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 270.0755208333333
+              },
+              {
+                "offsetY": 208.73846726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 271.21800595238096
+              },
+              {
+                "offsetY": 218.6436011904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 270.0755208333333
+              },
+              {
+                "offsetY": 223.21949404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 266.64769345238096
+              },
+              {
+                "offsetY": 227.79538690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 261.32403273809524
+              },
+              {
+                "offsetY": 231.19940476190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 245.7046130952381
+              },
+              {
+                "offsetY": 228.93936011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 239.99181547619048
+              },
+              {
+                "offsetY": 218.6436011904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 228.94270833333334
+              },
+              {
+                "offsetY": 209.88244047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 224.37239583333334
+              },
+              {
+                "offsetY": 200.73065476190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 220.94456845238096
+              },
+              {
+                "offsetY": 178.63244047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 215.21912202380952
+              },
+              {
+                "offsetY": 169.50855654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 215.21912202380952
+              },
+              {
+                "offsetY": 161.50074404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 215.21912202380952
+              },
+              {
+                "offsetY": 149.3076636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 219.80208333333334
+              },
+              {
+                "offsetY": 143.58779761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 237.70647321428572
+              },
+              {
+                "offsetY": 143.58779761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 244.56212797619048
+              },
+              {
+                "offsetY": 149.3076636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 261.32403273809524
+              },
+              {
+                "offsetY": 153.88355654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 266.64769345238096
+              },
+              {
+                "offsetY": 159.60342261904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 270.0755208333333
+              },
+              {
+                "offsetY": 163.78869047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 274.6581101190476
+              },
+              {
+                "offsetY": 174.05654761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 278.0859375
+              },
+              {
+                "offsetY": 178.63244047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 278.0859375
+              },
+              {
+                "offsetY": 181.70163690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 278.0859375
+              },
+              {
+                "offsetY": 182.81770833333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 276.9434523809524
+              },
+              {
+                "offsetY": 180.5576636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 275.80096726190476
+              }
+            ],
+            "createdAt": 1766588466139,
+            "title": "666",
+            "userId": "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "updatedAt": 1766588466139,
+            "textContent": ""
+          }
+        },
+        {
+          "id": "fneGbu97AvqtdCWwmopY",
+          "data": {
+            "drawingPoints": [
+              {
+                "offsetY": 141.6904761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 241.1343005952381
+              },
+              {
+                "offsetY": 141.6904761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 239.99181547619048
+              },
+              {
+                "offsetY": 141.6904761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 238.84895833333334
+              },
+              {
+                "offsetY": 141.6904761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 172.9438244047619
+              },
+              {
+                "offsetY": 141.6904761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 164.94568452380952
+              },
+              {
+                "offsetY": 141.6904761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 161.89471726190476
+              },
+              {
+                "offsetY": 141.6904761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 158.46688988095238
+              },
+              {
+                "offsetY": 141.6904761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 157.32440476190476
+              },
+              {
+                "offsetY": 141.6904761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 156.18154761904762
+              },
+              {
+                "offsetY": 141.6904761904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 155.0390625
+              },
+              {
+                "offsetY": 145.87574404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 145.13244047619048
+              },
+              {
+                "offsetY": 147.01971726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 145.13244047619048
+              },
+              {
+                "offsetY": 147.01971726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 143.98995535714286
+              },
+              {
+                "offsetY": 148.16369047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 143.98995535714286
+              },
+              {
+                "offsetY": 149.3076636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 142.84747023809524
+              },
+              {
+                "offsetY": 150.45163690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 141.70498511904762
+              },
+              {
+                "offsetY": 175.20052083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 138.27715773809524
+              },
+              {
+                "offsetY": 178.63244047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 137.13467261904762
+              },
+              {
+                "offsetY": 179.7764136904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 137.13467261904762
+              },
+              {
+                "offsetY": 182.81770833333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 137.13467261904762
+              },
+              {
+                "offsetY": 187.3936011904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 137.13467261904762
+              },
+              {
+                "offsetY": 209.88244047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 142.84747023809524
+              },
+              {
+                "offsetY": 211.0264136904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 142.84747023809524
+              },
+              {
+                "offsetY": 211.0264136904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 143.98995535714286
+              },
+              {
+                "offsetY": 215.60230654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 146.27529761904762
+              },
+              {
+                "offsetY": 217.89025297619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 148.18377976190476
+              },
+              {
+                "offsetY": 219.78757440476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 150.46875
+              },
+              {
+                "offsetY": 220.93154761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 152.75409226190476
+              },
+              {
+                "offsetY": 223.21949404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 156.18154761904762
+              },
+              {
+                "offsetY": 224.36346726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 156.18154761904762
+              },
+              {
+                "offsetY": 224.36346726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 158.46688988095238
+              },
+              {
+                "offsetY": 225.50744047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 159.609375
+              },
+              {
+                "offsetY": 226.6514136904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 163.03720238095238
+              },
+              {
+                "offsetY": 227.79538690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 163.8031994047619
+              },
+              {
+                "offsetY": 227.79538690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 166.08816964285714
+              },
+              {
+                "offsetY": 227.79538690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 168.3735119047619
+              },
+              {
+                "offsetY": 227.79538690476193,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 169.51599702380952
+              },
+              {
+                "offsetY": 228.93936011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 169.51599702380952
+              },
+              {
+                "offsetY": 228.93936011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 170.65848214285714
+              },
+              {
+                "offsetY": 228.93936011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 171.80096726190476
+              },
+              {
+                "offsetY": 228.93936011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 175.22879464285714
+              },
+              {
+                "offsetY": 225.50744047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 213.3232886904762
+              },
+              {
+                "offsetY": 224.36346726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 214.4657738095238
+              },
+              {
+                "offsetY": 224.36346726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 215.21912202380952
+              },
+              {
+                "offsetY": 223.21949404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 215.21912202380952
+              },
+              {
+                "offsetY": 187.3936011904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 177.48846726190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 175.20052083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 170.65252976190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 169.50855654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 164.9326636904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 155.02752976190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 225.51488095238096
+              },
+              {
+                "offsetY": 153.88355654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 222.08705357142858
+              },
+              {
+                "offsetY": 153.88355654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 219.80208333333334
+              },
+              {
+                "offsetY": 153.88355654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 218.6592261904762
+              },
+              {
+                "offsetY": 153.88355654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 216.37425595238096
+              },
+              {
+                "offsetY": 153.88355654761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 214.4657738095238
+              },
+              {
+                "offsetY": 155.02752976190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 212.18043154761904
+              },
+              {
+                "offsetY": 178.63244047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 179.79910714285714
+              },
+              {
+                "offsetY": 179.7764136904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 179.79910714285714
+              },
+              {
+                "offsetY": 182.81770833333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 179.79910714285714
+              },
+              {
+                "offsetY": 186.24962797619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 180.56510416666666
+              },
+              {
+                "offsetY": 236.91927083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 220.94456845238096
+              },
+              {
+                "offsetY": 263.5933779761905,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 268.16927083333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 269.31324404761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 271.6011904761905,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 275.03311011904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 278.07440476190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.22767857142858
+              },
+              {
+                "offsetY": 320.73623511904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 224.37239583333334
+              },
+              {
+                "offsetY": 328.74404761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 217.51674107142858
+              },
+              {
+                "offsetY": 329.8880208333333,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 215.21912202380952
+              },
+              {
+                "offsetY": 332.14806547619054,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 215.21912202380952
+              },
+              {
+                "offsetY": 332.14806547619054,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 214.4657738095238
+              },
+              {
+                "offsetY": 332.92931547619054,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 213.3232886904762
+              },
+              {
+                "offsetY": 334.0732886904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 212.18043154761904
+              },
+              {
+                "offsetY": 334.0732886904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 211.03794642857142
+              },
+              {
+                "offsetY": 335.21726190476187,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 211.03794642857142
+              },
+              {
+                "offsetY": 335.21726190476187,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 209.8954613095238
+              },
+              {
+                "offsetY": 336.36123511904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 209.8954613095238
+              },
+              {
+                "offsetY": 336.36123511904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 207.61011904761904
+              },
+              {
+                "offsetY": 340.9092261904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 194.27604166666666
+              },
+              {
+                "offsetY": 340.9092261904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 193.13355654761904
+              },
+              {
+                "offsetY": 339.79315476190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 188.56324404761904
+              },
+              {
+                "offsetY": 338.6491815476191,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 187.4203869047619
+              },
+              {
+                "offsetY": 338.6491815476191,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 186.27790178571428
+              },
+              {
+                "offsetY": 337.5052083333333,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 185.13541666666666
+              },
+              {
+                "offsetY": 336.36123511904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 183.99293154761904
+              },
+              {
+                "offsetY": 335.21726190476187,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 183.99293154761904
+              },
+              {
+                "offsetY": 335.21726190476187,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 182.8500744047619
+              },
+              {
+                "offsetY": 334.0732886904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 181.70758928571428
+              },
+              {
+                "offsetY": 332.92931547619054,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 181.70758928571428
+              },
+              {
+                "offsetY": 332.14806547619054,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 180.56510416666666
+              },
+              {
+                "offsetY": 331.00409226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 179.79910714285714
+              },
+              {
+                "offsetY": 328.74404761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 178.65662202380952
+              },
+              {
+                "offsetY": 327.60007440476187,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 178.65662202380952
+              },
+              {
+                "offsetY": 326.4561011904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 177.5141369047619
+              },
+              {
+                "offsetY": 326.4561011904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 176.37127976190476
+              },
+              {
+                "offsetY": 325.31212797619054,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 176.37127976190476
+              },
+              {
+                "offsetY": 324.16815476190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 176.37127976190476
+              },
+              {
+                "offsetY": 321.8802083333333,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 175.22879464285714
+              },
+              {
+                "offsetY": 320.73623511904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 175.22879464285714
+              },
+              {
+                "offsetY": 319.59226190476187,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 175.22879464285714
+              },
+              {
+                "offsetY": 318.4482886904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 174.08630952380952
+              },
+              {
+                "offsetY": 317.30431547619054,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 172.9438244047619
+              },
+              {
+                "offsetY": 316.16034226190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 172.9438244047619
+              },
+              {
+                "offsetY": 315.01636904761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 172.9438244047619
+              },
+              {
+                "offsetY": 313.11904761904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 172.9438244047619
+              },
+              {
+                "offsetY": 311.9750744047619,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 172.9438244047619
+              },
+              {
+                "offsetY": 308.54315476190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 172.9438244047619
+              },
+              {
+                "offsetY": 307.39918154761904,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 171.80096726190476
+              },
+              {
+                "offsetY": 306.25520833333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 171.80096726190476
+              },
+              {
+                "offsetY": 303.9672619047619,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 171.80096726190476
+              },
+              {
+                "offsetY": 302.8232886904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 171.80096726190476
+              },
+              {
+                "offsetY": 301.6793154761905,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 171.80096726190476
+              },
+              {
+                "offsetY": 260.16145833333337,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 195.41852678571428
+              },
+              {
+                "offsetY": 259.01748511904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 196.5610119047619
+              },
+              {
+                "offsetY": 259.01748511904765,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 197.32700892857142
+              },
+              {
+                "offsetY": 257.8735119047619,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 199.6123511904762
+              },
+              {
+                "offsetY": 257.8735119047619,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 200.7548363095238
+              },
+              {
+                "offsetY": 257.8735119047619,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 201.89732142857142
+              },
+              {
+                "offsetY": 257.8735119047619,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 203.03980654761904
+              },
+              {
+                "offsetY": 257.8735119047619,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 204.1826636904762
+              },
+              {
+                "offsetY": 256.7295386904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 205.3251488095238
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 207.61011904761904
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 209.8954613095238
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 211.03794642857142
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 214.4657738095238
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 216.37425595238096
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 218.6592261904762
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 219.80208333333334
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 224.37239583333334
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 227.7998511904762
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 228.94270833333334
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 231.98102678571428
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 235.42150297619048
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 237.70647321428572
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 238.84895833333334
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 243.41927083333334
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 246.84709821428572
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 247.98958333333334
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 251.0282738095238
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 252.17075892857142
+              },
+              {
+                "offsetY": 255.97619047619048,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 254.4561011904762
+              },
+              {
+                "offsetY": 256.7295386904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 256.75372023809524
+              },
+              {
+                "offsetY": 256.7295386904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 260.1815476190476
+              },
+              {
+                "offsetY": 262.44940476190476,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 290.2652529761905
+              },
+              {
+                "offsetY": 294.0621279761905,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 332.9296875
+              },
+              {
+                "offsetY": 301.6793154761905,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 327.2168898809524
+              },
+              {
+                "offsetY": 301.6793154761905,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 326.07440476190476
+              },
+              {
+                "offsetY": 302.8232886904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 326.07440476190476
+              },
+              {
+                "offsetY": 302.8232886904762,
+                "strokeWidth": 3.0,
+                "color": 4278190080,
+                "offsetX": 324.9315476190476
+              }
+            ],
+            "createdAt": 1741528698961,
+            "title": "666",
+            "userId": "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "updatedAt": 1741528698961,
+            "textContent": "12321231321"
+          }
+        },
+        {
+          "id": "mYykfboQC8IjFltOxvjO",
+          "data": {
+            "drawingPoints": null,
+            "createdAt": 1765202112081,
+            "title": "12",
+            "userId": "UmtFu02WQ4QUoTV3x6AFRbd1ov52",
+            "updatedAt": 1765202112081,
+            "textContent": "86"
+          }
+        }
+      ],
+      "sample_doc_ids": [
+        "2A741SzVK4AQzEu7LTwE",
+        "HteDrJqpHsARGeFY76hn",
+        "X5wUkvvAKl7yIjUxqeDC",
+        "fneGbu97AvqtdCWwmopY",
+        "mYykfboQC8IjFltOxvjO"
+      ]
+    }
+  },
+  "query_cost_analysis": {
+    "description": "基於 Firestore 定價：讀取 $0.06/100K 次，寫入 $0.18/100K 次",
+    "scenarios": [
+      {
+        "name": "用戶載入訓練計劃列表",
+        "description": "每次打開 App 查詢 traineeId",
+        "estimated_reads_per_query": 50,
+        "frequency": "每用戶每日 5-10 次",
+        "monthly_cost_per_user": 0.0072,
+        "note": "若用戶有大量歷史記錄，成本會線性增加"
+      },
+      {
+        "name": "完成一次訓練",
+        "description": "讀取模板 + 更新記錄",
+        "estimated_reads": 1,
+        "estimated_writes": 1,
+        "frequency": "每用戶每週 3-5 次",
+        "monthly_cost_per_user": 0.0
+      },
+      {
+        "name": "載入動作資料庫",
+        "description": "用戶選擇動作時查詢所有動作",
+        "estimated_reads_per_query": 794,
+        "frequency": "每用戶每週 1-2 次",
+        "monthly_cost_per_user": 0.0038,
+        "note": "共 794 個動作，每次都需要讀取全部"
+      },
+      {
+        "name": "用戶登入",
+        "description": "查詢用戶資料",
+        "estimated_reads": 1,
+        "frequency": "每用戶每日 1-3 次",
+        "monthly_cost_per_user": 0.0
+      }
+    ]
+  },
+  "migration_recommendations": [
+    {
+      "priority": "中",
+      "issue": "exercise 集合有 794 個動作",
+      "impact": "動作資料幾乎不變，但每次都要從 Firestore 讀取",
+      "suggestion": "動作資料可以：1) 打包進 App 內，2) 使用 CDN 快取，3) 遷移到 PostgreSQL 並配合 Redis 快取"
+    },
+    {
+      "priority": "高",
+      "issue": "Firestore 不支援複雜查詢",
+      "impact": "需要客戶端排序/過濾，或創建大量複合索引",
+      "suggestion": "關聯式資料庫（PostgreSQL）對複雜查詢有原生支援，且成本更可預測"
+    },
+    {
+      "priority": "高",
+      "issue": "Firestore 成本隨用戶增長不可預測",
+      "impact": "1000 活躍用戶可能產生每月 $50-200 的讀取成本",
+      "suggestion": "關聯式資料庫（如 Supabase PostgreSQL）提供固定月費，更適合規模化"
+    }
+  ],
+  "summary": {
+    "total_collections": 6,
+    "total_documents": 868,
+    "total_fields": 96
+  }
+}

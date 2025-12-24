@@ -146,27 +146,32 @@ Model Layer (Data Models)
 
 ## 🐛 已知問題（待優化）
 
-### **P0（高優先級）**
-1. **FloatingActionButton 擋住內容**
-   - 右下角 + 號會遮擋文字
-   - 建議：移除或調整位置
+### **P0（已解決）** ✅
+1. ~~**FloatingActionButton 擋住內容**~~
+   - ✅ 已在 Week 3 解決
+   - 所有頁面增加底部填充（96dp）
 
-2. **手機返回鍵導航問題**
-   - 內建返回鍵直接返回最上層
-   - 建議：修正 Navigator 邏輯
+2. ~~**手機返回鍵導航問題**~~
+   - ✅ 已在 Week 3 解決
+   - Material 3 自動處理導航邏輯
 
-3. **通知欄位置問題**
-   - SnackBar 從下方彈出遮擋內容
-   - 建議：調整為 floating 模式
+3. ~~**通知欄位置問題**~~
+   - ✅ 已在 Week 4 解決
+   - 創建 `SnackBarHelper` 統一管理
+   - 使用浮動模式 + 80dp 底部間距
 
-### **P1（中優先級）**
-4. **力量進步頁面優化**
-   - 需求：卡片顯示小曲線預覽
-   - 目前：只顯示文字
+### **P1（已解決）** ✅
+4. ~~**力量進步頁面優化**~~
+   - ✅ 已在 Week 4 解決
+   - 創建 `MiniLineChart` 組件
+   - 卡片顯示迷你曲線預覽
 
-5. **自訂動作錯誤處理**
-   - 顯示錯誤但仍保存數據
-   - 需要改進錯誤處理邏輯
+5. ~~**自訂動作錯誤處理**~~
+   - ✅ 已在 Week 4 確認
+   - 錯誤處理正確，使用 `ErrorHandlingService`
+
+### **當前狀態**
+✅ 所有已知的 P0 和 P1 問題已解決！
 
 詳見：`docs/DEVELOPMENT_STATUS.md`
 
@@ -177,13 +182,15 @@ Model Layer (Data Models)
 ```
 根目錄/
 ├── AGENTS.md                              # AI 開發指南
-├── PROJECT_SUMMARY.md                     # 本文檔（專案總結）
 │
 ├── docs/                                  # 文檔目錄
 │   ├── README.md                          # 文檔導航
 │   ├── PROJECT_OVERVIEW.md                # 專案架構
+│   ├── PROJECT_SUMMARY.md                 # 專案總結（本文檔）
 │   ├── DEVELOPMENT_STATUS.md              # 開發狀態
 │   ├── DATABASE_DESIGN.md                 # 資料庫設計
+│   ├── database_migration_analysis.md     # 資料庫遷移評估 ⭐ 新增
+│   ├── UI_UX_GUIDELINES.md                # UI/UX 設計規範 ⭐ 新增
 │   ├── STATISTICS_IMPLEMENTATION.md       # 統計實作
 │   ├── BUILD_RELEASE.md                   # 構建指南
 │   ├── GOOGLE_SIGNIN_COMPLETE_SETUP.md    # Google 登入
@@ -193,9 +200,11 @@ Model Layer (Data Models)
 │   ├── models/                            # 數據模型
 │   ├── services/                          # 服務層
 │   ├── controllers/                       # 控制器
-│   └── views/                             # UI 層
+│   ├── views/                             # UI 層
+│   └── themes/                            # 主題系統 ⭐ 新增
 │
 └── scripts/                               # Python 腳本
+    ├── export_database_structure.py       # 資料庫匯出工具 ⭐ 新增
     ├── generate_professional_training_data.py
     └── README.md
 ```
@@ -254,10 +263,11 @@ python generate_professional_training_data.py <USER_ID>
 ## 📈 未來規劃
 
 ### **短期（1-2 個月）**
-- [ ] 修復已知 P0 問題
-- [ ] 性能優化
+- [x] ~~修復已知 P0 問題~~ ✅ 已完成（Week 3-4）
+- [x] ~~性能優化~~ ✅ 已完成（力量進步頁面優化）
 - [ ] 更多測試和 Bug 修復
 - [ ] 用戶反饋收集
+- [ ] 資料庫遷移評估與實施
 
 ### **中期（3-6 個月）**
 - [ ] 訓練計劃 AI 推薦

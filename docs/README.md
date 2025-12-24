@@ -22,7 +22,21 @@
 
 ---
 
-### 2. [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)
+### 2. [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)
+**專案總結和快速開始**
+
+包含：
+- 專案目標和已完成功能
+- 代碼統計和架構組成
+- Release 資訊和已知問題
+- 快速開始指南
+- 未來規劃和里程碑
+
+**適合對象**：專案管理者、新加入的開發者、需要快速了解專案的人
+
+---
+
+### 3. [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)
 **當前開發進度和已知問題**
 
 包含：
@@ -35,7 +49,7 @@
 
 ---
 
-### 3. [DATABASE_DESIGN.md](DATABASE_DESIGN.md)
+### 4. [DATABASE_DESIGN.md](DATABASE_DESIGN.md)
 **Firestore 資料庫設計**
 
 包含：
@@ -48,7 +62,21 @@
 
 ---
 
-### 4. [UI_UX_GUIDELINES.md](UI_UX_GUIDELINES.md) ⭐ 新增
+### 5. [database_migration_analysis.md](database_migration_analysis.md) ⭐ 新增
+**資料庫遷移評估報告**
+
+包含：
+- 當前資料庫規模和結構（6 個集合、868 個文檔）
+- 成本分析（Firestore vs Supabase）
+- 遷移建議（短期混合架構 vs 長期完全遷移）
+- 詳細的集合欄位清單
+- 查詢模式和成本估算
+
+**適合對象**：資料庫專家、需要評估技術債務的人、規劃長期架構的人
+
+---
+
+### 6. [UI_UX_GUIDELINES.md](UI_UX_GUIDELINES.md) ⭐ 新增
 **UI/UX 設計規範**
 
 包含：
@@ -67,7 +95,7 @@
 
 ---
 
-### 5. [STATISTICS_IMPLEMENTATION.md](STATISTICS_IMPLEMENTATION.md)
+### 7. [STATISTICS_IMPLEMENTATION.md](STATISTICS_IMPLEMENTATION.md)
 **統計功能實作指南**
 
 包含：
@@ -82,7 +110,7 @@
 
 ## 🛠️ 操作指南
 
-### 6. [BUILD_RELEASE.md](BUILD_RELEASE.md)
+### 8. [BUILD_RELEASE.md](BUILD_RELEASE.md)
 **Release APK 構建和安裝指南**
 
 包含：
@@ -96,7 +124,7 @@
 
 ---
 
-### 7. [GOOGLE_SIGNIN_COMPLETE_SETUP.md](GOOGLE_SIGNIN_COMPLETE_SETUP.md)
+### 9. [GOOGLE_SIGNIN_COMPLETE_SETUP.md](GOOGLE_SIGNIN_COMPLETE_SETUP.md)
 **Google Sign-In 完整配置指南**
 
 包含：
