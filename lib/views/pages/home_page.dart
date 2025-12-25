@@ -5,8 +5,7 @@ import 'package:intl/intl.dart';
 import '../../services/service_locator.dart';
 import 'workout/workout_execution_page.dart';
 import 'statistics_page_v2.dart';
-import 'theme_test_page.dart'; // 臨時測試用
-import 'workout_ui_test_page.dart'; // Week 2 UI 測試
+import 'notification_test_page.dart'; // 通知測試頁面
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -62,14 +61,16 @@ class _HomePageState extends State<HomePage> {
       final recentWorkouts = records.take(5).map((record) {
         return {
           'id': record.id,
-          'title': '訓練記錄', // 可以從 exercises 提取
+          'title': record.title,  // 使用實際的訓練標題
           'completedDate': record.date,
           'exercises': record.exerciseRecords
               .map((e) => {
                     'exerciseName': e.exerciseName,
                     'sets': e.sets.length,
+                    'completed': e.completed,  // 添加完成狀態
                   })
               .toList(),
+          'completed': record.completed,  // 添加整體完成狀態
           '_sortDate': record.date,
         };
       }).toList();
@@ -131,7 +132,7 @@ class _HomePageState extends State<HomePage> {
       final todayPlans = plans.map((plan) {
         return {
           'id': plan.id,
-          'title': plan.title ?? '訓練計畫',
+          'title': plan.title,
           'scheduledDate': plan.date,  // 使用 date 而不是 scheduledDate
           'exercises': plan.exerciseRecords
               .map((e) => {
@@ -269,32 +270,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               actions: [
-                // 🏋️ Week 2 UI 測試按鈕（臨時）
-                IconButton(
-                  icon: const Icon(Icons.fitness_center, color: Colors.white),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const WorkoutUITestPage(),
-                      ),
-                    );
-                  },
-                  tooltip: 'Week 2 UI 測試',
-                ),
-                // 🎨 主題測試按鈕（臨時）
-                IconButton(
-                  icon: const Icon(Icons.palette, color: Colors.white),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ThemeTestPage(),
-                      ),
-                    );
-                  },
-                  tooltip: '主題測試',
-                ),
+                // 📊 訓練統計
                 IconButton(
                   icon: const Icon(Icons.bar_chart, color: Colors.white),
                   onPressed: () {
@@ -306,6 +282,19 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                   tooltip: '訓練統計',
+                ),
+                // 🔔 通知測試頁面
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationTestPage(),
+                      ),
+                    );
+                  },
+                  tooltip: '通知測試',
                 ),
               ],
             ),

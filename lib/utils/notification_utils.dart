@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-/// 統一的通知工具類
-/// 
+/// 統一的通知工具類（基礎版本）
+///
 /// 提供符合 UI/UX 規範的通知顯示方式
+/// 注意：建議使用 AdaptiveNotificationService 以獲得更好的自適應體驗
+///
+/// 相關文檔：
+/// - lib/utils/adaptive_notification_service.dart（進階版）
+/// - docs/UI_UX_GUIDELINES.md
 class NotificationUtils {
   /// 顯示成功通知（浮動，不遮擋底部）
   static void showSuccess(
@@ -12,39 +18,53 @@ class NotificationUtils {
     VoidCallback? onAction,
     String? actionLabel,
   }) {
+    // 添加觸覺回饋
+    HapticFeedback.lightImpact();
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.check_circle,
-              color: Theme.of(context).colorScheme.onSecondary,
+              color: Colors.white,
               size: 24,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSecondary,
-                    ),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
         ),
-        backgroundColor: Theme.of(context).colorScheme.secondary,
+        // 灰色透明背景 + 白字
+        backgroundColor: const Color(0xCC424242), // 灰色 70% 透明度
         behavior: SnackBarBehavior.floating,
-        duration: duration ?? const Duration(seconds: 2),
+        duration: duration ?? const Duration(seconds: 3),
         margin: const EdgeInsets.only(
           bottom: 80, // 避免遮擋底部導航欄
           left: 16,
           right: 16,
         ),
+        // 膠囊形狀（圓角 24）
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        elevation: 4,
         action: onAction != null
             ? SnackBarAction(
                 label: actionLabel ?? '查看',
-                textColor: Theme.of(context).colorScheme.onSecondary,
-                onPressed: onAction,
+                textColor: Colors.white,
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  onAction();
+                },
               )
             : null,
       ),
@@ -57,34 +77,49 @@ class NotificationUtils {
     String message, {
     Duration? duration,
   }) {
+    // 添加觸覺回饋（重度震動）
+    HapticFeedback.heavyImpact();
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.error_outline,
-              color: Theme.of(context).colorScheme.onError,
+              color: Colors.white,
               size: 24,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onError,
-                    ),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],
         ),
-        backgroundColor: Theme.of(context).colorScheme.error,
-        behavior: SnackBarBehavior.fixed,
-        duration: duration ?? const Duration(seconds: 3),
+        // 紅色透明背景 + 白字
+        backgroundColor: const Color(0xCCEF4444), // 紅色 80% 透明度
+        behavior: SnackBarBehavior.floating,
+        duration: duration ?? const Duration(seconds: 4),
+        margin: const EdgeInsets.only(
+          bottom: 80,
+          left: 16,
+          right: 16,
+        ),
+        // 膠囊形狀
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        elevation: 4,
       ),
     );
   }
 
-  /// 顯示資訊通知（浮動，主題色背景）
+  /// 顯示資訊通知（浮動,主題色背景）
   static void showInfo(
     BuildContext context,
     String message, {
@@ -92,39 +127,51 @@ class NotificationUtils {
     VoidCallback? onAction,
     String? actionLabel,
   }) {
+    // 添加觸覺回饋
+    HapticFeedback.lightImpact();
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.info_outline,
-              color: Theme.of(context).colorScheme.onPrimary,
+              color: Colors.white,
               size: 24,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
-        duration: duration ?? const Duration(seconds: 2),
+        duration: duration ?? const Duration(seconds: 3),
         margin: const EdgeInsets.only(
           bottom: 80,
           left: 16,
           right: 16,
         ),
+        // 膠囊形狀
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        elevation: 4,
         action: onAction != null
             ? SnackBarAction(
                 label: actionLabel ?? '確定',
-                textColor: Theme.of(context).colorScheme.onPrimary,
-                onPressed: onAction,
+                textColor: Colors.white,
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  onAction();
+                },
               )
             : null,
       ),
@@ -137,39 +184,45 @@ class NotificationUtils {
     String message, {
     Duration? duration,
   }) {
-    final warningColor = Theme.of(context).colorScheme.tertiary;
-    final onWarningColor = Theme.of(context).colorScheme.onTertiary;
+    // 添加觸覺回饋（中度震動）
+    HapticFeedback.mediumImpact();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.warning_amber_rounded,
-              color: onWarningColor,
+              color: Colors.white,
               size: 24,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: onWarningColor,
-                    ),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],
         ),
-        backgroundColor: warningColor,
+        // 橙色透明背景 + 白字
+        backgroundColor: const Color(0xCCF97316), // 橙色 80% 透明度
         behavior: SnackBarBehavior.floating,
-        duration: duration ?? const Duration(seconds: 2),
+        duration: duration ?? const Duration(seconds: 3),
         margin: const EdgeInsets.only(
           bottom: 80,
           left: 16,
           right: 16,
         ),
+        // 膠囊形狀
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        elevation: 4,
       ),
     );
   }
 }
-

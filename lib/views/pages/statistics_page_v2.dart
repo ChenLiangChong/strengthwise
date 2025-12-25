@@ -4,11 +4,14 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../models/statistics_model.dart';
 import '../../controllers/interfaces/i_statistics_controller.dart';
 import '../../controllers/interfaces/i_auth_controller.dart';
+import '../../controllers/body_data_controller.dart';
 import '../../services/service_locator.dart';
 import '../../services/interfaces/i_favorites_service.dart';
+import '../../services/interfaces/i_user_service.dart';
 import '../widgets/favorite_exercises_list.dart';
 import '../widgets/exercise_selection_navigator.dart';
 import 'exercise_strength_detail_page.dart';
+import 'profile/body_data_page.dart';
 
 /// 統計頁面（專業版）
 ///
@@ -31,7 +34,7 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
     super.initState();
     _controller = serviceLocator<IStatisticsController>();
     _authController = serviceLocator<IAuthController>();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
 
     // 初始化統計數據 - 使用 AuthController 的 UID（已經是 Supabase UUID）
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -82,6 +85,7 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
               Tab(text: '肌群平衡', icon: Icon(Icons.pie_chart, size: 20)),
               Tab(text: '訓練日曆', icon: Icon(Icons.calendar_month, size: 20)),
               Tab(text: '完成率', icon: Icon(Icons.check_circle, size: 20)),
+              Tab(text: '身體數據', icon: Icon(Icons.monitor_weight, size: 20)),
             ],
           ),
         ),
@@ -146,6 +150,7 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
                       _buildMuscleBalanceTab(data),
                       _buildCalendarTab(data),
                       _buildCompletionRateTab(data),
+                      _buildBodyDataTab(), // 🆕 新增身體數據 Tab
                     ],
                   ),
                 ),
@@ -290,7 +295,8 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
     final maxVolume =
         history.map((p) => p.totalVolume).reduce((a, b) => a > b ? a : b);
     // 確保 maxY 至少為 1，避免除以 0 的錯誤
-    final maxY = maxVolume <= 0 ? 100.0 : (maxVolume * 1.2).ceilToDouble(); // 增加 20% 留白
+    final maxY =
+        maxVolume <= 0 ? 100.0 : (maxVolume * 1.2).ceilToDouble(); // 增加 20% 留白
 
     return Card(
       elevation: 2,
@@ -1267,6 +1273,458 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
         ),
       ),
     );
+  }
+
+  /// 🆕 身體數據 Tab
+  Widget _buildBodyDataTab() {
+    final user = _authController.user;
+    if (user == null) {
+      return const Center(child: Text('請先登入'));
+    }
+
+    return ChangeNotifierProvider(
+      create: (_) =>
+          serviceLocator<BodyDataController>()..loadRecords(user.uid),
+      child: Consumer<BodyDataController>(
+        builder: (context, controller, child) {
+          if (controller.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (controller.records.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.monitor_weight_outlined,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '還沒有身體數據記錄',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '開始記錄體重、體脂等數據，追蹤身體變化',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BodyDataPage(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('新增記錄'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // 有數據時，顯示趨勢圖表
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 最新數據卡片
+                _buildLatestBodyDataCard(controller),
+                const SizedBox(height: 24),
+
+                // 體重趨勢圖
+                _buildBodyDataWeightChart(controller),
+                const SizedBox(height: 24),
+
+                // BMI 趨勢圖
+                if (controller.records.any((r) => r.bmi != null))
+                  _buildBodyDataBMIChart(controller),
+
+                const SizedBox(height: 24),
+
+                // 查看詳細記錄按鈕
+                Center(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      // 獲取當前用戶資料
+                      final userService = serviceLocator<IUserService>();
+                      final userProfile =
+                          await userService.getCurrentUserProfile();
+
+                      if (!context.mounted) return;
+
+                      // 導航並等待返回
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              BodyDataPage(userProfile: userProfile),
+                        ),
+                      );
+
+                      // 🆕 返回後重新載入數據
+                      final user = _authController.user;
+                      if (user != null) {
+                        controller.loadRecords(user.uid);
+                      }
+                    },
+                    icon: const Icon(Icons.list),
+                    label: const Text('查看詳細記錄'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// 最新身體數據卡片
+  Widget _buildLatestBodyDataCard(BodyDataController controller) {
+    final latest = controller.records.first;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.calendar_today,
+                    size: 20, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  '最新記錄 - ${_formatBodyDataDate(latest.recordDate)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildBodyDataItem(
+                    '體重',
+                    '${latest.weight.toStringAsFixed(1)} kg',
+                    Icons.monitor_weight,
+                    colorScheme.primary,
+                  ),
+                ),
+                if (latest.bodyFat != null)
+                  Expanded(
+                    child: _buildBodyDataItem(
+                      '體脂率',
+                      '${latest.bodyFat!.toStringAsFixed(1)}%',
+                      Icons.water_drop,
+                      Colors.orange,
+                    ),
+                  ),
+              ],
+            ),
+            if (latest.bmi != null || latest.muscleMass != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  if (latest.bmi != null)
+                    Expanded(
+                      child: _buildBodyDataItem(
+                        'BMI',
+                        latest.bmi!.toStringAsFixed(1),
+                        Icons.analytics,
+                        Colors.blue,
+                      ),
+                    ),
+                  if (latest.muscleMass != null)
+                    Expanded(
+                      child: _buildBodyDataItem(
+                        '肌肉量',
+                        '${latest.muscleMass!.toStringAsFixed(1)} kg',
+                        Icons.fitness_center,
+                        Colors.green,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBodyDataItem(
+      String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 體重趨勢圖
+  Widget _buildBodyDataWeightChart(BodyDataController controller) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // 按日期升序排列
+    final sortedRecords = List.from(controller.records)
+      ..sort((a, b) => a.recordDate.compareTo(b.recordDate));
+
+    final spots = sortedRecords
+        .asMap()
+        .entries
+        .map((entry) => FlSpot(entry.key.toDouble(), entry.value.weight))
+        .toList();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '體重趨勢',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(show: false),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            '${value.toInt()}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          if (value.toInt() >= 0 &&
+                              value.toInt() < sortedRecords.length) {
+                            final date =
+                                sortedRecords[value.toInt()].recordDate;
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                '${date.month}/${date.day}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            );
+                          }
+                          return const Text('');
+                        },
+                      ),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: true,
+                      color: colorScheme.primary,
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) {
+                          return FlDotCirclePainter(
+                            radius: 4,
+                            color: colorScheme.primary,
+                            strokeWidth: 2,
+                            strokeColor: colorScheme.surface,
+                          );
+                        },
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: colorScheme.primary.withOpacity(0.1),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// BMI 趨勢圖
+  Widget _buildBodyDataBMIChart(BodyDataController controller) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // 按日期升序排列，並過濾出有 BMI 的記錄
+    final sortedRecords = List.from(controller.records)
+      ..sort((a, b) => a.recordDate.compareTo(b.recordDate));
+
+    final recordsWithBMI = sortedRecords.where((r) => r.bmi != null).toList();
+
+    final spots = recordsWithBMI
+        .asMap()
+        .entries
+        .map((entry) => FlSpot(entry.key.toDouble(), entry.value.bmi!))
+        .toList();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'BMI 趨勢',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(show: false),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            value.toStringAsFixed(1),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          if (value.toInt() >= 0 &&
+                              value.toInt() < recordsWithBMI.length) {
+                            final date =
+                                recordsWithBMI[value.toInt()].recordDate;
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                '${date.month}/${date.day}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            );
+                          }
+                          return const Text('');
+                        },
+                      ),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: true,
+                      color: Colors.blue,
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) {
+                          return FlDotCirclePainter(
+                            radius: 4,
+                            color: Colors.blue,
+                            strokeWidth: 2,
+                            strokeColor: colorScheme.surface,
+                          );
+                        },
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: Colors.blue.withOpacity(0.1),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatBodyDataDate(DateTime date) {
+    return '${date.year}/${date.month}/${date.day}';
   }
 }
 

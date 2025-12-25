@@ -188,6 +188,28 @@ class UserServiceSupabase implements IUserService {
     }
   }
 
+  @override
+  Future<bool> updateUserWeight(String userId, double weight) async {
+    try {
+      _logDebug('更新用戶體重: userId=$userId, weight=$weight');
+
+      await _supabase
+          .from('users')
+          .update({
+            'weight': weight,
+            'profile_updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', userId);
+
+      _logDebug('用戶體重更新成功');
+      return true;
+    } catch (e) {
+      _logError('更新用戶體重失敗: $e');
+      _errorService?.logError('更新用戶體重失敗: $e', type: 'UserServiceError');
+      return false;
+    }
+  }
+
   /// 上傳頭像到 Supabase Storage
   Future<String?> _uploadAvatar(String userId, File avatarFile) async {
     try {

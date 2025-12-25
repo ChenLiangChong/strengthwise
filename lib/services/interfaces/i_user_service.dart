@@ -30,4 +30,9 @@ abstract class IUserService {
   
   /// 切換用戶角色
   Future<bool> toggleUserRole(bool isCoach);
+  
+  /// 更新用戶體重（由身體數據記錄觸發）
+  /// 
+  /// 當新增身體數據記錄時，自動同步最新體重到用戶基本資料
+  Future<bool> updateUserWeight(String userId, double weight);
 } 

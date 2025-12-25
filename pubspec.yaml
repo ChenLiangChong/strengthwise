@@ -25,6 +25,8 @@ dependencies:
   flutter_dotenv: ^5.1.0     # 环境变量管理
   uuid: ^4.5.1               # UUID 生成
   google_sign_in: ^6.1.5     # Google 登入（Supabase Auth 使用）
+  elegant_notification: ^2.2.2  # 現代化頂部通知（2025 最佳實踐）
+  flutter_animate: ^4.5.0    # 微動畫支援
 
 dev_dependencies:
   flutter_test:

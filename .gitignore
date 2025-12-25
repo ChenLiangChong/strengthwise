@@ -81,6 +81,10 @@ analysis/*.json
 analysis/*.md
 !analysis/README.md
 
+# 資料庫匯出數據（包含敏感用戶資料）
+database_export/*.json
+database_export/database_structure.md
+
 # 其他敏感信息
 **/private/
 **/secrets/

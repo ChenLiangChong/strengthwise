@@ -10,6 +10,7 @@ import 'interfaces/i_user_service.dart';
 import 'interfaces/i_workout_service.dart';
 import 'interfaces/i_statistics_service.dart';
 import 'interfaces/i_favorites_service.dart';
+import 'interfaces/i_body_data_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_service_supabase.dart'; // Supabase Auth
 import 'booking_service_supabase.dart'; // Supabase Booking Service
@@ -20,6 +21,7 @@ import 'user_service_supabase.dart'; // Supabase User Service
 import 'workout_service_supabase.dart'; // Supabase 訓練服務
 import 'statistics_service_supabase.dart'; // Supabase Statistics Service
 import 'favorites_service.dart';
+import 'body_data_service_supabase.dart'; // Supabase 身體數據服務
 import 'error_handling_service.dart';
 import '../controllers/interfaces/i_auth_controller.dart';
 import '../controllers/interfaces/i_booking_controller.dart';
@@ -37,6 +39,7 @@ import '../controllers/note_controller.dart';
 import '../controllers/workout_controller.dart';
 import '../controllers/workout_execution_controller.dart';
 import '../controllers/statistics_controller.dart';
+import '../controllers/body_data_controller.dart';
 
 /// 全局服務定位器，用於依賴注入和服務管理
 final GetIt serviceLocator = GetIt.instance;
@@ -173,6 +176,15 @@ void _registerServices() {
       errorService: serviceLocator<ErrorHandlingService>(),
     ));
   }
+  
+  // 身體數據服務（使用 Supabase 版本）⭐
+  if (!serviceLocator.isRegistered<IBodyDataService>()) {
+    serviceLocator.registerLazySingleton<IBodyDataService>(
+      () => BodyDataServiceSupabase(
+        errorService: serviceLocator<ErrorHandlingService>(),
+      ),
+    );
+  }
 }
 
 /// 註冊所有控制器
@@ -234,6 +246,15 @@ void _registerControllers() {
   if (!serviceLocator.isRegistered<IStatisticsController>()) {
     serviceLocator.registerFactory<IStatisticsController>(() => StatisticsController(
       statisticsService: serviceLocator<IStatisticsService>(),
+      errorService: serviceLocator<ErrorHandlingService>(),
+    ));
+  }
+  
+  // 身體數據控制器
+  if (!serviceLocator.isRegistered<BodyDataController>()) {
+    serviceLocator.registerFactory<BodyDataController>(() => BodyDataController(
+      bodyDataService: serviceLocator<IBodyDataService>(),
+      userService: serviceLocator<IUserService>(),
       errorService: serviceLocator<ErrorHandlingService>(),
     ));
   }

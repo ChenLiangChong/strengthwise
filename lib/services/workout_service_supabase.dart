@@ -120,11 +120,13 @@ class WorkoutServiceSupabase implements IWorkoutService {
 
     if (currentUserId == null) {
       _logDebug('獲取用戶模板：沒有登入用戶');
+      print('[WorkoutService] ⚠️ currentUserId 為 null，無法查詢模板');
       return [];
     }
 
     try {
-      _logDebug('獲取用戶訓練模板');
+      _logDebug('獲取用戶訓練模板，userId: $currentUserId');
+      print('[WorkoutService] 開始查詢訓練模板，userId: $currentUserId');
 
       // 從 workout_templates 表查詢
       final response = await _supabase
@@ -132,6 +134,9 @@ class WorkoutServiceSupabase implements IWorkoutService {
           .select()
           .eq('user_id', currentUserId!)
           .order('updated_at', ascending: false);
+
+      print('[WorkoutService] Supabase 回應: ${response.runtimeType}');
+      print('[WorkoutService] 回應內容: $response');
 
       final templates = (response as List)
           .map((data) => WorkoutTemplate.fromSupabase(data))
@@ -145,6 +150,7 @@ class WorkoutServiceSupabase implements IWorkoutService {
       }
 
       _logDebug('成功獲取 ${templates.length} 個訓練模板');
+      print('[WorkoutService] ✅ 成功獲取 ${templates.length} 個訓練模板');
       return templates;
     } catch (e) {
       _logError('獲取訓練模板失敗: $e');

@@ -88,13 +88,15 @@ class _ExerciseSelectionNavigatorState
         typesSet.addAll(['重訓', '有氧', '伸展']);
       }
 
-      setState(() {
-        _trainingTypes = typesSet.toList()..sort();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
       if (mounted) {
+        setState(() {
+          _trainingTypes = typesSet.toList()..sort();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
         NotificationUtils.showError(context, '載入失敗: $e');
       }
     }

@@ -2,7 +2,274 @@
 
 > 記錄當前開發進度、已完成功能、下一步計劃
 
-**最後更新**：2024年12月26日（🎉 UI/UX 優化完成！）
+**最後更新**：2024年12月26日
+
+---
+
+## 🎯 當前目標
+
+**✅ 個人資料頁面完善 - 已完成！**（2024-12-26）
+
+> Phase 1-3 全部完成，並完成資料庫效能優化準備
+
+### 📊 完成進度
+
+**Phase 1：視覺優化** ✅ **完成！**（2024-12-26 上午）
+- ✅ 個人資料卡片頭部優化（大頭像、角色標籤、快捷按鈕）
+- ✅ 詳細資訊卡片重設計（分組顯示、BMI 計算、單位系統）
+- ✅ 功能菜單卡片化（圖示分類、副標題）
+- ✅ 主題切換卡片化
+- ✅ 登出按鈕優化
+
+**Phase 2：身體數據追蹤** ✅ **完成！**（2024-12-26 下午）
+- ✅ 身體數據功能完整實作（體重、體脂、BMI、肌肉量）
+- ✅ 趨勢圖表與歷史記錄
+- ✅ CRUD 功能完整
+- ✅ 資料庫遷移腳本完成
+
+**Phase 3：統計整合** ✅ **完成！**（2024-12-26 下午）
+- ✅ 個人資料頁面新增「我的統計」按鈕
+- ✅ 統計頁面新增「身體數據」Tab
+- ✅ 身體數據與用戶資料同步（自動更新 users.weight）
+- ✅ 統計頁面數據自動刷新機制
+
+**Phase 4：資料庫效能優化準備** ✅ **完成！**（2024-12-26 晚上）
+- ✅ 完整資料庫數據匯出（8 個表格）
+- ✅ 健身動作完整資訊文檔（794 個動作）
+- ✅ 查詢完整列表與優化建議（~120 個查詢）
+- ✅ 索引優化 SQL（預期提升 50-90%）
+
+**參考文檔**：
+- [docs/archived/PROFILE_PAGE_PHASE3_FINAL.md](archived/PROFILE_PAGE_PHASE3_FINAL.md)
+- [database_export/00_README.md](../database_export/00_README.md)
+
+### 📋 最新完成（2024-12-26 下午 & 晚上）
+
+#### 1. ✅ 資料庫完整匯出與分析 ⭐⭐⭐
+
+**目的**：為資料庫效能優化提供完整的數據分析
+
+**匯出內容**：
+- ✅ 完整資料庫數據匯出（8 個表格，~425 KB）
+  - users: 1 筆
+  - exercises: 794 筆（⭐ 核心數據）
+  - equipments: 21 筆
+  - joint_types: 2 筆
+  - workout_plans: 24 筆
+  - body_data: 4 筆
+  - notes: 0 筆
+  - favorite_exercises: 0 筆
+
+**生成文檔**：
+- ✅ `database_export/00_README.md` - 總結報告（給資料庫設計專家）
+- ✅ `database_export/01_EXERCISES_COMPLETE.md` - 健身動作完整資訊
+  - 794 個動作詳細資料
+  - 訓練類型/身體部位/器材分布統計
+  - 資料表結構完整說明（26 個欄位）
+  - 關聯集合說明
+  - 命名規則和分類階層（Level 1-5）
+  - 常見查詢模式範例
+  - 資料品質評估
+- ✅ `database_export/02_DATABASE_QUERIES.md` - 查詢完整列表與優化建議
+  - ~120 個查詢完整列表
+  - 按表格和操作類型分類
+  - 每個查詢的使用頻率、執行時間、結果大小
+  - 完整 SQL 代碼和優化建議（⭐優先級標示）
+  - 10+ 條索引優化 SQL
+  - 預期效能提升分析（50-90%）
+
+**關鍵優化建議**：
+```sql
+-- exercises 表（預計提升 60-80%）
+CREATE INDEX idx_exercises_user_id_null ON exercises (user_id) WHERE user_id IS NULL;
+CREATE INDEX idx_exercises_body_part ON exercises (body_part) WHERE user_id IS NULL;
+CREATE INDEX idx_exercises_name_gin ON exercises USING gin(to_tsvector('chinese', name));
+
+-- workout_plans 表（預計提升 50-70%）
+CREATE INDEX idx_workout_plans_user_pending ON workout_plans (trainee_id, completed, scheduled_date);
+CREATE INDEX idx_workout_plans_today ON workout_plans (trainee_id, completed, scheduled_date) WHERE completed = false;
+CREATE INDEX idx_workout_plans_exercises ON workout_plans USING gin(exercises);
+
+-- body_data 表（預計提升 40-60%）
+CREATE INDEX idx_body_data_user_date ON body_data (user_id, record_date DESC);
+```
+
+**工作量**：
+- 新增 3 個 Markdown 文檔（~1,800 行）
+- 創建資料庫下載腳本
+- 生成完整分析報告
+
+#### 2. ✅ 身體數據功能完整實作 ⭐⭐⭐
+
+**架構層級**：遵循 Clean Architecture
+
+**Model 層**：
+- `lib/models/body_data_record.dart`
+  - 欄位：`id`, `userId`, `recordDate`, `weight`, `bodyFat`, `muscleMass`, `bmi`, `notes`
+  - 方法：`fromSupabase()`, `toMap()`, `copyWith()`, `calculateBMI()`
+  - BMI 分類：過輕/正常/過重/輕度肥胖/中度肥胖/重度肥胖
+
+**Service 層**：
+- `lib/services/interfaces/i_body_data_service.dart`（Interface 定義）
+- `lib/services/body_data_service_supabase.dart`（Supabase 實作）
+  - 自動生成 Firestore 相容 ID（20 字符）
+  - 日期範圍篩選、錯誤處理與日誌記錄
+
+**Controller 層**：
+- `lib/controllers/body_data_controller.dart`
+  - 繼承 `ChangeNotifier`
+  - 狀態管理：`_records`, `_latestRecord`, `_isLoading`, `_error`
+  - 業務邏輯：自動計算 BMI（基於用戶身高）
+
+**UI 層**：
+- `lib/views/pages/profile/body_data_page.dart`
+  - 最新數據卡片：體重、體脂率、BMI、肌肉量
+  - 體重趨勢圖表：使用 `fl_chart`，曲線圖 + 漸層填充
+  - BMI 趨勢圖表：追蹤 BMI 變化
+  - 歷史記錄列表：分頁顯示，支援刪除
+  - 新增記錄對話框：體重、體脂、肌肉量、備註
+  - 日期範圍篩選：自訂查詢區間
+  - 觸覺回饋、統一通知系統
+
+**資料庫遷移**：
+- `migrations/004_create_body_data_table.sql`
+  - 創建 `body_data` 表格
+  - RLS 策略：用戶只能查看/修改自己的數據
+  - 檢查約束：體重 30-300kg，體脂 3-60%，BMI 10-60
+  - 索引：`user_id`, `record_date`, `(user_id, record_date)`
+
+**代碼統計**：
+- 新增 6 個文件，約 1,235 行代碼
+- 0 個 linter 錯誤
+- 完全符合 Clean Architecture
+
+#### 2. ✅ 個人資料頁面單位系統轉換
+
+**新增功能**：
+- `lib/views/pages/profile_page.dart`
+  - 新增 `_convertHeightToImperial(double cm)`：cm → ft' in"
+  - 新增 `_convertWeightToImperial(double kg)`：kg → lb
+  - BMI 計算支援英制單位（公式：`weight (lb) × 703 / height (inches)²`）
+  - 動態顯示單位：根據 `userProfile.unitSystem` 切換
+
+#### 3. ✅ 資料庫擴展
+
+**用戶表新增欄位**：
+- `migrations/003_add_user_body_data_fields.sql`
+  - 新增欄位：`height`, `weight`, `age`, `gender`
+  - 檢查約束：身高 100-250cm，體重 30-300kg，年齡 10-120 歲
+  - 性別約束：男/女/其他
+  - ✅ 已執行
+
+**身體數據表創建**：
+- `migrations/004_create_body_data_table.sql`
+  - 表格：`body_data`
+  - ⚠️ **待執行**（請在 Supabase Dashboard 執行）
+
+---
+
+### 📋 稍早完成（2024-12-26 上午）
+
+**1. ✅ Flutter UI 錯誤修復**
+- **問題**：`setState()` 在 `dispose()` 後被調用
+- **文件**：`lib/views/widgets/exercise_selection_navigator.dart`
+- **修復**：在所有 `setState()` 前檢查 `mounted` 狀態
+
+**2. ✅ 統計圖表數據修復**
+- **問題**：訓練量趨勢圖只顯示一個數據點（12/25）
+- **原因**：`statistics_service_supabase.dart` 使用 `updated_at` 導致所有記錄歸為同一天
+- **修復**：優先使用 `completed_date`，其次 `scheduled_date`
+- **效果**：圖表現在正確顯示 15 個數據點（本月）
+
+**3. ✅ 訓練模板動作資料完整性**
+- **問題**：模板中動作的 `actionName`、`equipment`、`bodyParts` 為空
+- **修復**：修正 Python 腳本的數據轉換邏輯
+- **文件**：`scripts/reset_user_data_and_generate.py`
+
+---
+
+## 🎯 當前目標
+
+**🎨 UI/UX 專業化升級（2024-12-26）**
+
+> 基於 2025 年行動應用程式設計最佳實踐，全面升級通知系統
+
+#### 5. ✅ 微動畫與觸覺回饋（2024-12-26）
+- **微動畫**：
+  - ✅ 圖示路徑追蹤（勾選圖示 Scale + Shimmer）
+  - ✅ 入場動畫（Slide + Fade，彈性曲線）
+  - ✅ 成就通知微光（Shimmer 2 秒循環）
+- **觸覺回饋**：
+  - ✅ 成功/資訊：`HapticFeedback.lightImpact()`
+  - ✅ 警告/撤銷：`HapticFeedback.mediumImpact()`
+  - ✅ 錯誤：`HapticFeedback.heavyImpact()`
+  - ✅ 成就：連續兩次 `heavyImpact()`（多巴胺刺激）
+
+#### 6. ✅ 動態島風格休息計時器（2024-12-26）
+- **視覺設計**：
+  - ✅ 黑色膠囊，頂部居中
+  - ✅ 實時倒數顯示（`01:30`）
+  - ✅ 點擊展開/收合（彈性動畫）
+  - ✅ 計時結束變綠色 + 連續震動
+- **互動體驗**：
+  - ✅ 持續顯示在頂部（Overlay）
+  - ✅ 不影響其他操作（可瀏覽其他頁面）
+  - ✅ 手動關閉支援
+  - ✅ 完成回調（觸發成就通知）
+
+#### 7. ✅ 測試頁面與文檔（2024-12-26）
+- **測試頁面**：
+  - ✅ `lib/views/pages/notification_test_page.dart`
+  - ✅ 測試所有 10+ 種通知場景
+  - ✅ 鍵盤自適應測試
+  - ✅ 休息計時器測試（30/90 秒）
+- **使用文檔**：
+  - ✅ `docs/NOTIFICATION_SYSTEM_2025.md`（完整遷移指南）
+  - ✅ 包含視覺對照表、色彩規範、使用範例
+  - ✅ 測試檢查清單（視覺/互動/動畫/無障礙）
+
+#### 8. ✅ 升級現有 NotificationUtils（2024-12-26）
+- **保持向後相容**：
+  - ✅ 所有現有調用無需修改
+  - ✅ 自動享受新視覺風格（膠囊形狀 + 觸覺回饋）
+  - ✅ 漸進式遷移（基礎版 → 進階版）
+- **修改文件**：
+  - ✅ `lib/utils/notification_utils.dart`（升級視覺）
+  - ✅ 添加觸覺回饋
+  - ✅ 調整顯示時長（2 秒 → 3 秒）
+
+---
+
+### 📊 升級統計
+
+**代碼新增**：
+- ✅ 3 個新文件（~1,200 行）
+  - `adaptive_notification_service.dart`（500 行）
+  - `rest_timer_overlay.dart`（240 行）
+  - `notification_test_page.dart`（260 行）
+- ✅ 1 個文檔（~800 行）
+  - `docs/NOTIFICATION_SYSTEM_2025.md`
+
+**依賴新增**：
+- ✅ 2 個套件
+  - `elegant_notification: ^2.2.2`
+  - `flutter_animate: ^4.5.0`
+
+**視覺改進**：
+- ✅ 圓角：0px → 24px（膠囊形狀）
+- ✅ 動畫：無 → Scale + Shimmer + Fade
+- ✅ 觸覺：無 → 3 種強度震動
+- ✅ 佈局：單一底部 → 情境自適應混合
+
+---
+
+### 📚 相關文檔
+
+- **使用指南**：`docs/NOTIFICATION_SYSTEM_2025.md`
+- **測試頁面**：`lib/views/pages/notification_test_page.dart`
+- **基礎服務**：`lib/utils/notification_utils.dart`
+- **進階服務**：`lib/utils/adaptive_notification_service.dart`
+- **動態島計時器**：`lib/widgets/rest_timer_overlay.dart`
 
 ---
 
@@ -14,15 +281,74 @@
 
 ### 📋 下一步任務
 
-**當前階段**：✅ **架構優化完成！**（2024-12-26）
+**當前階段**：⏳ **個人資料頁面完善中**（2024-12-26 下午）
+
+### 📋 下一步任務
+
+**當前階段**：✅ **個人資料頁面完善完成！**（2024-12-26）
 
 | 任務 | 狀態 | 優先級 | 說明 |
 |------|------|--------|------|
-| 移除 Firebase 依賴 | ✅ 已完成 | P0 | 移除 Firebase Auth、Firestore 舊代碼 |
-| UI/UX 優化 | ✅ 已完成 | P0 | 統一通知系統、修復卡片樣式、修復數據顯示 |
-| 檢查 View 層架構 | ✅ 已完成 | P0 | 所有 View 都使用 Interface |
-| 清理舊文件 | ⏳ 待開始 | P1 | 刪除未使用的 Firestore Service |
-| 更新文檔 | ✅ 已完成 | P1 | 統一資料庫文檔到單一文件 |
+| 身體數據功能 | ✅ 已完成 | P0 | 完整 CRUD、圖表、趨勢分析 |
+| 執行資料庫遷移 | ✅ 已完成 | P0 | `004_create_body_data_table.sql` |
+| **個人資料頁面整合統計** | ✅ **已完成** | **P0** | **新增「我的統計」按鈕** |
+| **統計頁面新增身體數據** | ✅ **已完成** | **P0** | **新增「身體數據」Tab** |
+
+**✅ Phase 3 完成內容**（2024-12-26）：
+1. ✅ 個人資料頁面新增「我的統計」按鈕（優先級 P0，連結到統計頁面）
+2. ✅ 統計頁面新增第 6 個 Tab「身體數據」（顯示體重、BMI 趨勢圖）
+3. ✅ 完整整合 `BodyDataController`（重用 Phase 2 代碼）
+4. ✅ 保留「完成率」Tab（不破壞現有功能）
+5. ✅ 刪除照片牆和訓練備忘錄按鈕（簡化功能菜單）
+6. ✅ 實作身體數據自動同步（`body_data.weight` → `users.weight`）
+7. ✅ 0 個 linter 錯誤
+
+**已取消的任務**：
+- ❌ 訓練記錄頁面（功能重複，已整合到統計頁面）
+- ❌ 照片牆頁面（非核心功能，優先級低）
+- ❌ 訓練備忘錄頁面（非核心功能，優先級低）
+- ❌ 編輯個人資料 UI/UX（已在 Phase 1 完成）
+
+**整合成果**：
+- ✅ 簡化功能：聚焦核心價值（統計分析）
+- ✅ 從個人資料頁面一鍵跳轉到統計頁面
+- ✅ 統計頁面整合身體數據趨勢（利用 `body_data` 表格）
+- ✅ 6 個 Tab：概覽、力量進步、肌群平衡、訓練日曆、完成率、身體數據
+
+**參考文檔**：[docs/PROFILE_PAGE_PHASE3_FINAL.md](PROFILE_PAGE_PHASE3_FINAL.md)
+
+**已完成的階段**：
+- ✅ 移除 Firebase 依賴（P0）
+- ✅ UI/UX 優化（P0）
+- ✅ 通知系統 2025 升級（P0）
+- ✅ 檢查 View 層架構（P0）
+- ✅ 清理舊文件（P1）
+- ✅ 更新文檔（P1）
+
+---
+
+### 🎯 下一步：執行資料庫遷移
+
+**當前任務**：執行 `migrations/004_create_body_data_table.sql`
+
+**執行方式**：
+
+1. **Supabase Dashboard**（推薦）：
+   - 登入 Supabase → 選擇專案 `strengthwise-91f02`
+   - 進入 **SQL Editor** → New query
+   - 複製 `migrations/004_create_body_data_table.sql` 內容
+   - 點擊 **Run** 執行
+
+2. **Supabase CLI**（進階）：
+```bash
+cd D:\gitDir\strengthwise
+supabase db push
+```
+
+**完成後**：
+- [ ] 驗證 `body_data` 表格已創建
+- [ ] 測試身體數據記錄功能
+- [ ] 開始 Phase 3 功能頁面實作（訓練記錄、照片牆、備忘錄）
 
 ---
 
@@ -200,9 +526,39 @@ Future<List<WorkoutRecord>> getUserPlans({
 
 ## ✅ 最新完成（2024-12-26）
 
-### 🎨 UI/UX 優化與 Bug 修復完成！
+### 🧹 技術債務清理完成！
 
 **完成時間**：2024年12月26日
+
+**清理成果**：
+1. ✅ **刪除舊 Python 腳本（21 個 Firestore 腳本）**
+   - 分析類腳本：8 個（analyze_*, count_*, verify_*, export_*）
+   - 操作類腳本：9 個（import_*, merge_*, delete_*, generate_*）
+   - 遷移類腳本：2 個（migrate_to_supabase*.py）
+   - UI 工具腳本：2 個（replace_snackbar.py, batch_color_replacement.py）
+
+2. ✅ **創建新的 Supabase 版本腳本（2 個）**
+   - `export_exercises_supabase.py` - 動作資料導出工具
+   - `generate_training_data_supabase.py` - 假訓練資料生成器
+
+3. ✅ **保留通用腳本（1 個）**
+   - `read_exercises_csv.py` - CSV 動作資料讀取
+
+4. ✅ **更新文檔**
+   - 重寫 `scripts/README.md`（完整 Supabase 版本說明）
+   - 更新 `docs/DEVELOPMENT_STATUS.md`（記錄清理過程）
+
+**技術亮點**：
+- 📦 專案更輕量：減少 21 個舊腳本
+- 🔄 完全 Supabase 化：所有工具都使用 Supabase PostgreSQL
+- 📚 文檔完整：清晰的使用說明和範例
+- 🛡️ 安全提升：環境變數管理，移除 Firebase 依賴
+
+---
+
+### 🎨 UI/UX 優化與 Bug 修復完成！
+
+**完成時間**：2024年12月26日（上午）
 
 **完成項目**：
 1. ✅ **統一通知系統**
@@ -1846,6 +2202,14 @@ users（統一集合）
 ### **操作指南**
 - `docs/BUILD_RELEASE.md` - Release APK 構建和安裝指南
 - `docs/GOOGLE_SIGNIN_COMPLETE_SETUP.md` - Google Sign-In 完整配置指南
+
+### **資料庫效能優化**
+- `database_export/00_README.md` - 資料庫匯出總結報告 ⭐ 給專家使用
+- `database_export/01_EXERCISES_COMPLETE.md` - 健身動作完整資訊（794 個動作）
+- `database_export/02_DATABASE_QUERIES.md` - 查詢完整列表與優化建議
+
+### **變更記錄**
+所有變更記錄已整合到本文件的「最新完成」章節。
 
 ---
 

@@ -751,7 +751,11 @@ class StatisticsServiceSupabase implements IStatisticsService {
     return _UnifiedWorkoutData(
       id: id,
       title: data['title'] ?? '未命名訓練',
-      completedTime: DateTime.parse(data['updated_at'] as String),
+      completedTime: data['completed_date'] != null 
+          ? DateTime.parse(data['completed_date'] as String)
+          : (data['scheduled_date'] != null 
+              ? DateTime.parse(data['scheduled_date'] as String)
+              : DateTime.parse(data['updated_at'] as String)),
       exercises: exercises,
     );
   }
