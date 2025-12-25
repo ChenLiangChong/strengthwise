@@ -29,6 +29,9 @@ dependencies:
   firebase_messaging: ^14.7.10
   fl_chart: ^1.1.1
   google_fonts: ^6.2.0
+  supabase_flutter: ^2.0.0  # Supabase 客户端
+  flutter_dotenv: ^5.1.0     # 环境变量管理
+  uuid: ^4.5.1               # UUID 生成
 
 dev_dependencies:
   flutter_test:
@@ -41,3 +44,4 @@ flutter:
   
   assets:
     - assets/images/
+    - .env  # 环境变量文件

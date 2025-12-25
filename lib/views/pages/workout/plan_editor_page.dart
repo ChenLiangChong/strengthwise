@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../../models/workout_exercise_model.dart' as exercise_models;
+import '../../../models/workout_record_model.dart';
 import '../../../models/exercise_model.dart';
-import '../../../controllers/interfaces/i_workout_controller.dart';
-import '../../../services/error_handling_service.dart';
+import '../../../services/interfaces/i_workout_service.dart';
+import '../../../controllers/interfaces/i_auth_controller.dart';
 import '../../../services/service_locator.dart';
 import '../exercises_page.dart';
-import 'template_management_page.dart' hide WorkoutTemplate;
+import 'template_management_page.dart';
 import '../../../models/workout_template_model.dart';
 
 class PlanEditorPage extends StatefulWidget {
@@ -28,8 +27,8 @@ class PlanEditorPage extends StatefulWidget {
 }
 
 class _PlanEditorPageState extends State<PlanEditorPage> {
-  late final IWorkoutController _workoutController;
-  late final ErrorHandlingService _errorService;
+  late final IWorkoutService _workoutService;
+  late final IAuthController _authController;
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -57,8 +56,8 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     super.initState();
 
     // 從服務定位器獲取依賴
-    _workoutController = serviceLocator<IWorkoutController>();
-    _errorService = serviceLocator<ErrorHandlingService>();
+    _workoutService = serviceLocator<IWorkoutService>();
+    _authController = serviceLocator<IAuthController>();
 
     // 如果提供了計劃類型，設置默認值
     if (widget.planType != null) {
@@ -99,35 +98,39 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     });
 
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('workoutPlans')
-          .doc(widget.planId)
-          .get();
+      print('[PlanEditor] 載入現有計畫: ${widget.planId}');
+      
+      final record = await _workoutService.getRecordById(widget.planId!);
+      
+      if (record != null) {
+        _titleController.text = '訓練記錄'; // WorkoutRecord 沒有 title
+        _descriptionController.text = record.notes;
+        _selectedPlanType = '力量訓練'; // 預設值
 
-      if (doc.exists) {
-        final data = doc.data()!;
-        _titleController.text = data['title'] ?? '';
-        _descriptionController.text = data['description'] ?? '';
-        _selectedPlanType = data['planType'];
-
-        // 加載訓練時間，如果存在
-        if (data['trainingTime'] != null) {
-          _trainingTime = (data['trainingTime'] as Timestamp).toDate();
-        } else if (data['trainingHour'] != null) {
-          // 兼容舊數據
-          final hour = data['trainingHour'] as int;
-          final date = widget.selectedDate;
-          _trainingTime = DateTime(date.year, date.month, date.day, hour, 0);
+        // 加載訓練時間
+        if (record.trainingTime != null) {
+          _trainingTime = record.trainingTime!;
         }
 
-        // 載入訓練動作
-        final exercisesData = data['exercises'] as List<dynamic>? ?? [];
-        _exercises = exercisesData
-            .map((e) => exercise_models.WorkoutExercise.fromFirestore(
-                e as Map<String, dynamic>))
-            .toList();
+        // 載入訓練動作（從 ExerciseRecord 轉換回 WorkoutExercise）
+        _exercises = record.exerciseRecords.map((exerciseRecord) {
+          return exercise_models.WorkoutExercise(
+            id: exerciseRecord.exerciseId,
+            exerciseId: exerciseRecord.exerciseId,
+            name: exerciseRecord.exerciseName,
+            sets: exerciseRecord.sets.length,
+            reps: exerciseRecord.sets.isNotEmpty ? exerciseRecord.sets.first.reps : 10,
+            weight: exerciseRecord.sets.isNotEmpty ? exerciseRecord.sets.first.weight : 0.0,
+            restTime: exerciseRecord.sets.isNotEmpty ? exerciseRecord.sets.first.restTime : 60,
+            equipment: '',  // 預設空值
+            bodyParts: [],  // 預設空陣列
+          );
+        }).toList();
+        
+        print('[PlanEditor] 載入成功，動作數量: ${_exercises.length}');
       }
     } catch (e) {
+      print('[PlanEditor] 載入失敗: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('載入訓練計畫失敗: $e')),
       );
@@ -152,46 +155,72 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     });
 
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
+      final userId = _authController.user?.uid;
       if (userId == null) {
         throw Exception('未登入');
       }
 
-      // 將現有的訓練界面類型 (力量訓練等) 映射到系統標記類型 (self/trainer)
-      final actualPlanType = widget.planType ?? 'self'; // 預設為自主訓練
+      print('[PlanEditor] 準備保存訓練計畫，動作數量: ${_exercises.length}');
 
-      // 創建訓練計畫數據
-      final recordData = {
-        // 根據新的集合結構添加字段
-        'userId': userId, // 向後相容，同時添加 userId
-        'creatorId': userId, // 創建者就是當前用戶
-        'traineeId': userId, // 預設情況下，訓練計劃是給自己的
-        'title': _titleController.text,
-        'description': _descriptionController.text,
-        'uiPlanType': _selectedPlanType, // 界面顯示的訓練類型 (力量訓練等)
-        'planType': actualPlanType, // 系統標記的計劃類型 (self/trainer)
-        'scheduledDate':
-            Timestamp.fromDate(widget.selectedDate), // 改用 scheduledDate
-        'exercises': _exercises.map((e) => e.toJson()).toList(),
-        'completed': false,
-        'trainingTime': Timestamp.fromDate(_trainingTime),
-        'createdAt': Timestamp.fromDate(DateTime.now()),
-      };
+      // 將 WorkoutExercise 轉換為 ExerciseRecord
+      final exerciseRecords = _exercises.map((exercise) {
+        return ExerciseRecord(
+          exerciseId: exercise.exerciseId, // ← 修復：使用 exerciseId 而不是 id
+          exerciseName: exercise.name,
+          sets: List.generate(
+            exercise.sets,
+            (index) => SetRecord(
+              setNumber: index + 1,
+              reps: exercise.reps,
+              weight: exercise.weight,
+              restTime: exercise.restTime,
+              completed: false,
+            ),
+          ),
+          notes: '',
+          completed: false,
+        );
+      }).toList();
 
       if (widget.planId != null) {
         // 更新現有記錄
-        await FirebaseFirestore.instance
-            .collection('workoutPlans') // 改用 workoutPlans 集合
-            .doc(widget.planId)
-            .update({
-          ...recordData,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+        print('[PlanEditor] 更新現有計畫: ${widget.planId}');
+        
+        final existingRecord = await _workoutService.getRecordById(widget.planId!);
+        if (existingRecord != null) {
+          final updatedRecord = WorkoutRecord(
+            id: widget.planId!,
+            workoutPlanId: existingRecord.workoutPlanId,
+            userId: userId,
+            date: widget.selectedDate,
+            exerciseRecords: exerciseRecords,
+            notes: _descriptionController.text,
+            completed: existingRecord.completed,
+            createdAt: existingRecord.createdAt,
+            trainingTime: _trainingTime,
+          );
+          
+          await _workoutService.updateRecord(updatedRecord);
+          print('[PlanEditor] 更新成功');
+        }
       } else {
         // 創建新記錄
-        await FirebaseFirestore.instance
-            .collection('workoutPlans')
-            .add(recordData); // 改用 workoutPlans 集合
+        print('[PlanEditor] 創建新計畫');
+        
+        final newRecord = WorkoutRecord(
+          id: '', // 會在 createRecord 中生成
+          workoutPlanId: '',
+          userId: userId,
+          date: widget.selectedDate,
+          exerciseRecords: exerciseRecords,
+          notes: _descriptionController.text,
+          completed: false,
+          createdAt: DateTime.now(),
+          trainingTime: _trainingTime,
+        );
+        
+        await _workoutService.createRecord(newRecord);
+        print('[PlanEditor] 創建成功');
       }
 
       // 返回行事曆頁面
@@ -199,6 +228,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         Navigator.pop(context, true); // 傳回true表示保存成功
       }
     } catch (e) {
+      print('[PlanEditor] 保存失敗: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('保存訓練計畫失敗: $e')),
@@ -266,28 +296,28 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         _isLoading = true;
       });
 
-      final userId = FirebaseAuth.instance.currentUser?.uid;
+      final userId = _authController.user?.uid;
       if (userId == null) {
         throw Exception('用戶未登入');
       }
 
-      // 創建模板數據 (存儲在 workoutTemplates 集合中)
-      final templateData = {
-        'userId': userId,
-        'title': templateName,
-        'description': _descriptionController.text,
-        'planType': _selectedPlanType,
-        'exercises': _exercises.map((e) => e.toJson()).toList(),
-        'trainingTime': Timestamp.fromDate(_trainingTime),
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
+      print('[PlanEditor] 準備保存為模板: $templateName');
+      
+      // 創建模板對象
+      final template = WorkoutTemplate(
+        id: '', // 會在 createTemplate 中生成
+        userId: userId,
+        title: templateName,
+        description: _descriptionController.text,
+        planType: _selectedPlanType ?? '力量訓練',
+        exercises: _exercises,
+        trainingTime: _trainingTime,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
 
-      print('準備保存模板: $templateName');
-      await FirebaseFirestore.instance
-          .collection('workoutTemplates')
-          .add(templateData);
-      print('模板已保存到 workoutTemplates 集合: $templateName');
+      await _workoutService.createTemplate(template);
+      print('[PlanEditor] 模板已保存: $templateName');
 
       setState(() {
         _isLoading = false;
@@ -299,8 +329,8 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         );
       }
     } catch (e, stackTrace) {
-      print('保存模板錯誤: $e');
-      print('錯誤堆棧: $stackTrace');
+      print('[PlanEditor] 保存模板錯誤: $e');
+      print('[PlanEditor] 錯誤堆棧: $stackTrace');
 
       setState(() {
         _isLoading = false;
@@ -317,7 +347,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   // 從模板加載
   Future<void> _loadFromTemplate() async {
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
+      final userId = _authController.user?.uid;
       if (userId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('請先登入')),

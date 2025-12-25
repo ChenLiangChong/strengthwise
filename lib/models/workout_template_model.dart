@@ -147,6 +147,32 @@ class WorkoutTemplate {
           : DateTime.now(),
     );
   }
+
+  /// 從 Supabase 數據創建對象（snake_case 欄位）
+  factory WorkoutTemplate.fromSupabase(Map<String, dynamic> json) {
+    DateTime? trainingTime;
+    if (json['training_time'] != null) {
+      trainingTime = DateTime.parse(json['training_time']);
+    }
+    
+    return WorkoutTemplate(
+      id: json['id'] ?? '',
+      userId: json['user_id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      planType: json['plan_type'] ?? '',
+      exercises: (json['exercises'] as List<dynamic>?)
+          ?.map((e) => WorkoutExercise.fromJson(e as Map<String, dynamic>))
+          .toList() ?? [],
+      trainingTime: trainingTime,
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null 
+          ? DateTime.parse(json['updated_at']) 
+          : DateTime.now(),
+    );
+  }
   
   /// 創建一個本對象的副本，並可選擇性地修改某些屬性
   WorkoutTemplate copyWith({

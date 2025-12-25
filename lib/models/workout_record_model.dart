@@ -106,6 +106,37 @@ class WorkoutRecord {
     );
   }
 
+  /// 從 Supabase 數據創建對象（從 workout_plans 表，completed=true）
+  factory WorkoutRecord.fromSupabase(Map<String, dynamic> json) {
+    DateTime? trainingTime;
+    if (json['training_time'] != null) {
+      trainingTime = DateTime.parse(json['training_time']);
+    }
+    
+    // exerciseRecords 從 exercises JSONB 欄位轉換
+    final exercisesJson = json['exercises'] as List<dynamic>? ?? [];
+    
+    return WorkoutRecord(
+      id: json['id'] ?? '',
+      workoutPlanId: json['id'] ?? '', // workout_plans 的 id 就是 workoutPlanId
+      userId: json['trainee_id'] ?? json['user_id'] ?? '',
+      date: json['completed_date'] != null 
+          ? DateTime.parse(json['completed_date'])
+          : (json['scheduled_date'] != null 
+              ? DateTime.parse(json['scheduled_date']) 
+              : DateTime.now()),
+      exerciseRecords: exercisesJson
+          .map((e) => ExerciseRecord.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      notes: json['note'] ?? '',
+      completed: json['completed'] ?? false,
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
+      trainingTime: trainingTime,
+    );
+  }
+
   /// 從訓練計畫創建新的訓練記錄
   factory WorkoutRecord.fromWorkoutPlan(
     String userId,

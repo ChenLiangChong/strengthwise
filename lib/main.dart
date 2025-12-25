@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 import 'views/splash_screen.dart';
 import 'services/service_locator.dart';
+import 'services/supabase_service.dart';
 import 'services/theme_service.dart';
 import 'controllers/theme_controller.dart';
 import 'themes/app_theme.dart';
@@ -40,6 +41,15 @@ void main() {
           // 其他錯誤則重新拋出
           rethrow;
         }
+      }
+
+      // 初始化 Supabase（用於動作庫等靜態資料）
+      try {
+        await SupabaseService.initialize();
+        print('Supabase 初始化成功');
+      } catch (e) {
+        print('Supabase 初始化失敗: $e');
+        // Supabase 初始化失敗不阻止應用啟動（可以繼續使用 Firebase）
       }
 
       // 設置環境和初始化服務定位器

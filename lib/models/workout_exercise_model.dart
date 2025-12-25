@@ -1,3 +1,4 @@
+import 'package:uuid/uuid.dart';
 import 'exercise_model.dart';
 
 /// 訓練動作配置模型
@@ -39,9 +40,10 @@ class WorkoutExercise {
   /// 
   /// 使用標準的預設值初始化新的訓練動作配置
   factory WorkoutExercise.fromExercise(Exercise exercise) {
+    const uuid = Uuid();
     return WorkoutExercise(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      exerciseId: exercise.id,
+      id: uuid.v4(), // 使用 UUID v4 生成客戶端臨時 ID
+      exerciseId: exercise.id, // 這是關聯到 exercises 表的真實 ID
       name: exercise.name,
       actionName: exercise.actionName,
       equipment: exercise.equipment,

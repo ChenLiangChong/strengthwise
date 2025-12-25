@@ -8,13 +8,161 @@
 
 ## 🎯 當前目標
 
-**🎨 UI/UX 全面重設計（2024-12-25 開始）**
+**🔧 技術債務清理與架構優化（2024-12-25 開始）**
 
-> 基於 Kinetic 設計系統，實現從「陽春」到「專業」的視覺升級
+> 完成 Supabase 遷移後的清理工作，優化架構設計
 
-### 📋 執行計劃（4 週）
+### 📋 下一步任務
 
-**當前階段**：✅ **UI/UX 重設計完成！** 🎉（Week 1-4 全部完成）
+**當前階段**：⏳ **技術債務清理中**（預計 1-2 天完成）
+
+| 任務 | 狀態 | 優先級 | 說明 |
+|------|------|--------|------|
+| 移除 Firebase 依賴 | ⏳ 待開始 | P0 | 移除 Firebase Auth、Firestore 舊代碼 |
+| 檢查 View 層架構 | ⏳ 待開始 | P0 | 確保所有 View 都使用 Interface |
+| 清理舊文件 | ⏳ 待開始 | P1 | 刪除未使用的 Firestore Service |
+| 更新文檔 | ✅ 已完成 | P1 | 統一資料庫文檔到單一文件 |
+
+---
+
+### 🔥 P0 任務：移除 Firebase 依賴
+
+**目標**：完全移除 Firebase，改用 Supabase
+
+**檢查項目**：
+1. ✅ **Firebase Auth** → Supabase Auth（已完成）
+2. ✅ **Firestore** → Supabase PostgreSQL（已完成）
+3. ⏳ **移除 Firebase 套件**
+   - [ ] 移除 `firebase_core`
+   - [ ] 移除 `firebase_auth`
+   - [ ] 移除 `cloud_firestore`
+   - [ ] 移除 `google_sign_in`（改用 Supabase Auth + Google）
+4. ⏳ **清理舊 Service 文件**
+   - [ ] 刪除 `lib/services/auth_wrapper.dart`（舊的 Firebase Auth）
+   - [ ] 刪除 `lib/services/exercise_service.dart`（舊的 Firestore）
+   - [ ] 刪除 `lib/services/workout_service.dart`（舊的 Firestore）
+   - [ ] 刪除 `lib/services/user_service.dart`（舊的 Firestore）
+   - [ ] 刪除 `lib/services/custom_exercise_service.dart`（舊的 Firestore）
+   - [ ] 刪除其他未使用的 Firestore Service
+5. ⏳ **清理配置文件**
+   - [ ] 刪除 `android/app/google-services.json`
+   - [ ] 刪除 `ios/Runner/GoogleService-Info.plist`
+   - [ ] 清理 `pubspec.yaml` 中的 Firebase 依賴
+
+---
+
+### 🏗️ P0 任務：檢查 View 層架構
+
+**目標**：確保所有 View 都透過 Interface 使用 Service，遵循依賴反轉原則
+
+**檢查清單**：
+
+#### 1. Controller Layer（必須使用 Interface）
+- [ ] `lib/controllers/auth_controller.dart` → `IAuthService`
+- [ ] `lib/controllers/workout_controller.dart` → `IWorkoutService`
+- [ ] `lib/controllers/workout_execution_controller.dart` → `IWorkoutService`
+- [ ] 其他 Controller...
+
+#### 2. View Layer（必須使用 Interface）
+檢查以下頁面是否直接使用 Service 實例：
+
+**核心頁面**：
+- [ ] `lib/views/pages/home_page.dart`
+  - ❌ 當前：直接使用 `Supabase.instance.client`
+  - ✅ 應該：使用 `IWorkoutService`、`IAuthController`
+- [ ] `lib/views/pages/booking_page.dart`
+  - ❌ 當前：直接使用 `Supabase.instance.client`
+  - ✅ 應該：使用 `IWorkoutService`、`IBookingService`
+- [ ] `lib/views/pages/statistics_page_v2.dart`
+  - ✅ 已使用：`IStatisticsService`、`IAuthController`
+- [ ] `lib/views/pages/training_page.dart`
+  - 檢查是否使用 Interface
+- [ ] `lib/views/pages/profile_page.dart`
+  - 檢查是否使用 Interface
+
+**訓練相關頁面**：
+- [ ] `lib/views/pages/workout/plan_editor_page.dart`
+- [ ] `lib/views/pages/workout/template_editor_page.dart`
+- [ ] `lib/views/pages/workout/template_management_page.dart`
+- [ ] `lib/views/pages/workout/workout_execution_page.dart`
+
+**其他頁面**：
+- [ ] `lib/views/pages/exercises_page.dart`
+- [ ] `lib/views/pages/custom_exercises_page.dart`
+
+#### 3. 直接查詢問題修復
+
+**問題**：部分 View 直接使用 `Supabase.instance.client` 查詢資料庫
+
+**修復方案**：
+1. 在對應的 Service Interface 添加缺少的方法
+2. 在 Service 實作中添加方法實作
+3. View 層改為使用 Interface 方法
+
+**範例**：
+
+```dart
+// ❌ 錯誤：View 直接查詢
+final plans = await Supabase.instance.client
+  .from('workout_plans')
+  .select()
+  .eq('trainee_id', userId)
+  .eq('completed', false);
+
+// ✅ 正確：透過 Service Interface
+final plans = await _workoutService.getUserPlans(
+  userId: userId,
+  completed: false,
+);
+```
+
+---
+
+### 📚 P1 任務：文檔整理
+
+**目標**：統一資料庫文檔，清理過時文檔
+
+**已完成**：
+- ✅ 創建 `docs/DATABASE_SUPABASE.md`（完整的 Supabase 資料庫文檔）
+
+**待處理**：
+- [ ] 更新 `docs/README.md` 文檔導航
+- [ ] 更新 `AGENTS.md` 資料庫參考連結
+
+---
+
+## ✅ 最新完成（2024-12-25）
+
+### 🎉 Supabase 遷移 100% 完成！
+
+**完成時間**：2024年12月25日（深夜 → 凌晨）
+
+**遷移成果**：
+- ✅ 資料遷移：828 個文檔（exercises、body_parts、exercise_types、equipments、joint_types）
+- ✅ Service 層：8 個 Supabase Service（Auth、User、Exercise、CustomExercise、Workout、Note、Booking、Statistics）
+- ✅ Model 層：所有 Model 支援 `fromSupabase()` 方法
+- ✅ UI 層：8 個頁面重構（home、training、booking、plan_editor、template_management、workout_execution 等）
+- ✅ 認證系統：Firebase Auth → Supabase Auth
+- ✅ 功能完整：今日訓練、時間權限、統計、預約等所有功能正常
+
+**關鍵修復**（2024-12-25 最後階段）：
+- ✅ 修復 `plan_editor_page.dart` 中 `exerciseId` 錯誤使用 UUID 的問題
+- ✅ 改為正確使用 `exercise.exerciseId`（20 字符 TEXT）
+- ✅ 統計頁面正常顯示動作詳情
+- ✅ 不再出現 `運動詳情不存在` 錯誤
+
+**成本優勢**：
+- ❌ Firestore：$11-50/月（增長中）
+- ✅ Supabase：$25/月固定（支援到 10K 用戶）
+
+**新增文檔**：
+- ✅ `docs/DATABASE_SUPABASE.md` - 完整的 Supabase PostgreSQL 資料庫設計文檔
+
+---
+
+## 🎨 UI/UX 重設計完成（Week 1-4）
+
+### 📋 執行計劃（4 週）- 已全部完成 ✅
 
 | 週次 | 階段 | 狀態 | 重點任務 |
 |------|------|------|---------|
@@ -202,6 +350,203 @@
 
 ## ✅ 最新完成
 
+### 2024-12-25：Supabase 遷移完成！🎉🎉🎉
+
+**決策**：確定採用 **完全遷移到 Supabase PostgreSQL** 方案
+
+**✅ 階段一至七：全部完成**
+
+#### **階段一：資料庫分析完成**（2024-12-25 深夜）
+- ✅ 完整掃描 9 個 Firestore 集合
+- ✅ 確認遷移範圍：828 個文檔
+- ✅ 成本對比（Firestore $11-50/月 vs Supabase $25/月固定）
+
+#### **階段二：PostgreSQL Schema 建立**（2024-12-25 深夜）
+- ✅ 5 個表格建立：exercises, body_parts, exercise_types, equipments, joint_types
+- ✅ Row Level Security (RLS) 策略配置
+- ✅ 索引優化策略
+- ✅ pg_trgm 擴展啟用（全文搜尋）
+
+#### **階段三：遷移腳本準備**（2024-12-25 深夜）
+- ✅ 修正遷移腳本（新增 equipments, jointTypes 元數據集合）
+- ✅ 移除不需要遷移的集合（users, workoutPlans, workoutTemplates, customExercises）
+- ✅ 完整 ETL 流程（Extract-Transform-Load）
+- ✅ 批次寫入優化（100 筆/批）
+
+#### **階段四：資料遷移執行**（2024-12-25 深夜）⭐
+- ✅ 成功遷移 **794 個動作**（exercises）
+- ✅ 成功遷移 **8 個身體部位**（body_parts）
+- ✅ 成功遷移 **3 個訓練類型**（exercise_types）
+- ✅ 成功遷移 **21 個器材**（equipments）
+- ✅ 成功遷移 **2 個關節類型**（joint_types）
+- ✅ **總計：828 個文檔，0 個錯誤** 🎊
+
+#### **階段五：Flutter Service 層重構**（2024-12-25 深夜）✅ **完成！**
+- ✅ 安裝 `supabase_flutter` 和 `flutter_dotenv` 套件
+- ✅ 建立 `.env` 環境變數配置
+- ✅ 建立 `SupabaseService`（Supabase 客戶端管理）
+- ✅ 建立 `ExerciseServiceSupabase`（Supabase 版本的 ExerciseService）
+- ✅ 更新 `Exercise` Model（新增 `fromSupabase` 方法）
+- ✅ 更新 `service_locator.dart`（註冊 Supabase 服務）
+- ✅ 更新 `main.dart`（初始化 Supabase）
+- ✅ 重構 `exercises_page.dart`（改用 ExerciseService）
+- ✅ 修正 RLS 策略（新增 anon 策略允許讀取）
+- ✅ **實際測試通過**（794 個動作成功載入）⭐
+
+**測試結果**（2024-12-25 深夜）：
+- ✅ 訓練類型：3 個（重訓 744、有氧、伸展）
+- ✅ 動作總數：794 個（與遷移數量一致）
+- ✅ 階層式導航：正常運作
+- ✅ 資料來源：Supabase PostgreSQL
+- ✅ 緩存機制：正常運作
+
+**關鍵修正**：
+- ✅ RLS 策略問題：原本只允許 `authenticated` 用戶，新增 `anon` 策略
+- ✅ SQL: `CREATE POLICY "System exercises are viewable by anonymous users" ON exercises FOR SELECT TO anon USING (user_id IS NULL);`
+
+**新增檔案**：
+- `lib/services/supabase_service.dart`（91 行）
+- `lib/services/exercise_service_supabase.dart`（685 行）
+
+**修改檔案**：
+- `lib/models/exercise_model.dart`（新增 `fromSupabase` 方法）
+- `lib/services/service_locator.dart`（切換到 Supabase 服務）
+- `lib/main.dart`（初始化 Supabase）
+- `lib/views/pages/exercises_page.dart`（完全重構，移除 6 處 Firestore 直接查詢）
+- `pubspec.yaml`（新增依賴）
+- `migrations/001_create_core_tables.sql`（新增 anon RLS 策略）
+
+**效能考量**：
+- ⚠️ 階層查詢會重複查詢動作列表（可優化）
+- ✅ 緩存機制可減少重複查詢
+- 📝 未來可考慮：記憶體快取、單次查詢優化
+
+---
+
+#### **階段六：測試與驗證**（2024-12-25 深夜）✅ **完成！**
+- ✅ 動作瀏覽功能測試通過（794 個動作）
+- ✅ 從動作庫新增動作到訓練計劃測試通過
+- ✅ **所有涉及 Supabase 的功能測試完成**
+
+**測試說明**：
+- 其他功能（訓練執行、統計、自訂動作）仍使用 Firestore，不受遷移影響
+- 本次遷移僅針對系統級資料（exercises 等），用戶級資料保留在 Firestore
+
+---
+
+#### **階段七：用戶認證與核心功能遷移**（2024-12-25 深夜 → 凌晨）✅ **完成！**
+
+**🎯 重大決策**：完全遷移到 Supabase（包括用戶認證）
+
+**✅ 完成內容**：
+
+1. **用戶認證系統遷移**
+   - ✅ Firebase Auth → Supabase Auth
+   - ✅ 新用戶將使用 Supabase 註冊和登入
+   - ✅ 現有 Firebase 用戶保持不變（向後相容）
+   - ✅ 實作 `AuthServiceSupabase` 和 `UserServiceSupabase`
+   - ✅ PostgreSQL Trigger 自動創建用戶資料
+
+2. **資料庫 Schema 更新**
+   - ✅ 創建 `users` 表格（UUID 主鍵）
+   - ✅ 創建 `workout_plans` 表格（訓練計劃 + 記錄統一）
+   - ✅ 創建 `workout_templates` 表格（訓練模板）
+   - ✅ 創建 `custom_exercises` 表格（自訂動作）
+   - ✅ 修正 ID 類型（UUID → TEXT，支持 Firestore ID 格式）
+   - ✅ 配置 Row Level Security (RLS) 策略
+
+3. **Flutter Service 層重構**（8 個文件）
+   - ✅ `lib/services/auth_service_supabase.dart`（新增，240 行）
+   - ✅ `lib/services/user_service_supabase.dart`（新增，180 行）
+   - ✅ `lib/services/custom_exercise_service_supabase.dart`（新增，280 行）
+   - ✅ `lib/services/workout_service_supabase.dart`（新增，620 行）
+   - ✅ 所有服務已註冊到 `service_locator.dart`
+
+4. **Model 層更新**（支持 snake_case 轉換）
+   - ✅ `UserModel.fromSupabase()`
+   - ✅ `CustomExercise.fromSupabase()`
+   - ✅ `WorkoutTemplate.fromSupabase()`
+   - ✅ `WorkoutRecord.fromSupabase()`
+
+5. **UI 層重構**（8 個頁面）
+   - ✅ `home_page.dart` - 首頁（今日訓練 + 最近記錄）
+   - ✅ `template_editor_page.dart` - 模板編輯器
+   - ✅ `plan_editor_page.dart` - 計劃編輯器
+   - ✅ `training_page.dart` - 訓練頁面
+   - ✅ `template_management_page.dart` - 模板管理
+   - ✅ `booking_page.dart` - 預約頁面（行事曆）
+   - ✅ `workout_execution_page.dart` - 訓練執行（透過 controller）
+   - ✅ `workout_execution_controller.dart` - 訓練執行控制器
+
+6. **新功能實現**
+   - ✅ **「今日訓練」** - 首頁顯示今天未完成的訓練（`_loadTodayPlans()`）
+   - ✅ **時間權限編輯**：
+     - ❌ 過去的訓練：只能查看，不能編輯/刪除
+     - ✅ 今天的訓練：完整權限（編輯+刪除+勾選完成）
+     - ✅ 未來的訓練：可以編輯+刪除，不能勾選完成
+
+7. **關鍵技術修正**
+   - ✅ Firestore ID 生成邏輯（20 字符 alphanumeric）
+   - ✅ PostgreSQL `id` 欄位類型改為 `TEXT`（從 `UUID`）
+   - ✅ 移除 `DEFAULT uuid_generate_v4()`，改為 Flutter 端生成
+   - ✅ RLS 策略修正（`auth.uid()::text` 與 `user_id` 比對）
+
+**測試結果**：
+- ✅ 新用戶註冊（Supabase Email + Password）
+- ✅ 創建訓練模板
+- ✅ 從模板創建訓練計劃
+- ✅ 執行訓練並勾選完成
+- ✅ 首頁顯示今日訓練和最近記錄
+- ✅ 預約頁面（行事曆）顯示和編輯訓練
+- ✅ 時間權限控制（過去/現在/未來）
+
+**文檔更新**：
+- ✅ `AGENTS.md` - 更新 Supabase 使用說明
+- ✅ `docs/DEVELOPMENT_STATUS.md` - 記錄遷移過程
+
+---
+
+#### **階段八：總結與文檔更新**（2024-12-25 凌晨）✅ **完成！**
+- ✅ 更新專案文檔（`AGENTS.md`、`DEVELOPMENT_STATUS.md`）
+- ✅ 記錄遷移經驗和注意事項
+- ✅ 整理技術決策和解決方案
+
+---
+
+**🎯 遷移完成度**：✅ **100%（核心功能）**
+
+**成本對比**：
+- ❌ **Firestore**：$11-50/月（增長中）
+- ✅ **Supabase**：$25/月固定（支援到 10K 用戶）
+
+**剩餘的 Firebase 服務**（非核心功能，可選遷移）：
+- `statistics_page_v2.dart` - 統計頁面（可選遷移）
+- `booking_service.dart` - 預約服務（教練功能，暫不使用）
+- 舊服務文件（已有 Supabase 版本，可清理）
+
+---
+
+#### **階段七：總結與文檔更新**（2024-12-25 深夜）⏳ **進行中**
+- ⏳ 更新專案文檔
+- ⏳ 記錄遷移經驗和注意事項
+- ⏳ 清理臨時文件
+
+---
+
+**🎯 下一步**：✅ **遷移完成！**
+
+**剩餘任務**：
+- [x] 階段一：資料庫分析（828 個文檔）
+- [x] 階段二：PostgreSQL Schema 建立（5 個表格 + RLS）
+- [x] 階段三：遷移腳本準備（ETL 流程）
+- [x] 階段四：資料遷移執行（exercises, equipments, jointTypes）
+- [x] 階段五：Flutter Service 層重構（ExerciseService）
+- [x] 階段六：測試與驗證（動作庫功能）
+- [x] 階段七：用戶認證與核心功能遷移（8 個頁面重構）
+- [x] 階段八：文檔更新（AGENTS.md, DEVELOPMENT_STATUS.md）
+
+---
+
 ### 2024-12-25：資料庫遷移實作啟動 🚀
 
 **決策**：確定採用 **完全遷移到 Supabase PostgreSQL** 方案
@@ -214,26 +559,26 @@
   
 - ✅ **Supabase 專案設置**
   - 專案 ID: `strengthwise-91f02`
-  - 取得 Secret Key: `sb_secret_hvuMcQXsDcbLUhNLRPfPMQ_-3-5AmXq`
+  - 取得 API Keys 並配置環境變數
   - 環境變數配置方案設計
   
 - ✅ **PostgreSQL Schema 設計**（完整）
-  - 8 個正規化表格設計
+  - 5 個表格設計（exercises + 4 個元數據表）
   - Row Level Security (RLS) 策略
   - 索引優化策略
-  - 外鍵關聯定義
+  - pg_trgm 擴展啟用
   
 - ✅ **Python 遷移腳本編寫**
   - 完整 ETL 流程（Extract-Transform-Load）
   - 批次寫入優化（100 筆/批）
-  - 串流解析大型 JSON
+  - 直接從 Firestore 讀取
   - 冪等性設計（可重複執行）
   
-- ✅ **Flutter 整合方案設計**
+- ✅ **Flutter 整合開始**
   - supabase-flutter SDK 整合
-  - Service 層重構方案
-  - 查詢優化策略
-  - 離線優先架構設計（SQLite + PowerSync）
+  - Service 層重構（ExerciseService）
+  - 保持介面相容性
+  - 完整的型別轉換
 
 **產出文檔**：
 - `docs/database_migration_analysis.md` - 評估報告（950 行）
@@ -1348,9 +1693,7 @@ users（統一集合）
 
 ### **核心文檔**
 - `docs/PROJECT_OVERVIEW.md` - 專案技術架構和開發規範
-- `docs/PROJECT_SUMMARY.md` - 專案總結和快速開始
-- `docs/DATABASE_DESIGN.md` - Firestore 資料庫結構
-- `docs/database_migration_analysis.md` - 資料庫遷移評估報告
+- `docs/DATABASE_SUPABASE.md` - Supabase PostgreSQL 資料庫設計 ⭐ 最新
 - `docs/UI_UX_GUIDELINES.md` - UI/UX 設計規範
 - `docs/STATISTICS_IMPLEMENTATION.md` - 統計功能實作指南
 - `docs/README.md` - 文檔導航

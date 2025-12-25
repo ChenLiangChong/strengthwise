@@ -126,6 +126,40 @@ class Exercise {
     );
   }
 
+  /// 從 Supabase 資料創建對象
+  /// 
+  /// Supabase PostgreSQL 使用 snake_case 欄位名稱
+  factory Exercise.fromSupabase(Map<String, dynamic> data) {
+    return Exercise(
+      id: data['id'] ?? '',
+      name: data['name'] ?? '',
+      nameEn: data['name_en'] ?? '',
+      bodyParts: List<String>.from(data['body_parts'] ?? []),
+      type: data['training_type'] ?? '',
+      equipment: data['equipment'] ?? '',
+      jointType: data['joint_type'] ?? '',
+      level1: data['level1'] ?? '',
+      level2: data['level2'] ?? '',
+      level3: data['level3'] ?? '',
+      level4: data['level4'] ?? '',
+      level5: data['level5'] ?? '',
+      // 新的專業分類欄位
+      trainingType: data['training_type'] ?? '',
+      bodyPart: data['body_part'] ?? '',
+      specificMuscle: data['specific_muscle'] ?? '',
+      equipmentCategory: data['equipment_category'] ?? '',
+      equipmentSubcategory: data['equipment_subcategory'] ?? '',
+      actionName: data['action_name'] ?? '',
+      description: data['description'] ?? '',
+      imageUrl: data['image_url'] ?? '',
+      videoUrl: data['video_url'] ?? '',
+      apps: [], // Supabase 資料庫中無此欄位
+      createdAt: data['created_at'] != null 
+          ? DateTime.parse(data['created_at']) 
+          : DateTime.now(),
+    );
+  }
+
   /// 轉換為 Firestore 可用的數據格式
   Map<String, dynamic> toFirestore() {
     return {

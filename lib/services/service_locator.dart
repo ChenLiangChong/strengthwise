@@ -11,15 +11,16 @@ import 'interfaces/i_user_service.dart';
 import 'interfaces/i_workout_service.dart';
 import 'interfaces/i_statistics_service.dart';
 import 'interfaces/i_favorites_service.dart';
-import 'auth_wrapper.dart';
-import 'booking_service.dart';
-import 'custom_exercise_service.dart';
-import 'exercise_service.dart';
-import 'note_service.dart';
-import 'user_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'auth_service_supabase.dart'; // Supabase Auth
+import 'booking_service_supabase.dart'; // Supabase Booking Service
+import 'custom_exercise_service_supabase.dart'; // Supabase 自訂動作服務
+import 'exercise_service_supabase.dart'; // Supabase 運動服務
+import 'note_service_supabase.dart'; // Supabase Note Service
+import 'user_service_supabase.dart'; // Supabase User Service
 import 'user_migration_service.dart';
-import 'workout_service.dart';
-import 'statistics_service.dart';
+import 'workout_service_supabase.dart'; // Supabase 訓練服務
+import 'statistics_service_supabase.dart'; // Supabase Statistics Service
 import 'favorites_service.dart';
 import 'error_handling_service.dart';
 import 'exercise_cache_service.dart';
@@ -101,45 +102,59 @@ Future<void> setupServiceLocator() async {
 
 /// 註冊所有服務
 void _registerServices() {
-  // 身份驗證服務
+  // 身份驗證服務（使用 Supabase 版本）⭐
   if (!serviceLocator.isRegistered<IAuthService>()) {
-    serviceLocator.registerLazySingleton<IAuthService>(() => AuthWrapper());
+    serviceLocator.registerLazySingleton<IAuthService>(
+      () => AuthServiceSupabase(
+        errorService: serviceLocator<ErrorHandlingService>(),
+      ),
+    );
   }
   
-  // 預約服務
+  // 預約服務（使用 Supabase 版本）⭐
   if (!serviceLocator.isRegistered<IBookingService>()) {
-    // 改回懶加載方式，但在註冊後添加一個初始化程序
     serviceLocator.registerLazySingleton<IBookingService>(() {
-      final bookingService = BookingService(
+      final bookingService = BookingServiceSupabase(
+        supabase: Supabase.instance.client,
         errorService: serviceLocator<ErrorHandlingService>(),
       );
-      // 不要在這裡同步初始化，將在關鍵服務初始化列表中異步初始化
       return bookingService;
     });
   }
   
-  // 自定義運動服務
+  // 自定義運動服務（使用 Supabase 版本）⭐
   if (!serviceLocator.isRegistered<ICustomExerciseService>()) {
-    serviceLocator.registerLazySingleton<ICustomExerciseService>(() => CustomExerciseService());
+    serviceLocator.registerLazySingleton<ICustomExerciseService>(
+      () => CustomExerciseServiceSupabase(
+        errorService: serviceLocator<ErrorHandlingService>(),
+      ),
+    );
   }
   
-  // 運動項目服務
+  // 運動項目服務（使用 Supabase 版本）
   if (!serviceLocator.isRegistered<IExerciseService>()) {
-    serviceLocator.registerLazySingleton<IExerciseService>(() => ExerciseService());
+    serviceLocator.registerLazySingleton<IExerciseService>(
+      () => ExerciseServiceSupabase(
+        errorService: serviceLocator<ErrorHandlingService>(),
+      ),
+    );
   }
   
-  // 筆記服務
+  // 筆記服務（使用 Supabase 版本）⭐
   if (!serviceLocator.isRegistered<INoteService>()) {
-    serviceLocator.registerLazySingleton<INoteService>(() => NoteService(
+    serviceLocator.registerLazySingleton<INoteService>(() => NoteServiceSupabase(
+      supabase: Supabase.instance.client,
       errorService: serviceLocator<ErrorHandlingService>(),
     ));
   }
   
-  // 用戶服務
+  // 用戶服務（使用 Supabase 版本）⭐
   if (!serviceLocator.isRegistered<IUserService>()) {
-    serviceLocator.registerLazySingleton<IUserService>(() => UserService(
-      errorService: serviceLocator<ErrorHandlingService>(),
-    ));
+    serviceLocator.registerLazySingleton<IUserService>(
+      () => UserServiceSupabase(
+        errorService: serviceLocator<ErrorHandlingService>(),
+      ),
+    );
   }
   
   // 用戶遷移服務
@@ -149,17 +164,19 @@ void _registerServices() {
     ));
   }
   
-  // 訓練計畫服務
+  // 訓練計畫服務（使用 Supabase 版本）⭐
   if (!serviceLocator.isRegistered<IWorkoutService>()) {
-    serviceLocator.registerLazySingleton<IWorkoutService>(() => WorkoutService(
-      errorService: serviceLocator<ErrorHandlingService>(),
-    ));
+    serviceLocator.registerLazySingleton<IWorkoutService>(
+      () => WorkoutServiceSupabase(
+        errorService: serviceLocator<ErrorHandlingService>(),
+      ),
+    );
   }
   
-  // 統計服務
+  // 統計服務（使用 Supabase 版本）⭐
   if (!serviceLocator.isRegistered<IStatisticsService>()) {
-    serviceLocator.registerLazySingleton<IStatisticsService>(() => StatisticsService(
-      firestore: FirebaseFirestore.instance,
+    serviceLocator.registerLazySingleton<IStatisticsService>(() => StatisticsServiceSupabase(
+      supabase: Supabase.instance.client,
       errorService: serviceLocator<ErrorHandlingService>(),
       exerciseService: serviceLocator<IExerciseService>(),
     ));

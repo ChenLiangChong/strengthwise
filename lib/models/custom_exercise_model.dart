@@ -29,6 +29,18 @@ class CustomExercise {
     );
   }
 
+  /// 從 Supabase 數據創建對象（snake_case 欄位）
+  factory CustomExercise.fromSupabase(Map<String, dynamic> json) {
+    return CustomExercise(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      userId: json['user_id'] ?? '',
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
+    );
+  }
+
   /// 轉換為 Firestore 可用的數據格式
   Map<String, dynamic> toFirestore() {
     return {

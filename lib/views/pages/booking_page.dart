@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'workout/plan_editor_page.dart';
 import 'workout/workout_execution_page.dart';
 import '../../controllers/interfaces/i_booking_controller.dart';
+import '../../controllers/interfaces/i_auth_controller.dart';
 import '../../controllers/booking_controller.dart';
+import '../../services/interfaces/i_workout_service.dart';
 import '../../services/error_handling_service.dart';
 import '../../services/service_locator.dart';
 
@@ -24,6 +25,8 @@ class BookingPage extends StatefulWidget {
 
 class _BookingPageState extends State<BookingPage> with SingleTickerProviderStateMixin {
   late final IBookingController _controller;
+  late final IWorkoutService _workoutService;
+  late final IAuthController _authController;
   final ErrorHandlingService _errorService = serviceLocator<ErrorHandlingService>();
   
   late TabController _tabController;
@@ -58,6 +61,8 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
     
     // 使用注入的控制器或創建新的控制器
     _controller = widget.controller ?? BookingController();
+    _workoutService = serviceLocator<IWorkoutService>();
+    _authController = serviceLocator<IAuthController>();
     
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_handleTabChange);
@@ -185,8 +190,9 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
       
       for (var booking in bookings) {
         final dateTime = booking['dateTime'];
-        if (dateTime != null && dateTime is Timestamp) {
-          final date = dateTime.toDate();
+        // 暂时跳过 Firestore Timestamp（预约系统尚未迁移到 Supabase）
+        if (dateTime != null && dateTime is String) {
+          final date = DateTime.parse(dateTime);
           final day = DateTime(date.year, date.month, date.day);
           
           if (bookingsByDate[day] == null) {
@@ -227,7 +233,8 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
     });
     
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
+      // 使用 AuthController 的當前用戶 UID（已經是 Supabase UUID）
+      final userId = _authController.user?.uid;
       if (userId == null) {
         setState(() {
           _isLoading = false;
@@ -235,62 +242,43 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
         return;
       }
       
-      // 獲取所有該用戶的訓練計劃（包括自主計劃和教練分配的計劃）
-      final snapshot = await FirebaseFirestore.instance
-          .collection('workoutPlans')
-          .where('traineeId', isEqualTo: userId) // 查詢指派給該用戶的計劃
-          .get();
+      print('[BOOKING PAGE] 從 Supabase 載入訓練計劃，userId: $userId');
+      
+      // 使用 Supabase Client 直接查詢所有訓練記錄（已完成和未完成的）
+      // 注意：這裡暫時直接使用 Supabase，因為 IWorkoutService 沒有提供查詢所有計畫的方法
+      final response = await Supabase.instance.client
+          .from('workout_plans')
+          .select()
+          .eq('trainee_id', userId)
+          .order('scheduled_date', ascending: false);
+      
+      print('[BOOKING PAGE] 查詢到 ${response.length} 個訓練計劃');
       
       final trainings = <DateTime, List<Map<String, dynamic>>>{};
       
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        data['dataType'] = 'plan'; // 標記數據類型為訓練計劃
+      // 處理所有訓練計劃（包括未完成和已完成的）
+      for (var data in response) {
+        if (data['scheduled_date'] == null) continue;
         
-        // 使用 scheduledDate 替代舊的 date 字段
-        if (data['scheduledDate'] is Timestamp) {
-          final timestamp = data['scheduledDate'] as Timestamp;
-          final date = timestamp.toDate();
-          final day = DateTime(date.year, date.month, date.day);
-          
-          if (trainings[day] == null) {
-            trainings[day] = [];
-          }
-          
-          trainings[day]!.add(data);
+        final date = DateTime.parse(data['scheduled_date']);
+        final day = DateTime(date.year, date.month, date.day);
+        
+        if (trainings[day] == null) {
+          trainings[day] = [];
         }
-      }
-      
-      // 再獲取當前用戶作為教練創建的訓練計劃
-      if (_isCoachMode) {
-        final coachSnapshot = await FirebaseFirestore.instance
-            .collection('workoutPlans')
-            .where('creatorId', isEqualTo: userId) // 查詢用戶作為教練創建的計劃
-            .where('planType', isEqualTo: 'trainer') // 只獲取教練創建的計劃
-            .get();
-            
-        for (var doc in coachSnapshot.docs) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          data['isCoachView'] = true; // 標記該計劃是以教練身份查看
-          data['dataType'] = 'plan'; // 標記數據類型為訓練計劃
-          
-          if (data['scheduledDate'] is Timestamp) {
-            final timestamp = data['scheduledDate'] as Timestamp;
-            final date = timestamp.toDate();
-            final day = DateTime(date.year, date.month, date.day);
-            
-            if (trainings[day] == null) {
-              trainings[day] = [];
-            }
-            
-            // 避免重複添加（如果該計劃已經在第一個查詢中加入）
-            if (!trainings[day]!.any((plan) => plan['id'] == doc.id)) {
-              trainings[day]!.add(data);
-            }
-          }
-        }
+        
+        trainings[day]!.add({
+          'id': data['id'],
+          'title': data['title'] ?? '訓練計畫',
+          'description': data['description'],
+          'scheduled_date': data['scheduled_date'],
+          'exercises': data['exercises'] ?? [],
+          'completed': data['completed'] ?? false,
+          'planType': data['plan_type'] ?? 'self',
+          'trainee_id': data['trainee_id'],
+          'creator_id': data['creator_id'],
+          'dataType': 'plan',
+        });
       }
       
       if (!mounted) return;
@@ -300,6 +288,8 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
         _updateSelectedDayData();
         _isLoading = false;
       });
+      
+      print('[BOOKING PAGE] 訓練計劃載入完成，共 ${trainings.length} 天有訓練');
     } catch (e) {
       if (!mounted) return;
       
@@ -447,6 +437,28 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
     }
   }
   
+  // 編輯訓練計劃
+  Future<void> _editTrainingPlan(String planId, DateTime scheduledDate) async {
+    if (!mounted) return;
+    
+    print('[BOOKING PAGE] 編輯訓練計劃: $planId');
+    
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlanEditorPage(
+          planId: planId,
+          selectedDate: scheduledDate,
+        ),
+      ),
+    );
+    
+    if (result == true) {
+      // 重新加載訓練計劃
+      _loadTrainingPlans();
+    }
+  }
+  
   // 刪除訓練計畫
   Future<void> _deleteTrainingPlan(String planId, String planTitle) async {
     if (!mounted) return;
@@ -474,11 +486,10 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
     if (confirmed != true || !mounted) return;
     
     try {
-      // 刪除 workoutPlans 集合中的訓練計畫
-      await FirebaseFirestore.instance
-          .collection('workoutPlans')
-          .doc(planId)
-          .delete();
+      print('[BOOKING PAGE] 刪除訓練計畫: $planId');
+      
+      // 使用 WorkoutService 刪除記錄
+      await _workoutService.deleteRecord(planId);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -806,16 +817,15 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
     final isCoachView = training['isCoachView'] as bool? ?? false;
     
     // 顯示計劃是由誰創建的信息（僅對教練計劃顯示）
-    final traineeId = training['traineeId'] as String?;
-    final creatorId = training['creatorId'] as String?;
-    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final traineeId = training['trainee_id'] as String?; // Supabase 用 snake_case
+    final creatorId = training['creator_id'] as String?;
+    final userId = _authController.user?.uid;
     
     // 判斷訓練計劃是否為過去的
     bool isPastPlan = false;
     DateTime? scheduledDate;
-    if (training['scheduledDate'] != null) {
-      final timestamp = training['scheduledDate'] as Timestamp;
-      scheduledDate = timestamp.toDate();
+    if (training['scheduled_date'] != null) {
+      scheduledDate = DateTime.parse(training['scheduled_date']);
       
       // 比較日期（只比較年月日，不比較時間）
       final now = DateTime.now();
@@ -895,6 +905,16 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
                       ),
                     ),
                   ),
+                  // 編輯按鈕（過去的訓練計劃不能編輯）
+                  if (!isPastPlan && !completed)
+                    IconButton(
+                      icon: Icon(Icons.edit, size: 20),
+                      color: Theme.of(context).colorScheme.primary,
+                      onPressed: () => _editTrainingPlan(training['id'], scheduledDate!),
+                      tooltip: '編輯訓練計畫',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
                   // 刪除按鈕（過去的訓練計劃不能刪除）
                   if (!isPastPlan)
                     IconButton(

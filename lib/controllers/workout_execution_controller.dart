@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout_record_model.dart';
 import '../models/exercise_model.dart';
 import '../services/interfaces/i_workout_service.dart';
+import '../controllers/interfaces/i_auth_controller.dart';
 import '../services/error_handling_service.dart';
 import '../services/service_locator.dart';
 import 'interfaces/i_workout_execution_controller.dart';
@@ -14,6 +13,7 @@ import 'interfaces/i_workout_execution_controller.dart';
 class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecutionController {
   // 依賴注入
   final IWorkoutService _workoutService;
+  final IAuthController _authController;
   final ErrorHandlingService _errorService;
   
   // 狀態管理
@@ -24,7 +24,6 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   
   // 數據
   String _workoutRecordId = '';
-  Map<String, dynamic>? _workoutPlan;
   String _planTitle = '';
   String _planType = '';
   List<ExerciseRecord> _exerciseRecords = [];
@@ -46,9 +45,11 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   /// 構造函數，支持依賴注入
   WorkoutExecutionController({
     IWorkoutService? workoutService,
+    IAuthController? authController,
     ErrorHandlingService? errorService,
   }) : 
     _workoutService = workoutService ?? serviceLocator<IWorkoutService>(),
+    _authController = authController ?? serviceLocator<IAuthController>(),
     _errorService = errorService ?? serviceLocator<ErrorHandlingService>();
   
   /// 正在載入數據
@@ -108,55 +109,44 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     _setLoading(true);
     
     try {
-      // 從 workoutPlans 集合獲取數據
-      final planDoc = await FirebaseFirestore.instance
-          .collection('workoutPlans')
-          .doc(workoutRecordId)
-          .get();
+      print('[WorkoutExecutionController] 從 Supabase 獲取訓練計畫: $workoutRecordId');
+      
+      // 使用 IWorkoutService 獲取訓練記錄
+      final record = await _workoutService.getRecordById(workoutRecordId);
 
       // 如果找不到，拋出錯誤
-      if (!planDoc.exists) {
+      if (record == null) {
         throw Exception('無法找到訓練計劃');
       }
 
-      final planData = planDoc.data() as Map<String, dynamic>;
+      print('[WorkoutExecutionController] 成功獲取訓練計畫: ${record.workoutPlanId}');
       
       // 設置計劃標題和類型
-      _workoutPlan = planData;
-      _planTitle = planData['title'] ?? '未命名訓練';
+      _planTitle = '訓練記錄'; // WorkoutRecord 沒有 title 欄位，暫時使用預設值
+      _planType = '一般訓練'; // WorkoutRecord 沒有 planType 欄位，暫時使用預設值
       
-      // 從 uiPlanType 或 planType 獲取訓練類型
-      _planType = planData['uiPlanType'] ?? planData['planType'] ?? '一般訓練';
-      
-      if (planData['note'] != null) {
-        _notesController.text = planData['note'];
+      if (record.notes.isNotEmpty) {
+        _notesController.text = record.notes;
       }
       
       // 處理日期信息
-      if (planData['scheduledDate'] != null && planData['scheduledDate'] is Timestamp) {
-        _processDateInfo(planData['scheduledDate'] as Timestamp);
-      } else if (planData['date'] != null && planData['date'] is Timestamp) {
-        _processDateInfo(planData['date'] as Timestamp);
-      } else {
-        // 如果沒有日期，預設為今天
-        _isToday = true;
-        _isPastDate = false;
-        _isFutureDate = false;
-      }
+      _processDateInfoFromDateTime(record.date);
       
-      // 直接從文檔創建運動記錄
-      final exercises = planData['exercises'] as List<dynamic>? ?? [];
-      _exerciseRecords = _processExercises(exercises);
+      // 設置運動記錄
+      _exerciseRecords = record.exerciseRecords;
+      
+      print('[WorkoutExecutionController] 訓練計畫載入完成，動作數量: ${_exerciseRecords.length}');
       
       _setLoading(false);
     } catch (e) {
+      print('[WorkoutExecutionController] 加載訓練計劃失敗: $e');
       _handleError('加載訓練計劃失敗', e);
     }
   }
   
-  /// 處理日期信息
-  void _processDateInfo(Timestamp timestamp) {
-    _planDate = timestamp.toDate();
+  /// 處理日期信息（從 DateTime）
+  void _processDateInfoFromDateTime(DateTime date) {
+    _planDate = date;
     
     // 對比今日日期（僅考慮年月日，不考慮時分秒）
     final today = DateTime.now();
@@ -166,141 +156,6 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     _isToday = planDateOnly.isAtSameMomentAs(todayDate);
     _isPastDate = planDateOnly.isBefore(todayDate);
     _isFutureDate = planDateOnly.isAfter(todayDate);
-  }
-  
-  /// 處理運動記錄數據
-  List<ExerciseRecord> _processExercises(List<dynamic> exercises) {
-    final exerciseRecords = <ExerciseRecord>[];
-    
-    for (final exercise in exercises) {
-      try {
-        if (exercise is Map<String, dynamic>) {
-          // 處理sets數據
-          final setsRecords = <SetRecord>[];
-          
-          // 優先檢查是否有 setTargets（每組單獨設定）
-          if (exercise['setTargets'] != null && exercise['setTargets'] is List) {
-            final setTargetsList = exercise['setTargets'] as List<dynamic>;
-            final restTime = (exercise['restTime'] as num?)?.toInt() ?? 60;
-            
-            // 檢查是否有保存的組數狀態（只處理 List 類型）
-            final savedSets = exercise['sets'] is List ? exercise['sets'] as List<dynamic>? : null;
-            
-            for (int i = 0; i < setTargetsList.length; i++) {
-              final target = setTargetsList[i] as Map<String, dynamic>;
-              final targetReps = (target['reps'] as num?)?.toInt() ?? 10;
-              final targetWeight = (target['weight'] as num?)?.toDouble() ?? 0.0;
-              
-              // 如果有保存的狀態，使用保存的 completed 值
-              bool completed = false;
-              if (savedSets != null && i < savedSets.length && savedSets[i] is Map<String, dynamic>) {
-                completed = (savedSets[i] as Map<String, dynamic>)['completed'] ?? false;
-              }
-              
-              setsRecords.add(SetRecord(
-                setNumber: i + 1,
-                reps: targetReps,
-                weight: targetWeight,
-                restTime: restTime,
-                completed: completed,
-                note: '',
-              ));
-            }
-          } else if (exercise['targetSets'] != null) {
-            // 新結構: 使用 targetSets, targetReps, targetWeight 字段
-            final targetSets = (exercise['targetSets'] as num).toInt();
-            final targetReps = (exercise['targetReps'] as num?)?.toInt() ?? 10;
-            final targetWeight = (exercise['targetWeight'] as num?)?.toDouble() ?? 0.0;
-            final restTime = (exercise['restTime'] as num?)?.toInt() ?? 60;
-            
-            // 檢查是否有保存的組數狀態（只處理 List 類型）
-            final savedSets = exercise['sets'] is List ? exercise['sets'] as List<dynamic>? : null;
-            
-            for (int i = 0; i < targetSets; i++) {
-              // 如果有保存的狀態，使用保存的 completed 值
-              bool completed = false;
-              if (savedSets != null && i < savedSets.length && savedSets[i] is Map<String, dynamic>) {
-                completed = (savedSets[i] as Map<String, dynamic>)['completed'] ?? false;
-              }
-              
-              setsRecords.add(SetRecord(
-                setNumber: i + 1,
-                reps: targetReps,
-                weight: targetWeight,
-                restTime: restTime,
-                completed: completed,
-                note: '',
-              ));
-            }
-          } else if (exercise['sets'] is List) {
-            // 舊結構: 如果已經是 List 形式的 sets
-            final setsList = exercise['sets'] as List<dynamic>;
-            
-            if (setsList.isNotEmpty && setsList.first is Map<String, dynamic>) {
-              for (final setData in setsList) {
-                if (setData is Map<String, dynamic>) {
-                  setsRecords.add(SetRecord(
-                    setNumber: setData['setNumber'] ?? 0,
-                    reps: setData['reps'] ?? 0,
-                    weight: (setData['weight'] as num?)?.toDouble() ?? 0.0,
-                    restTime: setData['restTime'] ?? 60,
-                    completed: setData['completed'] ?? false,
-                    note: setData['note'] ?? '',
-                  ));
-                }
-              }
-            }
-          } else if (exercise['sets'] is int) {
-            // 舊結構: 如果sets是整數，表示組數
-            final totalSets = exercise['sets'] as int;
-            for (int i = 0; i < totalSets; i++) {
-              setsRecords.add(SetRecord(
-                setNumber: i + 1,
-                reps: exercise['reps'] as int? ?? 10,
-                weight: (exercise['weight'] as num?)?.toDouble() ?? 0.0,
-                restTime: exercise['restTime'] as int? ?? 60,
-                completed: false,
-                note: '',
-              ));
-            }
-          } else {
-            // 默認情況，創建3組
-            for (int i = 0; i < 3; i++) {
-              setsRecords.add(SetRecord(
-                setNumber: i + 1,
-                reps: exercise['reps'] as int? ?? 10,
-                weight: (exercise['weight'] as num?)?.toDouble() ?? 0.0,
-                restTime: exercise['restTime'] as int? ?? 60,
-                completed: false,
-                note: '',
-              ));
-            }
-          }
-          
-          // 優先使用exerciseName，然後是name，最後是actionName
-          final name = exercise['exerciseName'] ?? 
-                      exercise['name'] ?? 
-                      exercise['actionName'] ?? 
-                      '未命名運動';
-          
-          // 檢查是否所有組數都已完成（優先使用計算值）
-          final exerciseCompleted = setsRecords.isNotEmpty && setsRecords.every((set) => set.completed);
-          
-          // 創建運動記錄
-          exerciseRecords.add(ExerciseRecord(
-            exerciseId: exercise['exerciseId'] ?? '',
-            exerciseName: name,
-            sets: setsRecords,
-            notes: exercise['notes'] ?? exercise['note'] ?? '',
-            completed: exerciseCompleted,  // 根據實際組數狀態計算
-          ));
-        }
-      } catch (e) {
-        _errorService.logError('處理運動記錄失敗: $e', type: 'ExerciseProcessError');
-      }
-    }
-    
-    return exerciseRecords;
   }
   
   /// 獲取訓練計劃標題
@@ -429,45 +284,44 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   /// 自動保存打勾狀態（不顯示「完成訓練」提示）
   Future<void> _autoSaveCheckboxState() async {
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) return;
+      final userId = _authController.user?.uid;
+      if (userId == null) {
+        print('[WorkoutExecutionController] 自動保存失敗：用戶未登入');
+        return;
+      }
       
       // 計算整體完成狀態
       final overallCompleted = allExercisesCompleted();
       
-      // 更新 workoutPlans 集合中的組數狀態
-      final planDoc = await FirebaseFirestore.instance
-          .collection('workoutPlans')
-          .doc(_workoutRecordId)
-          .get();
-          
-      if (planDoc.exists) {
-        await FirebaseFirestore.instance
-            .collection('workoutPlans')
-            .doc(_workoutRecordId)
-            .update({
-              'completed': overallCompleted,  // 更新整體完成狀態
-              'exercises': _exerciseRecords.map((exercise) => {
-                'exerciseId': exercise.exerciseId,
-                'exerciseName': exercise.exerciseName,
-                'completed': exercise.completed,
-                'sets': exercise.sets.map((set) => {
-                  'setNumber': set.setNumber,
-                  'reps': set.reps,
-                  'weight': set.weight,
-                  'restTime': set.restTime,
-                  'completed': set.completed,
-                  'note': set.note,
-                }).toList(),
-              }).toList(),
-              'updatedAt': FieldValue.serverTimestamp(),
-            });
+      print('[WorkoutExecutionController] 自動保存打勾狀態，workoutRecordId: $_workoutRecordId');
+      
+      // 獲取現有記錄
+      final existingRecord = await _workoutService.getRecordById(_workoutRecordId);
+      
+      if (existingRecord != null) {
+        // 更新記錄
+        final updatedRecord = WorkoutRecord(
+          id: _workoutRecordId,
+          workoutPlanId: existingRecord.workoutPlanId,
+          userId: userId,
+          date: existingRecord.date,
+          exerciseRecords: _exerciseRecords,
+          notes: _notesController.text,
+          completed: overallCompleted,
+          createdAt: existingRecord.createdAt,
+          trainingTime: existingRecord.trainingTime,
+        );
+        
+        await _workoutService.updateRecord(updatedRecord);
+        print('[WorkoutExecutionController] 自動保存成功');
+      } else {
+        print('[WorkoutExecutionController] 找不到訓練記錄: $_workoutRecordId');
       }
       
       _isDataChanged = false;
     } catch (e) {
       // 靜默失敗，不影響用戶體驗
-      print('[自動保存] 保存打勾狀態失敗: $e');
+      print('[WorkoutExecutionController] 自動保存打勾狀態失敗: $e');
     }
   }
   
@@ -771,98 +625,62 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     
     try {
       // 當前用戶ID
-      final userId = FirebaseAuth.instance.currentUser?.uid;
+      final userId = _authController.user?.uid;
       if (userId == null) {
         throw Exception('未登入');
       }
       
-      // 創建運動記錄數據
-      final recordData = {
-        'userId': userId,
-        'planId': _workoutRecordId, // 關聯到原計劃ID
-        'title': _planTitle,
-        'date': Timestamp.now(),
-        'exercises': _exerciseRecords.map((exercise) {
-          // 將每個運動轉換為JSON格式
-          final sets = exercise.sets.map((set) => {
-            'setNumber': set.setNumber,
-            'weight': set.weight,
-            'reps': set.reps,
-            'completed': set.completed,
-            'note': set.note,
-          }).toList();
-          
-          // 計算該運動的總訓練量
-          double totalVolumeForExercise = 0;
-          for (var set in exercise.sets) {
-            if (set.completed) {
-              totalVolumeForExercise += set.weight * set.reps;
-            }
-          }
-          
-          return {
-            'exerciseId': exercise.exerciseId,
-            'exerciseName': exercise.exerciseName,
-            'sets': sets,
-            'completed': exercise.completed,
-            'totalVolume': totalVolumeForExercise,
-            'restTime': exercise.sets.isNotEmpty ? exercise.sets.first.restTime : 60,
-            'note': exercise.notes,
-          };
-        }).toList(),
-        'completed': allExercisesCompleted(),
-        'duration': 0, // 暫時設為0
-        'startTime': Timestamp.now(),
-        'endTime': Timestamp.now(),
-        'note': _notesController.text,
-        'totalExercises': _exerciseRecords.length,
-        'totalSets': calculateTotalSets(),
-        'totalVolume': calculateTotalVolume(),
-        'updatedAt': Timestamp.now(),
-        'isPublic': false,
-        'feelingRating': 0, // 預設值
-        'difficultyRating': 0, // 預設值
-        'muscleGroups': _extractMuscleGroups(),
-      };
+      print('[WorkoutExecutionController] 保存訓練記錄: $_workoutRecordId');
       
-      // 統一保存到 workoutPlans 集合（不再使用 workoutRecords）
-      final planDoc = await FirebaseFirestore.instance
-          .collection('workoutPlans')
-          .doc(_workoutRecordId)
-          .get();
-          
-      if (planDoc.exists) {
-        // 計算整體完成狀態
-        final overallCompleted = allExercisesCompleted();
+      // 計算整體完成狀態
+      final overallCompleted = allExercisesCompleted();
+      
+      // 獲取現有記錄
+      final existingRecord = await _workoutService.getRecordById(_workoutRecordId);
+      
+      if (existingRecord != null) {
+        // 更新現有記錄
+        final updatedRecord = WorkoutRecord(
+          id: _workoutRecordId,
+          workoutPlanId: existingRecord.workoutPlanId,
+          userId: userId,
+          date: existingRecord.date,
+          exerciseRecords: _exerciseRecords,
+          notes: _notesController.text,
+          completed: overallCompleted,
+          createdAt: existingRecord.createdAt,
+          trainingTime: existingRecord.trainingTime ?? (_hasScheduledTime && _trainingHour != null 
+              ? DateTime(existingRecord.date.year, existingRecord.date.month, existingRecord.date.day, _trainingHour!)
+              : null),
+        );
         
-        // 更新訓練計畫，包含所有訓練記錄數據
-        await FirebaseFirestore.instance
-            .collection('workoutPlans')
-            .doc(_workoutRecordId)
-            .update({
-              'completed': overallCompleted,  // 根據實際狀態設置
-              'completedDate': overallCompleted ? Timestamp.now() : null,  // 只有真正完成時才設置完成日期
-              'exercises': _exerciseRecords.map((exercise) => {
-                'exerciseId': exercise.exerciseId,
-                'exerciseName': exercise.exerciseName,
-                'completed': exercise.completed,
-                // 保存詳細的組數狀態
-                'sets': exercise.sets.map((set) => {
-                  'setNumber': set.setNumber,
-                  'reps': set.reps,
-                  'weight': set.weight,
-                  'restTime': set.restTime,
-                  'completed': set.completed,
-                  'note': set.note,
-                }).toList(),
-              }).toList(),
-              // 保存訓練記錄的統計數據
-              'totalExercises': _exerciseRecords.length,
-              'totalSets': calculateTotalSets(),
-              'totalVolume': calculateTotalVolume(),
-              'note': _notesController.text,  // ✅ 添加：保存訓練備註
-              'updatedAt': Timestamp.now(),
-            });
+        final success = await _workoutService.updateRecord(updatedRecord);
+        
+        if (!success) {
+          throw Exception('更新訓練記錄失敗');
+        }
+        
+        print('[WorkoutExecutionController] 訓練記錄更新成功');
+      } else {
+        // 創建新記錄（理論上不應該走到這裡，因為 loadWorkoutPlan 應該已經確保記錄存在）
+        print('[WorkoutExecutionController] 警告：找不到現有記錄，創建新記錄');
+        
+        final newRecord = WorkoutRecord(
+          id: _workoutRecordId, // 使用傳入的 ID
+          workoutPlanId: _workoutRecordId,
+          userId: userId,
+          date: _planDate ?? DateTime.now(),
+          exerciseRecords: _exerciseRecords,
+          notes: _notesController.text,
+          completed: overallCompleted,
+          createdAt: DateTime.now(),
+          trainingTime: _hasScheduledTime && _trainingHour != null 
+              ? DateTime((_planDate ?? DateTime.now()).year, (_planDate ?? DateTime.now()).month, (_planDate ?? DateTime.now()).day, _trainingHour!)
+              : null,
+        );
+        
+        await _workoutService.createRecord(newRecord);
+        print('[WorkoutExecutionController] 新訓練記錄創建成功');
       }
       
       // 標記數據已保存
@@ -876,7 +694,9 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
       }
       
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('[WorkoutExecutionController] 保存訓練記錄失敗: $e');
+      print('[WorkoutExecutionController] Stack trace: $stackTrace');
       _handleError('保存訓練記錄失敗', e);
       
       if (context != null) {
@@ -887,16 +707,6 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
       
       return false;
     }
-  }
-  
-  /// 提取訓練涉及的肌肉群
-  List<String> _extractMuscleGroups() {
-    final muscleGroups = <String>{};
-    
-    // 這裡可以根據實際情況從運動記錄中提取肌肉群
-    // 暫時返回空列表
-    
-    return muscleGroups.toList();
   }
   
   /// 計算總組數

@@ -10,10 +10,10 @@
 
 開始開發前，請先閱讀以下文檔：
 
-1. **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - 專案架構和技術棧
-2. **[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)** - 當前開發進度
-3. **[docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md)** - Firestore 資料庫設計
-4. **[docs/UI_UX_GUIDELINES.md](docs/UI_UX_GUIDELINES.md)** - UI/UX 設計規範（⭐ 新增）
+1. **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - 專案架構和技術棧（⭐ 必讀）
+2. **[docs/DATABASE_SUPABASE.md](docs/DATABASE_SUPABASE.md)** - Supabase PostgreSQL 資料庫設計（⭐ 必讀）
+3. **[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)** - 當前開發進度和下一步任務
+4. **[docs/UI_UX_GUIDELINES.md](docs/UI_UX_GUIDELINES.md)** - UI/UX 設計規範
 
 ---
 
@@ -25,25 +25,30 @@
 - ❌ 不要刪除或破壞現有功能
 
 ### 2. 型別安全 ⭐⭐⭐
-- ✅ **必須**：所有 Firestore 操作透過 Model 類別的 `.fromMap()` 和 `.toMap()` 方法
+- ✅ **必須**：所有資料庫操作透過 Model 類別的 `.fromSupabase()` 和 `.toMap()` 方法
 - ❌ **禁止**：直接操作 `Map<String, dynamic>`
 
 ```dart
-// ✅ 正確
-final user = UserModel.fromMap(doc.data()!);
-await firestore.collection('users').doc(uid).set(user.toMap());
+// ✅ 正確（Supabase）
+final record = WorkoutRecord.fromSupabase(data);
+await workoutService.createRecord(record);
 
 // ❌ 錯誤
-await firestore.collection('users').doc(uid).set({'name': 'John'});
+await supabase.from('workout_plans').insert({'title': 'Test'});
 ```
 
-### 3. 依賴注入 ⭐⭐
-- ✅ 所有服務透過 `serviceLocator` 獲取
+### 3. 依賴注入 ⭐⭐⭐
+- ✅ **必須**：所有服務透過 `serviceLocator` 獲取
+- ✅ **必須**：必須透過 Interface 使用服務（依賴反轉原則）
 - ✅ 控制器透過建構函式注入依賴
 
 ```dart
-// ✅ 正確
+// ✅ 正確：透過 Service Locator 和 Interface
 final workoutController = serviceLocator<IWorkoutController>();
+final workoutService = serviceLocator<IWorkoutService>();
+
+// ❌ 錯誤：直接使用實作類別
+final service = WorkoutServiceSupabase();  // 違反依賴反轉
 ```
 
 ### 4. 錯誤處理 ⭐⭐
@@ -69,11 +74,6 @@ try {
 - ✅ **必須**：新增文檔前先確認是否可以更新現有文檔
 - ✅ **必須**：臨時性、實驗性文檔在任務完成後應清理
 
-### 6. 文檔管理規範 ⭐⭐
-- ❌ **禁止**：非必要情況下產生新的 Markdown 文檔
-- ✅ **必須**：新增文檔前先確認是否可以更新現有文檔
-- ✅ **必須**：臨時性、實驗性文檔在任務完成後應清理
-
 ### 7. UI/UX 設計規範 ⭐⭐
 - ✅ **必須**：遵循 `docs/UI_UX_GUIDELINES.md` 中的設計系統
 - ✅ **必須**：所有間距使用 8 點網格系統（8, 16, 24, 32...）
@@ -82,16 +82,21 @@ try {
 - ✅ **必須**：使用語意化色彩（Primary, Surface, OnSurface 等）
 - ✅ **建議**：關鍵操作加入觸覺回饋（HapticFeedback）
 
-
 ---
 
 ## 🗄️ 資料庫重要約定
 
-### 1. workoutPlans 集合（統一）
+### ⚠️ 已完成 Supabase 遷移（2024-12-25）
+
+**重要**：專案已從 Firestore 完全遷移至 Supabase PostgreSQL
+
+**完整資料庫文檔**：請參考 **[docs/DATABASE_SUPABASE.md](docs/DATABASE_SUPABASE.md)**
+
+### 1. workout_plans 表格（統一）
 
 **架構**：
 ```
-workoutPlans（統一集合）
+workout_plans（PostgreSQL 表格）
 ├── completed: false  → 未完成的訓練計劃
 └── completed: true   → 已完成的訓練記錄
 ```
@@ -99,39 +104,57 @@ workoutPlans（統一集合）
 **必須包含的欄位**：
 ```dart
 {
-  'userId': userId,      // 向後相容
-  'traineeId': userId,   // 受訓者 ID
-  'creatorId': userId,   // 創建者 ID
-  'completed': bool,     // 完成狀態
+  'id': TEXT,              // Firestore 相容 ID（20 字符）
+  'user_id': UUID,         // 向後相容
+  'trainee_id': UUID,      // 受訓者 ID
+  'creator_id': UUID,      // 創建者 ID
+  'completed': bool,       // 完成狀態
+  'scheduled_date': TIMESTAMPTZ,  // 預定日期
+  'exercises': JSONB,      // 訓練動作（JSON）
   ...
 }
 ```
 
 ### 2. 查詢訓練計劃時
 
-**必須同時查詢兩個欄位**：
+**使用 Supabase Client**：
 ```dart
-// 查詢作為受訓者的計劃
-.where('traineeId', isEqualTo: userId)
+// 查詢作為受訓者的計劃（注意：Supabase 使用 snake_case）
+await Supabase.instance.client
+  .from('workout_plans')
+  .select()
+  .eq('trainee_id', userId);
 
 // 如果是教練，也查詢作為創建者的計劃
 if (isCoach) {
-  .where('creatorId', isEqualTo: userId)
+  .eq('creator_id', userId)
+  .eq('plan_type', 'trainer');
 }
 ```
 
-### 3. 避免複雜查詢
+### 3. 使用 WorkoutService 介面
 
 ```dart
-// ❌ 需要 Firestore 複合索引
-.where('traineeId', isEqualTo: userId)
-.orderBy('updatedAt', descending: true)
+// ✅ 正確：透過服務層和 Interface
+final workoutService = serviceLocator<IWorkoutService>();
+await workoutService.createRecord(record);
 
-// ✅ 改用客戶端排序
-.where('traineeId', isEqualTo: userId)
-.get()
-// 然後在客戶端排序
-templates.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+// ❌ 避免：View 層直接操作 Supabase（違反架構原則）
+await Supabase.instance.client.from('workout_plans').insert(...);
+```
+
+### 4. Snake_case 轉換
+
+Supabase 使用 `snake_case`，Dart 使用 `camelCase`：
+
+```dart
+factory UserModel.fromSupabase(Map<String, dynamic> json) {
+  return UserModel(
+    uid: json['id'] as String,  // id → uid
+    displayName: json['display_name'] as String?,  // snake_case → camelCase
+    isCoach: json['is_coach'] as bool? ?? false,
+  );
+}
 ```
 
 ---
@@ -142,16 +165,24 @@ templates.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
 ```
 1. 設計 Model (lib/models/)
+   ├── 實作 fromSupabase() 方法
+   └── 實作 toMap() 方法
    ↓
 2. 創建 Service 介面 (lib/services/interfaces/)
+   └── 定義 CRUD 方法
    ↓
 3. 實作 Service (lib/services/)
+   └── 實作 Supabase 操作
    ↓
 4. 註冊到 Service Locator (service_locator.dart)
+   └── 註冊為 LazySingleton
    ↓
 5. 創建 Controller (lib/controllers/)
+   ├── 繼承 ChangeNotifier
+   └── 透過 Interface 注入依賴
    ↓
 6. 建立 UI (lib/views/pages/)
+   └── 透過 Interface 使用服務
    ↓
 7. 測試並驗證
 ```
@@ -186,10 +217,10 @@ print(serviceLocator.isRegistered<IWorkoutService>());
 ### 型別轉換錯誤
 ```dart
 // ✅ 使用 Model
-final user = UserModel.fromMap(doc.data()!);
+final user = UserModel.fromSupabase(data);
 
 // ❌ 直接轉換
-final user = doc.data() as UserModel;  // 會出錯
+final user = data as UserModel;  // 會出錯
 ```
 
 ### 狀態不更新
@@ -222,92 +253,54 @@ TextField(
 
 ## 🎯 當前開發重點
 
-**目標**：🎨 UI/UX 全面重設計（2024-12-25 開始）
+**目標**：🔧 技術債務清理與架構優化（2024-12-25 開始）
 
-**當前階段**：✅ **配色系統最終定案**（準備進入 Week 3）
+**當前階段**：⏳ **準備清理 Firebase 依賴**
 
-### 📋 4 週執行計劃
+### 📋 下一步任務
 
-| 週次 | 階段 | 狀態 | 交付物 |
-|------|------|------|--------|
-| ~~Week 1~~ | ⚙️ 基礎建設 | ✅ **已完成** | 可切換深淺模式的主題系統 |
-| ~~Week 2~~ | 🎯 核心重構 | ✅ **已完成** | 全新的訓練記錄體驗 + 配色標準化 |
-| **Week 3** | 🗺️ 導航與框架 | ⏳ **準備開始** | 完整的 App 框架 |
-| Week 4 | ✨ 細節打磨 | ⏳ 待開始 | 市場級品質 UI/UX |
+| 任務 | 狀態 | 優先級 | 說明 |
+|------|------|--------|------|
+| 移除 Firebase 依賴 | ⏳ 待開始 | P0 | 移除 Firebase Auth、Firestore 舊代碼 |
+| 檢查 View 層架構 | ⏳ 待開始 | P0 | 確保所有 View 都使用 Interface |
+| 清理舊文件 | ⏳ 待開始 | P1 | 刪除未使用的 Firestore Service |
+| 更新文檔 | ✅ 已完成 | P1 | 統一資料庫文檔到單一文件 |
 
-**✅ Week 2 已完成**：
-- ✅ 卡片式訓練記錄 UI（ExerciseCard + SetInputRow）
-- ✅ JetBrains Mono 等寬字體整合
-- ✅ 配色系統最終定案（設計團隊簽署）
-- ✅ 全 App 配色標準化（8 個核心頁面）
-- ✅ 移除所有硬編碼顏色（~70 處修正）
-
-**🎉 重大里程碑**：
-從「通用 App」成功轉型為「品牌 App」，完成「打熬」專屬配色系統建立。
-
-**設計文檔**：
-- `docs/UI_UX_GUIDELINES.md` - 完整 UI/UX 規範
-- `docs/ui_prototype.html` - 互動原型
+詳見：[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)
 
 ---
 
 **最近完成**（2024-12-25）：
-- ✅ **資料庫遷移實作啟動**（2024-12-25 晚上）⭐⭐⭐
-  - 決定採用完全遷移到 Supabase PostgreSQL 方案
-  - 完整 PostgreSQL Schema 設計（8 個表格 + RLS）
-  - Python 遷移腳本編寫（完整 ETL 流程）
-  - Flutter 整合方案設計（supabase-flutter + 離線優先）
-  - Supabase 專案設置（已取得 Secret Key）
-  - 遷移路線圖（5 週計劃）
+- ✅ **Supabase 遷移 100% 完成**（2024-12-25）⭐⭐⭐
+  - 完成資料庫遷移：Firestore → Supabase PostgreSQL
+  - 成功遷移：exercises (794)、equipments (21)、jointTypes (12)
+  - 新用戶認證：Firebase Auth → Supabase Auth
+  - 重構 8 個核心頁面：home、training、booking、plan_editor 等
+  - 實現「今日訓練」功能
+  - 實現時間權限編輯（過去/現在/未來）
   - 成本優勢：$25/月固定（vs Firestore $11-50/月增長）
-- ✅ **配色系統最終定案**（2024-12-25 晚上）⭐⭐⭐
-  - 設計團隊正式簽署配色決策
-  - 實施 Sky-400 電光藍（深色主色）
-  - 實施 Slate-50 極致乾淨背景（淺色）
-  - 全 App 配色標準化（8 個核心頁面，~70 處修正）
-  - 從「通用 App」到「品牌 App」的轉型完成
-- ✅ **Week 2 核心組件**（2024-12-25）
-  - ExerciseCard + SetInputRow 卡片式 UI
-  - JetBrains Mono 等寬字體整合
-  - 智能數字格式化（20 而不是 20.000）
-  - WorkoutExecutionPage 完整重構
-- ✅ **Week 1 主題系統**（2024-12-25）
+- ✅ **UI/UX 重設計完成**（Week 1-4 完成）
+  - Kinetic 設計系統建立
+  - Material 3 完整實作
   - Titanium Blue 配色方案
-  - Light/Dark/System 三種模式
-  - 完整的 Material 3 實作
-- ✅ **UI/UX 設計系統建立**（2024-12-25）
-  - 創建完整設計規範文檔（20,000+ 字）
-  - 定義 Kinetic 設計系統
-  - HTML 互動原型與 Flutter 實作指南
-  - 4 週執行路徑圖
-- ✅ **Google 登入 & 新用戶默認模板**（2024-12-24 深夜）
-  - Google 登入修復（真實設備測試成功）
-  - 新用戶自動獲得 5 天專業訓練模板
-  - Release APK 構建與安裝（55.8 MB）
-- ✅ **訓練模板系統完善**（2024-12-24 晚上）
-  - 簡化模板編輯器、解決緩存刷新問題
-- ✅ **時間權限控制**（2024-12-24 晚上）
-  - 過去/現在/未來訓練的權限控制
+  - 深色/淺色/系統模式切換
+- ✅ **文檔整理完成**（2024-12-25）
+  - 創建統一的 `DATABASE_SUPABASE.md`
+  - 整合 `PROJECT_SUMMARY.md` 到 `PROJECT_OVERVIEW.md`
+  - 歸檔舊的 Firestore 相關文檔
 
 **基礎功能 v1.0**：✅ 已完成
-- ✅ 訓練模板系統（階段 8）
-- ✅ 時間權限控制（階段 9）
-- ✅ Google 登入（階段 10）
-
-**已順延的任務**：
-以下任務待 UI/UX 重設計完成後處理（詳見 `docs/DEVELOPMENT_STATUS.md`）
-- FloatingActionButton 擋住內容 → Week 3 解決
-- 手機返回鍵導航問題 → Week 3 解決
-- 通知欄位置問題 → Week 4 解決
-- 力量進步頁面優化 → UI 重構後評估
-- 自訂動作錯誤處理 → UI 重構後優化
+- ✅ 訓練模板系統
+- ✅ 時間權限控制
+- ✅ Google 登入（Supabase Auth）
+- ✅ 統計分析系統（~5,180 行）
+- ✅ 794 個專業動作資料庫
 
 **參考文檔**：
-- `docs/DEVELOPMENT_STATUS.md` - 了解整體進度和已知問題
-- `docs/DATABASE_DESIGN.md` - 查看資料庫結構
-- `docs/UI_UX_GUIDELINES.md` - UI/UX 設計規範（⭐ 新增）
+- `docs/DATABASE_SUPABASE.md` - 查看 Supabase 資料庫結構
+- `docs/DEVELOPMENT_STATUS.md` - 了解整體進度和下一步任務
+- `docs/UI_UX_GUIDELINES.md` - UI/UX 設計規範
 - `docs/BUILD_RELEASE.md` - 構建和發布指南
-- `docs/GOOGLE_SIGNIN_COMPLETE_SETUP.md` - Google 登入配置
 
 ---
 
@@ -315,12 +308,9 @@ TextField(
 
 ### 核心文檔
 - `docs/README.md` - 文檔導航（必讀）
-- `docs/PROJECT_OVERVIEW.md` - 專案架構總覽
-- `docs/PROJECT_SUMMARY.md` - 專案總結和快速開始
+- `docs/PROJECT_OVERVIEW.md` - 專案架構總覽（⭐ 必讀）
+- `docs/DATABASE_SUPABASE.md` - Supabase PostgreSQL 資料庫設計（⭐ 必讀）
 - `docs/DEVELOPMENT_STATUS.md` - 開發狀態和已知問題
-- `docs/DATABASE_DESIGN.md` - 資料庫設計（794 個動作）
-- `docs/database_migration_analysis.md` - 資料庫遷移評估
-- `docs/database_migration_implementation.md` - 資料庫遷移實作指南（⭐ 新增）
 - `docs/UI_UX_GUIDELINES.md` - UI/UX 設計規範
 - `docs/STATISTICS_IMPLEMENTATION.md` - 統計功能實作
 
@@ -328,19 +318,9 @@ TextField(
 - `docs/BUILD_RELEASE.md` - Release APK 構建指南
 - `docs/GOOGLE_SIGNIN_COMPLETE_SETUP.md` - Google Sign-In 配置
 
-### 任務文檔
-- `docs/cursor_tasks/` - 雙邊平台任務（暫停）
-
 ### 腳本文檔
 - `scripts/README.md` - 所有腳本的使用說明
 - `scripts/generate_professional_training_data.py` - 生成訓練數據
-
-### 分析文檔
-- `analysis/README.md` - 專案分析文檔
-- `analysis/firestore_analysis.md` - Firestore 資料庫分析
-
-### 其他重要文檔
-- `README.md` - 專案首頁
 
 ---
 
@@ -356,7 +336,7 @@ TextField(
 
 ### 實作新功能的流程
 1. 閱讀 `PROJECT_OVERVIEW.md` 了解架構
-2. 閱讀 `DATABASE_DESIGN.md` 設計數據結構
+2. 閱讀 `DATABASE_SUPABASE.md` 設計數據結構
 3. 創建 TODO List
 4. 按照標準流程開發（Model → Service → Controller → UI）
 5. 測試並優化
@@ -366,9 +346,11 @@ TextField(
 - ✅ 使用持久的 `TextEditingController`
 - ✅ 異步操作完成後再關閉 Dialog
 - ✅ 保存數據時包含所有必要欄位
-- ✅ 查詢時同時查 `traineeId` 和 `creatorId`
-- ✅ 使用 `update()` 而不是 `add()` 更新文檔
+- ✅ 查詢時同時查 `trainee_id` 和 `creator_id`（Supabase 用 snake_case）
+- ✅ 使用 `WorkoutService.updateRecord()` 更新記錄
 - ✅ 動態計算完成狀態
+- ✅ 所有 Model 都有 `.fromSupabase()` 方法處理 snake_case 轉換
+- ✅ View 層必須透過 Interface 使用服務，不直接操作 Supabase
 
 ---
 

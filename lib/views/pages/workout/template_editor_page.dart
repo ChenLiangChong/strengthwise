@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/workout_template_model.dart';
 import '../../../models/workout_exercise_model.dart' as exercise_models;
 import '../../../models/exercise_model.dart';
+import '../../../services/interfaces/i_workout_service.dart';
+import '../../../services/interfaces/i_auth_service.dart';
+import '../../../services/service_locator.dart';
 import '../exercises_page.dart';
 
 /// 訓練模板編輯頁面
@@ -29,6 +30,10 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
   bool _isLoading = false;
   DateTime _trainingTime = DateTime.now().copyWith(hour: 18, minute: 0);
 
+  // Service 層
+  late final IWorkoutService _workoutService;
+  late final IAuthService _authService;
+
   // 可用的訓練類型
   final List<String> _planTypes = [
     '力量訓練',
@@ -42,6 +47,8 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
   @override
   void initState() {
     super.initState();
+    _workoutService = serviceLocator<IWorkoutService>();
+    _authService = serviceLocator<IAuthService>();
     if (widget.template != null) {
       _loadTemplateData();
     }
@@ -87,41 +94,44 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
     });
 
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) {
-        throw Exception('未登入');
-      }
-
       print('[模板編輯] 準備保存模板，動作數量: ${_exercises.length}');
-      
-      final templateData = {
-        'userId': userId,
-        'title': _titleController.text.trim(),
-        'description': _descriptionController.text.trim(),
-        'planType': _selectedPlanType,
-        'exercises': _exercises.map((e) => e.toJson()).toList(),
-        'trainingTime': Timestamp.fromDate(_trainingTime),
-        'updatedAt': Timestamp.now(),
-      };
 
-      print('[模板編輯] 模板數據: ${templateData.keys}');
+      final currentUser = _authService.getCurrentUser();
+      if (currentUser == null) {
+        throw Exception('用戶未登入');
+      }
 
       if (widget.template != null) {
         // 更新現有模板
         print('[模板編輯] 更新模板 ID: ${widget.template!.id}');
-        await FirebaseFirestore.instance
-            .collection('workoutTemplates')
-            .doc(widget.template!.id)
-            .update(templateData);
+        final updatedTemplate = widget.template!.copyWith(
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          planType: _selectedPlanType!,
+          exercises: _exercises,
+          trainingTime: _trainingTime,
+          updatedAt: DateTime.now(),
+        );
+        
+        await _workoutService.updateTemplate(updatedTemplate);
         print('[模板編輯] 更新成功');
       } else {
         // 創建新模板
-        templateData['createdAt'] = Timestamp.now();
         print('[模板編輯] 創建新模板');
-        final docRef = await FirebaseFirestore.instance
-            .collection('workoutTemplates')
-            .add(templateData);
-        print('[模板編輯] 創建成功，ID: ${docRef.id}');
+        final newTemplate = WorkoutTemplate(
+          id: '', // Service 會生成
+          userId: currentUser['uid'] ?? '',
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          planType: _selectedPlanType!,
+          exercises: _exercises,
+          trainingTime: _trainingTime,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        
+        final savedTemplate = await _workoutService.createTemplate(newTemplate);
+        print('[模板編輯] 創建成功，ID: ${savedTemplate.id}');
       }
 
       if (mounted) {

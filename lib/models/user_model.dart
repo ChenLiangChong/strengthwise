@@ -64,6 +64,29 @@ class UserModel {
     );
   }
 
+  /// 從 Supabase 數據創建用戶（snake_case 欄位）
+  factory UserModel.fromSupabase(Map<String, dynamic> json) {
+    return UserModel(
+      uid: json['id'] ?? '',
+      email: json['email'] ?? '',
+      displayName: json['display_name'],
+      photoURL: json['photo_url'],
+      nickname: json['nickname'],
+      gender: json['gender'],
+      height: json['height']?.toDouble(),
+      weight: json['weight']?.toDouble(),
+      age: json['age'],
+      birthDate: _parseTimestamp(json['birth_date']),
+      isCoach: json['is_coach'] ?? false,
+      isStudent: json['is_student'] ?? true,
+      bio: json['bio'],
+      unitSystem: json['unit_system'],
+      profileCreatedAt: _parseTimestamp(json['profile_created_at']),
+      profileUpdatedAt: _parseTimestamp(json['profile_updated_at']),
+      lastLogin: _parseTimestamp(json['last_login']),
+    );
+  }
+
   /// 解析時間戳記（支援多種格式）
   static DateTime? _parseTimestamp(dynamic timestamp) {
     if (timestamp == null) return null;

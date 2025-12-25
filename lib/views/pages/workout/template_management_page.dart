@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/workout_template_model.dart';
+import '../../../models/workout_record_model.dart';
 import '../../../controllers/interfaces/i_workout_controller.dart';
+import '../../../controllers/interfaces/i_auth_controller.dart';
+import '../../../services/interfaces/i_workout_service.dart';
 import '../../../services/error_handling_service.dart';
 import '../../../services/service_locator.dart';
 import 'template_editor_page.dart';
@@ -16,6 +17,8 @@ class TemplateManagementPage extends StatefulWidget {
 
 class _TemplateManagementPageState extends State<TemplateManagementPage> {
   late final IWorkoutController _workoutController;
+  late final IWorkoutService _workoutService;
+  late final IAuthController _authController;
   late final ErrorHandlingService _errorService;
 
   List<WorkoutTemplate> _templates = [];
@@ -27,6 +30,8 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
 
     // 從服務定位器獲取依賴
     _workoutController = serviceLocator<IWorkoutController>();
+    _workoutService = serviceLocator<IWorkoutService>();
+    _authController = serviceLocator<IAuthController>();
     _errorService = serviceLocator<ErrorHandlingService>();
 
     _loadTemplates();
@@ -190,40 +195,31 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
       if (selectedDate == null) return;
 
       // 獲取當前用戶 ID
-      final userId = FirebaseAuth.instance.currentUser?.uid;
+      final userId = _authController.user?.uid;
       if (userId == null) {
         throw Exception('未登入');
       }
 
-      // 計算統計資料
-      final totalExercises = template.exercises.length;
-      final totalSets = template.exercises.fold<int>(0, (sum, exercise) => sum + exercise.sets);
+      print('[TemplateManagement] 從模板創建訓練: ${template.title}，日期: $selectedDate');
       
-      // 直接在 workoutPlans 創建訓練計畫
-      final planData = {
-        'userId': userId,
-        'traineeId': userId,
-        'creatorId': userId,
-        'title': template.title,
-        'description': template.description,
-        'planType': 'self', // 系統標記類型（自主訓練）
-        'uiPlanType': template.planType, // 界面顯示類型（從模板讀取）
-        'scheduledDate': Timestamp.fromDate(selectedDate),
-        'completedDate': null, // 初始為 null，完成時才設置
-        'trainingTime': template.trainingTime != null 
-            ? Timestamp.fromDate(template.trainingTime!) 
-            : null, // 從模板讀取預設訓練時間
-        'exercises': template.exercises.map((e) => e.toJson()).toList(),
-        'completed': false,
-        'totalExercises': totalExercises, // 總運動數
-        'totalSets': totalSets, // 總組數
-        'totalVolume': 0.0, // 初始訓練量為 0，執行後才會有值
-        'note': '', // 初始備註為空
-        'createdAt': Timestamp.now(),
-        'updatedAt': Timestamp.now(),
-      };
-
-      await FirebaseFirestore.instance.collection('workoutPlans').add(planData);
+      // 使用 WorkoutService 創建記錄（但需要手動設置日期）
+      // 先從模板創建，然後更新日期
+      final record = await _workoutService.createRecordFromTemplate(template.id);
+      
+      // 更新日期
+      final updatedRecord = WorkoutRecord(
+        id: record.id,
+        workoutPlanId: record.workoutPlanId,
+        userId: userId,
+        date: selectedDate,
+        exerciseRecords: record.exerciseRecords,
+        notes: record.notes,
+        completed: false,
+        createdAt: record.createdAt,
+        trainingTime: record.trainingTime,
+      );
+      
+      await _workoutService.updateRecord(updatedRecord);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -233,6 +229,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
         );
       }
     } catch (e) {
+      print('[TemplateManagement] 從模板創建訓練失敗: $e');
       if (mounted) {
         _errorService.handleError(context, e);
       }

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../controllers/interfaces/i_auth_controller.dart';
-import '../../controllers/interfaces/i_workout_controller.dart';
+import '../../services/interfaces/i_workout_service.dart';
 import 'package:intl/intl.dart';
-import '../../services/error_handling_service.dart';
 import '../../services/service_locator.dart';
 import 'workout/workout_execution_page.dart';
 import 'statistics_page_v2.dart';
@@ -19,9 +17,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late final IWorkoutController _workoutController;
-  late final ErrorHandlingService _errorService;
   late final IAuthController _authController;
+  late final IWorkoutService _workoutService;
 
   List<Map<String, dynamic>> _recentWorkouts = [];
   List<Map<String, dynamic>> _todayPlans = [];
@@ -31,9 +28,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _workoutController = serviceLocator<IWorkoutController>();
-    _errorService = serviceLocator<ErrorHandlingService>();
     _authController = serviceLocator<IAuthController>();
+    _workoutService = serviceLocator<IWorkoutService>();
     _loadRecentWorkouts();
     _loadTodayPlans();
   }
@@ -46,8 +42,10 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
+      // 使用 AuthController 獲取當前用戶
+      final userId = _authController.user?.uid;
       if (userId == null) {
+        print('[HomePage] 用戶未登入');
         setState(() {
           _isLoading = false;
         });
@@ -56,83 +54,31 @@ class _HomePageState extends State<HomePage> {
 
       print('[HomePage] 查詢最近訓練，userId: $userId');
 
-      // 從 workoutPlans 集合查詢已完成的訓練
-      final List<Map<String, dynamic>> allCompletedPlans = [];
+      // 使用 WorkoutService 查詢已完成的訓練記錄
+      final records = await _workoutService.getUserRecords();
 
-      // 查詢作為受訓者完成的計畫
-      final traineeCompletedSnapshot = await FirebaseFirestore.instance
-          .collection('workoutPlans')
-          .where('traineeId', isEqualTo: userId)
-          .where('completed', isEqualTo: true)
-          .get();
+      print('[HomePage] 查詢到 ${records.length} 個已完成的訓練');
 
-      print(
-          '[HomePage] 查詢到 ${traineeCompletedSnapshot.docs.length} 個作為受訓者完成的訓練');
-
-      for (var doc in traineeCompletedSnapshot.docs) {
-        final data = {...doc.data(), 'id': doc.id};
-        allCompletedPlans.add(data);
-      }
-
-      // 如果是教練，也查詢作為創建者完成的計畫
-      if (_authController.user?.isCoach == true) {
-        final creatorCompletedSnapshot = await FirebaseFirestore.instance
-            .collection('workoutPlans')
-            .where('creatorId', isEqualTo: userId)
-            .where('completed', isEqualTo: true)
-            .get();
-
-        print(
-            '[HomePage] 查詢到 ${creatorCompletedSnapshot.docs.length} 個作為創建者完成的訓練');
-
-        for (var doc in creatorCompletedSnapshot.docs) {
-          final data = {...doc.data(), 'id': doc.id};
-          // 避免重複添加
-          if (!allCompletedPlans.any((plan) => plan['id'] == data['id'])) {
-            allCompletedPlans.add(data);
-          }
-        }
-      }
+      // 轉換為 Map 格式（為了相容現有 UI）
+      final recentWorkouts = records.take(5).map((record) {
+        return {
+          'id': record.id,
+          'title': '訓練記錄', // 可以從 exercises 提取
+          'completedDate': record.date,
+          'exercises': record.exerciseRecords
+              .map((e) => {
+                    'exerciseName': e.exerciseName,
+                    'sets': e.sets.length,
+                  })
+              .toList(),
+          '_sortDate': record.date,
+        };
+      }).toList();
 
       if (!mounted) return;
 
-      print('[HomePage] 查詢到總共 ${allCompletedPlans.length} 個已完成的訓練');
-
-      // 直接使用 Map 格式
-      final records = <Map<String, dynamic>>[];
-      for (var data in allCompletedPlans) {
-        try {
-          // data 已經包含 id，不需要再處理
-
-          // 添加日期用於排序
-          DateTime? date;
-          if (data['completedDate'] != null) {
-            date = (data['completedDate'] as Timestamp).toDate();
-          } else if (data['scheduledDate'] != null) {
-            date = (data['scheduledDate'] as Timestamp).toDate();
-          } else {
-            date = DateTime.now();
-          }
-          data['_sortDate'] = date; // 用於排序的內部欄位
-
-          records.add(data);
-          print('[HomePage] ✓ 加入訓練記錄: ${data['title']}, 日期: $date');
-        } catch (e) {
-          print('[HomePage] 解析訓練記錄失敗: $e');
-        }
-      }
-
-      // 按日期排序（最新的在前）
-      records.sort((a, b) {
-        final dateA = a['_sortDate'] as DateTime;
-        final dateB = b['_sortDate'] as DateTime;
-        return dateB.compareTo(dateA);
-      });
-
-      print('[HomePage] 最近訓練數量: ${records.length}');
-
       setState(() {
-        _recentWorkouts = records.take(5).toList();
+        _recentWorkouts = recentWorkouts;
         _isLoading = false;
       });
     } catch (e) {
@@ -155,58 +101,54 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
+      // 使用 AuthController 的當前用戶 UID（已經是 Supabase UUID）
+      final userId = _authController.user?.uid;
       if (userId == null) {
-        print('[HomePage] userId 為空，無法查詢');
+        print('[HomePage] 用戶未登入');
         setState(() {
+          _todayPlans = [];
           _isLoadingPlans = false;
         });
         return;
       }
 
-      // 獲取今天的開始和結束時間
+      print('[HomePage] 查詢今日訓練計畫，userId: $userId');
+
+      // 計算今天的日期範圍（00:00 到 23:59）
       final now = DateTime.now();
-      final todayStart = DateTime(now.year, now.month, now.day);
+      final today = DateTime(now.year, now.month, now.day);
 
-      print('[HomePage] 查詢今日訓練計畫，userId: $userId, 日期: $todayStart');
+      // 使用 Supabase Client 查詢今天的訓練計畫（未完成的）
+      // 注意：這裡暫時直接使用 Supabase，因為 IWorkoutService 沒有提供未完成計畫的查詢方法
+      final response = await Supabase.instance.client
+          .from('workout_plans')
+          .select()
+          .eq('trainee_id', userId)
+          .eq('completed', false) // 只查詢未完成的
+          .gte('scheduled_date', today.toIso8601String())
+          .lt('scheduled_date',
+              today.add(const Duration(days: 1)).toIso8601String())
+          .order('scheduled_date', ascending: true);
 
-      // 查詢所有該用戶的訓練計畫（使用 traineeId 欄位）
-      final snapshot = await FirebaseFirestore.instance
-          .collection('workoutPlans')
-          .where('traineeId', isEqualTo: userId)
-          .get();
+      print('[HomePage] 查詢到 ${response.length} 個今日訓練計畫');
+
+      // 轉換為 Map 格式（為了相容現有 UI）
+      final todayPlans = (response as List).map((data) {
+        return {
+          'id': data['id'],
+          'title': data['title'] ?? '訓練計畫',
+          'scheduledDate': data['scheduled_date'] != null
+              ? DateTime.parse(data['scheduled_date'])
+              : today,
+          'exercises': data['exercises'] ?? [],
+          'completed': data['completed'] ?? false,
+        };
+      }).toList();
 
       if (!mounted) return;
 
-      print('[HomePage] 查詢到 ${snapshot.docs.length} 個訓練計畫');
-
-      final plans = <Map<String, dynamic>>[];
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-
-        // 檢查是否是今天的計畫
-        if (data['scheduledDate'] != null) {
-          final scheduledDate = (data['scheduledDate'] as Timestamp).toDate();
-          final planDay = DateTime(
-              scheduledDate.year, scheduledDate.month, scheduledDate.day);
-
-          print(
-              '[HomePage] 計畫 ${doc.id}: title=${data['title']}, scheduledDate=$scheduledDate, planDay=$planDay');
-
-          if (planDay == todayStart) {
-            data['id'] = doc.id;
-            plans.add(data);
-            print('[HomePage] ✓ 加入今日計畫: ${data['title']}');
-          }
-        } else {
-          print('[HomePage] 計畫 ${doc.id} 沒有 scheduledDate');
-        }
-      }
-
-      print('[HomePage] 今日訓練計畫數量: ${plans.length}');
-
       setState(() {
-        _todayPlans = plans;
+        _todayPlans = todayPlans;
         _isLoadingPlans = false;
       });
     } catch (e) {
@@ -269,9 +211,9 @@ class _HomePageState extends State<HomePage> {
               expandedHeight: 140,
               floating: false,
               pinned: true,
-              backgroundColor: brightness == Brightness.light 
-                  ? colorScheme.primary  // 淺色模式：藍色
-                  : null,  // 深色模式：使用預設深色背景
+              backgroundColor: brightness == Brightness.light
+                  ? colorScheme.primary // 淺色模式：藍色
+                  : null, // 深色模式：使用預設深色背景
               flexibleSpace: FlexibleSpaceBar(
                 titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
                 title: Text(
@@ -450,16 +392,8 @@ class _HomePageState extends State<HomePage> {
         exercises.where((e) => e['completed'] == true).length;
     final progress = exerciseCount > 0 ? completedCount / exerciseCount : 0.0;
 
-    // 計算時間顯示
+    // 計算時間顯示（暫時簡化）
     String timeInfo = '全天';
-    if (plan['scheduledDate'] != null) {
-      final timestamp = plan['scheduledDate'] as Timestamp;
-      final time = timestamp.toDate();
-      if (time.hour != 0 || time.minute != 0) {
-        timeInfo =
-            '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-      }
-    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -613,26 +547,24 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildWorkoutCard(Map<String, dynamic> workout) {
-    // 獲取日期
+    // 獲取日期（Supabase 已經是 DateTime，不需要轉換）
     DateTime date = DateTime.now();
-    if (workout['completedDate'] != null) {
-      date = (workout['completedDate'] as Timestamp).toDate();
-    } else if (workout['scheduledDate'] != null) {
-      date = (workout['scheduledDate'] as Timestamp).toDate();
-    } else if (workout['_sortDate'] != null) {
+    if (workout['completedDate'] is DateTime) {
+      date = workout['completedDate'] as DateTime;
+    } else if (workout['_sortDate'] is DateTime) {
       date = workout['_sortDate'] as DateTime;
     }
 
     final formattedDate = DateFormat('MM/dd').format(date);
     final title = workout['title'] ?? '未命名訓練';
     final exercises = workout['exercises'] as List<dynamic>? ?? [];
-    final completed = workout['completed'] as bool? ?? false;
+    final completed = workout['completed'] as bool? ?? true; // 已完成的訓練
 
     // 計算完成度
     final exerciseCount = exercises.length;
     final completedCount =
         exercises.where((e) => e['completed'] == true).length;
-    final progress = exerciseCount > 0 ? completedCount / exerciseCount : 0.0;
+    final progress = exerciseCount > 0 ? completedCount / exerciseCount : 1.0;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -668,8 +600,8 @@ class _HomePageState extends State<HomePage> {
                   ),
                   Icon(
                     completed ? Icons.check_circle : Icons.circle_outlined,
-                    color: completed 
-                        ? Theme.of(context).colorScheme.primary 
+                    color: completed
+                        ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.outline,
                   ),
                 ],
@@ -705,5 +637,4 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
 }

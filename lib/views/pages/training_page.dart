@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/workout_template_model.dart';
+import '../../models/workout_record_model.dart';
 import '../../controllers/interfaces/i_workout_controller.dart';
+import '../../controllers/interfaces/i_auth_controller.dart';
+import '../../services/interfaces/i_workout_service.dart';
 import '../../services/error_handling_service.dart';
 import '../../services/service_locator.dart';
 import 'workout/template_editor_page.dart';
@@ -22,6 +23,8 @@ class TrainingPage extends StatefulWidget {
 
 class _TrainingPageState extends State<TrainingPage> {
   late final IWorkoutController _workoutController;
+  late final IWorkoutService _workoutService;
+  late final IAuthController _authController;
   late final ErrorHandlingService _errorService;
   
   List<WorkoutTemplate> _templates = [];
@@ -31,6 +34,8 @@ class _TrainingPageState extends State<TrainingPage> {
   void initState() {
     super.initState();
     _workoutController = serviceLocator<IWorkoutController>();
+    _workoutService = serviceLocator<IWorkoutService>();
+    _authController = serviceLocator<IAuthController>();
     _errorService = serviceLocator<ErrorHandlingService>();
     _loadTemplates();
   }
@@ -69,35 +74,15 @@ class _TrainingPageState extends State<TrainingPage> {
   /// 從模板快速創建今日訓練
   Future<void> _createTodayPlanFromTemplate(WorkoutTemplate template) async {
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
+      final userId = _authController.user?.uid;
       if (userId == null) {
         throw Exception('未登入');
       }
       
-      final today = DateTime.now();
+      print('[TrainingPage] 從模板創建今日訓練: ${template.title}');
       
-      // 直接在 workoutPlans 創建訓練計畫
-      final planData = {
-        'userId': userId,
-        'traineeId': userId,
-        'creatorId': userId,
-        'title': template.title,
-        'description': template.description,
-        'planType': 'self',
-        'uiPlanType': template.planType,
-        'scheduledDate': Timestamp.fromDate(today),
-        'exercises': template.exercises.map((e) => e.toJson()).toList(),
-        'completed': false,
-        'createdAt': Timestamp.now(),
-        'updatedAt': Timestamp.now(),
-        'trainingTime': template.trainingTime != null 
-            ? Timestamp.fromDate(template.trainingTime!) 
-            : null,
-      };
-      
-      await FirebaseFirestore.instance
-          .collection('workoutPlans')
-          .add(planData);
+      // 使用 WorkoutService 的 createRecordFromTemplate 方法
+      await _workoutService.createRecordFromTemplate(template.id);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -114,6 +99,7 @@ class _TrainingPageState extends State<TrainingPage> {
         );
       }
     } catch (e) {
+      print('[TrainingPage] 創建今日訓練失敗: $e');
       if (mounted) {
         _errorService.handleError(context, e);
       }
@@ -123,7 +109,7 @@ class _TrainingPageState extends State<TrainingPage> {
   /// 從模板創建自訂日期的訓練
   Future<void> _createScheduledPlanFromTemplate(WorkoutTemplate template) async {
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
+      final userId = _authController.user?.uid;
       if (userId == null) {
         throw Exception('未登入');
       }
@@ -142,28 +128,26 @@ class _TrainingPageState extends State<TrainingPage> {
       
       if (selectedDate == null) return;
       
-      // 創建訓練計畫
-      final planData = {
-        'userId': userId,
-        'traineeId': userId,
-        'creatorId': userId,
-        'title': template.title,
-        'description': template.description,
-        'planType': 'self',
-        'uiPlanType': template.planType,
-        'scheduledDate': Timestamp.fromDate(selectedDate),
-        'exercises': template.exercises.map((e) => e.toJson()).toList(),
-        'completed': false,
-        'createdAt': Timestamp.now(),
-        'updatedAt': Timestamp.now(),
-        'trainingTime': template.trainingTime != null 
-            ? Timestamp.fromDate(template.trainingTime!) 
-            : null,
-      };
+      print('[TrainingPage] 從模板創建訓練: ${template.title}，日期: $selectedDate');
       
-      await FirebaseFirestore.instance
-          .collection('workoutPlans')
-          .add(planData);
+      // 使用 WorkoutService 創建記錄（但需要手動設置日期）
+      // 先從模板創建，然後更新日期
+      final record = await _workoutService.createRecordFromTemplate(template.id);
+      
+      // 更新日期
+      final updatedRecord = WorkoutRecord(
+        id: record.id,
+        workoutPlanId: record.workoutPlanId,
+        userId: userId,
+        date: selectedDate,
+        exerciseRecords: record.exerciseRecords,
+        notes: record.notes,
+        completed: false,
+        createdAt: record.createdAt,
+        trainingTime: record.trainingTime,
+      );
+      
+      await _workoutService.updateRecord(updatedRecord);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

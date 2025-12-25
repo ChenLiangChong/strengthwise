@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../models/statistics_model.dart';
 import '../../controllers/interfaces/i_statistics_controller.dart';
+import '../../controllers/interfaces/i_auth_controller.dart';
 import '../../services/service_locator.dart';
 import '../../services/interfaces/i_favorites_service.dart';
 import '../widgets/favorite_exercises_list.dart';
@@ -23,17 +23,19 @@ class StatisticsPageV2 extends StatefulWidget {
 class _StatisticsPageV2State extends State<StatisticsPageV2>
     with SingleTickerProviderStateMixin {
   late IStatisticsController _controller;
+  late IAuthController _authController;
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _controller = serviceLocator<IStatisticsController>();
+    _authController = serviceLocator<IAuthController>();
     _tabController = TabController(length: 5, vsync: this);
 
-    // 初始化統計數據
+    // 初始化統計數據 - 使用 AuthController 的 UID（已經是 Supabase UUID）
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _authController.user;
       if (user != null) {
         _controller.initialize(user.uid);
       }
@@ -48,8 +50,8 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
 
   @override
   Widget build(BuildContext context) {
-    // 檢查用戶是否登入
-    final user = FirebaseAuth.instance.currentUser;
+    // 檢查用戶是否登入 - 使用 AuthController
+    final user = _authController.user;
     if (user == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('訓練統計')),
@@ -287,7 +289,8 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
     // 找出最大值用於設置 Y 軸範圍
     final maxVolume =
         history.map((p) => p.totalVolume).reduce((a, b) => a > b ? a : b);
-    final maxY = (maxVolume * 1.2).ceilToDouble(); // 增加 20% 留白
+    // 確保 maxY 至少為 1，避免除以 0 的錯誤
+    final maxY = maxVolume <= 0 ? 100.0 : (maxVolume * 1.2).ceilToDouble(); // 增加 20% 留白
 
     return Card(
       elevation: 2,
@@ -323,7 +326,7 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: false,
-                    horizontalInterval: maxY / 4,
+                    horizontalInterval: maxY > 0 ? maxY / 4 : 25,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
                         color: Theme.of(context)
@@ -339,7 +342,7 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 45,
-                        interval: maxY / 4,
+                        interval: maxY > 0 ? maxY / 4 : 25,
                         getTitlesWidget: (value, meta) {
                           if (value >= 1000) {
                             return Text(
@@ -772,7 +775,7 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
 
   /// 力量進步 Tab
   Widget _buildStrengthProgressTab(StatisticsData data) {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authController.user;
     if (user == null) {
       return const Center(child: Text('請先登入'));
     }

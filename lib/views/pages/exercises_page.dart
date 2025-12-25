@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/exercise_model.dart';
 import 'exercise_detail_page.dart';
 import '../../services/exercise_cache_service.dart';
+import '../../services/interfaces/i_exercise_service.dart';
+import '../../services/service_locator.dart';
 import 'custom_exercises_page.dart';
 
 /// 動作瀏覽頁面 - 使用專業 5 層分類結構
@@ -17,6 +18,9 @@ class ExercisesPage extends StatefulWidget {
 
 class _ExercisesPageState extends State<ExercisesPage> {
   bool _isLoading = true;
+  
+  // 注入 ExerciseService
+  late final IExerciseService _exerciseService;
 
   // 新的 5 層分類選擇
   String? _selectedTrainingType; // 訓練類型
@@ -39,6 +43,10 @@ class _ExercisesPageState extends State<ExercisesPage> {
   @override
   void initState() {
     super.initState();
+    
+    // 初始化 ExerciseService
+    _exerciseService = serviceLocator<IExerciseService>();
+    
     _logDebug('應用啟動：正在清除所有緩存...');
 
     // 清除緩存並載入訓練類型
@@ -65,21 +73,9 @@ class _ExercisesPageState extends State<ExercisesPage> {
     try {
       _logDebug('開始載入訓練類型...');
 
-      // 從 exercise 集合直接提取所有訓練類型
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('exercise')
-          .get(const GetOptions(source: Source.server));
-
-      Set<String> typesSet = {};
-      for (var doc in querySnapshot.docs) {
-        final data = doc.data();
-        final trainingType = data['trainingType'] as String?;
-        if (trainingType != null && trainingType.isNotEmpty) {
-          typesSet.add(trainingType);
-        }
-      }
-
-      List<String> types = typesSet.toList()..sort();
+      // 使用 ExerciseService 取得訓練類型
+      final types = await _exerciseService.getExerciseTypes();
+      
       _logDebug('成功載入 ${types.length} 個訓練類型: ${types.join(", ")}');
 
       setState(() {
@@ -109,27 +105,25 @@ class _ExercisesPageState extends State<ExercisesPage> {
     try {
       _logDebug('開始載入身體部位，選擇的訓練類型: $_selectedTrainingType');
 
-      Query query = FirebaseFirestore.instance.collection('exercise');
-
+      // 建構篩選條件，取得所有符合訓練類型的動作
+      final filters = <String, String>{};
       if (_selectedTrainingType != null && _selectedTrainingType!.isNotEmpty) {
-        query = query.where('trainingType', isEqualTo: _selectedTrainingType);
+        filters['type'] = _selectedTrainingType!;
       }
-
-      final querySnapshot =
-          await query.get(const GetOptions(source: Source.server));
-
-      Set<String> partsSet = {};
-      for (var doc in querySnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final bodyPart = data['bodyPart'] as String?;
-        if (bodyPart != null && bodyPart.isNotEmpty) {
-          partsSet.add(bodyPart);
+      
+      // 使用 getExercisesByFilters 取得動作列表
+      final exercises = await _exerciseService.getExercisesByFilters(filters);
+      
+      // 從動作列表中提取唯一的身體部位
+      final partsSet = <String>{};
+      for (var exercise in exercises) {
+        if (exercise.bodyPart.isNotEmpty) {
+          partsSet.add(exercise.bodyPart);
         }
       }
-
-      List<String> parts = partsSet.toList()..sort();
-      _logDebug(
-          '成功載入 ${parts.length} 個身體部位（來自 ${querySnapshot.docs.length} 個動作）');
+      
+      final parts = partsSet.toList()..sort();
+      _logDebug('成功載入 ${parts.length} 個身體部位（來自 ${exercises.length} 個動作）');
 
       setState(() {
         _bodyParts = parts;
@@ -153,28 +147,27 @@ class _ExercisesPageState extends State<ExercisesPage> {
     try {
       _logDebug('開始載入特定肌群，身體部位: $_selectedBodyPart');
 
-      Query query = FirebaseFirestore.instance.collection('exercise');
-
+      // 建構篩選條件
+      final filters = <String, String>{};
       if (_selectedTrainingType != null) {
-        query = query.where('trainingType', isEqualTo: _selectedTrainingType);
+        filters['type'] = _selectedTrainingType!;
       }
       if (_selectedBodyPart != null) {
-        query = query.where('bodyPart', isEqualTo: _selectedBodyPart);
+        filters['bodyPart'] = _selectedBodyPart!;
       }
-
-      final querySnapshot =
-          await query.get(const GetOptions(source: Source.server));
-
-      Set<String> musclesSet = {};
-      for (var doc in querySnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final muscle = data['specificMuscle'] as String?;
-        if (muscle != null && muscle.isNotEmpty) {
-          musclesSet.add(muscle);
+      
+      // 取得動作列表
+      final exercises = await _exerciseService.getExercisesByFilters(filters);
+      
+      // 提取唯一的特定肌群
+      final musclesSet = <String>{};
+      for (var exercise in exercises) {
+        if (exercise.specificMuscle.isNotEmpty) {
+          musclesSet.add(exercise.specificMuscle);
         }
       }
 
-      List<String> muscles = musclesSet.toList()..sort();
+      final muscles = musclesSet.toList()..sort();
       _logDebug('成功載入 ${muscles.length} 個特定肌群');
 
       setState(() {
@@ -205,38 +198,33 @@ class _ExercisesPageState extends State<ExercisesPage> {
     try {
       _logDebug('開始載入器材類別');
 
-      Query query = FirebaseFirestore.instance.collection('exercise');
-
+      // 建構篩選條件
+      final filters = <String, String>{};
       if (_selectedTrainingType != null) {
-        query = query.where('trainingType', isEqualTo: _selectedTrainingType);
+        filters['type'] = _selectedTrainingType!;
       }
       if (_selectedBodyPart != null) {
-        query = query.where('bodyPart', isEqualTo: _selectedBodyPart);
+        filters['bodyPart'] = _selectedBodyPart!;
       }
+      
+      // 取得動作列表
+      final exercises = await _exerciseService.getExercisesByFilters(filters);
 
-      final querySnapshot =
-          await query.get(const GetOptions(source: Source.server));
-
-      // 客戶端過濾特定肌群
-      Set<String> categoriesSet = {};
-      for (var doc in querySnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-
+      // 客戶端過濾並提取器材類別
+      final categoriesSet = <String>{};
+      for (var exercise in exercises) {
         // 如果選擇了特定肌群，進行過濾
-        if (_selectedSpecificMuscle != null) {
-          final muscle = data['specificMuscle'] as String?;
-          if (muscle != _selectedSpecificMuscle) {
-            continue;
-          }
+        if (_selectedSpecificMuscle != null && 
+            exercise.specificMuscle != _selectedSpecificMuscle) {
+          continue;
         }
 
-        final category = data['equipmentCategory'] as String?;
-        if (category != null && category.isNotEmpty) {
-          categoriesSet.add(category);
+        if (exercise.equipmentCategory.isNotEmpty) {
+          categoriesSet.add(exercise.equipmentCategory);
         }
       }
 
-      List<String> categories = categoriesSet.toList()..sort();
+      final categories = categoriesSet.toList()..sort();
       _logDebug('成功載入 ${categories.length} 個器材類別');
 
       setState(() {
@@ -267,42 +255,39 @@ class _ExercisesPageState extends State<ExercisesPage> {
     try {
       _logDebug('開始載入器材子類別');
 
-      Query query = FirebaseFirestore.instance.collection('exercise');
-
+      // 建構篩選條件
+      final filters = <String, String>{};
       if (_selectedTrainingType != null) {
-        query = query.where('trainingType', isEqualTo: _selectedTrainingType);
+        filters['type'] = _selectedTrainingType!;
       }
       if (_selectedBodyPart != null) {
-        query = query.where('bodyPart', isEqualTo: _selectedBodyPart);
+        filters['bodyPart'] = _selectedBodyPart!;
       }
+      
+      // 取得動作列表
+      final exercises = await _exerciseService.getExercisesByFilters(filters);
 
-      final querySnapshot =
-          await query.get(const GetOptions(source: Source.server));
-
-      // 客戶端過濾
-      Set<String> subcategoriesSet = {};
-      for (var doc in querySnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-
+      // 客戶端過濾並提取器材子類別
+      final subcategoriesSet = <String>{};
+      for (var exercise in exercises) {
         // 過濾特定肌群
-        if (_selectedSpecificMuscle != null) {
-          final muscle = data['specificMuscle'] as String?;
-          if (muscle != _selectedSpecificMuscle) continue;
+        if (_selectedSpecificMuscle != null && 
+            exercise.specificMuscle != _selectedSpecificMuscle) {
+          continue;
         }
 
         // 過濾器材類別
-        if (_selectedEquipmentCategory != null) {
-          final category = data['equipmentCategory'] as String?;
-          if (category != _selectedEquipmentCategory) continue;
+        if (_selectedEquipmentCategory != null && 
+            exercise.equipmentCategory != _selectedEquipmentCategory) {
+          continue;
         }
 
-        final subcategory = data['equipmentSubcategory'] as String?;
-        if (subcategory != null && subcategory.isNotEmpty) {
-          subcategoriesSet.add(subcategory);
+        if (exercise.equipmentSubcategory.isNotEmpty) {
+          subcategoriesSet.add(exercise.equipmentSubcategory);
         }
       }
 
-      List<String> subcategories = subcategoriesSet.toList()..sort();
+      final subcategories = subcategoriesSet.toList()..sort();
       _logDebug('成功載入 ${subcategories.length} 個器材子類別');
 
       setState(() {
@@ -335,49 +320,40 @@ class _ExercisesPageState extends State<ExercisesPage> {
       _logDebug(
           '篩選條件：訓練類型=$_selectedTrainingType, 身體部位=$_selectedBodyPart, 特定肌群=$_selectedSpecificMuscle, 器材類別=$_selectedEquipmentCategory, 器材子類別=$_selectedEquipmentSubcategory');
 
-      Query query = FirebaseFirestore.instance.collection('exercise');
-
-      // 添加所有 Firestore 可查詢的條件
+      // 建構篩選條件
+      final filters = <String, String>{};
       if (_selectedTrainingType != null) {
-        query = query.where('trainingType', isEqualTo: _selectedTrainingType);
+        filters['type'] = _selectedTrainingType!;
       }
       if (_selectedBodyPart != null) {
-        query = query.where('bodyPart', isEqualTo: _selectedBodyPart);
+        filters['bodyPart'] = _selectedBodyPart!;
       }
-
-      final querySnapshot =
-          await query.get(const GetOptions(source: Source.server));
+      
+      // 取得動作列表
+      var exercises = await _exerciseService.getExercisesByFilters(filters);
 
       // 客戶端過濾其他條件
-      List<Exercise> exercises = [];
-      for (var doc in querySnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-
+      exercises = exercises.where((exercise) {
         // 過濾特定肌群
-        if (_selectedSpecificMuscle != null) {
-          final muscle = data['specificMuscle'] as String?;
-          if (muscle != _selectedSpecificMuscle) continue;
+        if (_selectedSpecificMuscle != null && 
+            exercise.specificMuscle != _selectedSpecificMuscle) {
+          return false;
         }
 
         // 過濾器材類別
-        if (_selectedEquipmentCategory != null) {
-          final category = data['equipmentCategory'] as String?;
-          if (category != _selectedEquipmentCategory) continue;
+        if (_selectedEquipmentCategory != null && 
+            exercise.equipmentCategory != _selectedEquipmentCategory) {
+          return false;
         }
 
         // 過濾器材子類別
-        if (_selectedEquipmentSubcategory != null) {
-          final subcategory = data['equipmentSubcategory'] as String?;
-          if (subcategory != _selectedEquipmentSubcategory) continue;
+        if (_selectedEquipmentSubcategory != null && 
+            exercise.equipmentSubcategory != _selectedEquipmentSubcategory) {
+          return false;
         }
 
-        try {
-          final exercise = Exercise.fromFirestore(doc);
-          exercises.add(exercise);
-        } catch (e) {
-          _logDebug('解析動作失敗: ${doc.id} - $e');
-        }
-      }
+        return true;
+      }).toList();
 
       _logDebug('成功載入 ${exercises.length} 個動作');
 
