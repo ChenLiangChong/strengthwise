@@ -217,6 +217,15 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         print('[PlanEditor] 創建成功');
       }
 
+      // 顯示成功通知
+      if (mounted) {
+        final isUpdate = widget.planId != null;
+        NotificationUtils.showSuccess(
+          context, 
+          isUpdate ? '訓練計畫更新成功' : '訓練計畫創建成功',
+        );
+      }
+
       // 返回行事曆頁面
       if (mounted) {
         Navigator.pop(context, true); // 傳回true表示保存成功
