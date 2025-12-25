@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/exercise_model.dart';
+import '../../utils/notification_utils.dart';
 
 class ExerciseDetailPage extends StatelessWidget {
   final Exercise exercise;
@@ -107,9 +108,7 @@ class ExerciseDetailPage extends StatelessWidget {
                 icon: const Icon(Icons.play_circle_outline),
                 label: const Text('觀看教學影片'),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('視頻播放功能開發中')),
-                  );
+                  NotificationUtils.showInfo(context, '視頻播放功能開發中');
                 },
               ),
             ],

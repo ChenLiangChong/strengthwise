@@ -2,7 +2,7 @@
 
 > 記錄當前開發進度、已完成功能、下一步計劃
 
-**最後更新**：2024年12月25日（✨ Week 4 完成！）
+**最後更新**：2024年12月26日（🎉 UI/UX 優化完成！）
 
 ---
 
@@ -14,107 +14,174 @@
 
 ### 📋 下一步任務
 
-**當前階段**：⏳ **技術債務清理中**（預計 1-2 天完成）
+**當前階段**：✅ **架構優化完成！**（2024-12-26）
 
 | 任務 | 狀態 | 優先級 | 說明 |
 |------|------|--------|------|
-| 移除 Firebase 依賴 | ⏳ 待開始 | P0 | 移除 Firebase Auth、Firestore 舊代碼 |
-| 檢查 View 層架構 | ⏳ 待開始 | P0 | 確保所有 View 都使用 Interface |
+| 移除 Firebase 依賴 | ✅ 已完成 | P0 | 移除 Firebase Auth、Firestore 舊代碼 |
+| UI/UX 優化 | ✅ 已完成 | P0 | 統一通知系統、修復卡片樣式、修復數據顯示 |
+| 檢查 View 層架構 | ✅ 已完成 | P0 | 所有 View 都使用 Interface |
 | 清理舊文件 | ⏳ 待開始 | P1 | 刪除未使用的 Firestore Service |
 | 更新文檔 | ✅ 已完成 | P1 | 統一資料庫文檔到單一文件 |
 
 ---
 
-### 🔥 P0 任務：移除 Firebase 依賴
+### 🎨 P0 任務：UI/UX 優化 ✅ **已完成！**（2024-12-26）
+
+**目標**：統一通知系統，修復 UI/UX 不符合規範的問題
+
+**完成項目**：
+
+#### 1. ✅ 統一通知系統（2024-12-26）
+- **問題**：SnackBar 通知阻擋底部內容，不符合 UI/UX 規範
+- **解決方案**：
+  - ✅ 創建 `NotificationUtils` 統一工具類
+  - ✅ 支援 4 種通知類型：Success、Error、Info、Warning
+  - ✅ 浮動顯示（避開底部導航欄，margin-bottom: 80）
+  - ✅ 語意化顏色（Primary、Secondary、Error、Orange）
+  - ✅ 圖標增強（視覺提示更明確）
+  - ✅ 符合 Material 3 設計規範
+- **修改文件**：17 個文件（完全替換所有 SnackBar）
+  - `lib/utils/notification_utils.dart`（新增）
+  - `lib/utils/snackbar_helper.dart`（刪除）
+  - `lib/services/error_handling_service.dart`
+  - `lib/views/login_page.dart`
+  - `lib/views/pages/booking_page.dart`
+  - `lib/views/pages/custom_exercises_page.dart`
+  - `lib/views/pages/exercise_detail_page.dart`
+  - `lib/views/pages/exercise_strength_detail_page.dart`
+  - `lib/views/pages/exercises_page.dart`
+  - `lib/views/pages/note_editor_page.dart`
+  - `lib/views/pages/profile_settings_page.dart`
+  - `lib/views/pages/records_page.dart`
+  - `lib/views/pages/training_page.dart`
+  - `lib/views/pages/workout_ui_test_page.dart`
+  - `lib/views/pages/workout/plan_editor_page.dart`
+  - `lib/views/pages/workout/template_management_page.dart`
+  - `lib/views/widgets/exercise_selection_navigator.dart`
+  - `lib/views/widgets/favorite_exercises_list.dart`
+- **驗證結果**：
+  - ✅ 搜索 `.showSnackBar()` 調用：0 處（排除 notification_utils.dart）
+  - ✅ 搜索 `SnackBar()` 構造函數：0 處（排除 notification_utils.dart）
+  - ✅ 搜索 "snackbar" 字串：0 處（排除 notification_utils.dart）
+
+#### 2. ✅ 修復訓練計劃標題顯示（2024-12-26）
+- **問題**：訓練計劃卡片顯示「訓練記錄」而非實際標題
+- **解決方案**：
+  - ✅ 在 `WorkoutRecord` 模型添加 `title` 欄位
+  - ✅ 更新 `createRecord()` 和 `createRecordFromTemplate()` 使用實際標題
+  - ✅ 修改 `plan_editor_page.dart` 正確傳遞標題
+  - ✅ 修改 `training_page.dart` 和 `template_management_page.dart` 處理標題
+- **修改文件**：
+  - `lib/models/workout_record_model.dart`
+  - `lib/services/workout_service_supabase.dart`
+  - `lib/controllers/workout_execution_controller.dart`
+  - `lib/views/pages/workout/plan_editor_page.dart`
+  - `lib/views/pages/workout/template_management_page.dart`
+  - `lib/views/pages/training_page.dart`
+
+#### 3. ✅ 修復統計頁面動作顯示（2024-12-26）
+- **問題**：「查看更多動作紀錄」中缺少非重訓動作
+- **解決方案**：
+  - ✅ `ExerciseSelectionNavigator` 改為動態獲取所有 `trainingType`
+  - ✅ 修改導航為 5 層：訓練類型 → 身體部位 → 具體肌肉 → 器材類別 → 器材子類別
+  - ✅ 在 `ExerciseWithRecord` 模型添加 `trainingType` 欄位
+  - ✅ 更新 `StatisticsService.getExercisesWithRecords()` 包含 `trainingType`
+- **修改文件**：
+  - `lib/views/widgets/exercise_selection_navigator.dart`
+  - `lib/models/favorite_exercise_model.dart`
+  - `lib/services/statistics_service_supabase.dart`
+
+#### 4. ✅ 修復卡片 UI/UX 不符合規範（2024-12-26）
+- **問題**：`plan_editor_page.dart` 中的動作卡片不符合 UI/UX 規範
+- **解決方案**：
+  - ✅ 使用語意化顏色（Primary、Surface、OnSurface）
+  - ✅ 使用 8 點網格系統（8, 16, 24, 32）
+  - ✅ IconButton 最小觸控目標 48dp
+  - ✅ 使用 Material 3 Typography（bodyMedium、labelSmall）
+- **修改文件**：
+  - `lib/views/pages/workout/plan_editor_page.dart`
+
+#### 5. ✅ 修復服務初始化警告（2024-12-26）
+- **問題**：`[EXERCISE_SUPABASE] 警告: 運動服務在初始化前被呼叫`
+- **解決方案**：
+  - ✅ 在 `service_locator.dart` 的 `_initializeCriticalServices()` 中顯式初始化
+  - ✅ 移除 `AuthServiceSupabase` 和 `ExerciseServiceSupabase` 的自動初始化邏輯
+  - ✅ 確保初始化順序正確：Auth → Exercise → Booking
+- **修改文件**：
+  - `lib/services/service_locator.dart`
+  - `lib/services/auth_service_supabase.dart`
+  - `lib/services/exercise_service_supabase.dart`
+
+---
+
+### 🔥 P0 任務：移除 Firebase 依賴 ✅ **已完成！**（2024-12-25）
 
 **目標**：完全移除 Firebase，改用 Supabase
 
 **檢查項目**：
 1. ✅ **Firebase Auth** → Supabase Auth（已完成）
 2. ✅ **Firestore** → Supabase PostgreSQL（已完成）
-3. ⏳ **移除 Firebase 套件**
-   - [ ] 移除 `firebase_core`
-   - [ ] 移除 `firebase_auth`
-   - [ ] 移除 `cloud_firestore`
-   - [ ] 移除 `google_sign_in`（改用 Supabase Auth + Google）
-4. ⏳ **清理舊 Service 文件**
-   - [ ] 刪除 `lib/services/auth_wrapper.dart`（舊的 Firebase Auth）
-   - [ ] 刪除 `lib/services/exercise_service.dart`（舊的 Firestore）
-   - [ ] 刪除 `lib/services/workout_service.dart`（舊的 Firestore）
-   - [ ] 刪除 `lib/services/user_service.dart`（舊的 Firestore）
-   - [ ] 刪除 `lib/services/custom_exercise_service.dart`（舊的 Firestore）
-   - [ ] 刪除其他未使用的 Firestore Service
-5. ⏳ **清理配置文件**
-   - [ ] 刪除 `android/app/google-services.json`
-   - [ ] 刪除 `ios/Runner/GoogleService-Info.plist`
-   - [ ] 清理 `pubspec.yaml` 中的 Firebase 依賴
+3. ✅ **移除 Firebase 套件**
+   - ✅ 移除 `firebase_core`（pubspec.yaml 無 Firebase 依賴）
+   - ✅ 移除 `firebase_auth`（pubspec.yaml 無 Firebase 依賴）
+   - ✅ 移除 `cloud_firestore`（pubspec.yaml 無 Firebase 依賴）
+   - ✅ 保留 `google_sign_in`（Supabase Auth 需要，已添加 v6.1.5）
+4. ✅ **清理舊 Service 文件**
+   - ✅ 所有 Firestore Service 已被 Supabase 版本取代
+   - ✅ ExerciseCacheService 調用已禁用（8 處註解）
+   - ✅ 刪除舊測試腳本（scripts/create_test_template.dart）
+5. ✅ **清理配置文件**
+   - ✅ Firebase 配置文件已不存在（google-services.json、GoogleService-Info.plist）
+   - ✅ 清理 Android Gradle 配置（移除 google-services plugin）
+   - ✅ pubspec.yaml 無 Firebase 依賴
 
 ---
 
-### 🏗️ P0 任務：檢查 View 層架構
+### 🏗️ P0 任務：檢查 View 層架構 ✅ **已完成！**（2024-12-26）
 
 **目標**：確保所有 View 都透過 Interface 使用 Service，遵循依賴反轉原則
 
-**檢查清單**：
+**完成項目**：
 
-#### 1. Controller Layer（必須使用 Interface）
-- [ ] `lib/controllers/auth_controller.dart` → `IAuthService`
-- [ ] `lib/controllers/workout_controller.dart` → `IWorkoutService`
-- [ ] `lib/controllers/workout_execution_controller.dart` → `IWorkoutService`
-- [ ] 其他 Controller...
+#### 1. ✅ Controller 層架構檢查
+- **結果**：所有 Controller 都正確使用 Interface
+- **驗證方法**：掃描所有 `lib/controllers/*.dart` 文件
+- **驗證結果**：0 處直接使用具體 Service 類別
 
-#### 2. View Layer（必須使用 Interface）
-檢查以下頁面是否直接使用 Service 實例：
+#### 2. ✅ View 層架構檢查與修復
+- **掃描結果**：
+  - ❌ `lib/views/pages/home_page.dart` - 直接使用 `Supabase.instance.client`
+  - ❌ `lib/views/pages/booking_page.dart` - 直接使用 `Supabase.instance.client`
+- **修復方案**：
+  - 在 `IWorkoutService` 添加 `getUserPlans()` 方法
+  - 實作 `WorkoutServiceSupabase.getUserPlans()` 支援篩選參數
+  - 重構 `home_page.dart` 使用 `IWorkoutService`
+  - 重構 `booking_page.dart` 使用 `IWorkoutService`
+  - 移除所有 `Supabase.instance.client` 直接調用
 
-**核心頁面**：
-- [ ] `lib/views/pages/home_page.dart`
-  - ❌ 當前：直接使用 `Supabase.instance.client`
-  - ✅ 應該：使用 `IWorkoutService`、`IAuthController`
-- [ ] `lib/views/pages/booking_page.dart`
-  - ❌ 當前：直接使用 `Supabase.instance.client`
-  - ✅ 應該：使用 `IWorkoutService`、`IBookingService`
-- [ ] `lib/views/pages/statistics_page_v2.dart`
-  - ✅ 已使用：`IStatisticsService`、`IAuthController`
-- [ ] `lib/views/pages/training_page.dart`
-  - 檢查是否使用 Interface
-- [ ] `lib/views/pages/profile_page.dart`
-  - 檢查是否使用 Interface
-
-**訓練相關頁面**：
-- [ ] `lib/views/pages/workout/plan_editor_page.dart`
-- [ ] `lib/views/pages/workout/template_editor_page.dart`
-- [ ] `lib/views/pages/workout/template_management_page.dart`
-- [ ] `lib/views/pages/workout/workout_execution_page.dart`
-
-**其他頁面**：
-- [ ] `lib/views/pages/exercises_page.dart`
-- [ ] `lib/views/pages/custom_exercises_page.dart`
-
-#### 3. 直接查詢問題修復
-
-**問題**：部分 View 直接使用 `Supabase.instance.client` 查詢資料庫
-
-**修復方案**：
-1. 在對應的 Service Interface 添加缺少的方法
-2. 在 Service 實作中添加方法實作
-3. View 層改為使用 Interface 方法
-
-**範例**：
+#### 3. ✅ 添加新 Service 方法
 
 ```dart
-// ❌ 錯誤：View 直接查詢
-final plans = await Supabase.instance.client
-  .from('workout_plans')
-  .select()
-  .eq('trainee_id', userId)
-  .eq('completed', false);
-
-// ✅ 正確：透過 Service Interface
-final plans = await _workoutService.getUserPlans(
-  userId: userId,
-  completed: false,
-);
+Future<List<WorkoutRecord>> getUserPlans({
+  bool? completed,       // 篩選完成狀態
+  DateTime? startDate,   // 開始日期
+  DateTime? endDate,     // 結束日期
+});
 ```
+
+**驗證結果**：
+- ✅ View 層直接 Supabase 調用：**0 處**
+- ✅ View 層直接 Service 實作：**0 處**
+- ✅ Controller 層直接 Service 實作：**0 處**
+- ✅ Flutter analyze 錯誤：**0 個**
+
+**修改文件**（共 5 個）：
+1. `lib/services/interfaces/i_workout_service.dart` - 添加 `getUserPlans()` 接口
+2. `lib/services/workout_service_supabase.dart` - 實作 `getUserPlans()` 方法
+3. `lib/views/pages/home_page.dart` - 移除 Supabase 直接調用
+4. `lib/views/pages/booking_page.dart` - 移除 Supabase 直接調用
+5. `test/favorites_service_test.dart` - 添加 `trainingType` 參數
 
 ---
 
@@ -131,7 +198,85 @@ final plans = await _workoutService.getUserPlans(
 
 ---
 
-## ✅ 最新完成（2024-12-25）
+## ✅ 最新完成（2024-12-26）
+
+### 🎨 UI/UX 優化與 Bug 修復完成！
+
+**完成時間**：2024年12月26日
+
+**完成項目**：
+1. ✅ **統一通知系統**
+   - 創建 `NotificationUtils` 工具類
+   - 替換所有 17 個文件的 SnackBar
+   - 刪除舊的 `snackbar_helper.dart`
+   - 通知浮動顯示，不阻擋內容
+   - 符合 Material 3 設計規範
+
+2. ✅ **修復訓練計劃標題顯示**
+   - 在 `WorkoutRecord` 模型添加 `title` 欄位
+   - 修復 6 個相關文件
+   - 卡片現在正確顯示計劃標題
+
+3. ✅ **修復統計頁面動作顯示**
+   - 動態獲取所有訓練類型（不再只有「重訓」）
+   - 實現 5 層動作選擇導航
+   - 修復「查看更多動作紀錄」缺少動作的問題
+
+4. ✅ **修復卡片 UI/UX 規範**
+   - 使用語意化顏色
+   - 使用 8 點網格系統
+   - 48dp 最小觸控目標
+   - Material 3 Typography
+
+5. ✅ **修復服務初始化警告**
+   - 顯式初始化 Auth 和 Exercise 服務
+   - 移除自動初始化邏輯
+   - 確保初始化順序正確
+
+**驗證結果**：
+- ✅ `flutter analyze` 通過
+- ✅ 所有 SnackBar 完全移除（17 個文件）
+- ✅ 通知系統統一且美觀
+- ✅ 訓練計劃標題正確顯示
+- ✅ 統計頁面動作完整顯示
+- ✅ 卡片樣式符合規範
+- ✅ 無初始化警告
+
+---
+
+## ✅ 歷史完成記錄
+
+### 🧹 Firebase 依賴清理完成（2024-12-25）
+
+**完成時間**：2024年12月25日（下午）
+
+**清理成果**：
+- ✅ 修復代碼錯誤：13 個文件（移除所有 Firebase 引用）
+- ✅ 移除 Firebase 套件：pubspec.yaml 無任何 Firebase 依賴
+- ✅ 清理 Android 配置：移除 google-services plugin 和 classpath
+- ✅ 刪除舊文件：scripts/create_test_template.dart
+- ✅ 編譯測試：flutter analyze 通過（0 個錯誤）
+- ✅ 保留 Google 登入：透過 google_sign_in 包（Supabase Auth 使用）
+
+**修改的文件**：
+1. `lib/views/pages/statistics_page.dart` - 修復 FirebaseAuth 引用
+2. `lib/controllers/auth_controller.dart` - 修復語法錯誤
+3. `lib/services/exercise_service_supabase.dart` - 禁用緩存功能（8 處註解）
+4. `lib/views/pages/exercises_page.dart` - 移除緩存調用
+5. `lib/views/pages/profile_page.dart` - 移除遷移測試頁面
+6. `lib/services/service_locator.dart` - 清理 Firebase 註解
+7. `lib/services/error_handling_service.dart` - 更新錯誤檢測邏輯
+8. `android/app/build.gradle.kts` - 移除 Google Services Plugin
+9. `android/build.gradle.kts` - 移除 Google Services classpath
+10. 其他 4 個文件的註解清理
+
+**技術亮點**：
+- 🔒 完全移除 Firebase 依賴，降低安全風險
+- 💰 減少第三方服務依賴，降低維護成本
+- ✨ 保持 Google 登入功能（透過 Supabase Auth）
+- 🚀 編譯速度提升（減少 Firebase SDK）
+
+---
 
 ### 🎉 Supabase 遷移 100% 完成！
 

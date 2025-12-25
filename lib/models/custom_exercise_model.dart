@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 /// 用戶自定義訓練動作模型
 ///
 /// 用於表示用戶創建的自定義訓練動作。這些動作只對創建它們的用戶可見。
@@ -17,18 +15,6 @@ class CustomExercise {
     required this.createdAt,
   });
 
-  /// 從 Firestore 文檔創建對象
-  factory CustomExercise.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    
-    return CustomExercise(
-      id: doc.id,
-      name: data['name'] ?? '',
-      userId: data['userId'] ?? '',
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-    );
-  }
-
   /// 從 Supabase 數據創建對象（snake_case 欄位）
   factory CustomExercise.fromSupabase(Map<String, dynamic> json) {
     return CustomExercise(
@@ -39,15 +25,6 @@ class CustomExercise {
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
     );
-  }
-
-  /// 轉換為 Firestore 可用的數據格式
-  Map<String, dynamic> toFirestore() {
-    return {
-      'name': name,
-      'userId': userId,
-      'createdAt': Timestamp.fromDate(createdAt),
-    };
   }
   
   /// 創建一個本對象的副本，並可選擇性地修改某些屬性

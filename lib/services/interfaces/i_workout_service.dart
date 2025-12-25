@@ -24,6 +24,13 @@ abstract class IWorkoutService {
   /// 獲取用戶的所有訓練記錄
   Future<List<WorkoutRecord>> getUserRecords();
   
+  /// 獲取用戶的訓練計劃（可篩選完成狀態）
+  Future<List<WorkoutRecord>> getUserPlans({
+    bool? completed,
+    DateTime? startDate,
+    DateTime? endDate,
+  });
+  
   /// 獲取特定訓練記錄
   Future<WorkoutRecord?> getRecordById(String recordId);
   

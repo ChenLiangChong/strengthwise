@@ -4,6 +4,7 @@ import '../../models/statistics_model.dart';
 import '../../services/interfaces/i_statistics_service.dart';
 import '../../services/interfaces/i_favorites_service.dart';
 import '../../services/service_locator.dart';
+import '../../utils/notification_utils.dart';
 
 /// 動作力量進步詳情頁面
 /// 
@@ -89,9 +90,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
       if (_isFavorite) {
         await _favoritesService.removeFavorite(widget.userId, widget.exerciseId);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('已移除收藏')),
-          );
+          NotificationUtils.showSuccess(context, '已移除收藏');
         }
       } else {
         await _favoritesService.addFavorite(
@@ -101,18 +100,14 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
           _progress!.bodyPart,
         );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('已添加收藏')),
-          );
+          NotificationUtils.showSuccess(context, '已添加收藏');
         }
       }
 
       setState(() => _isFavorite = !_isFavorite);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('操作失敗: $e')),
-        );
+        NotificationUtils.showError(context, '操作失敗: $e');
       }
     }
   }

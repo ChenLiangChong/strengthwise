@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/statistics_model.dart';
 import '../../controllers/interfaces/i_statistics_controller.dart';
+import '../../controllers/interfaces/i_auth_controller.dart';
 import '../../services/service_locator.dart';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -18,15 +18,17 @@ class StatisticsPage extends StatefulWidget {
 
 class _StatisticsPageState extends State<StatisticsPage> {
   late IStatisticsController _controller;
+  late IAuthController _authController;
 
   @override
   void initState() {
     super.initState();
     _controller = serviceLocator<IStatisticsController>();
+    _authController = serviceLocator<IAuthController>();
 
-    // 初始化統計數據 - 使用 Firebase Auth 直接獲取當前用戶
+    // 初始化統計數據 - 使用 IAuthController 獲取當前用戶
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _authController.user;
       if (user != null) {
         _controller.initialize(user.uid);
       } else {
@@ -39,7 +41,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
   @override
   Widget build(BuildContext context) {
     // 檢查用戶是否登入
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authController.user;
     if (user == null) {
       return Scaffold(
         appBar: AppBar(
@@ -79,7 +81,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () async {
-                final currentUser = FirebaseAuth.instance.currentUser;
+                final currentUser = _authController.user;
                 if (currentUser != null) {
                   // 清除快取並重新載入
                   await _controller.refreshStatistics();
@@ -115,7 +117,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () async {
-                        final currentUser = FirebaseAuth.instance.currentUser;
+                        final currentUser = _authController.user;
                         if (currentUser != null) {
                           await controller.initialize(currentUser.uid);
                         }

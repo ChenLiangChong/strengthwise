@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'workout/plan_editor_page.dart';
 import 'workout/workout_execution_page.dart';
 import '../../controllers/interfaces/i_booking_controller.dart';
@@ -9,6 +8,7 @@ import '../../controllers/booking_controller.dart';
 import '../../services/interfaces/i_workout_service.dart';
 import '../../services/error_handling_service.dart';
 import '../../services/service_locator.dart';
+import '../../utils/notification_utils.dart';
 
 class BookingPage extends StatefulWidget {
   // 允許外部注入控制器，實現依賴注入
@@ -140,9 +140,7 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
           );
         } catch (_) {
           // 即使錯誤處理失敗也繼續顯示界面
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('預約系統初始化失敗'))
-          );
+          NotificationUtils.showError(context, '預約系統初始化失敗');
         }
       }
     }
@@ -242,25 +240,18 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
         return;
       }
       
-      print('[BOOKING PAGE] 從 Supabase 載入訓練計劃，userId: $userId');
+      print('[BOOKING PAGE] 從 WorkoutService 載入訓練計劃，userId: $userId');
       
-      // 使用 Supabase Client 直接查詢所有訓練記錄（已完成和未完成的）
-      // 注意：這裡暫時直接使用 Supabase，因為 IWorkoutService 沒有提供查詢所有計畫的方法
-      final response = await Supabase.instance.client
-          .from('workout_plans')
-          .select()
-          .eq('trainee_id', userId)
-          .order('scheduled_date', ascending: false);
+      // 使用 WorkoutService 查詢所有訓練計畫（completed 參數為 null 表示查詢全部）
+      final plans = await _workoutService.getUserPlans();
       
-      print('[BOOKING PAGE] 查詢到 ${response.length} 個訓練計劃');
+      print('[BOOKING PAGE] 查詢到 ${plans.length} 個訓練計劃');
       
       final trainings = <DateTime, List<Map<String, dynamic>>>{};
       
       // 處理所有訓練計劃（包括未完成和已完成的）
-      for (var data in response) {
-        if (data['scheduled_date'] == null) continue;
-        
-        final date = DateTime.parse(data['scheduled_date']);
+      for (var plan in plans) {
+        final date = plan.date;
         final day = DateTime(date.year, date.month, date.day);
         
         if (trainings[day] == null) {
@@ -268,15 +259,21 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
         }
         
         trainings[day]!.add({
-          'id': data['id'],
-          'title': data['title'] ?? '訓練計畫',
-          'description': data['description'],
-          'scheduled_date': data['scheduled_date'],
-          'exercises': data['exercises'] ?? [],
-          'completed': data['completed'] ?? false,
-          'planType': data['plan_type'] ?? 'self',
-          'trainee_id': data['trainee_id'],
-          'creator_id': data['creator_id'],
+          'id': plan.id,
+          'title': plan.title ?? '訓練計畫',
+          'description': plan.notes,  // 使用 notes 而不是 description
+          'scheduled_date': plan.date.toIso8601String(),
+          'exercises': plan.exerciseRecords
+              .map((e) => {
+                    'exerciseName': e.exerciseName,
+                    'sets': e.sets.length,
+                    'completed': e.completed,  // 使用 completed 而不是 isCompleted
+                  })
+              .toList(),
+          'completed': plan.completed,
+          'planType': 'self',  // WorkoutRecord 沒有 planType，使用預設值
+          'trainee_id': plan.userId,  // 使用 userId
+          'creator_id': plan.userId,  // 使用 userId
           'dataType': 'plan',
         });
       }
@@ -359,14 +356,10 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
       if (!mounted) return;
       
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('預約已取消')),
-        );
+        NotificationUtils.showSuccess(context, '預約已取消');
         _loadBookings();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('取消預約失敗')),
-        );
+        NotificationUtils.showError(context, '取消預約失敗');
       }
     } catch (e) {
       if (!mounted) return;
@@ -382,14 +375,10 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
       if (!mounted) return;
       
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('預約已確認')),
-        );
+        NotificationUtils.showSuccess(context, '預約已確認');
         _loadBookings();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('確認預約失敗')),
-        );
+        NotificationUtils.showError(context, '確認預約失敗');
       }
     } catch (e) {
       if (!mounted) return;
@@ -492,9 +481,7 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
       await _workoutService.deleteRecord(planId);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('訓練計畫已刪除')),
-        );
+        NotificationUtils.showSuccess(context, '訓練計畫已刪除');
         
         // 重新加載訓練計畫
         _loadTrainingPlans();
@@ -503,9 +490,7 @@ class _BookingPageState extends State<BookingPage> with SingleTickerProviderStat
       print('[BOOKING PAGE] 刪除訓練計畫失敗: $e');
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('刪除失敗: $e')),
-        );
+        NotificationUtils.showError(context, '刪除失敗: $e');
       }
     }
   }

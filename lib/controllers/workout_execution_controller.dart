@@ -5,6 +5,7 @@ import '../services/interfaces/i_workout_service.dart';
 import '../controllers/interfaces/i_auth_controller.dart';
 import '../services/error_handling_service.dart';
 import '../services/service_locator.dart';
+import '../utils/notification_utils.dart';
 import 'interfaces/i_workout_execution_controller.dart';
 
 /// 訓練執行控制器實現
@@ -248,9 +249,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   void toggleSetCompletion(int exerciseIndex, int setIndex, {BuildContext? context}) async {
     if (!canModify()) {
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_getPastDateMessage())),
-        );
+        NotificationUtils.showWarning(context, _getPastDateMessage());
       }
       return;
     }
@@ -277,7 +276,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     _isDataChanged = true;
     notifyListeners();
     
-    // 自動保存打勾狀態到 Firebase
+    // 自動保存打勾狀態
     await _autoSaveCheckboxState();
   }
   
@@ -304,6 +303,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
           id: _workoutRecordId,
           workoutPlanId: existingRecord.workoutPlanId,
           userId: userId,
+          title: existingRecord.title,
           date: existingRecord.date,
           exerciseRecords: _exerciseRecords,
           notes: _notesController.text,
@@ -346,9 +346,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   ) async {
     if (!canModify()) {
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_getPastDateMessage())),
-        );
+        NotificationUtils.showWarning(context, _getPastDateMessage());
       }
       return;
     }
@@ -375,9 +373,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     notifyListeners();
     
     if (context != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已更新組數數據，完成訓練後將保存所有更改')),
-      );
+      NotificationUtils.showInfo(context, '已更新組數數據，完成訓練後將保存所有更改');
     }
   }
   
@@ -390,9 +386,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   ) async {
     if (!canModify()) {
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_getPastDateMessage())),
-        );
+        NotificationUtils.showWarning(context, _getPastDateMessage());
       }
       return;
     }
@@ -410,9 +404,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     notifyListeners();
     
     if (context != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已更新運動備註，完成訓練後將保存所有更改')),
-      );
+      NotificationUtils.showInfo(context, '已更新運動備註，完成訓練後將保存所有更改');
     }
   }
   
@@ -428,9 +420,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   ) async {
     if (_isPastDate) {
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_getPastDateMessage())),
-        );
+        NotificationUtils.showWarning(context, _getPastDateMessage());
       }
       return;
     }
@@ -467,26 +457,18 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
       notifyListeners();
       
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('已添加新運動：${exercise.name}'),
-            duration: const Duration(seconds: 2),
-            action: SnackBarAction(
-              label: '保存',
-              onPressed: () {
-                saveWorkoutRecord(context: context);
-              },
-            ),
-          ),
+        NotificationUtils.showSuccess(
+          context, 
+          '已添加新運動：${exercise.name}',
+          onAction: () => saveWorkoutRecord(context: context),
+          actionLabel: '保存',
         );
       }
     } catch (e) {
       _handleError('添加運動失敗', e);
       
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('添加運動失敗: $e')),
-        );
+        NotificationUtils.showError(context, '添加運動失敗: $e');
       }
     }
   }
@@ -496,9 +478,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   Future<void> addSetToExercise(int exerciseIndex, {BuildContext? context}) async {
     if (!canModify()) {
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_getPastDateMessage())),
-        );
+        NotificationUtils.showWarning(context, _getPastDateMessage());
       }
       return;
     }
@@ -540,9 +520,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     await _autoSaveCheckboxState();
     
     if (context != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已新增第 ${newSet.setNumber} 組')),
-      );
+      NotificationUtils.showSuccess(context, '已新增第 ${newSet.setNumber} 組');
     }
   }
   
@@ -551,9 +529,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   Future<void> deleteExercise(int exerciseIndex, {BuildContext? context}) async {
     if (_isPastDate) {
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_getPastDateMessage())),
-        );
+        NotificationUtils.showWarning(context, _getPastDateMessage());
       }
       return;
     }
@@ -575,9 +551,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     notifyListeners();
     
     if (context != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已刪除運動：$exerciseName，完成訓練後將保存所有更改')),
-      );
+      NotificationUtils.showInfo(context, '已刪除運動：$exerciseName，完成訓練後將保存所有更改');
     }
   }
   
@@ -589,9 +563,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     
     if (!canModifyTime) {
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('無法修改過去訓練的時間')),
-        );
+        NotificationUtils.showWarning(context, '無法修改過去訓練的時間');
       }
       return;
     }
@@ -603,17 +575,13 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
       notifyListeners();
       
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('訓練時間已設定為 ${hour.toString().padLeft(2, '0')}:00，完成訓練後將保存更改')),
-        );
+        NotificationUtils.showSuccess(context, '訓練時間已設定為 ${hour.toString().padLeft(2, '0')}:00，完成訓練後將保存更改');
       }
     } catch (e) {
       _handleError('設置訓練時間失敗', e);
       
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('設置訓練時間失敗: $e')),
-        );
+        NotificationUtils.showError(context, '設置訓練時間失敗: $e');
       }
     }
   }
@@ -644,6 +612,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
           id: _workoutRecordId,
           workoutPlanId: existingRecord.workoutPlanId,
           userId: userId,
+          title: existingRecord.title,
           date: existingRecord.date,
           exerciseRecords: _exerciseRecords,
           notes: _notesController.text,
@@ -669,6 +638,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
           id: _workoutRecordId, // 使用傳入的 ID
           workoutPlanId: _workoutRecordId,
           userId: userId,
+          title: '訓練記錄',  // 如果找不到現有記錄，使用默認標題
           date: _planDate ?? DateTime.now(),
           exerciseRecords: _exerciseRecords,
           notes: _notesController.text,
@@ -688,9 +658,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
       _setSaving(false);
       
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('訓練記錄已保存')),
-        );
+        NotificationUtils.showSuccess(context, '訓練記錄已保存');
       }
       
       return true;
@@ -700,9 +668,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
       _handleError('保存訓練記錄失敗', e);
       
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('保存訓練記錄失敗: $e')),
-        );
+        NotificationUtils.showError(context, '保存訓練記錄失敗: $e');
       }
       
       return false;

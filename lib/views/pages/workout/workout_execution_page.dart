@@ -6,7 +6,7 @@ import '../../../controllers/interfaces/i_workout_execution_controller.dart';
 import '../../../services/error_handling_service.dart';
 import '../../../services/service_locator.dart';
 import '../../../themes/app_theme.dart';
-import '../../../utils/snackbar_helper.dart';
+import '../../../utils/notification_utils.dart';
 import '../../widgets/exercise_card.dart';
 import '../exercises_page.dart';
 
@@ -103,16 +103,16 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   // 顯示無法修改的提示消息
   void _showCannotEditMessage() {
     if (_executionController.isPastDate()) {
-      SnackBarHelper.showWarning(context, '無法編輯過去的訓練記錄');
+      NotificationUtils.showWarning(context, '無法編輯過去的訓練記錄');
     }
   }
 
   // 顯示無法勾選完成的提示消息
   void _showCannotToggleCompletionMessage() {
     if (_executionController.isFutureDate()) {
-      SnackBarHelper.showWarning(context, '未來的訓練無法勾選完成，請在訓練當天標記');
+      NotificationUtils.showWarning(context, '未來的訓練無法勾選完成，請在訓練當天標記');
     } else if (_executionController.isPastDate()) {
-      SnackBarHelper.showWarning(context, '無法修改過去的訓練記錄');
+      NotificationUtils.showWarning(context, '無法修改過去的訓練記錄');
     }
   }
 
@@ -509,7 +509,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     final canModifyTime = !_executionController.isPastDate(); // 過去的訓練不能修改時間
 
     if (!canModifyTime) {
-      SnackBarHelper.showWarning(context, '無法修改過去訓練的時間');
+      NotificationUtils.showWarning(context, '無法修改過去訓練的時間');
       return;
     }
 

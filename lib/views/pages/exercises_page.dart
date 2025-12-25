@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../models/exercise_model.dart';
 import 'exercise_detail_page.dart';
-import '../../services/exercise_cache_service.dart';
 import '../../services/interfaces/i_exercise_service.dart';
 import '../../services/service_locator.dart';
+import '../../utils/notification_utils.dart';
 import 'custom_exercises_page.dart';
 
 /// 動作瀏覽頁面 - 使用專業 5 層分類結構
@@ -47,16 +47,10 @@ class _ExercisesPageState extends State<ExercisesPage> {
     // 初始化 ExerciseService
     _exerciseService = serviceLocator<IExerciseService>();
     
-    _logDebug('應用啟動：正在清除所有緩存...');
+    _logDebug('應用啟動：載入訓練類型...');
 
-    // 清除緩存並載入訓練類型
-    ExerciseCacheService.clearCache().then((_) {
-      _logDebug('緩存清除完成，開始加載訓練類型');
-      _loadTrainingTypes();
-    }).catchError((error) {
-      _logDebug('緩存清除失敗: $error');
-      _loadTrainingTypes();
-    });
+    // 載入訓練類型
+    _loadTrainingTypes();
   }
 
   void _logDebug(String message) {
@@ -88,9 +82,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('載入訓練類型失敗: $e')),
-        );
+        NotificationUtils.showError(context, '載入訓練類型失敗: $e');
       }
     }
   }

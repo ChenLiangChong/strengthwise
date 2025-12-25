@@ -97,7 +97,7 @@ class UserModel {
       // Unix 時間戳記（毫秒）
       return DateTime.fromMillisecondsSinceEpoch(timestamp);
     } else if (timestamp.runtimeType.toString() == 'Timestamp') {
-      // Firebase Timestamp
+      // Timestamp 類型（向後相容）
       return DateTime.fromMillisecondsSinceEpoch(timestamp.millisecondsSinceEpoch);
     }
     

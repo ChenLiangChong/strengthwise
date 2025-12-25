@@ -3,6 +3,7 @@ import '../../models/favorite_exercise_model.dart';
 import '../../services/interfaces/i_favorites_service.dart';
 import '../../services/interfaces/i_statistics_service.dart';
 import '../../services/service_locator.dart';
+import '../../utils/notification_utils.dart';
 
 /// 5 層分類導航組件（用於選擇有訓練記錄的動作）
 ///
@@ -68,18 +69,33 @@ class _ExerciseSelectionNavigatorState
     });
 
     try {
-      // 暫時簡化：只顯示重訓類型
-      // 未來可以擴展為查詢所有有記錄的動作的訓練類型
+      // 獲取所有有記錄的動作
+      final exercises = await _statisticsService.getExercisesWithRecords(
+        widget.userId,
+      );
+
+      // 從動作中提取訓練類型（去重）
+      final typesSet = <String>{};
+      
+      for (var exercise in exercises) {
+        if (exercise.trainingType.isNotEmpty) {
+          typesSet.add(exercise.trainingType);
+        }
+      }
+      
+      // 如果沒有找到任何訓練類型，顯示預設選項
+      if (typesSet.isEmpty) {
+        typesSet.addAll(['重訓', '有氧', '伸展']);
+      }
+
       setState(() {
-        _trainingTypes = ['重訓'];
+        _trainingTypes = typesSet.toList()..sort();
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('載入失敗: $e')),
-        );
+        NotificationUtils.showError(context, '載入失敗: $e');
       }
     }
   }
@@ -135,6 +151,7 @@ class _ExerciseSelectionNavigatorState
           exerciseId: exercise.exerciseId,
           exerciseName: exercise.exerciseName,
           bodyPart: exercise.bodyPart,
+          trainingType: exercise.trainingType,
           lastTrainingDate: exercise.lastTrainingDate,
           maxWeight: exercise.maxWeight,
           totalSets: exercise.totalSets,
@@ -149,9 +166,7 @@ class _ExerciseSelectionNavigatorState
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('載入動作失敗: $e')),
-        );
+        NotificationUtils.showError(context, '載入動作失敗: $e');
       }
     }
   }
@@ -181,6 +196,7 @@ class _ExerciseSelectionNavigatorState
               exerciseId: e.exerciseId,
               exerciseName: e.exerciseName,
               bodyPart: e.bodyPart,
+              trainingType: e.trainingType,
               lastTrainingDate: e.lastTrainingDate,
               maxWeight: e.maxWeight,
               totalSets: e.totalSets,
@@ -192,9 +208,7 @@ class _ExerciseSelectionNavigatorState
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('操作失敗: $e')),
-        );
+        NotificationUtils.showError(context, '操作失敗: $e');
       }
     }
   }

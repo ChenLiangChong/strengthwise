@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../controllers/interfaces/i_auth_controller.dart';
 import '../services/service_locator.dart';
 import '../services/error_handling_service.dart';
+import '../utils/notification_utils.dart';
 import 'main_home_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -68,11 +69,9 @@ class _LoginPageState extends State<LoginPage> {
           MaterialPageRoute(builder: (_) => const MainHomePage()),
         );
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_authController.errorMessage ?? '登入失敗，請稍後再試'),
-            backgroundColor: Colors.red[700],
-          ),
+        NotificationUtils.showError(
+          context,
+          _authController.errorMessage ?? '登入失敗，請稍後再試',
         );
       }
     } catch (e) {
@@ -105,12 +104,10 @@ class _LoginPageState extends State<LoginPage> {
           displayMsg = 'Google 登入在模擬器上不可用。\n請使用真實設備測試，或使用下方的電子郵件登入功能。';
         }
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(displayMsg),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            duration: const Duration(seconds: 5),
-          ),
+        NotificationUtils.showError(
+          context,
+          displayMsg,
+          duration: const Duration(seconds: 5),
         );
       }
     } catch (e) {
@@ -118,12 +115,10 @@ class _LoginPageState extends State<LoginPage> {
       String errorMsg = e.toString();
       if (errorMsg.contains('模擬器') || errorMsg.contains('真實設備')) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Google 登入在模擬器上不可用。\n請使用真實設備測試，或使用下方的電子郵件登入功能。'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-              duration: const Duration(seconds: 5),
-            ),
+          NotificationUtils.showError(
+            context,
+            'Google 登入在模擬器上不可用。\n請使用真實設備測試，或使用下方的電子郵件登入功能。',
+            duration: const Duration(seconds: 5),
           );
         }
       } else {

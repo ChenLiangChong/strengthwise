@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../controllers/interfaces/i_auth_controller.dart';
 import '../../services/interfaces/i_workout_service.dart';
 import 'package:intl/intl.dart';
@@ -117,31 +116,31 @@ class _HomePageState extends State<HomePage> {
       // 計算今天的日期範圍（00:00 到 23:59）
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
+      final tomorrow = today.add(const Duration(days: 1));
 
-      // 使用 Supabase Client 查詢今天的訓練計畫（未完成的）
-      // 注意：這裡暫時直接使用 Supabase，因為 IWorkoutService 沒有提供未完成計畫的查詢方法
-      final response = await Supabase.instance.client
-          .from('workout_plans')
-          .select()
-          .eq('trainee_id', userId)
-          .eq('completed', false) // 只查詢未完成的
-          .gte('scheduled_date', today.toIso8601String())
-          .lt('scheduled_date',
-              today.add(const Duration(days: 1)).toIso8601String())
-          .order('scheduled_date', ascending: true);
+      // 使用 WorkoutService 查詢今天的訓練計畫（未完成的）
+      final plans = await _workoutService.getUserPlans(
+        completed: false,
+        startDate: today,
+        endDate: tomorrow,
+      );
 
-      print('[HomePage] 查詢到 ${response.length} 個今日訓練計畫');
+      print('[HomePage] 查詢到 ${plans.length} 個今日訓練計畫');
 
       // 轉換為 Map 格式（為了相容現有 UI）
-      final todayPlans = (response as List).map((data) {
+      final todayPlans = plans.map((plan) {
         return {
-          'id': data['id'],
-          'title': data['title'] ?? '訓練計畫',
-          'scheduledDate': data['scheduled_date'] != null
-              ? DateTime.parse(data['scheduled_date'])
-              : today,
-          'exercises': data['exercises'] ?? [],
-          'completed': data['completed'] ?? false,
+          'id': plan.id,
+          'title': plan.title ?? '訓練計畫',
+          'scheduledDate': plan.date,  // 使用 date 而不是 scheduledDate
+          'exercises': plan.exerciseRecords
+              .map((e) => {
+                    'exerciseName': e.exerciseName,
+                    'sets': e.sets.length,
+                    'completed': e.completed,  // 使用 completed 而不是 isCompleted
+                  })
+              .toList(),
+          'completed': plan.completed,
         };
       }).toList();
 

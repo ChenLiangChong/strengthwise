@@ -332,6 +332,56 @@ class WorkoutServiceSupabase implements IWorkoutService {
   }
 
   @override
+  Future<List<WorkoutRecord>> getUserPlans({
+    bool? completed,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    _ensureInitialized();
+
+    if (currentUserId == null) {
+      _logDebug('獲取用戶計劃：沒有登入用戶');
+      return [];
+    }
+
+    try {
+      _logDebug('從 workout_plans 獲取用戶訓練計劃 (completed: $completed, startDate: $startDate, endDate: $endDate)');
+
+      // 構建查詢
+      var query = _supabase
+          .from('workout_plans')
+          .select()
+          .eq('trainee_id', currentUserId!);
+
+      // 篩選完成狀態
+      if (completed != null) {
+        query = query.eq('completed', completed);
+      }
+
+      // 篩選日期範圍
+      if (startDate != null) {
+        query = query.gte('scheduled_date', startDate.toIso8601String());
+      }
+      if (endDate != null) {
+        query = query.lt('scheduled_date', endDate.toIso8601String());
+      }
+
+      // 執行查詢並排序
+      final response = await query.order('scheduled_date', ascending: completed == false);
+
+      final plans = (response as List)
+          .map((data) => WorkoutRecord.fromSupabase(data))
+          .toList();
+
+      _logDebug('成功獲取 ${plans.length} 個訓練計劃');
+      return plans;
+    } catch (e) {
+      _logError('獲取訓練計劃失敗: $e');
+      return [];
+    }
+  }
+
+  @override
   Future<WorkoutRecord?> getRecordById(String recordId) async {
     _ensureInitialized();
 
@@ -374,7 +424,7 @@ class WorkoutServiceSupabase implements IWorkoutService {
     }
 
     try {
-      _logDebug('創建新的訓練記錄');
+      _logDebug('創建新的訓練記錄: ${record.title}');
 
       // 生成新的 ID（使用 Firestore 兼容格式）
       final newId = _generateFirestoreId();
@@ -385,7 +435,7 @@ class WorkoutServiceSupabase implements IWorkoutService {
         'user_id': currentUserId,
         'trainee_id': currentUserId,
         'creator_id': currentUserId,
-        'title': '訓練記錄',
+        'title': record.title,  // 使用記錄的標題
         'plan_type': 'self',
         'scheduled_date': record.date.toIso8601String(),
         'completed_date': record.completed ? DateTime.now().toIso8601String() : null,
@@ -516,6 +566,7 @@ class WorkoutServiceSupabase implements IWorkoutService {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         workoutPlanId: templateId,
         userId: currentUserId!,
+        title: template.title,  // 使用模板的標題
         date: DateTime.now(),
         exerciseRecords: exerciseRecords,
         completed: false,

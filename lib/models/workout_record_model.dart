@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Firestore 已移除，改用 Supabase
 
 /// 訓練記錄模型
 ///
@@ -7,6 +7,7 @@ class WorkoutRecord {
   final String id;                        // 唯一標識符
   final String workoutPlanId;             // 關聯的訓練計劃ID
   final String userId;                    // 用戶ID
+  final String title;                     // 訓練標題
   final DateTime date;                    // 訓練日期
   final List<ExerciseRecord> exerciseRecords; // 運動記錄列表
   final String notes;                     // 備註
@@ -19,6 +20,7 @@ class WorkoutRecord {
     required this.id,
     required this.workoutPlanId,
     required this.userId,
+    required this.title,
     required this.date,
     required this.exerciseRecords,
     this.notes = '',
@@ -33,6 +35,7 @@ class WorkoutRecord {
       'id': id,
       'workoutPlanId': workoutPlanId,
       'userId': userId,
+      'title': title,
       'date': date.millisecondsSinceEpoch,
       'exerciseRecords': exerciseRecords.map((record) => record.toJson()).toList(),
       'notes': notes,
@@ -40,46 +43,6 @@ class WorkoutRecord {
       'createdAt': createdAt.millisecondsSinceEpoch,
       'trainingTime': trainingTime?.millisecondsSinceEpoch,
     };
-  }
-  
-  /// 轉換為 Firestore 可用的數據格式
-  Map<String, dynamic> toFirestore() {
-    return {
-      'workoutPlanId': workoutPlanId,
-      'userId': userId,
-      'date': Timestamp.fromDate(date),
-      'exerciseRecords': exerciseRecords.map((record) => record.toJson()).toList(),
-      'notes': notes,
-      'completed': completed,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'trainingTime': trainingTime != null ? Timestamp.fromDate(trainingTime!) : null,
-    };
-  }
-
-  /// 從 Firestore 數據創建對象
-  factory WorkoutRecord.fromFirestore(Map<String, dynamic> data, String docId) {
-    DateTime? trainingTime;
-    if (data['trainingTime'] != null) {
-      trainingTime = (data['trainingTime'] as Timestamp).toDate();
-    } else if (data['trainingHour'] != null) {
-      final date = (data['date'] as Timestamp).toDate();
-      final hour = data['trainingHour'] as int;
-      trainingTime = DateTime(date.year, date.month, date.day, hour, 0);
-    }
-    
-    return WorkoutRecord(
-      id: docId,
-      workoutPlanId: data['workoutPlanId'] ?? '',
-      userId: data['userId'] ?? '',
-      date: (data['date'] as Timestamp).toDate(),
-      exerciseRecords: (data['exerciseRecords'] as List<dynamic>? ?? [])
-          .map((e) => ExerciseRecord.fromFirestore(e as Map<String, dynamic>))
-          .toList(),
-      notes: data['notes'] ?? '',
-      completed: data['completed'] ?? false,
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      trainingTime: trainingTime,
-    );
   }
   
   /// 從 JSON 數據創建對象
@@ -93,6 +56,7 @@ class WorkoutRecord {
       id: json['id'] ?? '',
       workoutPlanId: json['workoutPlanId'] ?? '',
       userId: json['userId'] ?? '',
+      title: json['title'] ?? '訓練記錄',
       date: DateTime.fromMillisecondsSinceEpoch(json['date']),
       exerciseRecords: (json['exerciseRecords'] as List<dynamic>? ?? [])
           .map((e) => ExerciseRecord.fromJson(e as Map<String, dynamic>))
@@ -120,6 +84,7 @@ class WorkoutRecord {
       id: json['id'] ?? '',
       workoutPlanId: json['id'] ?? '', // workout_plans 的 id 就是 workoutPlanId
       userId: json['trainee_id'] ?? json['user_id'] ?? '',
+      title: json['title'] ?? '訓練記錄',
       date: json['completed_date'] != null 
           ? DateTime.parse(json['completed_date'])
           : (json['scheduled_date'] != null 
@@ -147,7 +112,13 @@ class WorkoutRecord {
     
     DateTime? trainingTime;
     if (planData['trainingTime'] != null) {
-      trainingTime = (planData['trainingTime'] as Timestamp).toDate();
+      // 支援 DateTime 或 String 格式
+      final timeData = planData['trainingTime'];
+      if (timeData is DateTime) {
+        trainingTime = timeData;
+      } else if (timeData is String) {
+        trainingTime = DateTime.parse(timeData);
+      }
     } else if (planData['trainingHour'] != null) {
       final date = DateTime.now();
       final hour = planData['trainingHour'] as int;
@@ -158,6 +129,7 @@ class WorkoutRecord {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       workoutPlanId: planId,
       userId: userId,
+      title: planData['title'] ?? '訓練記錄',
       date: DateTime.now(),
       exerciseRecords: exercises
           .map((e) => ExerciseRecord.fromWorkoutExercise(e as Map<String, dynamic>))
@@ -173,6 +145,7 @@ class WorkoutRecord {
     String? id,
     String? workoutPlanId,
     String? userId,
+    String? title,
     DateTime? date,
     List<ExerciseRecord>? exerciseRecords,
     String? notes,
@@ -184,6 +157,7 @@ class WorkoutRecord {
       id: id ?? this.id,
       workoutPlanId: workoutPlanId ?? this.workoutPlanId,
       userId: userId ?? this.userId,
+      title: title ?? this.title,
       date: date ?? this.date,
       exerciseRecords: exerciseRecords ?? this.exerciseRecords,
       notes: notes ?? this.notes,

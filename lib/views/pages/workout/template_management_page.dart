@@ -6,6 +6,7 @@ import '../../../controllers/interfaces/i_auth_controller.dart';
 import '../../../services/interfaces/i_workout_service.dart';
 import '../../../services/error_handling_service.dart';
 import '../../../services/service_locator.dart';
+import '../../../utils/notification_utils.dart';
 import 'template_editor_page.dart';
 
 class TemplateManagementPage extends StatefulWidget {
@@ -117,9 +118,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
       await _loadTemplates(forceRefresh: true);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('模板複製成功')),
-        );
+        NotificationUtils.showSuccess(context, '模板複製成功');
       }
     } catch (e) {
       if (mounted) {
@@ -139,9 +138,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
         });
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('模板已刪除')),
-          );
+          NotificationUtils.showSuccess(context, '模板已刪除');
         }
       }
     } catch (e) {
@@ -166,13 +163,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
       await _loadTemplates(forceRefresh: true);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('模板已更新'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        NotificationUtils.showSuccess(context, '模板已更新');
       }
     }
   }
@@ -211,6 +202,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
         id: record.id,
         workoutPlanId: record.workoutPlanId,
         userId: userId,
+        title: record.title,
         date: selectedDate,
         exerciseRecords: record.exerciseRecords,
         notes: record.notes,
@@ -222,10 +214,9 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
       await _workoutService.updateRecord(updatedRecord);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text('${selectedDate.month}月${selectedDate.day}日的訓練已安排')),
+        NotificationUtils.showSuccess(
+          context,
+          '${selectedDate.month}月${selectedDate.day}日的訓練已安排',
         );
       }
     } catch (e) {
@@ -257,13 +248,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
                 await _loadTemplates(forceRefresh: true);
                 
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('模板已創建'),
-                      backgroundColor: Colors.green,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
+                  NotificationUtils.showSuccess(context, '模板已創建');
                 }
               }
             },

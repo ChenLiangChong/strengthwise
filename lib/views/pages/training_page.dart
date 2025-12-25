@@ -6,6 +6,7 @@ import '../../controllers/interfaces/i_auth_controller.dart';
 import '../../services/interfaces/i_workout_service.dart';
 import '../../services/error_handling_service.dart';
 import '../../services/service_locator.dart';
+import '../../utils/notification_utils.dart';
 import 'workout/template_editor_page.dart';
 
 /// 訓練模板管理中心
@@ -85,18 +86,24 @@ class _TrainingPageState extends State<TrainingPage> {
       await _workoutService.createRecordFromTemplate(template.id);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('已創建今日訓練：${template.title}'),
-            action: SnackBarAction(
-              label: '查看',
-              onPressed: () {
-                // 切換到行事曆頁面
-                DefaultTabController.of(context).animateTo(1); // 假設行事曆是第2個 tab
-              },
-            ),
-          ),
+        // 使用統一的成功通知（浮動，不會完全遮擋底部內容）
+        NotificationUtils.showSuccess(
+          context,
+          '已創建今日訓練：${template.title}',
+          onAction: () {
+            // 切換到行事曆頁面
+            DefaultTabController.of(context).animateTo(1); // 假設行事曆是第2個 tab
+          },
+          actionLabel: '查看',
         );
+        
+        // 可選：短暫延遲後自動跳轉到行事曆
+        // 取消註解以啟用自動跳轉
+        // Future.delayed(const Duration(milliseconds: 1500), () {
+        //   if (mounted) {
+        //     DefaultTabController.of(context).animateTo(1);
+        //   }
+        // });
       }
     } catch (e) {
       print('[TrainingPage] 創建今日訓練失敗: $e');
@@ -139,6 +146,7 @@ class _TrainingPageState extends State<TrainingPage> {
         id: record.id,
         workoutPlanId: record.workoutPlanId,
         userId: userId,
+        title: record.title,
         date: selectedDate,
         exerciseRecords: record.exerciseRecords,
         notes: record.notes,
@@ -150,12 +158,9 @@ class _TrainingPageState extends State<TrainingPage> {
       await _workoutService.updateRecord(updatedRecord);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '已安排 ${selectedDate.month}/${selectedDate.day} 的訓練：${template.title}',
-            ),
-          ),
+        NotificationUtils.showSuccess(
+          context,
+          '已安排 ${selectedDate.month}/${selectedDate.day} 的訓練：${template.title}',
         );
       }
     } catch (e) {
@@ -180,13 +185,7 @@ class _TrainingPageState extends State<TrainingPage> {
       await _loadTemplates(forceRefresh: true);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('模板已更新'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        NotificationUtils.showSuccess(context, '模板已更新');
       }
     }
   }
@@ -223,9 +222,7 @@ class _TrainingPageState extends State<TrainingPage> {
         });
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('模板已刪除')),
-          );
+          NotificationUtils.showSuccess(context, '模板已刪除');
         }
       }
     } catch (e) {
@@ -296,13 +293,7 @@ class _TrainingPageState extends State<TrainingPage> {
       await _loadTemplates(forceRefresh: true);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('模板已創建'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        NotificationUtils.showSuccess(context, '模板已創建');
       }
     }
   }

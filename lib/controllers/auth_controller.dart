@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'dart:async';
 import '../models/user_model.dart';
 import '../services/interfaces/i_auth_service.dart';
-import '../services/auth_wrapper.dart';
 import '../services/error_handling_service.dart';
 import '../services/service_locator.dart' show Environment, serviceLocator;
 import 'interfaces/i_auth_controller.dart';
@@ -56,12 +54,6 @@ class AuthController extends ChangeNotifier implements IAuthController {
       _isLoading = true;
       notifyListeners();
       
-      // 確保服務已初始化（如果它是AuthWrapper）
-      if (_authService is AuthWrapper) {
-        final authWrapper = _authService as AuthWrapper;
-        await authWrapper.initialize(environment: Environment.production);
-      }
-      
       // 初始化當前用戶
       _refreshCurrentUser();
       
@@ -86,12 +78,6 @@ class AuthController extends ChangeNotifier implements IAuthController {
       await _authStateSubscription?.cancel();
       _authStateSubscription = null;
       
-      // 釋放服務資源（如果它是AuthWrapper）
-      if (_authService is AuthWrapper) {
-        final authWrapper = _authService as AuthWrapper;
-        await authWrapper.dispose();
-      }
-      
       _isInitialized = false;
       super.dispose();
     } catch (e) {
@@ -101,17 +87,13 @@ class AuthController extends ChangeNotifier implements IAuthController {
   
   /// 設置認證狀態監聽器
   void _setupAuthStateListener() {
-    if (_authService is AuthWrapper) {
-      // AuthWrapper 已經有內建的狀態監聽和處理
-      // 這裡可以添加額外的回調或自定義處理邏輯
-    } else {
-      // 根據具體需求實現狀態監聽
-      // 這裡是一個簡單的定期檢查示例
-      _authStateSubscription?.cancel();
-      _authStateSubscription = Stream.periodic(const Duration(seconds: 30)).listen((_) {
-        _refreshCurrentUser();
-      });
-    }
+    // Supabase Auth 狀態監聽
+    // 根據具體需求實現狀態監聽
+    // 這裡是一個簡單的定期檢查示例
+    _authStateSubscription?.cancel();
+    _authStateSubscription = Stream.periodic(const Duration(seconds: 30)).listen((_) {
+      _refreshCurrentUser();
+    });
   }
   
   /// 刷新當前用戶信息
@@ -140,32 +122,32 @@ class AuthController extends ChangeNotifier implements IAuthController {
   
   /// 將技術錯誤轉換為用戶友好的消息
   String _getUserFriendlyError(String errorMsg, dynamic originalError) {
-    // 處理Firebase Auth常見錯誤
-    if (originalError is firebase_auth.FirebaseAuthException) {
-      switch (originalError.code) {
-        case 'user-not-found':
-          return '找不到該用戶，請檢查您的電子郵件';
-        case 'wrong-password':
-          return '密碼不正確';
-        case 'invalid-email':
-          return '電子郵件格式無效';
-        case 'user-disabled':
-          return '該帳戶已被停用';
-        case 'email-already-in-use':
-          return '該電子郵件已被註冊';
-        case 'operation-not-allowed':
-          return '此操作不被允許';
-        case 'weak-password':
-          return '密碼強度太弱，請使用更複雜的密碼';
-        case 'network-request-failed':
-          return '網絡連接失敗，請檢查您的網絡連接';
-        case 'too-many-requests':
-          return '登入嘗試次數過多，請稍後再試';
-        case 'account-exists-with-different-credential':
-          return '此電子郵件已與其他登入方式關聯';
-        default:
-          return '登入失敗: ${originalError.message}';
-      }
+    // 處理 Supabase Auth 常見錯誤（通過錯誤訊息判斷）
+    final errorString = originalError?.toString() ?? errorMsg;
+    
+    if (errorString.contains('Invalid login credentials') || 
+        errorString.contains('user-not-found')) {
+      return '找不到該用戶，請檢查您的電子郵件或密碼';
+    } else if (errorString.contains('wrong-password')) {
+      return '密碼不正確';
+    } else if (errorString.contains('invalid-email') || 
+               errorString.contains('Invalid email')) {
+      return '電子郵件格式無效';
+    } else if (errorString.contains('user-disabled') || 
+               errorString.contains('User is disabled')) {
+      return '該帳戶已被停用';
+    } else if (errorString.contains('email-already-in-use') || 
+               errorString.contains('already registered')) {
+      return '該電子郵件已被註冊';
+    } else if (errorString.contains('weak-password') || 
+               errorString.contains('Password should be')) {
+      return '密碼強度太弱，請使用更複雜的密碼';
+    } else if (errorString.contains('network') || 
+               errorString.contains('Network')) {
+      return '網絡連接失敗，請檢查您的網絡連接';
+    } else if (errorString.contains('too-many-requests') || 
+               errorString.contains('rate limit')) {
+      return '登入嘗試次數過多，請稍後再試';
     }
     
     // 處理Google登入錯誤

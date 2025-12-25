@@ -3,6 +3,7 @@ import '../../models/favorite_exercise_model.dart';
 import '../../models/statistics_model.dart';
 import '../../services/interfaces/i_favorites_service.dart';
 import '../../services/service_locator.dart';
+import '../../utils/notification_utils.dart';
 import 'mini_line_chart.dart';
 
 /// 收藏動作列表組件
@@ -85,9 +86,7 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('載入收藏失敗: $e')),
-        );
+        NotificationUtils.showError(context, '載入收藏失敗: $e');
       }
     }
   }
@@ -99,15 +98,11 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
       await _loadFavorites();
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已移除收藏')),
-        );
+        NotificationUtils.showSuccess(context, '已移除收藏');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('移除收藏失敗: $e')),
-        );
+        NotificationUtils.showError(context, '移除收藏失敗: $e');
       }
     }
   }
@@ -166,12 +161,7 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
                   widget.onAddMoreTap!();
                 } else {
                   // 默認行為：顯示提示訊息
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('請設置 onAddMoreTap 回調'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
+                  NotificationUtils.showWarning(context, '請設置 onAddMoreTap 回調');
                 }
               },
               icon: const Icon(Icons.search),

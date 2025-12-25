@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Firestore 已移除，改用 Supabase
 
 /// 訓練類型枚舉
 enum ExerciseType {
@@ -94,38 +94,6 @@ class Exercise {
     required this.createdAt,
   });
 
-  /// 從 Firestore 文檔創建對象
-  factory Exercise.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    
-    return Exercise(
-      id: doc.id,
-      name: data['name'] ?? '',
-      nameEn: data['nameEn'] ?? '',
-      bodyParts: List<String>.from(data['bodyParts'] ?? []),
-      type: data['type'] ?? '',
-      equipment: data['equipment'] ?? '',
-      jointType: data['jointType'] ?? '',
-      level1: data['level1'] ?? '',
-      level2: data['level2'] ?? '',
-      level3: data['level3'] ?? '',
-      level4: data['level4'] ?? '',
-      level5: data['level5'] ?? '',
-      // 新的專業分類欄位
-      trainingType: data['trainingType'] ?? '',
-      bodyPart: data['bodyPart'] ?? '',
-      specificMuscle: data['specificMuscle'] ?? '',
-      equipmentCategory: data['equipmentCategory'] ?? '',
-      equipmentSubcategory: data['equipmentSubcategory'] ?? '',
-      actionName: data['actionName'] ?? '',
-      description: data['description'] ?? '',
-      imageUrl: data['imageUrl'] ?? '',
-      videoUrl: data['videoUrl'] ?? '',
-      apps: List<String>.from(data['apps'] ?? []),
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-    );
-  }
-
   /// 從 Supabase 資料創建對象
   /// 
   /// Supabase PostgreSQL 使用 snake_case 欄位名稱
@@ -158,35 +126,6 @@ class Exercise {
           ? DateTime.parse(data['created_at']) 
           : DateTime.now(),
     );
-  }
-
-  /// 轉換為 Firestore 可用的數據格式
-  Map<String, dynamic> toFirestore() {
-    return {
-      'name': name,
-      'nameEn': nameEn,
-      'bodyParts': bodyParts,
-      'type': type,
-      'equipment': equipment,
-      'jointType': jointType,
-      'level1': level1,
-      'level2': level2,
-      'level3': level3,
-      'level4': level4,
-      'level5': level5,
-      // 新的專業分類欄位
-      'trainingType': trainingType,
-      'bodyPart': bodyPart,
-      'specificMuscle': specificMuscle,
-      'equipmentCategory': equipmentCategory,
-      'equipmentSubcategory': equipmentSubcategory,
-      'actionName': actionName,
-      'description': description,
-      'imageUrl': imageUrl,
-      'videoUrl': videoUrl,
-      'apps': apps,
-      'createdAt': Timestamp.fromDate(createdAt),
-    };
   }
 
   /// 轉換為 JSON 數據格式

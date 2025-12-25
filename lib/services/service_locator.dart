@@ -1,6 +1,5 @@
 import 'package:get_it/get_it.dart';
 import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'interfaces/i_auth_service.dart';
 import 'interfaces/i_booking_service.dart';
@@ -18,14 +17,10 @@ import 'custom_exercise_service_supabase.dart'; // Supabase 自訂動作服務
 import 'exercise_service_supabase.dart'; // Supabase 運動服務
 import 'note_service_supabase.dart'; // Supabase Note Service
 import 'user_service_supabase.dart'; // Supabase User Service
-import 'user_migration_service.dart';
 import 'workout_service_supabase.dart'; // Supabase 訓練服務
 import 'statistics_service_supabase.dart'; // Supabase Statistics Service
 import 'favorites_service.dart';
 import 'error_handling_service.dart';
-import 'exercise_cache_service.dart';
-import 'preload_service.dart';
-import 'default_templates_service.dart';
 import '../controllers/interfaces/i_auth_controller.dart';
 import '../controllers/interfaces/i_booking_controller.dart';
 import '../controllers/interfaces/i_custom_exercise_controller.dart';
@@ -76,9 +71,6 @@ Future<void> setupServiceLocator() async {
     if (!serviceLocator.isRegistered<ErrorHandlingService>()) {
       serviceLocator.registerSingleton<ErrorHandlingService>(ErrorHandlingService());
     }
-    
-    // 初始化緩存服務
-    ExerciseCacheService.init();
 
     // === 服務層（懶加載單例） ===
     _registerServices();
@@ -157,13 +149,6 @@ void _registerServices() {
     );
   }
   
-  // 用戶遷移服務
-  if (!serviceLocator.isRegistered<UserMigrationService>()) {
-    serviceLocator.registerLazySingleton<UserMigrationService>(() => UserMigrationService(
-      errorService: serviceLocator<ErrorHandlingService>(),
-    ));
-  }
-  
   // 訓練計畫服務（使用 Supabase 版本）⭐
   if (!serviceLocator.isRegistered<IWorkoutService>()) {
     serviceLocator.registerLazySingleton<IWorkoutService>(
@@ -187,11 +172,6 @@ void _registerServices() {
     serviceLocator.registerLazySingleton<IFavoritesService>(() => FavoritesService(
       errorService: serviceLocator<ErrorHandlingService>(),
     ));
-  }
-  
-  // 默認模板服務
-  if (!serviceLocator.isRegistered<DefaultTemplatesService>()) {
-    serviceLocator.registerLazySingleton<DefaultTemplatesService>(() => DefaultTemplatesService());
   }
 }
 
@@ -261,7 +241,29 @@ void _registerControllers() {
 
 /// 初始化關鍵服務
 Future<void> _initializeCriticalServices() async {
-  // 初始化預約服務
+  // === 初始化認證服務（AuthService）===
+  try {
+    if (kDebugMode) {
+      print('初始化認證服務...');
+    }
+    
+    final authService = serviceLocator<IAuthService>();
+    if (authService is AuthServiceSupabase) {
+      await authService.initialize(environment: _currentEnvironment);
+      
+      if (kDebugMode) {
+        print('認證服務初始化完成');
+      }
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('初始化認證服務失敗: $e');
+    }
+    // 記錄錯誤但不拋出
+    serviceLocator<ErrorHandlingService>().logError('初始化認證服務失敗: $e');
+  }
+
+  // === 初始化預約服務 ===
   try {
     if (serviceLocator.isRegistered<IBookingService>()) {
       final bookingService = serviceLocator<IBookingService>();
@@ -290,28 +292,31 @@ Future<void> _initializeCriticalServices() async {
     serviceLocator<ErrorHandlingService>().logError('初始化預約服務失敗: $e');
   }
 
-  // 預加載常用數據 - 僅在生產和開發環境執行
-  if (_currentEnvironment != Environment.testing) {
-    try {
-      // 添加超時控制，避免卡住
-      await PreloadService.preloadCommonData().timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          if (kDebugMode) {
-            print('預加載數據超時，將在後台繼續加載');
-          }
-          // 在後台繼續加載
-          Future.microtask(() => PreloadService.preloadCommonData());
-        },
-      );
-    } catch (e) {
-      // 預加載失敗不應阻止應用啟動
-      if (kDebugMode) {
-        print('預加載數據失敗: $e');
-      }
-      // 記錄錯誤但不拋出
-      serviceLocator<ErrorHandlingService>().logError('預加載數據失敗: $e');
+  // === 初始化運動服務（ExerciseService）===
+  try {
+    if (kDebugMode) {
+      print('初始化運動服務...');
     }
+    
+    final exerciseService = serviceLocator<IExerciseService>();
+    if (exerciseService is ExerciseServiceSupabase) {
+      await exerciseService.initialize(environment: _currentEnvironment);
+      
+      if (kDebugMode) {
+        print('運動服務初始化完成');
+      }
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('初始化運動服務失敗: $e');
+    }
+    // 記錄錯誤但不拋出
+    serviceLocator<ErrorHandlingService>().logError('初始化運動服務失敗: $e');
+  }
+
+  // Supabase 的數據預加載通過各個 Service 的緩存機制實現
+  if (kDebugMode) {
+    print('服務定位器設置完成 - Supabase 模式');
   }
 }
 
@@ -339,9 +344,6 @@ Future<void> _cleanupServices() async {
   try {
     // 在這裡添加需要特殊清理的服務
     // 例如關閉數據庫連接、取消訂閱等
-    if (serviceLocator.isRegistered<IExerciseService>()) {
-      await ExerciseCacheService.clearCache();
-    }
   } catch (e) {
     if (kDebugMode) {
       print('清理服務資源時出錯: $e');

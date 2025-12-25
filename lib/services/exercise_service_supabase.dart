@@ -4,7 +4,6 @@ import 'dart:async';
 import '../models/exercise_model.dart';
 import 'interfaces/i_exercise_service.dart';
 import 'supabase_service.dart';
-import 'exercise_cache_service.dart';
 import 'error_handling_service.dart';
 import 'service_locator.dart' show Environment;
 
@@ -22,7 +21,7 @@ class ExerciseServiceSupabase implements IExerciseService {
   Environment _environment = Environment.development;
   
   // 服務配置
-  bool _useCache = true;
+  bool _useCache = false;  // 緩存服務已移除（Supabase 遷移）
   bool _preloadCommonData = true;
   int _queryTimeout = 15; // 秒
   
@@ -48,12 +47,6 @@ class ExerciseServiceSupabase implements IExerciseService {
     try {
       // 設定環境
       configureForEnvironment(environment);
-      
-      // 確保緩存服務已初始化
-      await ExerciseCacheService.init(
-        environment: environment,
-        errorService: _errorService,
-      );
       
       // 如果配置了預載入，載入常用資料
       if (_preloadCommonData) {
@@ -88,21 +81,21 @@ class ExerciseServiceSupabase implements IExerciseService {
     switch (environment) {
       case Environment.development:
         // 開發環境設定
-        _useCache = true;
+        _useCache = false;  // 緩存服務已移除（Supabase 遷移）
         _preloadCommonData = true;
         _queryTimeout = 20; // 更長的逾時，便於除錯
         _logDebug('運動服務配置為開發環境');
         break;
       case Environment.testing:
         // 測試環境設定
-        _useCache = false;
+        _useCache = false;  // 緩存服務已移除（Supabase 遷移）
         _preloadCommonData = false;
         _queryTimeout = 10;
         _logDebug('運動服務配置為測試環境');
         break;
       case Environment.production:
         // 生產環境設定
-        _useCache = true;
+        _useCache = false;  // 緩存服務已移除（Supabase 遷移）
         _preloadCommonData = true;
         _queryTimeout = 15;
         _logDebug('運動服務配置為生產環境');
@@ -141,18 +134,18 @@ class ExerciseServiceSupabase implements IExerciseService {
     _lastLoadTimes['exerciseTypes'] = DateTime.now();
     
     try {
-      // 首先嘗試從緩存獲取（如果啟用）
-      if (_useCache) {
-        try {
-          final cachedTypes = await ExerciseCacheService.getCategories('exerciseTypes');
-          if (cachedTypes.isNotEmpty) {
-            _logDebug('成功從緩存載入 ${cachedTypes.length} 個訓練類型');
-            return cachedTypes;
-          }
-        } catch (e) {
-          _logDebug('從緩存獲取訓練類型失敗，將從伺服器獲取: $e');
-        }
-      }
+      // 緩存功能已移除（Supabase 遷移）
+      // if (_useCache) {
+      //   try {
+      //     final cachedTypes = await ExerciseCacheService.getCategories('exerciseTypes');
+      //     if (cachedTypes.isNotEmpty) {
+      //       _logDebug('成功從緩存載入 ${cachedTypes.length} 個訓練類型');
+      //       return cachedTypes;
+      //     }
+      //   } catch (e) {
+      //     _logDebug('從緩存獲取訓練類型失敗，將從伺服器獲取: $e');
+      //   }
+      // }
       
       // 從 Supabase 獲取
       final response = await _client
@@ -167,11 +160,6 @@ class ExerciseServiceSupabase implements IExerciseService {
       }
       
       _logDebug('成功從伺服器載入 ${types.length} 個訓練類型');
-      
-      // 存入緩存（如果啟用）
-      if (_useCache && types.isNotEmpty) {
-        unawaited(ExerciseCacheService.cacheCategories('exerciseTypes', types));
-      }
       
       return types;
     } catch (e) {
@@ -188,18 +176,18 @@ class ExerciseServiceSupabase implements IExerciseService {
     _lastLoadTimes['bodyParts'] = DateTime.now();
     
     try {
-      // 首先嘗試從緩存獲取（如果啟用）
-      if (_useCache) {
-        try {
-          final cachedParts = await ExerciseCacheService.getCategories('bodyParts');
-          if (cachedParts.isNotEmpty) {
-            _logDebug('成功從緩存載入 ${cachedParts.length} 個身體部位');
-            return cachedParts;
-          }
-        } catch (e) {
-          _logDebug('從緩存獲取身體部位失敗，將從伺服器獲取: $e');
-        }
-      }
+      // 緩存功能已移除（Supabase 遷移）
+      // if (_useCache) {
+      //   try {
+      //     final cachedParts = await ExerciseCacheService.getCategories('bodyParts');
+      //     if (cachedParts.isNotEmpty) {
+      //       _logDebug('成功從緩存載入 ${cachedParts.length} 個身體部位');
+      //       return cachedParts;
+      //     }
+      //   } catch (e) {
+      //     _logDebug('從緩存獲取身體部位失敗，將從伺服器獲取: $e');
+      //   }
+      // }
       
       // 從 Supabase 獲取
       final response = await _client
@@ -214,11 +202,6 @@ class ExerciseServiceSupabase implements IExerciseService {
       }
       
       _logDebug('成功從伺服器載入 ${parts.length} 個身體部位');
-      
-      // 存入緩存（如果啟用）
-      if (_useCache && parts.isNotEmpty) {
-        unawaited(ExerciseCacheService.cacheCategories('bodyParts', parts));
-      }
       
       return parts;
     } catch (e) {
@@ -245,24 +228,24 @@ class ExerciseServiceSupabase implements IExerciseService {
     _logDebug('緩存鍵: $cacheKey');
     _lastLoadTimes[cacheKey] = DateTime.now();
     
-    // 清除該緩存鍵的舊資料（如果啟用緩存）
-    if (_useCache) {
-      await ExerciseCacheService.clearCacheForKey('cat_$cacheKey');
-    }
+    // 緩存功能已移除（Supabase 遷移）
+    // if (_useCache) {
+    //   await ExerciseCacheService.clearCacheForKey('cat_$cacheKey');
+    // }
     
     try {
-      // 首先嘗試從緩存獲取（如果啟用）
-      if (_useCache) {
-        try {
-          final cachedCategories = await ExerciseCacheService.getCategories(cacheKey);
-          if (cachedCategories.isNotEmpty) {
-            _logDebug('成功從緩存載入 Level$level 分類: ${cachedCategories.length} 個項目');
-            return cachedCategories;
-          }
-        } catch (e) {
-          _logDebug('從緩存獲取 Level$level 分類失敗，將從伺服器獲取: $e');
-        }
-      }
+      // 緩存功能已移除（Supabase 遷移）
+      // if (_useCache) {
+      //   try {
+      //     final cachedCategories = await ExerciseCacheService.getCategories(cacheKey);
+      //     if (cachedCategories.isNotEmpty) {
+      //       _logDebug('成功從緩存載入 Level$level 分類: ${cachedCategories.length} 個項目');
+      //       return cachedCategories;
+      //     }
+      //   } catch (e) {
+      //     _logDebug('從緩存獲取 Level$level 分類失敗，將從伺服器獲取: $e');
+      //   }
+      // }
       
       // 驗證必要條件
       if (level == 1) {
@@ -337,10 +320,10 @@ class ExerciseServiceSupabase implements IExerciseService {
       
       List<String> result = categories.toList()..sort();
       
-      // 存入緩存（如果啟用）
-      if (_useCache && result.isNotEmpty) {
-        unawaited(ExerciseCacheService.cacheCategories(cacheKey, result));
-      }
+      // 緩存功能已移除（Supabase 遷移）
+      // if (_useCache && result.isNotEmpty) {
+      //   unawaited(ExerciseCacheService.cacheCategories(cacheKey, result));
+      // }
       
       _logDebug('成功從伺服器載入 Level$level 分類: ${result.length} 個項目');
       return result;
@@ -359,24 +342,24 @@ class ExerciseServiceSupabase implements IExerciseService {
     _logDebug('最終動作緩存鍵: $cacheKey');
     _lastLoadTimes[cacheKey] = DateTime.now();
     
-    // 清除該緩存鍵的舊資料（如果啟用緩存）
-    if (_useCache) {
-      await ExerciseCacheService.clearCacheForKey('ex_$cacheKey');
-    }
+    // 緩存功能已移除（Supabase 遷移）
+    // if (_useCache) {
+    //   await ExerciseCacheService.clearCacheForKey('ex_$cacheKey');
+    // }
     
     try {
-      // 首先嘗試從緩存獲取（如果啟用）
-      if (_useCache) {
-        try {
-          final cachedExercises = await ExerciseCacheService.getExercises(cacheKey);
-          if (cachedExercises.isNotEmpty) {
-            _logDebug('成功從緩存載入 ${cachedExercises.length} 個運動');
-            return cachedExercises;
-          }
-        } catch (e) {
-          _logDebug('從緩存獲取運動失敗，將從伺服器獲取: $e');
-        }
-      }
+      // 緩存功能已移除（Supabase 遷移）
+      // if (_useCache) {
+      //   try {
+      //     final cachedExercises = await ExerciseCacheService.getExercises(cacheKey);
+      //     if (cachedExercises.isNotEmpty) {
+      //       _logDebug('成功從緩存載入 ${cachedExercises.length} 個運動');
+      //       return cachedExercises;
+      //     }
+      //   } catch (e) {
+      //     _logDebug('從緩存獲取運動失敗，將從伺服器獲取: $e');
+      //   }
+      // }
       
       // 建構 Supabase 查詢
       var query = _client.from('exercises').select();
@@ -419,10 +402,10 @@ class ExerciseServiceSupabase implements IExerciseService {
         }
       }
       
-      // 存入緩存（如果啟用）
-      if (_useCache && exercises.isNotEmpty) {
-        unawaited(ExerciseCacheService.cacheExercises(cacheKey, exercises));
-      }
+      // 緩存功能已移除（Supabase 遷移）
+      // if (_useCache && exercises.isNotEmpty) {
+      //   unawaited(ExerciseCacheService.cacheExercises(cacheKey, exercises));
+      // }
       
       _logDebug('成功從伺服器載入 ${exercises.length} 個運動');
       return exercises;
@@ -469,13 +452,9 @@ class ExerciseServiceSupabase implements IExerciseService {
   /// 確保服務已初始化
   void _ensureInitialized() {
     if (!_isInitialized) {
-      _logDebug('警告: 運動服務在初始化前被呼叫');
-      // 在開發環境中自動初始化，但在其他環境拋出錯誤
-      if (_environment == Environment.development) {
-        initialize();
-      } else {
-        throw StateError('運動服務未初始化');
-      }
+      _logError('錯誤: 運動服務在初始化前被呼叫');
+      // 拋出錯誤，要求在 Service Locator 中正確初始化
+      throw StateError('運動服務未初始化。請確保在 setupServiceLocator() 中調用了 initialize()');
     }
   }
   

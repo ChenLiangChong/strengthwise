@@ -77,6 +77,7 @@ class ExerciseWithRecord {
   final String exerciseId;       // 動作 ID
   final String exerciseName;     // 動作名稱
   final String bodyPart;         // 身體部位
+  final String trainingType;     // 訓練類型（重訓、有氧、伸展等）
   final DateTime lastTrainingDate; // 最後訓練日期
   final double maxWeight;        // 最大重量
   final int totalSets;           // 總組數
@@ -86,6 +87,7 @@ class ExerciseWithRecord {
     required this.exerciseId,
     required this.exerciseName,
     required this.bodyPart,
+    required this.trainingType,
     required this.lastTrainingDate,
     required this.maxWeight,
     required this.totalSets,

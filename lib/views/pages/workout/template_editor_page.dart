@@ -5,6 +5,7 @@ import '../../../models/exercise_model.dart';
 import '../../../services/interfaces/i_workout_service.dart';
 import '../../../services/interfaces/i_auth_service.dart';
 import '../../../services/service_locator.dart';
+import '../../../utils/notification_utils.dart';
 import '../exercises_page.dart';
 
 /// 訓練模板編輯頁面
@@ -76,16 +77,12 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
   /// 保存模板
   Future<void> _saveTemplate() async {
     if (_titleController.text.isEmpty || _selectedPlanType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請填寫模板名稱和類型')),
-      );
+      NotificationUtils.showWarning(context, '請填寫模板名稱和類型');
       return;
     }
 
     if (_exercises.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請至少添加一個動作')),
-      );
+      NotificationUtils.showWarning(context, '請至少添加一個動作');
       return;
     }
 
@@ -141,12 +138,10 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
       print('[模板編輯] 保存失敗: $e');
       print('[模板編輯] Stack trace: $stackTrace');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('保存模板失敗: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
+        NotificationUtils.showError(
+          context,
+          '保存模板失敗: $e',
+          duration: const Duration(seconds: 5),
         );
       }
     } finally {
@@ -252,9 +247,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
               final restTime = int.tryParse(restTimeController.text);
 
               if (sets == null || reps == null || weight == null || restTime == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('請輸入有效的數值')),
-                );
+                NotificationUtils.showWarning(context, '請輸入有效的數值');
                 return;
               }
 

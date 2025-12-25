@@ -44,8 +44,9 @@ flutter {
     source = "../.."
 }
 
-apply(plugin = "com.google.gms.google-services")
-apply(plugin = "com.google.firebase.crashlytics")
+// Firebase 相關 Plugin 已移除（已遷移到 Supabase）
+// apply(plugin = "com.google.gms.google-services")
+// apply(plugin = "com.google.firebase.crashlytics")
 
 dependencies {
     implementation("androidx.multidex:multidex:2.0.1")

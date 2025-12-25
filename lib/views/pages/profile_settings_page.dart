@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../models/user_model.dart';
 import '../../services/interfaces/i_user_service.dart';
 import '../../services/service_locator.dart';
+import '../../utils/notification_utils.dart';
 import '../main_home_page.dart';
 
 class ProfileSettingsPage extends StatefulWidget {
@@ -106,9 +107,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     
     // 檢查必填欄位
     if (_gender == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請選擇性別'))
-      );
+      NotificationUtils.showWarning(context, '請選擇性別');
       return;
     }
     
@@ -136,9 +135,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     });
     
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('個人資料已保存'))
-      );
+      NotificationUtils.showSuccess(context, '個人資料已保存');
       
       // 如果是首次設置，完成後導航到主頁
       if (widget.isFirstTimeSetup) {
@@ -149,9 +146,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         Navigator.of(context).pop();
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('保存失敗，請稍後再試'))
-      );
+      NotificationUtils.showError(context, '保存失敗，請稍後再試');
     }
   }
 

@@ -18,7 +18,6 @@ class AuthServiceSupabase implements IAuthService {
 
   // 服務狀態
   bool _isInitialized = false;
-  Environment _environment = Environment.development;
 
   // 驗證監聽器
   StreamSubscription<AuthState>? _authStateSubscription;
@@ -74,8 +73,6 @@ class AuthServiceSupabase implements IAuthService {
 
   /// 根據環境配置服務
   void configureForEnvironment(Environment environment) {
-    _environment = environment;
-
     switch (environment) {
       case Environment.development:
         _logDebug('認證服務配置為開發環境');
@@ -290,12 +287,7 @@ class AuthServiceSupabase implements IAuthService {
   void _ensureInitialized() {
     if (!_isInitialized) {
       _logDebug('警告：認證服務在初始化前被呼叫');
-      if (_environment == Environment.development) {
-        // 開發環境自動初始化
-        initialize();
-      } else {
-        throw StateError('認證服務未初始化');
-      }
+      throw StateError('認證服務未初始化，請確保在 Service Locator 中正確初始化');
     }
   }
 

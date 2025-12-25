@@ -3,6 +3,7 @@ import '../../models/note_model.dart';
 import '../../controllers/interfaces/i_note_controller.dart';
 import '../../services/error_handling_service.dart';
 import '../../services/service_locator.dart';
+import '../../utils/notification_utils.dart';
 
 class NoteEditorPage extends StatefulWidget {
   final Note? note;
@@ -56,9 +57,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
   Future<void> _saveNote() async {
     // 驗證標題不能為空
     if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請輸入筆記標題')),
-      );
+      NotificationUtils.showWarning(context, '請輸入筆記標題');
       return;
     }
     

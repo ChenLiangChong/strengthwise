@@ -3,6 +3,7 @@ import '../../models/note_model.dart';
 import '../../controllers/interfaces/i_note_controller.dart';
 import '../../services/error_handling_service.dart';
 import '../../services/service_locator.dart';
+import '../../utils/notification_utils.dart';
 import 'note_editor_page.dart';
 import 'statistics_page_v2.dart';
 
@@ -69,13 +70,9 @@ class _RecordsPageState extends State<RecordsPage> {
           _notes.removeWhere((note) => note.id == noteId);
         });
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('筆記已刪除')),
-        );
+        NotificationUtils.showSuccess(context, '筆記已刪除');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('刪除筆記失敗')),
-        );
+        NotificationUtils.showError(context, '刪除筆記失敗');
       }
     } catch (e) {
       if (!mounted) return;

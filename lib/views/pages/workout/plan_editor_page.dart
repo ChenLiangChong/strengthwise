@@ -9,6 +9,7 @@ import '../../../services/service_locator.dart';
 import '../exercises_page.dart';
 import 'template_management_page.dart';
 import '../../../models/workout_template_model.dart';
+import '../../../utils/notification_utils.dart';
 
 class PlanEditorPage extends StatefulWidget {
   final DateTime selectedDate;
@@ -61,7 +62,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
     // 如果提供了計劃類型，設置默認值
     if (widget.planType != null) {
-      // 注意: 這裡的 planType 是用於 Firebase 存儲的值 ("self" 或 "trainer")
+      // 注意: 這裡的 planType 是用於資料庫存儲的值 ("self" 或 "trainer")
       // 而 _selectedPlanType 是界面顯示的訓練類型 (力量訓練, 有氧訓練等)
       // 我們在保存時會保存兩種值
     }
@@ -75,12 +76,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     if (selectedDate.isBefore(today)) {
       // 使用 Future.microtask 確保在 initState 之後顯示錯誤提示並返回
       Future.microtask(() {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('無法為過去的日期創建訓練計畫'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationUtils.showError(context, '無法為過去的日期創建訓練計畫');
         Navigator.of(context).pop();
       });
       return;
@@ -103,7 +99,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       final record = await _workoutService.getRecordById(widget.planId!);
       
       if (record != null) {
-        _titleController.text = '訓練記錄'; // WorkoutRecord 沒有 title
+        _titleController.text = record.title;
         _descriptionController.text = record.notes;
         _selectedPlanType = '力量訓練'; // 預設值
 
@@ -131,9 +127,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       }
     } catch (e) {
       print('[PlanEditor] 載入失敗: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('載入訓練計畫失敗: $e')),
-      );
+      NotificationUtils.showError(context, '載入訓練計畫失敗: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -144,9 +138,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   // 保存訓練計畫
   Future<void> _savePlan() async {
     if (_titleController.text.isEmpty || _selectedPlanType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請填寫計畫名稱和類型')),
-      );
+      NotificationUtils.showWarning(context, '請填寫計畫名稱和類型');
       return;
     }
 
@@ -192,6 +184,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
             id: widget.planId!,
             workoutPlanId: existingRecord.workoutPlanId,
             userId: userId,
+            title: _titleController.text.isNotEmpty ? _titleController.text : '訓練記錄',
             date: widget.selectedDate,
             exerciseRecords: exerciseRecords,
             notes: _descriptionController.text,
@@ -211,6 +204,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           id: '', // 會在 createRecord 中生成
           workoutPlanId: '',
           userId: userId,
+          title: _titleController.text.isNotEmpty ? _titleController.text : '訓練記錄',
           date: widget.selectedDate,
           exerciseRecords: exerciseRecords,
           notes: _descriptionController.text,
@@ -230,9 +224,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     } catch (e) {
       print('[PlanEditor] 保存失敗: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('保存訓練計畫失敗: $e')),
-        );
+        NotificationUtils.showError(context, '保存訓練計畫失敗: $e');
       }
     } finally {
       if (mounted) {
@@ -247,16 +239,12 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   Future<void> _saveAsTemplate() async {
     try {
       if (_titleController.text.isEmpty || _selectedPlanType == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('請填寫計畫名稱和類型')),
-        );
+        NotificationUtils.showWarning(context, '請填寫計畫名稱和類型');
         return;
       }
 
       if (_exercises.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('請至少添加一個訓練動作')),
-        );
+        NotificationUtils.showWarning(context, '請至少添加一個訓練動作');
         return;
       }
 
@@ -324,9 +312,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('模板保存成功')),
-        );
+        NotificationUtils.showSuccess(context, '模板保存成功');
       }
     } catch (e, stackTrace) {
       print('[PlanEditor] 保存模板錯誤: $e');
@@ -337,9 +323,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('保存模板失敗: $e')),
-        );
+        NotificationUtils.showError(context, '保存模板失敗: $e');
       }
     }
   }
@@ -349,9 +333,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     try {
       final userId = _authController.user?.uid;
       if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('請先登入')),
-        );
+        NotificationUtils.showWarning(context, '請先登入');
         return;
       }
 
@@ -374,15 +356,11 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           }
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已加載模板: ${template.title}')),
-        );
+        NotificationUtils.showSuccess(context, '已加載模板: ${template.title}');
       }
     } catch (e) {
       print('從模板加載錯誤: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('加載模板失敗: $e')),
-      );
+      NotificationUtils.showError(context, '加載模板失敗: $e');
     }
   }
 
@@ -461,9 +439,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
               final weight = double.tryParse(weightController.text);
 
               if (reps == null || weight == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('請輸入有效的數值')),
-                );
+                NotificationUtils.showWarning(context, '請輸入有效的數值');
                 return;
               }
 
@@ -594,9 +570,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
               final weight = double.tryParse(weightController.text);
 
               if (reps == null || weight == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('請輸入有效的數值')),
-                );
+                NotificationUtils.showWarning(context, '請輸入有效的數值');
                 return;
               }
 
@@ -974,7 +948,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                             return Card(
                               key: Key(exercise.id),
                               margin: const EdgeInsets.symmetric(vertical: 8),
-                              color: Colors.green.shade50,
+                              elevation: 1,
                               child: Padding(
                                 padding: const EdgeInsets.all(16.0),
                                 child: Column(
@@ -993,19 +967,24 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                               Text(
                                                 exercise.actionName ??
                                                     exercise.name,
-                                                style: const TextStyle(
-                                                  fontSize: 18.0,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleMedium
+                                                    ?.copyWith(
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
                                               ),
+                                              const SizedBox(height: 4),
                                               Text(
                                                 '${exercise.equipment} | ${exercise.bodyParts.join(", ")}',
-                                                style: TextStyle(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                                  fontSize: 12,
-                                                ),
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.copyWith(
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
                                               ),
                                             ],
                                           ),
@@ -1014,67 +993,97 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             IconButton(
-                                              icon: const Icon(Icons.copy,
-                                                  size: 20),
-                                              color: Colors.blue,
+                                              icon: const Icon(Icons.copy),
+                                              iconSize: 24,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
                                               onPressed: () =>
                                                   _batchEditSets(index),
                                               tooltip: '批量編輯',
+                                              constraints: const BoxConstraints(
+                                                minWidth: 48,
+                                                minHeight: 48,
+                                              ),
                                             ),
                                             IconButton(
-                                              icon: const Icon(Icons.delete,
-                                                  size: 20),
-                                              color: Colors.red,
+                                              icon: const Icon(Icons.delete_outline),
+                                              iconSize: 24,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .error,
                                               onPressed: () =>
                                                   _removeExercise(index),
                                               tooltip: '刪除動作',
+                                              constraints: const BoxConstraints(
+                                                minWidth: 48,
+                                                minHeight: 48,
+                                              ),
                                             ),
                                           ],
                                         ),
                                       ],
                                     ),
-                                    const Divider(),
+                                    const Divider(height: 16),
                                     // 組數調整
                                     Row(
                                       children: [
-                                        const Text(
+                                        Text(
                                           '訓練組數',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleSmall
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                         ),
                                         const Spacer(),
                                         IconButton(
                                           icon: const Icon(
                                               Icons.remove_circle_outline),
+                                          iconSize: 24,
                                           color: exercise.sets > 1
-                                              ? Colors.red
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .error
                                               : Theme.of(context)
                                                   .colorScheme
                                                   .onSurfaceVariant,
                                           onPressed: exercise.sets > 1
                                               ? () => _adjustSets(index, -1)
                                               : null,
+                                          constraints: const BoxConstraints(
+                                            minWidth: 48,
+                                            minHeight: 48,
+                                          ),
                                         ),
                                         Text(
                                           '${exercise.sets} 組',
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                         ),
                                         IconButton(
                                           icon: const Icon(
                                               Icons.add_circle_outline),
+                                          iconSize: 24,
                                           color: exercise.sets < 10
-                                              ? Colors.green
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
                                               : Theme.of(context)
                                                   .colorScheme
                                                   .onSurfaceVariant,
                                           onPressed: exercise.sets < 10
                                               ? () => _adjustSets(index, 1)
                                               : null,
+                                          constraints: const BoxConstraints(
+                                            minWidth: 48,
+                                            minHeight: 48,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -1108,6 +1117,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
                                         return ListTile(
                                           contentPadding: EdgeInsets.zero,
+                                          minVerticalPadding: 8,
                                           leading: CircleAvatar(
                                             backgroundColor: Theme.of(context)
                                                 .colorScheme
@@ -1117,15 +1127,36 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                                                 .onPrimary,
                                             child: Text('${setIndex + 1}'),
                                           ),
-                                          title: Text('第 ${setIndex + 1} 組'),
+                                          title: Text(
+                                            '第 ${setIndex + 1} 組',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyLarge,
+                                          ),
                                           subtitle: Text(
-                                              '$targetReps 次 × $targetWeight kg'),
+                                            '$targetReps 次 × $targetWeight kg',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                          ),
                                           trailing: IconButton(
-                                            icon: const Icon(Icons.edit),
-                                            color: Colors.blue,
+                                            icon: const Icon(Icons.edit_outlined),
+                                            iconSize: 24,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
                                             onPressed: () =>
                                                 _editSet(index, setIndex),
                                             tooltip: '編輯',
+                                            constraints: const BoxConstraints(
+                                              minWidth: 48,
+                                              minHeight: 48,
+                                            ),
                                           ),
                                         );
                                       },

@@ -8,7 +8,6 @@ import '../../services/service_locator.dart';
 import '../../controllers/theme_controller.dart';
 import '../login_page.dart';
 import 'profile_settings_page.dart';
-import 'migration_test_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -238,21 +237,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   const Divider(),
                   // 主題切換選項
                   _buildThemeSwitcher(context),
-                  // 開發模式：遷移測試入口
-                  if (kDebugMode) ...[
-                    const Divider(),
-                    _buildMenuItem(
-                      icon: Icons.bug_report,
-                      title: '遷移測試（開發用）',
-                      onTap: () async {
-                        await Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const MigrationTestPage(),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
                   const Divider(),
                   _buildMenuItem(
                     icon: Icons.logout,

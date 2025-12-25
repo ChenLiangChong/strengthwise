@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Firestore 已移除，改用 Supabase
 import 'workout_exercise_model.dart';
 
 /// 訓練計劃類型枚舉
@@ -83,43 +83,10 @@ class WorkoutTemplate {
       'description': description,
       'planType': planType,
       'exercises': exercises.map((e) => e.toJson()).toList(),
-      'trainingTime': trainingTime != null ? Timestamp.fromDate(trainingTime!) : null,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
+      'trainingTime': trainingTime?.toIso8601String(),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
-  }
-  
-  /// 轉換為 Firestore 可用的數據格式
-  Map<String, dynamic> toFirestore() {
-    return toJson();
-  }
-
-  /// 從 Firestore 文檔創建對象
-  factory WorkoutTemplate.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    
-    DateTime? trainingTime;
-    if (data['trainingTime'] != null) {
-      trainingTime = (data['trainingTime'] as Timestamp).toDate();
-    } else if (data['trainingHour'] != null) {
-      final today = DateTime.now();
-      final hour = data['trainingHour'] as int;
-      trainingTime = DateTime(today.year, today.month, today.day, hour, 0);
-    }
-    
-    return WorkoutTemplate(
-      id: doc.id,
-      userId: data['userId'] ?? '',
-      title: data['title'] ?? '',
-      description: data['description'] ?? '',
-      planType: data['planType'] ?? '',
-      exercises: (data['exercises'] as List<dynamic>?)
-          ?.map((e) => WorkoutExercise.fromFirestore(e as Map<String, dynamic>))
-          .toList() ?? [],
-      trainingTime: trainingTime,
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-    );
   }
   
   /// 從 JSON 創建對象

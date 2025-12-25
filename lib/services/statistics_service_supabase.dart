@@ -629,6 +629,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
           exerciseId: stat.exerciseId,
           exerciseName: stat.exerciseName,
           bodyPart: exercise.bodyPart.isNotEmpty ? exercise.bodyPart : '其他',
+          trainingType: exercise.trainingType.isNotEmpty ? exercise.trainingType : '重訓',
           lastTrainingDate: stat.lastTrainingDate,
           maxWeight: stat.maxWeight,
           totalSets: stat.totalSets,

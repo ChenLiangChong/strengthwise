@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../controllers/theme_controller.dart';
 import '../../themes/app_theme.dart';
+import '../../utils/notification_utils.dart';
 import '../widgets/exercise_card.dart';
 
 /// 訓練 UI 測試頁面
@@ -128,9 +129,7 @@ class _WorkoutUITestPageState extends State<WorkoutUITestPage> {
           // 完成按鈕
           TextButton(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('訓練已完成！')),
-              );
+              NotificationUtils.showSuccess(context, '訓練已完成！');
             },
             child: const Text(
               '完成',
@@ -241,9 +240,7 @@ class _WorkoutUITestPageState extends State<WorkoutUITestPage> {
       ),
       child: OutlinedButton(
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('新增動作功能開發中...')),
-          );
+          NotificationUtils.showInfo(context, '新增動作功能開發中...');
         },
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
@@ -288,9 +285,7 @@ class _WorkoutUITestPageState extends State<WorkoutUITestPage> {
                 title: const Text('替換動作'),
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('替換動作功能開發中...')),
-                  );
+                  NotificationUtils.showInfo(context, '替換動作功能開發中...');
                 },
               ),
               ListTile(
@@ -298,9 +293,7 @@ class _WorkoutUITestPageState extends State<WorkoutUITestPage> {
                 title: const Text('查看歷史'),
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('查看歷史功能開發中...')),
-                  );
+                  NotificationUtils.showInfo(context, '查看歷史功能開發中...');
                 },
               ),
               ListTile(
@@ -313,9 +306,7 @@ class _WorkoutUITestPageState extends State<WorkoutUITestPage> {
                   setState(() {
                     _exercises.removeAt(exerciseIndex);
                   });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('動作已刪除')),
-                  );
+                  NotificationUtils.showSuccess(context, '動作已刪除');
                 },
               ),
             ],

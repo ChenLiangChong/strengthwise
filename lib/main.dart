@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'firebase_options.dart';
 import 'views/splash_screen.dart';
 import 'services/service_locator.dart';
 import 'services/supabase_service.dart';
@@ -27,29 +25,14 @@ void main() {
     print('日期格式化初始化成功');
 
     try {
-      // 嘗試初始化 Firebase，使用 try-catch 來捕獲重複初始化錯誤
-      try {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
-        print('Firebase 初始化成功');
-      } catch (e) {
-        // 忽略已存在的 Firebase 應用實例錯誤
-        if (e.toString().contains('core/duplicate-app')) {
-          print('Firebase 已經初始化，繼續執行');
-        } else {
-          // 其他錯誤則重新拋出
-          rethrow;
-        }
-      }
-
-      // 初始化 Supabase（用於動作庫等靜態資料）
+      // 初始化 Supabase
       try {
         await SupabaseService.initialize();
         print('Supabase 初始化成功');
       } catch (e) {
         print('Supabase 初始化失敗: $e');
-        // Supabase 初始化失敗不阻止應用啟動（可以繼續使用 Firebase）
+        // Supabase 初始化失敗會阻止應用啟動
+        rethrow;
       }
 
       // 設置環境和初始化服務定位器
