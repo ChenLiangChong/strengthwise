@@ -23,6 +23,11 @@ abstract class IBodyDataService {
   /// 獲取最新的身體數據記錄
   Future<BodyDataRecord?> getLatestRecord(String userId);
 
+  /// 🆕 查詢指定日期的身體數據記錄
+  /// 
+  /// 用於實現"每日一筆數據"邏輯
+  Future<BodyDataRecord?> getRecordByDate(String userId, DateTime date);
+
   /// 獲取指定日期範圍的平均體重
   Future<double?> getAverageWeight({
     required String userId,

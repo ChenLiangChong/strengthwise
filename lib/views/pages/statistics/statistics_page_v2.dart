@@ -130,10 +130,21 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
             // 無數據
             final data = controller.statisticsData;
             if (data == null || !data.hasData) {
-              return const EmptyStateWidget(
-                icon: Icons.fitness_center,
-                title: '還沒有訓練記錄',
-                subtitle: '開始訓練後就能看到統計數據了！',
+              return Column(
+                children: [
+                  // 🐛 修復：即使沒有數據，也顯示時間範圍選擇器
+                  TimeRangeSelector(
+                    currentRange: controller.timeRange,
+                    onRangeChanged: (range) => controller.changeTimeRange(range),
+                  ),
+                  Expanded(
+                    child: const EmptyStateWidget(
+                      icon: Icons.fitness_center,
+                      title: '這個時間範圍還沒有訓練記錄',
+                      subtitle: '試試切換到其他時間範圍，或開始訓練吧！',
+                    ),
+                  ),
+                ],
               );
             }
 

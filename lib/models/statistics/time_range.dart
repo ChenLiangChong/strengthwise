@@ -1,6 +1,7 @@
 /// 時間範圍枚舉
 enum TimeRange {
   week,       // 本週
+  sevenDays,  // 最近七天 🆕
   month,      // 本月
   threeMonth, // 三個月
   year,       // 本年
@@ -13,6 +14,8 @@ extension TimeRangeExtension on TimeRange {
     switch (this) {
       case TimeRange.week:
         return '本週';
+      case TimeRange.sevenDays:
+        return '最近七天';
       case TimeRange.month:
         return '本月';
       case TimeRange.threeMonth:
@@ -34,6 +37,10 @@ extension TimeRangeExtension on TimeRange {
         final sunday = now.subtract(Duration(days: daysFromSunday));
         // 返回當週週日的 00:00:00
         return DateTime(sunday.year, sunday.month, sunday.day);
+      case TimeRange.sevenDays:
+        // 🆕 最近七天：從今天往前推 7 天
+        final sevenDaysAgo = now.subtract(const Duration(days: 7));
+        return DateTime(sevenDaysAgo.year, sevenDaysAgo.month, sevenDaysAgo.day);
       case TimeRange.month:
         return DateTime(now.year, now.month, 1);
       case TimeRange.threeMonth:

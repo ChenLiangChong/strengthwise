@@ -328,6 +328,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
     final timeRanges = [
       TimeRange.week,
+      TimeRange.sevenDays,  // 🆕 最近七天
       TimeRange.month,
       TimeRange.threeMonth,
       TimeRange.year,
@@ -432,10 +433,15 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
           // 累計訓練數據
           if (!exerciseStats.containsKey(exerciseId)) {
+            // 🐛 修復：使用 completed_date 或 updated_at，並處理 null 情況
+            final dateStr = data['completed_date'] as String? ?? 
+                           data['updated_at'] as String? ?? 
+                           DateTime.now().toIso8601String();
+            
             exerciseStats[exerciseId] = _ExerciseRecordData(
               exerciseId: exerciseId,
               exerciseName: exerciseName,
-              lastTrainingDate: DateTime.parse(data['updated_at'] as String),
+              lastTrainingDate: DateTime.parse(dateStr),
               maxWeight: 0,
               totalSets: 0,
             );
@@ -444,9 +450,14 @@ class StatisticsServiceSupabase implements IStatisticsService {
           final stat = exerciseStats[exerciseId]!;
           stat.totalSets += sets.length;
 
-          final updatedAt = DateTime.parse(data['updated_at'] as String);
-          if (updatedAt.isAfter(stat.lastTrainingDate)) {
-            stat.lastTrainingDate = updatedAt;
+          // 🐛 修復：使用 completed_date 或 updated_at，並處理 null 情況
+          final dateStr = data['completed_date'] as String? ?? 
+                         data['updated_at'] as String?;
+          if (dateStr != null) {
+            final updatedAt = DateTime.parse(dateStr);
+            if (updatedAt.isAfter(stat.lastTrainingDate)) {
+              stat.lastTrainingDate = updatedAt;
+            }
           }
 
           for (var set in sets) {

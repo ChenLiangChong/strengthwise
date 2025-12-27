@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import '../../../../models/body_data_record.dart';
 
 /// 體重趨勢圖表
@@ -50,8 +51,36 @@ class WeightTrendChart extends StatelessWidget {
                         },
                       ),
                     ),
-                    bottomTitles:
-                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 32,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index < 0 || index >= sortedRecords.length) {
+                            return const SizedBox.shrink();
+                          }
+                          
+                          // 只顯示特定位置的日期標籤，避免重複
+                          final totalRecords = sortedRecords.length;
+                          final showInterval = (totalRecords / 4).ceil().clamp(1, totalRecords);
+                          
+                          // 只在間隔位置顯示標籤
+                          if (index % showInterval != 0 && index != totalRecords - 1) {
+                            return const SizedBox.shrink();
+                          }
+                          
+                          final date = sortedRecords[index].recordDate;
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              DateFormat('MM/dd').format(date),
+                              style: textTheme.bodySmall,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                     topTitles:
                         AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     rightTitles:

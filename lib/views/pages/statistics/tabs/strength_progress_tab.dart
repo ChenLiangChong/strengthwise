@@ -126,9 +126,8 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
                 ),
               )
                   .then((_) {
-                // 從詳情頁返回後，重新檢查收藏狀態並刷新統計數據
+                // 🐛 修復：只需要刷新收藏狀態，不需要重新查詢統計數據
                 _checkFavorites();
-                widget.onRefresh?.call(); // 刷新統計數據（包含 strengthProgress）
               });
             },
           ),
@@ -199,9 +198,8 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
                 ),
               )
                   .then((_) {
-                // 從詳情頁返回後，重新檢查收藏狀態並刷新統計數據
+                // 🐛 修復：只需要刷新收藏狀態，不需要重新查詢統計數據
                 _checkFavorites();
-                widget.onRefresh?.call(); // 刷新統計數據（包含 strengthProgress）
               });
             },
           ),
@@ -230,9 +228,8 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
       ),
     )
         .then((_) {
-      // 從詳情頁返回後，重新檢查收藏狀態並刷新統計數據
+      // 🐛 修復：只需要刷新收藏狀態，不需要重新查詢統計數據
       _checkFavorites();
-      widget.onRefresh?.call(); // 刷新統計數據（包含 strengthProgress）
     });
   }
 }

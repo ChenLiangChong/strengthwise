@@ -75,6 +75,11 @@ class BodyDataServiceSupabase implements IBodyDataService {
     return await _query.getLatestRecord(userId);
   }
 
+  /// 🆕 查詢指定日期的身體數據記錄
+  Future<BodyDataRecord?> getRecordByDate(String userId, DateTime date) async {
+    return await _query.getRecordByDate(userId, date);
+  }
+
   @override
   Future<double?> getAverageWeight({
     required String userId,

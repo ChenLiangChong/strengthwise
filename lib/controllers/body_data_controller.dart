@@ -85,7 +85,11 @@ class BodyDataController extends ChangeNotifier {
     }
   }
 
-  /// 創建新記錄
+  /// 創建新記錄（或更新當日記錄）
+  /// 
+  /// 🆕 邏輯：
+  /// - 如果當日已有記錄：更新現有記錄
+  /// - 如果當日無記錄：新增記錄
   Future<bool> createRecord({
     required String userId,
     required DateTime recordDate,
@@ -96,7 +100,40 @@ class BodyDataController extends ChangeNotifier {
     String? notes,
   }) async {
     try {
-      // 使用助手類創建記錄
+      // 🆕 檢查當日是否已有記錄
+      final existingRecord = await _bodyDataService.getRecordByDate(userId, recordDate);
+
+      if (existingRecord != null) {
+        // 當日已有記錄：更新
+        _errorService?.logError('當日已有記錄，將更新現有記錄: ${existingRecord.id}', type: 'BodyDataControllerInfo');
+        
+        final updatedRecord = existingRecord.copyWith(
+          weight: weight,
+          bodyFat: bodyFat,
+          muscleMass: muscleMass,
+          bmi: heightCm != null ? BodyDataRecord.calculateBMI(weight, heightCm) : existingRecord.bmi,
+          notes: notes,
+          recordDate: recordDate, // 更新時間
+        );
+
+        final success = await _bodyDataService.updateRecord(updatedRecord);
+        
+        if (success) {
+          // 同步更新 users 表的體重
+          try {
+            await _userService.updateUserWeight(userId, weight);
+          } catch (e) {
+            _errorService?.logError('同步用戶體重失敗: $e', type: 'BodyDataControllerError');
+          }
+
+          // 重新載入數據
+          await loadRecords(userId);
+        }
+        
+        return success;
+      }
+
+      // 當日無記錄：新增
       final record = BodyDataOperationHelper.createRecord(
         userId: userId,
         recordDate: recordDate,
@@ -109,7 +146,7 @@ class BodyDataController extends ChangeNotifier {
 
       await _bodyDataService.createRecord(record);
 
-      // 🆕 同步更新 users 表的體重（最新體重）
+      // 同步更新 users 表的體重（最新體重）
       try {
         await _userService.updateUserWeight(userId, weight);
       } catch (e) {
