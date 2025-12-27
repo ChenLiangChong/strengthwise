@@ -36,9 +36,11 @@ class AuthServiceSupabase implements IAuthService {
     GoogleSignIn? googleSignIn,
     ErrorHandlingService? errorService,
   })  : _supabase = supabase ?? Supabase.instance.client,
-        _googleSignIn = googleSignIn ?? GoogleSignIn(
-          serverClientId: '254965941837-e2p11s22qejt49o5rfd0p2qk20ilefqu.apps.googleusercontent.com',
-        ),
+        _googleSignIn = googleSignIn ??
+            GoogleSignIn(
+              serverClientId:
+                  '254965941837-bp00e1l33hbvss4tpb94t9i16g8729e6.apps.googleusercontent.com',
+            ),
         _errorService = errorService {
     // 初始化子模組
     _googleProvider = AuthGoogleProvider(
@@ -68,7 +70,8 @@ class AuthServiceSupabase implements IAuthService {
   /// 初始化服務
   ///
   /// 設置狀態監聽器並嘗試靜默登入（如果已啟用）
-  Future<void> initialize({Environment environment = Environment.development}) async {
+  Future<void> initialize(
+      {Environment environment = Environment.development}) async {
     if (_isInitialized) return;
 
     try {
@@ -141,7 +144,8 @@ class AuthServiceSupabase implements IAuthService {
   }
 
   @override
-  Future<Map<String, dynamic>?> signInWithEmail(String email, String password) async {
+  Future<Map<String, dynamic>?> signInWithEmail(
+      String email, String password) async {
     _ensureInitialized();
 
     try {
@@ -154,7 +158,8 @@ class AuthServiceSupabase implements IAuthService {
   }
 
   @override
-  Future<Map<String, dynamic>?> registerWithEmail(String email, String password) async {
+  Future<Map<String, dynamic>?> registerWithEmail(
+      String email, String password) async {
     _ensureInitialized();
 
     try {
@@ -201,4 +206,3 @@ class AuthServiceSupabase implements IAuthService {
     _errorService?.logError(message, type: 'AuthError');
   }
 }
-
