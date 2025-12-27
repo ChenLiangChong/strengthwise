@@ -59,6 +59,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
   Future<void> _addExercise() async {
     showDialog(
       context: context,
+      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
       builder: (context) {
         return CustomExerciseDialog(
           onSubmit: (data) async {
@@ -74,9 +75,8 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
 
               if (!mounted) return;
 
-              setState(() {
-                _exercises.insert(0, newExercise);
-              });
+              // 🐛 修復：重新載入列表以確保數據同步
+              await _loadExercises();
 
               NotificationUtils.showSuccess(context, '成功添加自訂動作');
             } catch (e) {
@@ -93,6 +93,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
   Future<void> _editExercise(CustomExercise exercise) async {
     showDialog(
       context: context,
+      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
       builder: (context) {
         return CustomExerciseDialog(
           exercise: exercise,
@@ -131,9 +132,8 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
 
       if (!mounted) return;
 
-      setState(() {
-        _exercises.removeWhere((e) => e.id == exerciseId);
-      });
+      // 🐛 修復：重新載入列表以確保數據同步
+      await _loadExercises();
 
       NotificationUtils.showSuccess(context, '成功刪除自訂動作');
     } catch (e) {

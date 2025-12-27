@@ -109,6 +109,7 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
     
     return AlertDialog(
       title: Text(isEditing ? '編輯自訂動作' : '新增自訂動作'),
+      // 🐛 修復：barrierDismissible 已由 showDialog 設置
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,

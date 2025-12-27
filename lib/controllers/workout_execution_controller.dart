@@ -290,9 +290,7 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     _isDataChanged = true;
     notifyListeners();
     
-    if (context != null) {
-      NotificationUtils.showInfo(context, '已更新組數數據，完成訓練後將保存所有更改');
-    }
+    // 🐛 修復：移除「已更新數據組」通知（避免干擾用戶）
   }
   
   /// 添加運動備註

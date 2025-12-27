@@ -208,15 +208,32 @@ class _BodyDataPageState extends State<BodyDataPage> {
       ),
     );
 
-    if (result == true && weightController.text.isNotEmpty) {
-      final weight = double.tryParse(weightController.text);
-      if (weight == null) {
-        NotificationUtils.showError(context, '請輸入有效的體重數值');
+    if (result == true) {
+      // 🐛 修復：驗證體重必填
+      if (weightController.text.isEmpty) {
+        NotificationUtils.showError(context, '請輸入體重');
         return;
       }
 
+      final weight = double.tryParse(weightController.text);
+      if (weight == null || weight < 30 || weight > 300) {
+        NotificationUtils.showError(context, '請輸入有效的體重（30-300 kg）');
+        return;
+      }
+
+      // 驗證體脂（選填）
       final bodyFat = bodyFatController.text.isNotEmpty ? double.tryParse(bodyFatController.text) : null;
+      if (bodyFat != null && (bodyFat < 3 || bodyFat > 60)) {
+        NotificationUtils.showError(context, '體脂率範圍應在 3-60%');
+        return;
+      }
+
+      // 驗證肌肉量（選填）
       final muscleMass = muscleMassController.text.isNotEmpty ? double.tryParse(muscleMassController.text) : null;
+      if (muscleMass != null && (muscleMass < 10 || muscleMass > 200)) {
+        NotificationUtils.showError(context, '肌肉量範圍應在 10-200 kg');
+        return;
+      }
 
       final success = await _controller.createRecord(
         userId: widget.userProfile!.uid,
