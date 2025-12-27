@@ -1,11 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../controllers/interfaces/i_auth_controller.dart';
+import '../../controllers/interfaces/i_statistics_controller.dart';
 import '../../services/interfaces/i_workout_service.dart';
 import 'package:intl/intl.dart';
 import '../../services/service_locator.dart';
 import 'workout/workout_execution_page.dart';
-import 'statistics_page_v2.dart';
-import 'notification_test_page.dart'; // 通知測試頁面
+import 'statistics/statistics_page_v2.dart';
+import 'dev/notification_test_page.dart'; // 通知測試頁面
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -28,8 +30,66 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _authController = serviceLocator<IAuthController>();
     _workoutService = serviceLocator<IWorkoutService>();
-    _loadRecentWorkouts();
-    _loadTodayPlans();
+
+    // ⚡ 優先載入首頁關鍵數據，完成後才預載入其他
+    _initializeHomePage();
+  }
+
+  /// ⚡ 初始化首頁（優先級策略）
+  ///
+  /// 1. 立即載入首頁必需數據（最近訓練 + 今日計劃）
+  /// 2. 首頁數據完成後，背景預載入統計（不阻塞）
+  Future<void> _initializeHomePage() async {
+    // 步驟 1：並行載入首頁必需數據
+    await _loadCriticalDataInParallel();
+
+    // 步驟 2：背景預載入統計（完全不阻塞用戶操作）
+    if (mounted) {
+      _preloadStatistics();
+    }
+  }
+
+  /// ⚡ 並行載入關鍵數據
+  ///
+  /// 只載入首頁必需的數據（最近訓練 + 今日計劃）
+  Future<void> _loadCriticalDataInParallel() async {
+    // 並行執行並等待完成
+    await Future.wait([
+      _loadRecentWorkouts(),
+      _loadTodayPlans(),
+    ], eagerError: false);
+
+    if (kDebugMode) {
+      print('[HomePage] ✅ 首頁關鍵數據載入完成');
+    }
+  }
+
+  /// ⚡ 背景預載入統計數據（所有時間範圍）
+  ///
+  /// 真機效能足夠，預載入所有時間範圍（本週、本月、三個月、本年）
+  Future<void> _preloadStatistics() async {
+    // ⚡ 真機優化：首頁數據完成後立即預載入所有時間範圍
+    // 使用 microtask 確保在下一個事件循環執行
+    Future.microtask(() async {
+      try {
+        final user = _authController.user;
+        if (user == null) return;
+
+        final statisticsController = serviceLocator<IStatisticsController>();
+
+        // ⚡ 完整初始化：預載入所有時間範圍（本週、本月、三個月、本年）
+        await statisticsController.initialize(user.uid);
+
+        if (kDebugMode) {
+          print('[HomePage] ✅ 統計數據預載入完成（所有時間範圍）');
+        }
+      } catch (e) {
+        // 預載入失敗不影響主頁面
+        if (kDebugMode) {
+          print('[HomePage] ⚠️ 統計數據預載入失敗: $e');
+        }
+      }
+    });
   }
 
   Future<void> _loadRecentWorkouts() async {
@@ -61,16 +121,16 @@ class _HomePageState extends State<HomePage> {
       final recentWorkouts = records.take(5).map((record) {
         return {
           'id': record.id,
-          'title': record.title,  // 使用實際的訓練標題
+          'title': record.title, // 使用實際的訓練標題
           'completedDate': record.date,
           'exercises': record.exerciseRecords
               .map((e) => {
                     'exerciseName': e.exerciseName,
                     'sets': e.sets.length,
-                    'completed': e.completed,  // 添加完成狀態
+                    'completed': e.completed, // 添加完成狀態
                   })
               .toList(),
-          'completed': record.completed,  // 添加整體完成狀態
+          'completed': record.completed, // 添加整體完成狀態
           '_sortDate': record.date,
         };
       }).toList();
@@ -133,12 +193,12 @@ class _HomePageState extends State<HomePage> {
         return {
           'id': plan.id,
           'title': plan.title,
-          'scheduledDate': plan.date,  // 使用 date 而不是 scheduledDate
+          'scheduledDate': plan.date, // 使用 date 而不是 scheduledDate
           'exercises': plan.exerciseRecords
               .map((e) => {
                     'exerciseName': e.exerciseName,
                     'sets': e.sets.length,
-                    'completed': e.completed,  // 使用 completed 而不是 isCompleted
+                    'completed': e.completed, // 使用 completed 而不是 isCompleted
                   })
               .toList(),
           'completed': plan.completed,
@@ -285,7 +345,8 @@ class _HomePageState extends State<HomePage> {
                 ),
                 // 🔔 通知測試頁面
                 IconButton(
-                  icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                  icon: const Icon(Icons.notifications_outlined,
+                      color: Colors.white),
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -332,7 +393,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 16),
           _isLoadingPlans
-              ? const Center(child: CircularProgressIndicator())
+              ? _buildLoadingSkeleton() // ⚡ 使用骨架屏替代 Loading
               : _todayPlans.isEmpty
                   ? _buildNoPlansToday()
                   : Column(
@@ -342,6 +403,65 @@ class _HomePageState extends State<HomePage> {
                     ),
         ],
       ),
+    );
+  }
+
+  /// ⚡ 骨架屏（Loading 狀態）
+  Widget _buildLoadingSkeleton() {
+    return Column(
+      children: List.generate(2, (index) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color:
+                Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 標題骨架
+              Container(
+                width: 120,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // 內容骨架
+              Container(
+                width: double.infinity,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: 200,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 
@@ -488,7 +608,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 16),
           _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? _buildLoadingSkeleton() // ⚡ 使用骨架屏替代 Loading
               : _recentWorkouts.isEmpty
                   ? _buildEmptyWorkouts()
                   : Column(

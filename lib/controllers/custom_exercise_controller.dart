@@ -3,9 +3,12 @@ import 'dart:async';
 import '../models/custom_exercise_model.dart';
 import '../models/exercise_model.dart';
 import '../services/interfaces/i_custom_exercise_service.dart';
-import '../services/error_handling_service.dart';
-import '../services/service_locator.dart' show Environment, serviceLocator;
+import '../services/core/error_handling_service.dart';
+import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_custom_exercise_controller.dart';
+import 'custom_exercise/custom_exercise_cache_manager.dart';
+import 'custom_exercise/custom_exercise_validator.dart';
+import 'custom_exercise/custom_exercise_converter.dart';
 
 /// 自定義動作控制器實現
 /// 
@@ -20,9 +23,8 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
   String? _errorMessage;
   bool _isInitialized = false;
   
-  // 數據緩存
-  List<CustomExercise>? _userExercisesCache;
-  DateTime? _lastCacheRefreshTime;
+  // 子模組
+  late final CustomExerciseCacheManager _cacheManager;
   
   /// 正在載入數據
   bool get isLoading => _isLoading;
@@ -31,7 +33,7 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
   String? get errorMessage => _errorMessage;
   
   /// 緩存的用戶自定義動作
-  List<CustomExercise> get cachedExercises => _userExercisesCache ?? [];
+  List<CustomExercise> get cachedExercises => _cacheManager.cachedExercises;
   
   /// 構造函數，支持依賴注入
   CustomExerciseController({
@@ -40,6 +42,8 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
   }) : 
     _service = service ?? serviceLocator<ICustomExerciseService>(),
     _errorService = errorService ?? serviceLocator<ErrorHandlingService>() {
+    // 初始化子模組
+    _cacheManager = CustomExerciseCacheManager();
     _initialize();
   }
   
@@ -90,8 +94,7 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
   
   /// 清除緩存
   void clearCache() {
-    _userExercisesCache = null;
-    _lastCacheRefreshTime = null;
+    _cacheManager.clearCache();
   }
   
   /// 釋放資源
@@ -107,25 +110,21 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
     if (!_isInitialized) await _initialize();
     
     try {
-      // 檢查是否需要重新載入 (5分鐘過期)
-      final now = DateTime.now();
-      final shouldRefresh = _lastCacheRefreshTime == null || 
-          now.difference(_lastCacheRefreshTime!).inMinutes > 5;
-      
-      if (shouldRefresh || _userExercisesCache == null) {
+      // 使用緩存管理器檢查是否需要刷新
+      if (_cacheManager.shouldRefresh()) {
         _setLoading(true);
         clearError();
         
-        _userExercisesCache = await _service.getUserCustomExercises();
-        _lastCacheRefreshTime = now;
+        final exercises = await _service.getUserCustomExercises();
+        _cacheManager.updateCache(exercises);
         
         _setLoading(false);
       }
       
-      return _userExercisesCache ?? [];
+      return _cacheManager.cachedExercises;
     } catch (e) {
       _handleError('獲取自定義動作失敗', e);
-      return _userExercisesCache ?? [];
+      return _cacheManager.cachedExercises;
     }
   }
   
@@ -136,31 +135,42 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
   }
   
   @override
-  Future<CustomExercise> addExercise(String name) async {
+  Future<CustomExercise> addExercise({
+    required String name,
+    required String trainingType,
+    required String bodyPart,
+    String equipment = '徒手',
+    String description = '',
+    String notes = '',
+  }) async {
     if (!_isInitialized) await _initialize();
     
-    // 輸入驗證
-    if (name.trim().isEmpty) {
-      _handleError('動作名稱不能為空');
-      throw ArgumentError('動作名稱不能為空');
-    }
-    
-    // 業務邏輯 - 例如限制名稱長度或格式
-    if (name.length > 50) {
-      _handleError('動作名稱不能超過50個字符');
-      throw ArgumentError('動作名稱不能超過50個字符');
+    // 使用驗證器進行輸入驗證
+    try {
+      CustomExerciseValidator.validateCreateParams(
+        name: name,
+        bodyPart: bodyPart,
+      );
+    } catch (e) {
+      _handleError(e.toString());
+      rethrow;
     }
     
     try {
       _setLoading(true);
       clearError();
       
-      final exercise = await _service.addCustomExercise(name);
+      final exercise = await _service.addCustomExercise(
+        name: name,
+        trainingType: trainingType,
+        bodyPart: bodyPart,
+        equipment: equipment,
+        description: description,
+        notes: notes,
+      );
       
-      // 更新緩存
-      if (_userExercisesCache != null) {
-        _userExercisesCache = [..._userExercisesCache!, exercise];
-      }
+      // 使用緩存管理器更新緩存
+      _cacheManager.addToCache(exercise);
       
       _setLoading(false);
       return exercise;
@@ -171,40 +181,44 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
   }
   
   @override
-  Future<void> updateExercise(String exerciseId, String newName) async {
+  Future<void> updateExercise({
+    required String exerciseId,
+    String? name,
+    String? trainingType,
+    String? bodyPart,
+    String? equipment,
+    String? description,
+    String? notes,
+  }) async {
     if (!_isInitialized) await _initialize();
     
-    // 輸入驗證
-    if (exerciseId.trim().isEmpty) {
-      _handleError('動作ID不能為空');
-      throw ArgumentError('動作ID不能為空');
-    }
-    
-    if (newName.trim().isEmpty) {
-      _handleError('新的動作名稱不能為空');
-      throw ArgumentError('新的動作名稱不能為空');
+    // 使用驗證器進行輸入驗證
+    try {
+      CustomExerciseValidator.validateUpdateParams(
+        exerciseId: exerciseId,
+        name: name,
+      );
+    } catch (e) {
+      _handleError(e.toString());
+      rethrow;
     }
     
     try {
       _setLoading(true);
       clearError();
       
-      await _service.updateCustomExercise(exerciseId, newName);
+      await _service.updateCustomExercise(
+        exerciseId: exerciseId,
+        name: name,
+        trainingType: trainingType,
+        bodyPart: bodyPart,
+        equipment: equipment,
+        description: description,
+        notes: notes,
+      );
       
-      // 更新緩存
-      if (_userExercisesCache != null) {
-        _userExercisesCache = _userExercisesCache!.map((exercise) {
-          if (exercise.id == exerciseId) {
-            return CustomExercise(
-              id: exercise.id,
-              name: newName,
-              userId: exercise.userId,
-              createdAt: exercise.createdAt,
-            );
-          }
-          return exercise;
-        }).toList();
-      }
+      // 清除緩存，下次重新載入
+      _cacheManager.clearCache();
       
       _setLoading(false);
     } catch (e) {
@@ -217,9 +231,12 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
   Future<void> deleteExercise(String exerciseId) async {
     if (!_isInitialized) await _initialize();
     
-    if (exerciseId.trim().isEmpty) {
-      _handleError('動作ID不能為空');
-      throw ArgumentError('動作ID不能為空');
+    // 使用驗證器進行輸入驗證
+    try {
+      CustomExerciseValidator.validateId(exerciseId);
+    } catch (e) {
+      _handleError(e.toString());
+      rethrow;
     }
     
     try {
@@ -228,12 +245,8 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
       
       await _service.deleteCustomExercise(exerciseId);
       
-      // 更新緩存
-      if (_userExercisesCache != null) {
-        _userExercisesCache = _userExercisesCache!
-            .where((exercise) => exercise.id != exerciseId)
-            .toList();
-      }
+      // 使用緩存管理器更新緩存
+      _cacheManager.removeFromCache(exerciseId);
       
       _setLoading(false);
     } catch (e) {
@@ -244,25 +257,7 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
   
   @override
   Exercise convertToExercise(CustomExercise customExercise) {
-    // 將自定義動作轉換為標準Exercise對象，可以添加更多邏輯
-    return Exercise(
-      id: customExercise.id,
-      name: customExercise.name,
-      nameEn: '',
-      bodyParts: [],
-      type: '自訂',
-      equipment: '自訂',
-      jointType: '',
-      level1: '',
-      level2: '',
-      level3: '',
-      level4: '',
-      level5: '',
-      actionName: customExercise.name,
-      description: '用戶自訂動作',
-      videoUrl: '',
-      apps: [],
-      createdAt: customExercise.createdAt,
-    );
+    // 使用轉換器將自定義動作轉換為標準 Exercise 對象
+    return CustomExerciseConverter.toExercise(customExercise);
   }
 } 

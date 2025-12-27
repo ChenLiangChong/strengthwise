@@ -3,9 +3,11 @@ import 'dart:async';
 import '../models/workout_template_model.dart';
 import '../models/workout_record_model.dart';
 import '../services/interfaces/i_workout_service.dart';
-import '../services/error_handling_service.dart';
+import '../services/core/error_handling_service.dart';
 import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_workout_controller.dart';
+import 'workout/workout_cache_manager.dart';
+import 'workout/workout_data_validator.dart';
 
 /// 訓練計畫控制器實現
 /// 
@@ -20,10 +22,8 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
   String? _errorMessage;
   bool _isInitialized = false;
   
-  // 數據緩存
-  final Map<String, DateTime> _lastRefreshTime = {};
-  List<WorkoutTemplate>? _cachedTemplates;
-  List<WorkoutRecord>? _cachedRecords;
+  // 子模組
+  late final WorkoutCacheManager _cacheManager;
   
   /// 正在載入數據
   bool get isLoading => _isLoading;
@@ -32,10 +32,10 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
   String? get errorMessage => _errorMessage;
   
   /// 緩存的模板
-  List<WorkoutTemplate> get cachedTemplates => _cachedTemplates ?? [];
+  List<WorkoutTemplate> get cachedTemplates => _cacheManager.templatesCache ?? [];
   
   /// 緩存的記錄
-  List<WorkoutRecord> get cachedRecords => _cachedRecords ?? [];
+  List<WorkoutRecord> get cachedRecords => _cacheManager.recordsCache ?? [];
   
   /// 構造函數，支持依賴注入
   WorkoutController({
@@ -44,6 +44,8 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
   }) : 
     _workoutService = workoutService ?? serviceLocator<IWorkoutService>(),
     _errorService = errorService ?? serviceLocator<ErrorHandlingService>() {
+    // 初始化子模組
+    _cacheManager = WorkoutCacheManager();
     _initialize();
   }
   
@@ -96,9 +98,7 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
   @override
   void dispose() {
     _isInitialized = false;
-    _cachedTemplates = null;
-    _cachedRecords = null;
-    _lastRefreshTime.clear();
+    _cacheManager.clearAllCache();
     super.dispose();
   }
   
@@ -110,28 +110,23 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
       _setLoading(true);
       clearError();
       
-      // 檢查是否需要重新載入 (5分鐘過期)
-      final lastRefresh = _lastRefreshTime['templates'];
-      final now = DateTime.now();
-      final shouldRefresh = lastRefresh == null || 
-          now.difference(lastRefresh).inMinutes > 5;
-      
-      if (shouldRefresh || _cachedTemplates == null) {
-        _cachedTemplates = await _workoutService.getUserTemplates();
-        _lastRefreshTime['templates'] = now;
+      // 使用緩存管理器檢查是否需要刷新
+      if (_cacheManager.shouldRefreshTemplates()) {
+        final templates = await _workoutService.getUserTemplates();
+        _cacheManager.updateTemplatesCache(templates);
       }
       
       _setLoading(false);
-      return _cachedTemplates ?? [];
+      return _cacheManager.templatesCache ?? [];
     } catch (e) {
       _handleError('載入訓練模板失敗', e);
-      return _cachedTemplates ?? [];
+      return _cacheManager.templatesCache ?? [];
     }
   }
   
   /// 強制重新載入模板，忽略緩存
   Future<List<WorkoutTemplate>> reloadTemplates() async {
-    _cachedTemplates = null;
+    _cacheManager.clearTemplatesCache();
     return loadUserTemplates();
   }
   
@@ -141,14 +136,9 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
     
     try {
       // 先從緩存中查找
-      if (_cachedTemplates != null) {
-        final cachedTemplate = _cachedTemplates!
-            .where((t) => t.id == templateId)
-            .firstOrNull;
-        
-        if (cachedTemplate != null) {
-          return cachedTemplate;
-        }
+      final cachedTemplate = _cacheManager.findTemplateInCache(templateId);
+      if (cachedTemplate != null) {
+        return cachedTemplate;
       }
       
       // 緩存中沒有，從服務中獲取
@@ -164,14 +154,14 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
     if (!_isInitialized) await _initialize();
     
     // 輸入驗證
-    if (template.title.trim().isEmpty) {
-      _handleError('訓練模板標題不能為空');
-      throw ArgumentError('訓練模板標題不能為空');
-    }
-    
-    if (template.exercises.isEmpty) {
-      _handleError('訓練模板必須包含至少一個運動');
-      throw ArgumentError('訓練模板必須包含至少一個運動');
+    try {
+      WorkoutDataValidator.validateTemplate(
+        title: template.title,
+        exercises: template.exercises,
+      );
+    } catch (e) {
+      _handleError(e.toString());
+      rethrow;
     }
     
     try {
@@ -181,16 +171,14 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
       // 確保創建時間和更新時間
       final now = DateTime.now();
       final updatedTemplate = template.copyWith(
-        createdAt: template.createdAt ?? now,
+        createdAt: now,
         updatedAt: now,
       );
       
       final result = await _workoutService.createTemplate(updatedTemplate);
       
       // 更新緩存
-      if (_cachedTemplates != null) {
-        _cachedTemplates = [..._cachedTemplates!, result];
-      }
+      _cacheManager.addTemplateToCache(result);
       
       _setLoading(false);
       return result;
@@ -205,14 +193,14 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
     if (!_isInitialized) await _initialize();
     
     // 輸入驗證
-    if (template.title.trim().isEmpty) {
-      _handleError('訓練模板標題不能為空');
-      throw ArgumentError('訓練模板標題不能為空');
-    }
-    
-    if (template.exercises.isEmpty) {
-      _handleError('訓練模板必須包含至少一個運動');
-      throw ArgumentError('訓練模板必須包含至少一個運動');
+    try {
+      WorkoutDataValidator.validateTemplate(
+        title: template.title,
+        exercises: template.exercises,
+      );
+    } catch (e) {
+      _handleError(e.toString());
+      rethrow;
     }
     
     try {
@@ -227,10 +215,8 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
       final success = await _workoutService.updateTemplate(updatedTemplate);
       
       // 更新緩存
-      if (success && _cachedTemplates != null) {
-        _cachedTemplates = _cachedTemplates!.map((t) => 
-          t.id == template.id ? updatedTemplate : t
-        ).toList();
+      if (success) {
+        _cacheManager.updateTemplateInCache(updatedTemplate);
       }
       
       _setLoading(false);
@@ -252,10 +238,8 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
       final success = await _workoutService.deleteTemplate(templateId);
       
       // 更新緩存
-      if (success && _cachedTemplates != null) {
-        _cachedTemplates = _cachedTemplates!
-            .where((t) => t.id != templateId)
-            .toList();
+      if (success) {
+        _cacheManager.removeTemplateFromCache(templateId);
       }
       
       _setLoading(false);
@@ -274,28 +258,23 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
       _setLoading(true);
       clearError();
       
-      // 檢查是否需要重新載入 (5分鐘過期)
-      final lastRefresh = _lastRefreshTime['records'];
-      final now = DateTime.now();
-      final shouldRefresh = lastRefresh == null || 
-          now.difference(lastRefresh).inMinutes > 5;
-      
-      if (shouldRefresh || _cachedRecords == null) {
-        _cachedRecords = await _workoutService.getUserRecords();
-        _lastRefreshTime['records'] = now;
+      // 使用緩存管理器檢查是否需要刷新
+      if (_cacheManager.shouldRefreshRecords()) {
+        final records = await _workoutService.getUserRecords();
+        _cacheManager.updateRecordsCache(records);
       }
       
       _setLoading(false);
-      return _cachedRecords ?? [];
+      return _cacheManager.recordsCache ?? [];
     } catch (e) {
       _handleError('載入訓練記錄失敗', e);
-      return _cachedRecords ?? [];
+      return _cacheManager.recordsCache ?? [];
     }
   }
   
   /// 強制重新載入記錄，忽略緩存
   Future<List<WorkoutRecord>> reloadRecords() async {
-    _cachedRecords = null;
+    _cacheManager.clearRecordsCache();
     return loadUserRecords();
   }
   
@@ -305,14 +284,9 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
     
     try {
       // 先從緩存中查找
-      if (_cachedRecords != null) {
-        final cachedRecord = _cachedRecords!
-            .where((r) => r.id == recordId)
-            .firstOrNull;
-        
-        if (cachedRecord != null) {
-          return cachedRecord;
-        }
+      final cachedRecord = _cacheManager.findRecordInCache(recordId);
+      if (cachedRecord != null) {
+        return cachedRecord;
       }
       
       // 緩存中沒有，從服務中獲取
@@ -334,9 +308,7 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
       final result = await _workoutService.createRecord(record);
       
       // 更新緩存
-      if (_cachedRecords != null) {
-        _cachedRecords = [..._cachedRecords!, result];
-      }
+      _cacheManager.addRecordToCache(result);
       
       _setLoading(false);
       return result;
@@ -357,10 +329,8 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
       final success = await _workoutService.updateRecord(record);
       
       // 更新緩存
-      if (success && _cachedRecords != null) {
-        _cachedRecords = _cachedRecords!.map((r) => 
-          r.id == record.id ? record : r
-        ).toList();
+      if (success) {
+        _cacheManager.updateRecordInCache(record);
       }
       
       _setLoading(false);
@@ -382,10 +352,8 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
       final success = await _workoutService.deleteRecord(recordId);
       
       // 更新緩存
-      if (success && _cachedRecords != null) {
-        _cachedRecords = _cachedRecords!
-            .where((r) => r.id != recordId)
-            .toList();
+      if (success) {
+        _cacheManager.removeRecordFromCache(recordId);
       }
       
       _setLoading(false);
@@ -407,9 +375,7 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
       final record = await _workoutService.createRecordFromTemplate(templateId);
       
       // 更新緩存
-      if (_cachedRecords != null) {
-        _cachedRecords = [..._cachedRecords!, record];
-      }
+      _cacheManager.addRecordToCache(record);
       
       _setLoading(false);
       return record;

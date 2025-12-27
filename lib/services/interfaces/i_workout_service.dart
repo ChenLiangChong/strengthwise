@@ -6,8 +6,14 @@ import '../../models/workout_record_model.dart';
 /// 定義與訓練計畫相關的所有操作，
 /// 提供標準接口以支持不同的實現方式。
 abstract class IWorkoutService {
-  /// 獲取用戶的所有訓練模板
-  Future<List<WorkoutTemplate>> getUserTemplates();
+  /// 獲取用戶的訓練模板（支援 Cursor-based 分頁）
+  /// 
+  /// [cursor] 游標（上一頁最後一筆的 updated_at）
+  /// [limit] 每頁返回數量（預設 20）
+  Future<List<WorkoutTemplate>> getUserTemplates({
+    String? cursor,
+    int limit = 20,
+  });
   
   /// 獲取特定訓練模板
   Future<WorkoutTemplate?> getTemplateById(String templateId);
@@ -21,14 +27,28 @@ abstract class IWorkoutService {
   /// 刪除訓練模板
   Future<bool> deleteTemplate(String templateId);
   
-  /// 獲取用戶的所有訓練記錄
-  Future<List<WorkoutRecord>> getUserRecords();
+  /// 獲取用戶的訓練記錄（支援 Cursor-based 分頁）
+  /// 
+  /// [cursor] 游標（上一頁最後一筆的 completed_date）
+  /// [limit] 每頁返回數量（預設 20）
+  Future<List<WorkoutRecord>> getUserRecords({
+    String? cursor,
+    int limit = 20,
+  });
   
-  /// 獲取用戶的訓練計劃（可篩選完成狀態）
+  /// 獲取用戶的訓練計劃（可篩選完成狀態，支援 Cursor-based 分頁）
+  /// 
+  /// [completed] 完成狀態篩選
+  /// [startDate] 起始日期
+  /// [endDate] 結束日期
+  /// [cursor] 游標（上一頁最後一筆的 scheduled_date）
+  /// [limit] 每頁返回數量（預設 20）
   Future<List<WorkoutRecord>> getUserPlans({
     bool? completed,
     DateTime? startDate,
     DateTime? endDate,
+    String? cursor,
+    int limit = 20,
   });
   
   /// 獲取特定訓練記錄

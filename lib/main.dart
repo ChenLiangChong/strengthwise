@@ -6,8 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'views/splash_screen.dart';
 import 'services/service_locator.dart';
-import 'services/supabase_service.dart';
-import 'services/theme_service.dart';
+import 'services/core/supabase_service.dart';
+import 'services/core/theme_service.dart';
 import 'controllers/theme_controller.dart';
 import 'themes/app_theme.dart';
 
@@ -18,29 +18,16 @@ void main() {
     // 確保Flutter引擎初始化
     WidgetsFlutterBinding.ensureInitialized();
 
-    // 初始化日期格式化
-    await initializeDateFormatting('zh_TW', null);
-    await initializeDateFormatting('en_US', null);
-    Intl.defaultLocale = 'zh_TW';
-    print('日期格式化初始化成功');
-
+    // ⚡ 優化：將耗時操作移到後台，避免阻塞主線程
     try {
-      // 初始化 Supabase
-      try {
-        await SupabaseService.initialize();
-        print('Supabase 初始化成功');
-      } catch (e) {
-        print('Supabase 初始化失敗: $e');
-        // Supabase 初始化失敗會阻止應用啟動
-        rethrow;
-      }
+      // 1. 快速初始化：只做關鍵操作（Supabase + 服務註冊）
+      await _quickInitialization();
 
-      // 設置環境和初始化服務定位器
-      setEnvironment(Environment.development);
-      await setupServiceLocator();
-
-      // 啟動應用
+      // 2. 啟動應用（先顯示 UI）
       runApp(const MyApp());
+
+      // 3. 背景初始化：耗時服務在背景載入
+      _backgroundInitialization();
     } catch (e) {
       print('初始化失敗: $e');
       // 顯示錯誤並退出
@@ -78,6 +65,41 @@ void main() {
   });
 }
 
+/// ⚡ 快速初始化（<100ms）
+///
+/// 只初始化啟動應用必需的服務
+Future<void> _quickInitialization() async {
+  // 日期格式化（同步，很快）
+  await initializeDateFormatting('zh_TW', null);
+  await initializeDateFormatting('en_US', null);
+  Intl.defaultLocale = 'zh_TW';
+
+  // ⚡ Supabase 必須在這裡初始化（AuthService 依賴它）
+  await SupabaseService.initialize();
+
+  // 設置環境（同步）
+  setEnvironment(Environment.development);
+
+  // ⚡ 只註冊服務（不初始化，延遲到實際使用時）
+  await setupServiceLocator(lazyInit: true);
+}
+
+/// ⚡ 背景初始化（不阻塞 UI）
+///
+/// 在應用啟動後背景載入耗時服務
+void _backgroundInitialization() {
+  // 使用 Future.microtask 確保在下一個事件循環執行
+  Future.microtask(() async {
+    try {
+      // 背景載入認證、預約、運動服務
+      await setupServiceLocator(lazyInit: false);
+      print('[MAIN] ✅ 背景服務初始化完成');
+    } catch (e) {
+      print('[MAIN] ⚠️ 背景服務初始化失敗: $e');
+    }
+  });
+}
+
 /// 應用主類
 ///
 /// 使用 ChangeNotifierProvider 管理主題狀態
@@ -91,18 +113,8 @@ class MyApp extends StatelessWidget {
       create: (_) => ThemeController(ThemeService()),
       child: Consumer<ThemeController>(
         builder: (context, themeController, child) {
-          // 等待主題載入完成
-          if (!themeController.isInitialized) {
-            return const MaterialApp(
-              debugShowCheckedModeBanner: false,
-              home: Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-            );
-          }
-
+          // ⚡ 優化：不等待主題載入，使用默認主題先渲染 UI
+          // 主題載入完成後會自動更新
           return MaterialApp(
             title: 'StrengthWise',
             debugShowCheckedModeBanner: false,
@@ -112,7 +124,9 @@ class MyApp extends StatelessWidget {
             // ========================================
             theme: _buildLightTheme(),
             darkTheme: _buildDarkTheme(),
-            themeMode: themeController.themeMode,
+            themeMode: themeController.isInitialized
+                ? themeController.themeMode
+                : ThemeMode.light, // 默認使用淺色主題
 
             // ========================================
             // 首頁

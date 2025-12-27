@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/interfaces/i_auth_service.dart';
-import '../services/service_locator.dart';
-import 'login_page.dart';
 import 'pages/home_page.dart';
-import 'pages/booking_page.dart';
-// import 'pages/records_page.dart'; // 教練-學員版本功能：訓練記錄（暫時隱藏）
-import 'pages/profile_page.dart';
-import 'pages/training_page.dart';
+import 'pages/booking/booking_page.dart';
+// import 'pages/records/records_page.dart'; // 教練-學員版本功能：訓練記錄（暫時隱藏）
+import 'pages/profile/profile_page.dart';
+import 'pages/training/training_page.dart';
 
 class MainHomePage extends StatefulWidget {
   const MainHomePage({super.key});
@@ -18,18 +15,14 @@ class MainHomePage extends StatefulWidget {
 
 class _MainHomePageState extends State<MainHomePage> {
   int _selectedIndex = 0;
-  late final IAuthService _authService;
-  
+
   // 不同頁面的Widget
   late final List<Widget> _widgetOptions;
-  
+
   @override
   void initState() {
     super.initState();
-    
-    // 從服務定位器獲取認證服務
-    _authService = serviceLocator<IAuthService>();
-    
+
     _widgetOptions = <Widget>[
       // 首頁
       const HomePage(),
@@ -53,12 +46,6 @@ class _MainHomePageState extends State<MainHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // 檢查用戶是否已登入
-    final userData = _authService.getCurrentUser();
-    if (userData == null) {
-      return const LoginPage();
-    }
-    
     return Scaffold(
       body: _widgetOptions.elementAt(_selectedIndex),
       bottomNavigationBar: NavigationBar(
@@ -97,4 +84,4 @@ class _MainHomePageState extends State<MainHomePage> {
       ),
     );
   }
-} 
+}

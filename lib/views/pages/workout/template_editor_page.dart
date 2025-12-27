@@ -6,7 +6,7 @@ import '../../../services/interfaces/i_workout_service.dart';
 import '../../../services/interfaces/i_auth_service.dart';
 import '../../../services/service_locator.dart';
 import '../../../utils/notification_utils.dart';
-import '../exercises_page.dart';
+import '../exercises/exercises_page.dart';
 
 /// 訓練模板編輯頁面
 /// 
@@ -35,14 +35,18 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
   late final IWorkoutService _workoutService;
   late final IAuthService _authService;
 
-  // 可用的訓練類型
+  // 可用的訓練類型（與 PlanType 枚舉一致 - 專業健身分類）
   final List<String> _planTypes = [
-    '力量訓練',
-    '增肌訓練',
-    '減脂訓練',
-    '耐力訓練',
-    '功能性訓練',
-    '其他',
+    '力量訓練',      // 💪 1-5RM，提升最大力量
+    '增肌訓練',      // 🏋️ 6-12RM，增加肌肉量
+    '減脂訓練',      // 🔥 高強度循環，燃脂塑形
+    '有氧訓練',      // 🏃 有氧運動，提升心肺
+    '全身訓練',      // 🎯 全身性訓練，適合新手
+    '上半身訓練',    // ⬆️ 上半身專項訓練
+    '下半身訓練',    // ⬇️ 下半身專項訓練
+    '核心訓練',      // 🎪 核心穩定性訓練
+    '伸展恢復',      // 🧘 伸展放鬆，促進恢復
+    '自定義',        // ⚙️ 自訂訓練計劃
   ];
 
   @override
@@ -67,7 +71,15 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
     final template = widget.template!;
     _titleController.text = template.title;
     _descriptionController.text = template.description;
-    _selectedPlanType = template.planType;
+    
+    // ⚡ 防護：確保 planType 在列表中，否則使用預設值
+    if (_planTypes.contains(template.planType)) {
+      _selectedPlanType = template.planType;
+    } else {
+      print('[模板編輯] 警告：模板訓練類型 "${template.planType}" 不在可選列表中，使用預設值');
+      _selectedPlanType = _planTypes.first; // 使用第一個選項作為預設值
+    }
+    
     _exercises = List.from(template.exercises);
     if (template.trainingTime != null) {
       _trainingTime = template.trainingTime!;
@@ -182,7 +194,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('編輯 ${exercise.actionName ?? exercise.name}'),
+        title: Text('編輯 ${exercise.name}'),  // 使用完整 name
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -591,7 +603,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                           child: ListTile(
                             leading: const Icon(Icons.drag_handle),
                             title: Text(
-                              exercise.actionName ?? exercise.name,
+                              exercise.name,  // 使用完整 name
                               style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             subtitle: Text(

@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 import '../models/body_data_record.dart';
 import '../services/interfaces/i_body_data_service.dart';
 import '../services/interfaces/i_user_service.dart';
-import '../services/error_handling_service.dart';
+import '../services/core/error_handling_service.dart';
+import 'body_data/body_data_cache_manager.dart';
+import 'body_data/body_data_operation_helper.dart';
 
 /// 身體數據控制器
 /// 遵循 MVVM 架構，處理身體數據相關業務邏輯
@@ -11,8 +13,9 @@ class BodyDataController extends ChangeNotifier {
   final IUserService _userService;
   final ErrorHandlingService? _errorService;
 
-  List<BodyDataRecord> _records = [];
-  BodyDataRecord? _latestRecord;
+  // 子模組
+  late final BodyDataCacheManager _cacheManager;
+
   bool _isLoading = false;
   String? _error;
 
@@ -22,14 +25,17 @@ class BodyDataController extends ChangeNotifier {
     ErrorHandlingService? errorService,
   })  : _bodyDataService = bodyDataService,
         _userService = userService,
-        _errorService = errorService;
+        _errorService = errorService {
+    // 初始化子模組
+    _cacheManager = BodyDataCacheManager();
+  }
 
   // Getters
-  List<BodyDataRecord> get records => _records;
-  BodyDataRecord? get latestRecord => _latestRecord;
+  List<BodyDataRecord> get records => _cacheManager.records;
+  BodyDataRecord? get latestRecord => _cacheManager.latestRecord;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  bool get hasRecords => _records.isNotEmpty;
+  bool get hasRecords => _cacheManager.hasRecords;
 
   /// 載入用戶的身體數據記錄
   Future<void> loadRecords(String userId, {DateTime? startDate, DateTime? endDate}) async {
@@ -38,16 +44,14 @@ class BodyDataController extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      _records = await _bodyDataService.getUserRecords(
+      final records = await _bodyDataService.getUserRecords(
         userId: userId,
         startDate: startDate,
         endDate: endDate,
       );
 
-      // 同時更新最新記錄
-      if (_records.isNotEmpty) {
-        _latestRecord = _records.first; // 已按日期降序排列
-      }
+      // 使用緩存管理器更新緩存
+      _cacheManager.updateRecordsCache(records);
 
       _isLoading = false;
       notifyListeners();
@@ -66,7 +70,10 @@ class BodyDataController extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      _latestRecord = await _bodyDataService.getLatestRecord(userId);
+      final latestRecord = await _bodyDataService.getLatestRecord(userId);
+      
+      // 使用緩存管理器更新最新記錄
+      _cacheManager.updateLatestRecord(latestRecord);
 
       _isLoading = false;
       notifyListeners();
@@ -85,26 +92,19 @@ class BodyDataController extends ChangeNotifier {
     required double weight,
     double? bodyFat,
     double? muscleMass,
-    double? heightCm, // 用於計算 BMI
+    double? heightCm,
     String? notes,
   }) async {
     try {
-      // 計算 BMI（如果提供了身高）
-      double? bmi;
-      if (heightCm != null) {
-        bmi = BodyDataRecord.calculateBMI(weight, heightCm);
-      }
-
-      final record = BodyDataRecord(
-        id: '', // Service 層會生成
+      // 使用助手類創建記錄
+      final record = BodyDataOperationHelper.createRecord(
         userId: userId,
         recordDate: recordDate,
         weight: weight,
         bodyFat: bodyFat,
         muscleMass: muscleMass,
-        bmi: bmi,
+        heightCm: heightCm,
         notes: notes,
-        createdAt: DateTime.now(),
       );
 
       await _bodyDataService.createRecord(record);
@@ -132,21 +132,14 @@ class BodyDataController extends ChangeNotifier {
   /// 更新記錄
   Future<bool> updateRecord(BodyDataRecord record, {double? heightCm}) async {
     try {
-      // 重新計算 BMI（如果提供了身高）
-      BodyDataRecord updatedRecord = record;
-      if (heightCm != null) {
-        final bmi = BodyDataRecord.calculateBMI(record.weight, heightCm);
-        updatedRecord = record.copyWith(bmi: bmi);
-      }
+      // 使用助手類重新計算 BMI
+      final updatedRecord = BodyDataOperationHelper.updateRecord(record, heightCm: heightCm);
 
       final success = await _bodyDataService.updateRecord(updatedRecord);
       if (success) {
-        // 更新本地列表
-        final index = _records.indexWhere((r) => r.id == record.id);
-        if (index != -1) {
-          _records[index] = updatedRecord;
-          notifyListeners();
-        }
+        // 使用緩存管理器更新本地列表
+        _cacheManager.updateRecordInCache(record.id, updatedRecord);
+        notifyListeners();
       }
       return success;
     } catch (e) {
@@ -162,7 +155,8 @@ class BodyDataController extends ChangeNotifier {
     try {
       final success = await _bodyDataService.deleteRecord(recordId);
       if (success) {
-        _records.removeWhere((r) => r.id == recordId);
+        // 使用緩存管理器從本地列表中移除
+        _cacheManager.removeRecordFromCache(recordId);
         notifyListeners();
       }
       return success;

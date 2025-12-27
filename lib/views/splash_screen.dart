@@ -19,11 +19,31 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     
-    // 從服務定位器獲取 AuthController
-    _authController = serviceLocator<IAuthController>();
+    // ⚡ 超級優化：立即嘗試導航，不等待 3 秒
+    _navigateToNextScreen();
+  }
+  
+  /// ⚡ 立即導航到下一個畫面（等待服務就緒）
+  Future<void> _navigateToNextScreen() async {
+    // 等待一幀渲染（確保 Splash 畫面顯示）
+    await Future.delayed(const Duration(milliseconds: 100));
     
-    // 延遲3秒後檢查登入狀態並跳轉
-    Timer(const Duration(seconds: 3), () {
+    // ⚡ 等待服務定位器初始化（最多 2 秒）
+    int retries = 0;
+    while (retries < 20) {
+      try {
+        _authController = serviceLocator<IAuthController>();
+        break;
+      } catch (e) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        retries++;
+      }
+    }
+    
+    if (!mounted) return;
+    
+    // 檢查登入狀態並導航
+    try {
       if (_authController.isLoggedIn) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const MainHomePage()),
@@ -33,7 +53,12 @@ class _SplashScreenState extends State<SplashScreen> {
           MaterialPageRoute(builder: (_) => const LoginPage()),
         );
       }
-    });
+    } catch (e) {
+      // 最終失敗，預設進入登入頁
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+    }
   }
 
   @override

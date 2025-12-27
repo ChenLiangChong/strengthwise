@@ -98,6 +98,46 @@ python scripts/read_exercises_csv.py
 
 ---
 
+### 4. `reset_workouts_and_templates.py` - 用戶數據重置與假資料生成 ⭐⭐
+
+**功能**：刪除用戶所有訓練資料並生成專業的假訓練資料（推拉腿分化）
+
+**使用方式**：
+```bash
+# 互動式執行（推薦）
+python scripts/reset_workouts_and_templates.py <user_uuid>
+
+# 自動確認模式
+python scripts/reset_workouts_and_templates.py <user_uuid> --yes
+```
+
+**範例**：
+```bash
+python scripts/reset_workouts_and_templates.py d1798674-0b96-4c47-a7c7-ee20a5372a03
+```
+
+**功能特色**：
+- ✅ 清除用戶的 `workout_plans` 和 `workout_templates` 資料
+- ✅ 生成專業的推拉腿分化訓練（Push-Pull-Legs Split）
+- ✅ 漸進式超負荷原則（每週增加重量）
+- ✅ 支援 Phase 3 觸發器（包含 `trainingType`）
+- ✅ 使用真實動作 ID（從 Supabase 查詢）
+- ✅ 符合 WorkoutRecord 模型結構
+
+**訓練類型**：
+- **Push Day（推日）**：胸、肩、三頭肌
+- **Pull Day（拉日）**：背、二頭肌
+- **Leg Day（腿日）**：股四頭肌、臀部
+
+**需求**：
+- Python 3.x
+- supabase-py
+- python-dotenv
+- 需要配置 `.env` 文件
+- 需要有效的用戶 UUID
+
+---
+
 ## 🔧 環境設置
 
 ### 1. 安裝 Python 依賴

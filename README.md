@@ -2,10 +2,10 @@
 
 > 智慧型重訓追蹤應用 - 用數據驅動你的訓練進步
 
-一個基於 Flutter 與 Firebase 打造的跨平台健身訓練記錄 App，讓你輕鬆管理訓練計劃、記錄每一組動作，並透過數據分析追蹤你的肌力成長。
+一個基於 Flutter 與 Supabase 打造的跨平台健身訓練記錄 App，讓你輕鬆管理訓練計劃、記錄每一組動作，並透過數據分析追蹤你的肌力成長。
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.16+-02569B?logo=flutter)](https://flutter.dev/)
-[![Firebase](https://img.shields.io/badge/Firebase-Latest-FFCA28?logo=firebase)](https://firebase.google.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-Latest-3ECF8E?logo=supabase)](https://supabase.com/)
 [![Dart](https://img.shields.io/badge/Dart-3.1+-0175C2?logo=dart)](https://dart.dev/)
 
 ---
@@ -18,17 +18,23 @@
 - **訓練執行**：實時記錄每一組的重量、次數、完成狀態
 - **自動保存**：訓練過程中自動保存進度，不怕資料遺失
 
-### 📊 數據記錄
+### 📊 數據記錄與統計分析 ⭐
 - **完整記錄**：記錄每次訓練的詳細數據
 - **訓練備註**：為每次訓練添加備註
 - **歷史查詢**：查看過往的訓練記錄
-- **統計分析**：（開發中）訓練頻率、訓練量趨勢、個人最佳記錄
+- **專業統計系統**：✅ 模組化設計（16 個獨立元件）
+  - 📈 訓練頻率、訓練量趨勢圖表
+  - 💪 力量進步追蹤、個人最佳記錄（PR）
+  - 🎯 肌群平衡分析、訓練日曆熱力圖
+  - ⚡ 秒開載入（首頁預載入 + 智能快取）
+- **身體數據**：✅ 體重、體脂、BMI、肌肉量追蹤（含趨勢圖）
 
 ### 💪 運動庫
-- **豐富的運動庫**：內建數百種運動動作，涵蓋各大肌群
-- **階層式瀏覽**：依運動類型、身體部位、動作分類輕鬆查找
-- **自訂動作**：創建專屬的自訂動作
-- **動作詳情**：查看動作說明和教學
+- **794 個專業動作**：完整的運動動作資料庫，涵蓋各大肌群
+- **階層式瀏覽**：依訓練類型（阻力/心肺/活動度）、身體部位、動作分類輕鬆查找
+- **自訂動作**：✅ 創建專屬的自訂動作
+- **動作搜尋**：✅ 繁體中文全文搜尋（pgroonga）
+- **動作詳情**：查看動作說明和相關資訊
 
 ### 🗓️ 行事曆
 - **月曆視圖**：一眼看清所有訓練安排
@@ -43,7 +49,7 @@
 
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) 3.16 或更高版本
 - [Dart SDK](https://dart.dev/get-dart) 3.1 或更高版本
-- [Firebase CLI](https://firebase.google.com/docs/cli)（用於部署規則）
+- Supabase 專案（用於資料庫和認證）
 
 ### 安裝步驟
 
@@ -58,10 +64,14 @@
    flutter pub get
    ```
 
-3. **設定 Firebase**
-   - 在 [Firebase Console](https://console.firebase.google.com/) 創建新專案
-   - 下載 `google-services.json`（Android）和 `GoogleService-Info.plist`（iOS）
-   - 或執行 `flutterfire configure` 自動配置
+3. **設定 Supabase**
+   - 在專案根目錄創建 `.env` 檔案
+   - 加入你的 Supabase 憑證：
+     ```env
+     SUPABASE_URL=https://your-project.supabase.co
+     SUPABASE_ANON_KEY=your-anon-key
+     ```
+   - 詳細設定請參考 `docs/DEPLOYMENT_GUIDE.md`
 
 4. **執行應用**
    ```bash
@@ -76,10 +86,10 @@
 
 - **框架**：Flutter 3.16+
 - **語言**：Dart 3.1+
-- **後端**：Firebase (Auth, Firestore, Storage, Analytics)
+- **後端**：Supabase PostgreSQL (Database, Auth, Storage)
 - **狀態管理**：Provider (ChangeNotifier)
 - **依賴注入**：GetIt (Service Locator Pattern)
-- **本地儲存**：Hive、SharedPreferences
+- **本地儲存**：SharedPreferences
 
 ### 架構模式
 
@@ -91,7 +101,7 @@ View (UI 層)
 Controller (業務邏輯層)
   ↓ Service Interface
 Service (資料存取層)
-  ↓ Firestore/Firebase
+  ↓ Supabase PostgreSQL
 Model (資料模型層)
 ```
 
@@ -139,6 +149,14 @@ strengthwise/
 
 ### 開發規範
 
+**重要**：開始開發前，請先閱讀以下文檔：
+
+1. **[AGENTS.md](AGENTS.md)** - AI 程式碼助手的完整開發指南
+2. **[docs/README.md](docs/README.md)** - 文檔導航（入口）
+3. **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - 專案架構詳解
+4. **[docs/DATABASE_SUPABASE.md](docs/DATABASE_SUPABASE.md)** - Supabase 資料庫設計
+5. **[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)** - 開發狀態和變更記錄
+
 - **代碼風格**：遵循 Dart 官方風格指南
 - **註解**：關鍵邏輯使用繁體中文註解
 - **提交**：使用有意義的 commit message
@@ -150,17 +168,25 @@ strengthwise/
 
 ## 📂 資料庫結構
 
-使用 **Firebase Firestore** 作為資料庫，主要集合：
+使用 **Supabase PostgreSQL** 作為資料庫，主要表格：
 
-| 集合 | 說明 |
-|------|------|
-| `users` | 用戶資料 |
-| `workoutPlans` | 訓練計劃和記錄（統一） |
-| `workoutTemplates` | 訓練模板 |
-| `exercises` | 公共運動庫 |
-| `customExercises` | 用戶自訂動作 |
+| 表格 | 說明 | 狀態 |
+|------|------|------|
+| `users` | 用戶資料 | ✅ |
+| `workout_plans` | 訓練計劃和記錄（統一） | ✅ |
+| `workout_templates` | 訓練模板 | ✅ |
+| `exercises` | 公共運動庫（794 個專業動作） | ✅ |
+| `custom_exercises` | 用戶自訂動作 | ✅ |
+| `body_data` | 身體數據記錄 | ✅ |
+| `daily_workout_summary` | 每日訓練彙總表（效能優化） | ✅ |
+| `personal_records` | 個人最佳記錄彙總表 | ✅ |
 
-詳細設計請參考 [docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md)。
+**效能優化**（2024-12-27 完成）：
+- ✅ Phase 1-4 資料庫優化（索引 + 全文搜尋 + 彙總表 + Cursor 分頁）
+- ✅ 查詢效能提升 80-99%（統計頁面秒開）
+- ✅ pgroonga 全文搜尋（繁體中文優化）
+
+詳細設計請參考 [docs/DATABASE_SUPABASE.md](docs/DATABASE_SUPABASE.md)。
 
 ---
 
@@ -182,37 +208,54 @@ strengthwise/
 
 ## 🗺️ 開發路線圖
 
-### ✅ 已完成（v1.0）
+### ✅ 已完成（v1.0）- 2024-12-27
 
-- [x] 用戶登入/登出（Google Sign-In）
-- [x] 訓練計劃管理（創建、編輯、刪除）
-- [x] 訓練模板系統
-- [x] 訓練執行和記錄
-- [x] 運動庫瀏覽
-- [x] 自訂動作功能
-- [x] 行事曆視圖
+**核心功能**：
+- [x] 用戶認證（Supabase Auth + Google Sign-In）
+- [x] 訓練計劃管理（創建、編輯、刪除、模板）
+- [x] 訓練執行和記錄（實時保存、每組單獨編輯）
+- [x] 運動庫（794 個專業動作 + 階層式瀏覽）
+- [x] 自訂動作功能（CRUD + 統計整合）
+- [x] 行事曆視圖（月曆 + 快速創建）
 - [x] 個人資料編輯
+
+**專業統計系統** ⭐：
+- [x] 統計頁面模組化重構（1,951 行 → 16 個元件）
+- [x] 訓練頻率統計（本週/本月/三個月/全年）
+- [x] 訓練量趨勢圖表（使用 fl_chart）
+- [x] 力量進步追蹤（個人最佳記錄 PR）
+- [x] 肌群平衡分析（雷達圖）
+- [x] 訓練日曆熱力圖（7x5 熱力圖）
+- [x] 完成率統計
+- [x] 身體數據追蹤（體重/體脂/BMI/肌肉量）
+
+**效能優化** ⚡：
+- [x] Phase 1-4 資料庫優化（提升 80-99%）
+- [x] 統計頁面秒開（首頁預載入）
+- [x] pgroonga 全文搜尋（繁體中文）
+- [x] 智能快取與預載入
+
+**技術架構**：
+- [x] MVVM + Clean Architecture（100% Interface 使用）
+- [x] Supabase PostgreSQL（完全移除 Firebase）
+- [x] 依賴注入（GetIt Service Locator）
 
 ### 🚧 進行中（v1.1）
 
-- [ ] 訓練統計功能
-  - [ ] 訓練頻率統計
-  - [ ] 訓練量趨勢圖表
-  - [ ] 個人最佳記錄（PR）
-  - [ ] 各肌群訓練分布
+- [ ] 預約頁面查詢優化
+- [ ] 實際使用測試（2-4 週）
 
 ### 📅 計劃中（v2.0）
 
-- [ ] 體重追蹤
 - [ ] 體態照片記錄
 - [ ] 身體圍度測量
 - [ ] 數據匯出（CSV/PDF）
 - [ ] 訓練提醒通知
 
-### 🔮 未來計劃
+### 🔮 未來計劃（v3.0）
 
 - [ ] 教練-學員雙邊平台
-- [ ] 預約系統
+- [ ] 預約系統完整實作
 - [ ] 教學筆記
 - [ ] 社交功能
 
@@ -256,7 +299,8 @@ strengthwise/
 ## 🙏 致謝
 
 - [Flutter](https://flutter.dev/) - 優秀的跨平台框架
-- [Firebase](https://firebase.google.com/) - 強大的後端服務
+- [Supabase](https://supabase.com/) - 強大的開源後端服務
+- [fl_chart](https://pub.dev/packages/fl_chart) - 精美的圖表庫
 - 所有貢獻者和用戶的支持
 
 ---

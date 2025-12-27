@@ -4,10 +4,13 @@ import '../../../models/workout_record_model.dart';
 import '../../../controllers/interfaces/i_workout_controller.dart';
 import '../../../controllers/interfaces/i_auth_controller.dart';
 import '../../../services/interfaces/i_workout_service.dart';
-import '../../../services/error_handling_service.dart';
+import '../../../services/core/error_handling_service.dart';
 import '../../../services/service_locator.dart';
 import '../../../utils/notification_utils.dart';
 import 'template_editor_page.dart';
+import 'widgets/template_list_item.dart';
+import 'widgets/empty_template_state.dart';
+import 'widgets/template_duplicate_dialog.dart';
 
 class TemplateManagementPage extends StatefulWidget {
   const TemplateManagementPage({super.key});
@@ -69,35 +72,10 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
 
   Future<void> _duplicateTemplate(WorkoutTemplate template) async {
     try {
-      // 顯示輸入對話框讓用戶修改新模板的名稱
-      TextEditingController titleController =
-          TextEditingController(text: '${template.title} - 副本');
       final newTitle = await showDialog<String>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('複製模板'),
-          content: TextField(
-            controller: titleController,
-            decoration: const InputDecoration(
-              labelText: '新模板名稱',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context, titleController.text);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-              ),
-              child: const Text('確定'),
-            ),
-          ],
+        builder: (context) => TemplateDuplicateDialog(
+          defaultName: '${template.title} - 副本',
         ),
       );
 
@@ -259,116 +237,32 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _templates.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.note_alt_outlined,
-                        size: 64,
-                        color: Color(0xFF94A3B8), // Slate-400
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        '還沒有保存的模板',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () {
-                          // 返回上一頁
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text('返回'),
-                      ),
-                    ],
-                  ),
+              ? EmptyTemplateState(
+                  onBackPressed: () => Navigator.of(context).pop(),
                 )
               : ListView.builder(
                   itemCount: _templates.length,
                   itemBuilder: (context, index) {
                     final template = _templates[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: ListTile(
-                        title: Text(template.title),
-                        subtitle: Text(
-                          '${template.planType} - ${template.exercises.length} 個動作',
-                        ),
-                        trailing: PopupMenuButton(
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
-                              value: 'create_record',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.fitness_center,
-                                      color: Colors.green),
-                                  SizedBox(width: 8),
-                                  Text('安排訓練'),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'edit',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.edit, color: Colors.blue),
-                                  SizedBox(width: 8),
-                                  Text('編輯'),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'duplicate',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.copy),
-                                  SizedBox(width: 8),
-                                  Text('複製'),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'delete',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.delete, color: Colors.red),
-                                  SizedBox(width: 8),
-                                  Text('刪除',
-                                      style: TextStyle(color: Colors.red)),
-                                ],
-                              ),
-                            ),
-                          ],
-                          onSelected: (value) async {
-                            switch (value) {
-                              case 'create_record':
-                                await _createWorkoutRecordFromTemplate(
-                                    template);
-                                break;
-                              case 'edit':
-                                await _editTemplate(template);
-                                break;
-                              case 'duplicate':
-                                await _duplicateTemplate(template);
-                                break;
-                              case 'delete':
-                                await _deleteTemplate(template.id);
-                                break;
-                            }
-                          },
-                        ),
-                        onTap: () {
-                          // 返回選擇的模板（用於創建訓練計劃）
-                          Navigator.pop(context, template);
-                        },
-                      ),
+                    return TemplateListItem(
+                      template: template,
+                      onTap: () => Navigator.pop(context, template),
+                      onMenuAction: (action) async {
+                        switch (action) {
+                          case 'create_record':
+                            await _createWorkoutRecordFromTemplate(template);
+                            break;
+                          case 'edit':
+                            await _editTemplate(template);
+                            break;
+                          case 'duplicate':
+                            await _duplicateTemplate(template);
+                            break;
+                          case 'delete':
+                            await _deleteTemplate(template.id);
+                            break;
+                        }
+                      },
                     );
                   },
                 ),

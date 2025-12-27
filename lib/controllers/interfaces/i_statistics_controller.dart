@@ -29,6 +29,11 @@ abstract class IStatisticsController extends ChangeNotifier {
   /// [initialTimeRange] 初始時間範圍
   Future<void> initialize(String userId, {TimeRange? initialTimeRange});
 
+  /// ⚡ 最小化初始化（僅載入本週數據，不預載入其他時間範圍）
+  ///
+  /// 用於首頁快速預載入，減少主線程阻塞
+  Future<void> initializeMinimal(String userId);
+
   /// 載入統計數據
   ///
   /// [timeRange] 時間範圍

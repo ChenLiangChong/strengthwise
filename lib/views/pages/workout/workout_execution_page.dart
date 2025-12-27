@@ -3,12 +3,15 @@ import 'package:flutter/services.dart';
 import '../../../models/exercise_model.dart';
 import '../../../controllers/interfaces/i_workout_controller.dart';
 import '../../../controllers/interfaces/i_workout_execution_controller.dart';
-import '../../../services/error_handling_service.dart';
+import '../../../services/core/error_handling_service.dart';
 import '../../../services/service_locator.dart';
 import '../../../themes/app_theme.dart';
 import '../../../utils/notification_utils.dart';
-import '../../widgets/exercise_card.dart';
-import '../exercises_page.dart';
+import '../../../widgets/workout/exercise_card.dart';
+import '../exercises/exercises_page.dart';
+import 'widgets/workout_info_card.dart';
+import 'widgets/empty_exercise_state.dart';
+import 'widgets/exercise_settings_dialog.dart';
 
 class WorkoutExecutionPage extends StatefulWidget {
   final String workoutRecordId;
@@ -150,96 +153,43 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   }
 
   // 顯示運動設置對話框
-  void _showExerciseSettingsDialog(Exercise exercise) {
+  void _showExerciseSettingsDialog(Exercise exercise) async {
     // 重置控制器值為默認值
     _newExerciseSetsController.text = '3';
     _newExerciseRepsController.text = '10';
     _newExerciseWeightController.text = '0';
     _newExerciseRestController.text = '60';
 
-    showDialog(
+    final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('設置 ${exercise.name}'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _newExerciseSetsController,
-                decoration: const InputDecoration(
-                  labelText: '組數',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _newExerciseRepsController,
-                decoration: const InputDecoration(
-                  labelText: '每組次數',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _newExerciseWeightController,
-                decoration: const InputDecoration(
-                  labelText: '重量 (kg)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _newExerciseRestController,
-                decoration: const InputDecoration(
-                  labelText: '休息時間 (秒)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              // 解析設置
-              final sets = int.tryParse(_newExerciseSetsController.text) ?? 3;
-              final reps = int.tryParse(_newExerciseRepsController.text) ?? 10;
-              final weight =
-                  double.tryParse(_newExerciseWeightController.text) ?? 0.0;
-              final restTime =
-                  int.tryParse(_newExerciseRestController.text) ?? 60;
-
-              // 先關閉對話框
-              Navigator.pop(context);
-
-              // 使用控制器添加新動作
-              await _executionController.addNewExercise(
-                exercise,
-                sets,
-                reps,
-                weight,
-                restTime,
-                context: context,
-              );
-
-              setState(() {}); // 觸發重新構建
-            },
-            style: ElevatedButton.styleFrom(),
-            child: const Text('添加'),
-          ),
-        ],
+      builder: (context) => ExerciseSettingsDialog(
+        exerciseName: exercise.name,
+        setsController: _newExerciseSetsController,
+        repsController: _newExerciseRepsController,
+        weightController: _newExerciseWeightController,
+        restController: _newExerciseRestController,
       ),
     );
+
+    if (result == true && mounted) {
+      // 解析設置
+      final sets = int.tryParse(_newExerciseSetsController.text) ?? 3;
+      final reps = int.tryParse(_newExerciseRepsController.text) ?? 10;
+      final weight = double.tryParse(_newExerciseWeightController.text) ?? 0.0;
+      final restTime = int.tryParse(_newExerciseRestController.text) ?? 60;
+
+      // 使用控制器添加新動作
+      await _executionController.addNewExercise(
+        exercise,
+        sets,
+        reps,
+        weight,
+        restTime,
+        context: context,
+      );
+
+      setState(() {}); // 觸發重新構建
+    }
   }
 
   // 添加刪除運動的方法
@@ -676,151 +626,33 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
         body: isLoading || isSaving
             ? const Center(child: CircularProgressIndicator())
             : Column(
-                children: [
-                  // 頂部信息卡片
-                  Card(
-                    margin: const EdgeInsets.all(16.0),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      '訓練類型:',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(_executionController.getPlanType()),
-                                  ],
-                                ),
-                              ),
-                              // 訓練計時器
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  const Text(
-                                    '訓練時間:',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  Text(_elapsedTime),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      '運動數量:',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(
-                                        '${exerciseRecords.length} 個運動, ${_executionController.calculateTotalSets()} 組'),
-                                  ],
-                                ),
-                              ),
-                              // 總訓練量
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  const Text(
-                                    '總訓練量:',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  Text(
-                                      '${_executionController.calculateTotalVolume().toStringAsFixed(1)} kg'),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // 備註輸入框
-                          TextField(
-                            controller: _workoutNotesController,
-                            decoration: const InputDecoration(
-                              labelText: '訓練備註',
-                              border: OutlineInputBorder(),
-                            ),
-                            maxLines: 2,
-                            onChanged: (value) {
-                              _executionController.setNotes(value);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+              children: [
+                // 頂部信息卡片
+                WorkoutInfoCard(
+                  planType: _executionController.getPlanType(),
+                  elapsedTime: _elapsedTime,
+                  exerciseCount: exerciseRecords.length,
+                  totalSets: _executionController.calculateTotalSets(),
+                  totalVolume: _executionController.calculateTotalVolume(),
+                  notesController: _workoutNotesController,
+                  onNotesChanged: (value) {
+                    _executionController.setNotes(value);
+                  },
+                ),
 
-                  // 訓練動作列表
-                  Expanded(
-                    child: exerciseRecords.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.fitness_center,
-                                  size: 64,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  '還沒有添加運動',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                ElevatedButton.icon(
-                                  onPressed: _addNewExercise,
-                                  icon: const Icon(Icons.add),
-                                  label: const Text('添加運動'),
-                                  style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.only(
-                                bottom: 96), // 增加底部填充，避免被 FAB 遮擋
-                            itemCount: exerciseRecords.length,
-                            itemBuilder: (context, index) {
-                              return _buildExerciseCard(index);
-                            },
-                          ),
-                  ),
-                ],
+                // 訓練動作列表
+                Expanded(
+                  child: exerciseRecords.isEmpty
+                      ? EmptyExerciseState(onAddExercise: _addNewExercise)
+                      : ListView.builder(
+                          padding: const EdgeInsets.only(bottom: 96),
+                          itemCount: exerciseRecords.length,
+                          itemBuilder: (context, index) {
+                            return _buildExerciseCard(index);
+                          },
+                        ),
+                ),
+              ],
               ),
         // 添加運動的浮動按鈕（過去的訓練不能新增動作）
         floatingActionButton:

@@ -95,6 +95,15 @@ abstract class IStatisticsService {
   /// 清除快取
   void clearCache();
 
+  /// ⚡ 預載入所有時間範圍的統計數據（後台執行）
+  /// 
+  /// 在進入統計頁面時調用，預先載入所有常用時間範圍的數據
+  /// 用戶切換時間範圍時可以立即顯示快取數據
+  /// 
+  /// [userId] 用戶 ID
+  /// [currentTimeRange] 當前時間範圍（會跳過，避免重複載入）
+  Future<void> preloadAllTimeRanges(String userId, {TimeRange? currentTimeRange});
+
   /// 獲取有訓練記錄的動作列表（用於收藏功能）
   ///
   /// [userId] 用戶 ID

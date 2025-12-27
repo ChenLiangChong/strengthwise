@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/user_model.dart';
 import '../services/interfaces/i_auth_service.dart';
-import '../services/error_handling_service.dart';
-import '../services/service_locator.dart' show Environment, serviceLocator;
+import '../services/core/error_handling_service.dart';
+import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_auth_controller.dart';
+import 'auth/auth_error_handler.dart';
+import 'auth/auth_user_manager.dart';
+import 'auth/auth_state_listener.dart';
+import 'auth/auth_validators.dart';
 
 /// 身份驗證控制器
 /// 
@@ -21,8 +25,8 @@ class AuthController extends ChangeNotifier implements IAuthController {
   String? _errorMessage;
   bool _isInitialized = false;
   
-  // 狀態監聽
-  StreamSubscription? _authStateSubscription;
+  // 子模組
+  late final AuthStateListener _stateListener;
   
   @override
   bool get isLoading => _isLoading;
@@ -43,6 +47,11 @@ class AuthController extends ChangeNotifier implements IAuthController {
   }) : 
     _authService = authService ?? serviceLocator<IAuthService>(),
     _errorService = errorService ?? serviceLocator<ErrorHandlingService>() {
+    // 初始化子模組
+    _stateListener = AuthStateListener(
+      authService: _authService,
+      onStateChanged: _refreshCurrentUser,
+    );
     _initialize();
   }
   
@@ -74,9 +83,8 @@ class AuthController extends ChangeNotifier implements IAuthController {
   @override
   Future<void> dispose() async {
     try {
-      // 取消狀態監聽
-      await _authStateSubscription?.cancel();
-      _authStateSubscription = null;
+      // 使用子模組取消狀態監聽
+      await _stateListener.cancel();
       
       _isInitialized = false;
       super.dispose();
@@ -87,87 +95,23 @@ class AuthController extends ChangeNotifier implements IAuthController {
   
   /// 設置認證狀態監聽器
   void _setupAuthStateListener() {
-    // Supabase Auth 狀態監聽
-    // 根據具體需求實現狀態監聽
-    // 這裡是一個簡單的定期檢查示例
-    _authStateSubscription?.cancel();
-    _authStateSubscription = Stream.periodic(const Duration(seconds: 30)).listen((_) {
-      _refreshCurrentUser();
-    });
+    // 使用子模組設置定期檢查
+    _stateListener.setupPeriodicListener();
   }
   
   /// 刷新當前用戶信息
   void _refreshCurrentUser() {
     final userData = _authService.getCurrentUser();
-    if (userData != null) {
-      _user = UserModel(
-        uid: userData['uid'],
-        email: userData['email'],
-        displayName: userData['displayName'] ?? '',
-        photoURL: userData['photoURL'] ?? '',
-      );
-    } else {
-      _user = null;
-    }
+    _user = AuthUserManager.createUserFromData(userData);
     notifyListeners();
   }
   
   /// 處理錯誤
   void _handleError(String errorMsg, {dynamic originalError}) {
     _isLoading = false;
-    _errorMessage = _getUserFriendlyError(errorMsg, originalError);
+    _errorMessage = AuthErrorHandler.getUserFriendlyError(errorMsg, originalError);
     _errorService.logError('認證錯誤: $errorMsg', type: 'AuthError');
     notifyListeners();
-  }
-  
-  /// 將技術錯誤轉換為用戶友好的消息
-  String _getUserFriendlyError(String errorMsg, dynamic originalError) {
-    // 處理 Supabase Auth 常見錯誤（通過錯誤訊息判斷）
-    final errorString = originalError?.toString() ?? errorMsg;
-    
-    if (errorString.contains('Invalid login credentials') || 
-        errorString.contains('user-not-found')) {
-      return '找不到該用戶，請檢查您的電子郵件或密碼';
-    } else if (errorString.contains('wrong-password')) {
-      return '密碼不正確';
-    } else if (errorString.contains('invalid-email') || 
-               errorString.contains('Invalid email')) {
-      return '電子郵件格式無效';
-    } else if (errorString.contains('user-disabled') || 
-               errorString.contains('User is disabled')) {
-      return '該帳戶已被停用';
-    } else if (errorString.contains('email-already-in-use') || 
-               errorString.contains('already registered')) {
-      return '該電子郵件已被註冊';
-    } else if (errorString.contains('weak-password') || 
-               errorString.contains('Password should be')) {
-      return '密碼強度太弱，請使用更複雜的密碼';
-    } else if (errorString.contains('network') || 
-               errorString.contains('Network')) {
-      return '網絡連接失敗，請檢查您的網絡連接';
-    } else if (errorString.contains('too-many-requests') || 
-               errorString.contains('rate limit')) {
-      return '登入嘗試次數過多，請稍後再試';
-    }
-    
-    // 處理Google登入錯誤
-    if (originalError.toString().contains('GoogleSignIn')) {
-      return 'Google登入失敗，請稍後再試';
-    }
-    
-    // 其他常見錯誤模式
-    if (errorMsg.toLowerCase().contains('network')) {
-      return '網絡連接錯誤，請檢查您的網絡連接';
-    }
-    if (errorMsg.toLowerCase().contains('timeout')) {
-      return '連接超時，請稍後再試';
-    }
-    if (errorMsg.toLowerCase().contains('credential')) {
-      return '登入憑證無效';
-    }
-    
-    // 默認錯誤消息
-    return '登入失敗，請稍後再試';
   }
   
   /// 清除錯誤信息
@@ -188,12 +132,7 @@ class AuthController extends ChangeNotifier implements IAuthController {
       final userData = await _authService.signInWithEmail(email, password);
       
       if (userData != null) {
-        _user = UserModel(
-          uid: userData['uid'],
-          email: userData['email'],
-          displayName: userData['displayName'] ?? '',
-          photoURL: userData['photoURL'] ?? '',
-        );
+        _user = AuthUserManager.createUserFromData(userData);
         _isLoading = false;
         notifyListeners();
         return true;
@@ -215,12 +154,7 @@ class AuthController extends ChangeNotifier implements IAuthController {
           await Future.delayed(const Duration(milliseconds: 500));
           final currentUser = _authService.getCurrentUser();
           if (currentUser != null) {
-            _user = UserModel(
-              uid: currentUser['uid'],
-              email: currentUser['email'],
-              displayName: currentUser['displayName'] ?? '',
-              photoURL: currentUser['photoURL'] ?? '',
-            );
+            _user = AuthUserManager.createUserFromData(currentUser);
             _isLoading = false;
             notifyListeners();
             return true;
@@ -248,12 +182,7 @@ class AuthController extends ChangeNotifier implements IAuthController {
       final userData = await _authService.registerWithEmail(email, password);
       
       if (userData != null) {
-        _user = UserModel(
-          uid: userData['uid'],
-          email: userData['email'],
-          displayName: userData['displayName'] ?? '',
-          photoURL: userData['photoURL'] ?? '',
-        );
+        _user = AuthUserManager.createUserFromData(userData);
         _isLoading = false;
         notifyListeners();
         return true;
@@ -279,12 +208,7 @@ class AuthController extends ChangeNotifier implements IAuthController {
       final userData = await _authService.signInWithGoogle();
       
       if (userData != null) {
-        _user = UserModel(
-          uid: userData['uid'],
-          email: userData['email'],
-          displayName: userData['displayName'] ?? '',
-          photoURL: userData['photoURL'] ?? '',
-        );
+        _user = AuthUserManager.createUserFromData(userData);
         _isLoading = false;
         notifyListeners();
         return true;
@@ -324,21 +248,12 @@ class AuthController extends ChangeNotifier implements IAuthController {
   
   /// 檢查電子郵件格式是否有效
   bool isEmailValid(String email) {
-    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-    return emailRegex.hasMatch(email);
+    return AuthValidators.isEmailValid(email);
   }
   
   /// 檢查密碼強度
   /// 返回值: 0 (弱) 到 3 (強)
   int getPasswordStrength(String password) {
-    if (password.length < 6) return 0;
-    
-    int strength = 0;
-    if (password.length >= 8) strength++;
-    if (RegExp(r'[A-Z]').hasMatch(password) && RegExp(r'[a-z]').hasMatch(password)) strength++;
-    if (RegExp(r'[0-9]').hasMatch(password)) strength++;
-    if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) strength++;
-    
-    return strength > 3 ? 3 : strength;
+    return AuthValidators.getPasswordStrength(password);
   }
 } 

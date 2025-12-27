@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:strengthwise/models/favorite_exercise_model.dart';
-import 'package:strengthwise/services/favorites_service.dart';
-import 'package:strengthwise/services/error_handling_service.dart';
+import 'package:strengthwise/services/cache/favorites_service.dart';
+import 'package:strengthwise/services/core/error_handling_service.dart';
 
 void main() {
   group('FavoritesService 測試', () {

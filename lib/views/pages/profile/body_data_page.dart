@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../../../controllers/body_data_controller.dart';
 import '../../../services/service_locator.dart';
 import '../../../models/body_data_record.dart';
 import '../../../models/user_model.dart';
 import '../../../utils/notification_utils.dart';
+import 'widgets/latest_body_data_card.dart';
+import 'widgets/weight_trend_chart.dart';
+import 'widgets/bmi_trend_chart.dart';
+import 'widgets/body_data_records_list.dart';
 
 /// 身體數據頁面
 /// 顯示體重、體脂、BMI 等身體指標的歷史趨勢
@@ -108,17 +111,20 @@ class _BodyDataPageState extends State<BodyDataPage> {
               padding: const EdgeInsets.all(16),
               children: [
                 // 最新數據卡片
-                _buildLatestDataCard(controller.latestRecord!),
+                LatestBodyDataCard(record: controller.latestRecord!),
                 const SizedBox(height: 16),
                 // 體重趨勢圖表
-                _buildWeightChart(controller.records),
+                WeightTrendChart(records: controller.records),
                 const SizedBox(height: 16),
                 // BMI 趨勢圖表
                 if (controller.records.any((r) => r.bmi != null))
-                  _buildBMIChart(controller.records),
+                  BMITrendChart(records: controller.records),
                 const SizedBox(height: 16),
                 // 歷史記錄列表
-                _buildRecordsList(controller.records),
+                BodyDataRecordsList(
+                  records: controller.records,
+                  onDelete: _deleteRecord,
+                ),
               ],
             );
           },
@@ -132,280 +138,6 @@ class _BodyDataPageState extends State<BodyDataPage> {
     );
   }
 
-  /// 最新數據卡片
-  Widget _buildLatestDataCard(BodyDataRecord record) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('最新記錄', style: textTheme.titleMedium),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildDataItem(
-                    icon: Icons.monitor_weight_outlined,
-                    label: '體重',
-                    value: '${record.weight.toStringAsFixed(1)} kg',
-                    color: colorScheme.primary,
-                  ),
-                ),
-                if (record.bodyFat != null)
-                  Expanded(
-                    child: _buildDataItem(
-                      icon: Icons.water_drop_outlined,
-                      label: '體脂率',
-                      value: '${record.bodyFat!.toStringAsFixed(1)}%',
-                      color: colorScheme.secondary,
-                    ),
-                  ),
-              ],
-            ),
-            if (record.bmi != null || record.muscleMass != null) ...[
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  if (record.bmi != null)
-                    Expanded(
-                      child: _buildDataItem(
-                        icon: Icons.straighten_outlined,
-                        label: 'BMI',
-                        value: record.bmi!.toStringAsFixed(1),
-                        color: _getBMIColor(record.bmi!),
-                        subtitle: record.getBMICategory(),
-                      ),
-                    ),
-                  if (record.muscleMass != null)
-                    Expanded(
-                      child: _buildDataItem(
-                        icon: Icons.fitness_center_outlined,
-                        label: '肌肉量',
-                        value: '${record.muscleMass!.toStringAsFixed(1)} kg',
-                        color: colorScheme.tertiary,
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 數據項目
-  Widget _buildDataItem({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-    String? subtitle,
-  }) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
-          Text(label, style: textTheme.bodySmall?.copyWith(color: color)),
-          const SizedBox(height: 4),
-          Text(value, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          if (subtitle != null) ...[
-            const SizedBox(height: 2),
-            Text(subtitle, style: textTheme.bodySmall),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// 體重趨勢圖表
-  Widget _buildWeightChart(List<BodyDataRecord> records) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    // 按日期升序排列
-    final sortedRecords = List<BodyDataRecord>.from(records)
-      ..sort((a, b) => a.recordDate.compareTo(b.recordDate));
-
-    final spots = sortedRecords
-        .asMap()
-        .entries
-        .map((entry) => FlSpot(entry.key.toDouble(), entry.value.weight))
-        .toList();
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('體重趨勢', style: textTheme.titleMedium),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: LineChart(
-                LineChartData(
-                  gridData: FlGridData(show: false),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, meta) {
-                          return Text('${value.toInt()}kg', style: textTheme.bodySmall);
-                        },
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: spots,
-                      isCurved: true,
-                      color: colorScheme.primary,
-                      barWidth: 3,
-                      dotData: FlDotData(show: true),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: colorScheme.primary.withOpacity(0.1),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// BMI 趨勢圖表
-  Widget _buildBMIChart(List<BodyDataRecord> records) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    final sortedRecords = List<BodyDataRecord>.from(records.where((r) => r.bmi != null))
-      ..sort((a, b) => a.recordDate.compareTo(b.recordDate));
-
-    final spots = sortedRecords
-        .asMap()
-        .entries
-        .map((entry) => FlSpot(entry.key.toDouble(), entry.value.bmi!))
-        .toList();
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('BMI 趨勢', style: textTheme.titleMedium),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: LineChart(
-                LineChartData(
-                  gridData: FlGridData(show: false),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, meta) {
-                          return Text(value.toStringAsFixed(1), style: textTheme.bodySmall);
-                        },
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: spots,
-                      isCurved: true,
-                      color: colorScheme.secondary,
-                      barWidth: 3,
-                      dotData: FlDotData(show: true),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: colorScheme.secondary.withOpacity(0.1),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 歷史記錄列表
-  Widget _buildRecordsList(List<BodyDataRecord> records) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('歷史記錄', style: textTheme.titleMedium),
-            const SizedBox(height: 8),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: records.length,
-              separatorBuilder: (context, index) => const Divider(),
-              itemBuilder: (context, index) {
-                final record = records[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    child: Text('${record.weight.toInt()}'),
-                  ),
-                  title: Text('${record.weight.toStringAsFixed(1)} kg'),
-                  subtitle: Text(_formatDate(record.recordDate)),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (record.bmi != null)
-                        Chip(
-                          label: Text('BMI ${record.bmi!.toStringAsFixed(1)}'),
-                          backgroundColor: _getBMIColor(record.bmi!).withOpacity(0.2),
-                        ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () => _deleteRecord(record),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   /// 顯示新增記錄對話框
   Future<void> _showAddRecordDialog() async {
@@ -552,7 +284,8 @@ class _BodyDataPageState extends State<BodyDataPage> {
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      initialDateRange: DateTimeRange(start: _selectedStartDate, end: _selectedEndDate),
+      initialDateRange:
+          DateTimeRange(start: _selectedStartDate, end: _selectedEndDate),
     );
 
     if (dateRange != null) {
@@ -568,13 +301,4 @@ class _BodyDataPageState extends State<BodyDataPage> {
   String _formatDate(DateTime date) {
     return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
   }
-
-  /// 根據 BMI 值獲取顏色
-  Color _getBMIColor(double bmi) {
-    if (bmi < 18.5) return Colors.blue;
-    if (bmi < 24) return Colors.green;
-    if (bmi < 27) return Colors.orange;
-    return Colors.red;
-  }
 }
-

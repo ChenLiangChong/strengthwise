@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/services/interfaces/i_favorites_service.dart';
-import 'package:strengthwise/services/favorites_service.dart';
-import 'package:strengthwise/services/error_handling_service.dart';
+import 'package:strengthwise/services/cache/favorites_service.dart';
+import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

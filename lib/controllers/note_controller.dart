@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/note_model.dart';
 import '../services/interfaces/i_note_service.dart';
-import '../services/error_handling_service.dart';
+import '../services/core/error_handling_service.dart';
 import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_note_controller.dart';
+import 'note/note_cache_manager.dart';
+import 'note/note_validator.dart';
 
 /// 筆記控制器實現
 /// 
@@ -19,10 +21,8 @@ class NoteController extends ChangeNotifier implements INoteController {
   String? _errorMessage;
   bool _isInitialized = false;
   
-  // 數據緩存
-  List<Note>? _cachedNotes;
-  final Map<String, Note> _noteDetailsCache = {};
-  DateTime? _lastNotesRefreshTime;
+  // 子模組
+  late final NoteCacheManager _cacheManager;
   
   /// 正在載入數據
   bool get isLoading => _isLoading;
@@ -31,7 +31,7 @@ class NoteController extends ChangeNotifier implements INoteController {
   String? get errorMessage => _errorMessage;
   
   /// 緩存的筆記
-  List<Note> get cachedNotes => _cachedNotes ?? [];
+  List<Note> get cachedNotes => _cacheManager.cachedNotes;
   
   /// 構造函數，支持依賴注入
   NoteController({
@@ -40,6 +40,8 @@ class NoteController extends ChangeNotifier implements INoteController {
   }) : 
     _noteService = noteService ?? serviceLocator<INoteService>(),
     _errorService = errorService ?? serviceLocator<ErrorHandlingService>() {
+    // 初始化子模組
+    _cacheManager = NoteCacheManager();
     _initialize();
   }
   
@@ -90,9 +92,7 @@ class NoteController extends ChangeNotifier implements INoteController {
   
   /// 清除緩存
   void clearCache() {
-    _cachedNotes = null;
-    _noteDetailsCache.clear();
-    _lastNotesRefreshTime = null;
+    _cacheManager.clearCache();
   }
   
   /// 釋放資源
@@ -108,31 +108,27 @@ class NoteController extends ChangeNotifier implements INoteController {
     if (!_isInitialized) await _initialize();
     
     try {
-      // 檢查是否需要重新載入 (5分鐘過期)
-      final now = DateTime.now();
-      final shouldRefresh = _lastNotesRefreshTime == null || 
-          now.difference(_lastNotesRefreshTime!).inMinutes > 5;
-      
-      if (shouldRefresh || _cachedNotes == null) {
+      // 使用緩存管理器檢查是否需要刷新
+      if (_cacheManager.shouldRefresh()) {
         _setLoading(true);
         clearError();
         
-        _cachedNotes = await _noteService.getUserNotes();
-        _lastNotesRefreshTime = now;
+        final notes = await _noteService.getUserNotes();
+        _cacheManager.updateNotesCache(notes);
         
         _setLoading(false);
       }
       
-      return _cachedNotes ?? [];
+      return _cacheManager.cachedNotes;
     } catch (e) {
       _handleError('載入筆記失敗', e);
-      return _cachedNotes ?? [];
+      return _cacheManager.cachedNotes;
     }
   }
   
   /// 強制重新載入筆記，忽略緩存
   Future<List<Note>> reloadNotes() async {
-    _cachedNotes = null;
+    clearCache();
     return loadUserNotes();
   }
   
@@ -142,20 +138,15 @@ class NoteController extends ChangeNotifier implements INoteController {
     
     try {
       // 從緩存中查找
-      if (_noteDetailsCache.containsKey(noteId)) {
-        return _noteDetailsCache[noteId];
+      if (_cacheManager.hasNoteDetails(noteId)) {
+        return _cacheManager.getNoteDetails(noteId);
       }
       
       // 從列表緩存中查找
-      if (_cachedNotes != null) {
-        final cachedNote = _cachedNotes!
-            .where((note) => note.id == noteId)
-            .firstOrNull;
-        
-        if (cachedNote != null) {
-          _noteDetailsCache[noteId] = cachedNote;
-          return cachedNote;
-        }
+      final cachedNote = _cacheManager.findNoteInListCache(noteId);
+      if (cachedNote != null) {
+        _cacheManager.setNoteDetails(noteId, cachedNote);
+        return cachedNote;
       }
       
       // 從服務獲取
@@ -165,7 +156,7 @@ class NoteController extends ChangeNotifier implements INoteController {
       final note = await _noteService.getNoteById(noteId);
       
       if (note != null) {
-        _noteDetailsCache[noteId] = note;
+        _cacheManager.setNoteDetails(noteId, note);
       }
       
       _setLoading(false);
@@ -180,10 +171,12 @@ class NoteController extends ChangeNotifier implements INoteController {
   Future<Note> createNote(String title, String textContent, List<DrawingPoint>? drawingPoints) async {
     if (!_isInitialized) await _initialize();
     
-    // 輸入驗證
-    if (title.trim().isEmpty) {
-      _handleError('筆記標題不能為空');
-      throw ArgumentError('筆記標題不能為空');
+    // 使用驗證器進行輸入驗證
+    try {
+      NoteValidator.validateCreateParams(title);
+    } catch (e) {
+      _handleError(e.toString());
+      rethrow;
     }
     
     try {
@@ -192,10 +185,8 @@ class NoteController extends ChangeNotifier implements INoteController {
       
       final note = await _noteService.createNote(title, textContent, drawingPoints);
       
-      // 更新緩存
-      if (_cachedNotes != null) {
-        _cachedNotes = [..._cachedNotes!, note];
-      }
+      // 使用緩存管理器更新緩存
+      _cacheManager.addNoteToCache(note);
       
       _setLoading(false);
       return note;
@@ -209,10 +200,12 @@ class NoteController extends ChangeNotifier implements INoteController {
   Future<bool> updateNote(Note note) async {
     if (!_isInitialized) await _initialize();
     
-    // 輸入驗證
-    if (note.title.trim().isEmpty) {
-      _handleError('筆記標題不能為空');
-      throw ArgumentError('筆記標題不能為空');
+    // 使用驗證器進行輸入驗證
+    try {
+      NoteValidator.validateUpdateParams(note);
+    } catch (e) {
+      _handleError(e.toString());
+      rethrow;
     }
     
     try {
@@ -231,15 +224,9 @@ class NoteController extends ChangeNotifier implements INoteController {
       
       final success = await _noteService.updateNote(updatedNote);
       
-      // 更新緩存
+      // 使用緩存管理器更新緩存
       if (success) {
-        _noteDetailsCache[note.id] = updatedNote;
-        
-        if (_cachedNotes != null) {
-          _cachedNotes = _cachedNotes!.map((n) => 
-            n.id == note.id ? updatedNote : n
-          ).toList();
-        }
+        _cacheManager.updateNoteInCache(updatedNote);
       }
       
       _setLoading(false);
@@ -260,15 +247,9 @@ class NoteController extends ChangeNotifier implements INoteController {
       
       final success = await _noteService.deleteNote(noteId);
       
-      // 更新緩存
+      // 使用緩存管理器更新緩存
       if (success) {
-        _noteDetailsCache.remove(noteId);
-        
-        if (_cachedNotes != null) {
-          _cachedNotes = _cachedNotes!
-              .where((note) => note.id != noteId)
-              .toList();
-        }
+        _cacheManager.removeNoteFromCache(noteId);
       }
       
       _setLoading(false);

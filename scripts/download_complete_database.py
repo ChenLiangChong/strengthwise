@@ -5,7 +5,7 @@ Download Complete Supabase Database
 
 This script will:
 1. Connect to Supabase
-2. Download all table data
+2. Download all table data (9 tables)
 3. Save as JSON format
 4. Generate database structure report
 
@@ -14,17 +14,17 @@ Usage:
 
 Output:
     - database_export/
-        |- database_structure.md     (Complete structure documentation)
-        |- exercises_complete.json   (All exercises with relations)
-        |- database_queries.md       (All queries used in app)
-        |- users.json
-        |- exercises.json
-        |- equipments.json
-        |- joint_types.json
-        |- workout_plans.json
-        |- body_data.json
-        |- notes.json
-        |- favorite_exercises.json
+        |- users.json                (User data)
+        |- exercises.json            (System exercises - 794 records)
+        |- custom_exercises.json     (User custom exercises)
+        |- workout_plans.json        (Workout plans and records)
+        |- workout_templates.json    (Workout templates)
+        |- body_data.json            (Body measurements)
+        |- notes.json                (User notes)
+        |- body_parts.json           (Metadata: body parts)
+        |- exercise_types.json       (Metadata: exercise types)
+    
+    - docs/DATABASE_SUPABASE.md      (Updated with latest statistics)
 """
 
 import sys
@@ -97,20 +97,33 @@ def download_all_tables() -> Dict[str, List]:
     print("\nDownloading all tables...")
     print("-" * 60)
     
-    tables = [
+    # 核心表格（6 個）
+    core_tables = [
         "users",
         "exercises",
-        "equipments",
-        "joint_types",
+        "custom_exercises",
         "workout_plans",
+        "workout_templates",
         "body_data",
-        "notes",
-        "favorite_exercises"
+        "notes"
     ]
     
+    # 元數據表格（3 個）
+    metadata_tables = [
+        "body_parts",
+        "exercise_types"
+    ]
+    
+    # 合併所有表格（9 個）
+    all_tables = core_tables + metadata_tables
     all_data = {}
     
-    for table_name in tables:
+    print(f"Total tables to download: {len(all_tables)}")
+    print(f"Core tables: {', '.join(core_tables)}")
+    print(f"Metadata tables: {', '.join(metadata_tables)}")
+    print("-" * 60)
+    
+    for table_name in all_tables:
         data = download_table(table_name)
         all_data[table_name] = data
         
@@ -159,11 +172,28 @@ def generate_structure_doc(all_data: Dict[str, List]):
                 for t_type, count in sorted(training_types.items(), key=lambda x: x[1], reverse=True):
                     doc.append(f"- {t_type}: {count}")
             
+            elif table_name == "custom_exercises":
+                body_parts = {}
+                for item in data:
+                    bp = item.get('body_part', 'Unknown')
+                    body_parts[bp] = body_parts.get(bp, 0) + 1
+                
+                doc.append("\n**Body Parts Distribution:**")
+                for bp, count in sorted(body_parts.items(), key=lambda x: x[1], reverse=True):
+                    doc.append(f"- {bp}: {count}")
+            
             elif table_name == "workout_plans":
                 completed = sum(1 for item in data if item.get('completed'))
                 pending = len(data) - completed
                 doc.append(f"- Completed: {completed}")
                 doc.append(f"- Pending: {pending}")
+                
+                # Calculate total volume
+                total_volume = sum(item.get('total_volume', 0) for item in data if item.get('completed'))
+                doc.append(f"- Total training volume: {total_volume:.1f} kg")
+            
+            elif table_name == "workout_templates":
+                doc.append(f"- User templates: {len(data)}")
             
             elif table_name == "body_data":
                 if data:
@@ -171,6 +201,22 @@ def generate_structure_doc(all_data: Dict[str, List]):
                     if weights:
                         doc.append(f"- Weight range: {min(weights):.1f} - {max(weights):.1f} kg")
                         doc.append(f"- Average weight: {sum(weights)/len(weights):.1f} kg")
+                    
+                    body_fats = [item.get('body_fat') for item in data if item.get('body_fat')]
+                    if body_fats:
+                        doc.append(f"- Body fat range: {min(body_fats):.1f}% - {max(body_fats):.1f}%")
+            
+            elif table_name == "body_parts":
+                names = [item.get('name', 'Unknown') for item in data]
+                doc.append(f"\n**Body Parts:**")
+                for name in sorted(names):
+                    doc.append(f"- {name}")
+            
+            elif table_name == "exercise_types":
+                names = [item.get('name', 'Unknown') for item in data]
+                doc.append(f"\n**Exercise Types:**")
+                for name in sorted(names):
+                    doc.append(f"- {name}")
         
         doc.append("\n" + "-" * 80)
     

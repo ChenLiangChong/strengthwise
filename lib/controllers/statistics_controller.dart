@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/statistics_model.dart';
 import '../services/interfaces/i_statistics_service.dart';
-import '../services/error_handling_service.dart';
+import '../services/core/error_handling_service.dart';
 import 'interfaces/i_statistics_controller.dart';
 
 /// 統計控制器實作
@@ -57,6 +57,25 @@ class StatisticsController extends ChangeNotifier implements IStatisticsControll
     }
     // 立即載入統計數據
     await loadStatistics(_timeRange);
+    
+    // ⚡ 首次初始化後，後台預載入其他時間範圍（只執行一次）
+    _statisticsService.preloadAllTimeRanges(_userId!, currentTimeRange: _timeRange);
+  }
+
+  /// ⚡ 最小化初始化（僅載入本週數據，不預載入其他時間範圍）
+  ///
+  /// 用於首頁快速預載入，減少主線程阻塞
+  @override
+  Future<void> initializeMinimal(String userId) async {
+    _userId = userId;
+    _timeRange = TimeRange.week;
+    
+    // 只載入本週數據，不預載入其他時間範圍
+    await loadStatistics(TimeRange.week);
+    
+    if (kDebugMode) {
+      print('[StatisticsController] ⚡ 最小化初始化完成（僅本週）');
+    }
   }
 
   @override

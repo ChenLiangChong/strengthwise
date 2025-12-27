@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../controllers/interfaces/i_auth_controller.dart';
 import '../services/service_locator.dart';
-import '../services/error_handling_service.dart';
+import '../services/core/error_handling_service.dart';
 import '../utils/notification_utils.dart';
 import 'main_home_page.dart';
 
@@ -18,7 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _isSignUp = false;
-  
+
   late final IAuthController _authController;
   late final ErrorHandlingService _errorService;
 
@@ -43,85 +43,33 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
-
+  /// 統一處理登入結果和導航
+  /// [authAction] 認證操作（返回是否成功）
+  /// [customErrorHandler] 自定義錯誤處理（可選）
+  Future<void> _handleAuthResult(
+    Future<bool> Function() authAction, {
+    void Function(String errorMsg)? customErrorHandler,
+  }) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      bool success;
-      if (_isSignUp) {
-        success = await _authController.registerWithEmail(
-          _emailController.text.trim(),
-          _passwordController.text,
-        );
-      } else {
-        success = await _authController.signInWithEmail(
-          _emailController.text.trim(),
-          _passwordController.text,
-        );
-      }
-
+      final success = await authAction();
       if (success && mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const MainHomePage()),
         );
       } else if (mounted) {
-        NotificationUtils.showError(
-          context,
-          _authController.errorMessage ?? '登入失敗，請稍後再試',
-        );
+        final errorMsg = _authController.errorMessage ?? '登入失敗，請稍後再試';
+        if (customErrorHandler != null) {
+          customErrorHandler(errorMsg);
+        } else {
+          NotificationUtils.showError(context, errorMsg);
+        }
       }
     } catch (e) {
-      _errorService.handleError(context, e);
-    } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _handleGoogleSignIn() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final success = await _authController.signInWithGoogle();
-      if (success && mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainHomePage()),
-        );
-      } else if (mounted) {
-        final errorMsg = _authController.errorMessage ?? 'Google 登入失敗';
-        // 檢查是否為模擬器相關錯誤
-        String displayMsg = errorMsg;
-        if (errorMsg.contains('模擬器') || errorMsg.contains('真實設備')) {
-          displayMsg = 'Google 登入在模擬器上不可用。\n請使用真實設備測試，或使用下方的電子郵件登入功能。';
-        }
-        
-        NotificationUtils.showError(
-          context,
-          displayMsg,
-          duration: const Duration(seconds: 5),
-        );
-      }
-    } catch (e) {
-      // 處理模擬器相關錯誤
-      String errorMsg = e.toString();
-      if (errorMsg.contains('模擬器') || errorMsg.contains('真實設備')) {
-        if (mounted) {
-          NotificationUtils.showError(
-            context,
-            'Google 登入在模擬器上不可用。\n請使用真實設備測試，或使用下方的電子郵件登入功能。',
-            duration: const Duration(seconds: 5),
-          );
-        }
-      } else {
         _errorService.handleError(context, e);
       }
     } finally {
@@ -131,6 +79,41 @@ class _LoginPageState extends State<LoginPage> {
         });
       }
     }
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    await _handleAuthResult(() async {
+      return _isSignUp
+          ? await _authController.registerWithEmail(
+              _emailController.text.trim(),
+              _passwordController.text,
+            )
+          : await _authController.signInWithEmail(
+              _emailController.text.trim(),
+              _passwordController.text,
+            );
+    });
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    await _handleAuthResult(
+      () => _authController.signInWithGoogle(),
+      customErrorHandler: (errorMsg) {
+        // 檢查是否為模擬器相關錯誤
+        String displayMsg = errorMsg;
+        if (errorMsg.contains('模擬器') || errorMsg.contains('真實設備')) {
+          displayMsg = 'Google 登入在模擬器上不可用。\n請使用真實設備測試，或使用下方的電子郵件登入功能。';
+        }
+
+        NotificationUtils.showError(
+          context,
+          displayMsg,
+          duration: const Duration(seconds: 5),
+        );
+      },
+    );
   }
 
   @override
@@ -148,7 +131,7 @@ class _LoginPageState extends State<LoginPage> {
                 // Logo
                 const FlutterLogo(size: 100),
                 const SizedBox(height: 32),
-                
+
                 // 標題
                 Text(
                   _isSignUp ? '註冊新帳號' : '歡迎回來',
@@ -159,7 +142,7 @@ class _LoginPageState extends State<LoginPage> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                
+
                 // 電子郵件輸入
                 TextFormField(
                   controller: _emailController,
@@ -173,14 +156,19 @@ class _LoginPageState extends State<LoginPage> {
                     if (value == null || value.isEmpty) {
                       return '請輸入電子郵件';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    // ⚡ 改進的電子郵件驗證：支援更多格式
+                    // 允許數字開頭、連續點號、加號等常見格式
+                    final emailRegex = RegExp(
+                      r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+                    );
+                    if (!emailRegex.hasMatch(value.trim())) {
                       return '請輸入有效的電子郵件格式';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 // 密碼輸入
                 TextFormField(
                   controller: _passwordController,
@@ -201,7 +189,7 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
                 const SizedBox(height: 24),
-                
+
                 // 提交按鈕
                 SizedBox(
                   height: 50,
@@ -209,7 +197,8 @@ class _LoginPageState extends State<LoginPage> {
                     onPressed: _isLoading ? null : _handleSubmit,
                     child: _isLoading
                         ? const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           )
                         : Text(
                             _isSignUp ? '註冊' : '登入',
@@ -218,20 +207,20 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // 切換註冊/登入模式
                 TextButton(
                   onPressed: _toggleMode,
                   child: Text(_isSignUp ? '已有帳號？點此登入' : '沒有帳號？點此註冊'),
                 ),
                 const SizedBox(height: 24),
-                
+
                 const Text(
                   '或者使用以下方式登入',
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Google登入按鈕
                 ElevatedButton.icon(
                   onPressed: _handleGoogleSignIn,
@@ -252,4 +241,4 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-} 
+}
