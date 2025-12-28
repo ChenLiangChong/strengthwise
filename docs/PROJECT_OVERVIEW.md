@@ -2,7 +2,7 @@
 
 > 專案架構、技術棧、開發規範的完整說明
 
-**最後更新**：2024年12月27日
+**最後更新**：2024年12月28日 - v2.0 Phase 2 進行中（85%）
 
 ---
 
@@ -23,16 +23,17 @@
 
 ### 專案規模
 ```
-總代碼量：~15,000 行
-- Flutter/Dart：~12,000 行
-- SQL/Migrations：~1,000 行
+總代碼量：~47,000 行（v2.0 Phase 2）
+- Flutter/Dart：~43,700 行
+- SQL/Migrations：~2,500 行
 - Python 腳本：~2,000 行
 
 核心功能：
-- 頁面（Pages）：12 個
-- 控制器（Controllers）：8 個
-- 服務（Services）：15+ 個
-- 數據模型（Models）：20+ 個
+- 頁面（Pages）：20+ 個
+- 控制器（Controllers）：12+ 個（含子模組 43 個）
+- 服務（Services）：25+ 個
+- 數據模型（Models）：30+ 個
+- UI 組件（Widgets）：68+ 個
 ```
 
 ---
@@ -62,7 +63,7 @@ Supabase (PostgreSQL)
 
 **資料庫**：
 - **類型**：Supabase PostgreSQL
-- **表格數量**：15 個（11 核心 + 4 元數據）
+- **表格數量**：14 個（核心表格）
 - **動作資料**：794 個系統動作 + 用戶自訂動作
 - **安全性**：Row Level Security (RLS)
 
@@ -70,6 +71,8 @@ Supabase (PostgreSQL)
 - ✅ 2024-12-25：從 Firestore 完全遷移到 Supabase PostgreSQL
 - ✅ 2024-12-26：自訂動作功能完整實作（`custom_exercises` 表格）
 - ✅ 2024-12-27：Phase 1-3 效能優化完成（查詢效能提升 50-90%）
+- ✅ 2024-12-28：v2.0 Phase 1 完成（教練學員系統）
+- 🚧 2024-12-28：v2.0 Phase 2 進行中（預約系統 - 85%）
 - ✅ 成本優勢：$25/月固定（vs Firestore $11-50/月增長）
 
 ---

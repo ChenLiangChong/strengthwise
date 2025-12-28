@@ -87,6 +87,31 @@ class UserServiceSupabase implements IUserService {
   }
 
   @override
+  Future<UserModel?> getUserProfile(String userId) async {
+    try {
+      // ⚡ 檢查快取
+      final cached = _cacheManager.getCachedProfile(userId);
+      if (cached != null) {
+        return cached;
+      }
+
+      // 從資料庫獲取
+      final user = await _operations.getUserProfile(userId);
+      
+      if (user != null) {
+        // ⚡ 更新快取
+        _cacheManager.updateCache(userId, user);
+      }
+
+      return user;
+    } catch (e) {
+      _logError('獲取用戶資料失敗 (userId: $userId): $e');
+      _errorService?.logError('獲取用戶資料失敗: $e', type: 'UserServiceError');
+      return null;
+    }
+  }
+
+  @override
   Future<bool> updateUserProfile({
     String? displayName,
     String? nickname,

@@ -7,6 +7,8 @@ import '../../login_page.dart';
 import 'profile_settings_page.dart';
 import 'body_data_page.dart';
 import '../statistics/statistics_page_v2.dart';
+import '../coaching/coach_hub_page.dart';
+import '../appointments/client_hub_page.dart';
 import 'widgets/profile_header_card.dart';
 import 'widgets/profile_detail_card.dart';
 import 'widgets/profile_menu_item.dart';
@@ -87,7 +89,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => BodyDataPage(userProfile: _userProfile),
+                    builder: (context) =>
+                        BodyDataPage(userProfile: _userProfile),
                   ),
                 );
               },
@@ -96,10 +99,11 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 24),
 
             // 詳細資訊卡片
-            if (_userProfile != null) ProfileDetailCard(userProfile: _userProfile!),
+            if (_userProfile != null)
+              ProfileDetailCard(userProfile: _userProfile!),
 
             const SizedBox(height: 24),
-            
+
             // 功能菜單
             _buildMenuSection(context, colorScheme),
 
@@ -132,9 +136,10 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-
   /// 功能菜單區塊
   Widget _buildMenuSection(BuildContext context, ColorScheme colorScheme) {
+    final isCoach = _userProfile?.isCoach ?? false;
+
     return Column(
       children: [
         // 我的統計
@@ -152,14 +157,52 @@ class _ProfilePageState extends State<ProfilePage> {
             );
           },
         ),
+
+        // 教練管理中心（僅教練可見）
+        if (isCoach) ...[
+          const SizedBox(height: 16),
+          ProfileMenuItem(
+            icon: Icons.business_center,
+            iconColor: Colors.blue,
+            title: '教練管理中心',
+            subtitle: '學員管理、時段設定、預約管理',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CoachHubPage(),
+                ),
+              );
+            },
+          ),
+        ],
+
+        // 學員預約中心（所有用戶都可見）
+        const SizedBox(height: 16),
+        ProfileMenuItem(
+          icon: Icons.event_note,
+          iconColor: Colors.purple,
+          title: '學員預約中心',
+          subtitle: '預約課程、查看預約記錄',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ClientHubPage(),
+              ),
+            );
+          },
+        ),
+
         const SizedBox(height: 16),
         const Divider(),
         const SizedBox(height: 16),
+
         // 教練模式切換
         ProfileRoleSwitch(
           title: '教練模式',
           subtitle: '開啟教練功能',
-          value: _userProfile?.isCoach ?? false,
+          value: isCoach,
           onChanged: (value) async {
             await _userService.toggleUserRole(value);
             _loadUserProfile();

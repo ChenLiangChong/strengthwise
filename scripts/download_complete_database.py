@@ -5,7 +5,7 @@ Download Complete Supabase Database
 
 This script will:
 1. Connect to Supabase
-2. Download all table data (9 tables)
+2. Download all table data (14 tables - v2.0 Phase 2)
 3. Save as JSON format
 4. Generate database structure report
 
@@ -14,17 +14,22 @@ Usage:
 
 Output:
     - database_export/
-        |- users.json                (User data)
-        |- exercises.json            (System exercises - 794 records)
-        |- custom_exercises.json     (User custom exercises)
-        |- workout_plans.json        (Workout plans and records)
-        |- workout_templates.json    (Workout templates)
-        |- body_data.json            (Body measurements)
-        |- notes.json                (User notes)
-        |- body_parts.json           (Metadata: body parts)
-        |- exercise_types.json       (Metadata: exercise types)
+        |- users.json                      (v1.0 Core: User data)
+        |- exercises.json                  (v1.0 Core: System exercises - 794 records)
+        |- custom_exercises.json           (v1.0 Core: User custom exercises)
+        |- workout_plans.json              (v1.0 Core: Workout plans and records)
+        |- workout_templates.json          (v1.0 Core: Workout templates)
+        |- body_data.json                  (v1.0 Core: Body measurements)
+        |- notes.json                      (v1.0 Core: User notes)
+        |- body_parts.json                 (v1.0 Metadata: Body parts)
+        |- exercise_types.json             (v1.0 Metadata: Exercise types)
+        |- coaching_relationships.json     (v2.0 Phase 1: Coach-Client relationships)
+        |- availability_slots.json         (v2.0 Phase 2: Coach availability slots)
+        |- appointments.json               (v2.0 Phase 2: Appointments)
+        |- daily_workout_summary.json      (Optimization: Daily workout stats)
+        |- personal_records.json           (Optimization: Personal records)
     
-    - docs/DATABASE_SUPABASE.md      (Updated with latest statistics)
+    - database_export/database_structure.md  (Database structure documentation)
 """
 
 import sys
@@ -97,7 +102,7 @@ def download_all_tables() -> Dict[str, List]:
     print("\nDownloading all tables...")
     print("-" * 60)
     
-    # 核心表格（6 個）
+    # v1.0 核心表格（7 個）
     core_tables = [
         "users",
         "exercises",
@@ -108,19 +113,39 @@ def download_all_tables() -> Dict[str, List]:
         "notes"
     ]
     
-    # 元數據表格（3 個）
+    # v1.0 元數據表格（2 個）
     metadata_tables = [
         "body_parts",
         "exercise_types"
     ]
     
-    # 合併所有表格（9 個）
-    all_tables = core_tables + metadata_tables
+    # v2.0 Phase 1 表格（1 個）
+    phase1_tables = [
+        "coaching_relationships"
+    ]
+    
+    # v2.0 Phase 2 表格（2 個）
+    phase2_tables = [
+        "availability_slots",
+        "appointments"
+    ]
+    
+    # v1.0 優化表格（2 個）
+    optimization_tables = [
+        "daily_workout_summary",
+        "personal_records"
+    ]
+    
+    # 合併所有表格（14 個）
+    all_tables = core_tables + metadata_tables + phase1_tables + phase2_tables + optimization_tables
     all_data = {}
     
     print(f"Total tables to download: {len(all_tables)}")
-    print(f"Core tables: {', '.join(core_tables)}")
-    print(f"Metadata tables: {', '.join(metadata_tables)}")
+    print(f"v1.0 Core: {', '.join(core_tables)}")
+    print(f"v1.0 Metadata: {', '.join(metadata_tables)}")
+    print(f"v2.0 Phase 1: {', '.join(phase1_tables)}")
+    print(f"v2.0 Phase 2: {', '.join(phase2_tables)}")
+    print(f"Optimization: {', '.join(optimization_tables)}")
     print("-" * 60)
     
     for table_name in all_tables:
@@ -205,6 +230,51 @@ def generate_structure_doc(all_data: Dict[str, List]):
                     body_fats = [item.get('body_fat') for item in data if item.get('body_fat')]
                     if body_fats:
                         doc.append(f"- Body fat range: {min(body_fats):.1f}% - {max(body_fats):.1f}%")
+            
+            elif table_name == "coaching_relationships":
+                statuses = {}
+                for item in data:
+                    status = item.get('status', 'Unknown')
+                    statuses[status] = statuses.get(status, 0) + 1
+                
+                doc.append("\n**Status Distribution:**")
+                for status, count in sorted(statuses.items(), key=lambda x: x[1], reverse=True):
+                    doc.append(f"- {status}: {count}")
+            
+            elif table_name == "availability_slots":
+                coaches = {}
+                for item in data:
+                    coach_id = item.get('coach_id', 'Unknown')
+                    coaches[coach_id] = coaches.get(coach_id, 0) + 1
+                
+                doc.append(f"- Total coaches: {len(coaches)}")
+                doc.append(f"- Average slots per coach: {len(data)/len(coaches):.1f}" if coaches else "")
+            
+            elif table_name == "appointments":
+                statuses = {}
+                for item in data:
+                    status = item.get('status', 'Unknown')
+                    statuses[status] = statuses.get(status, 0) + 1
+                
+                doc.append("\n**Appointment Status:**")
+                for status, count in sorted(statuses.items(), key=lambda x: x[1], reverse=True):
+                    doc.append(f"- {status}: {count}")
+            
+            elif table_name == "daily_workout_summary":
+                if data:
+                    total_volume = sum(item.get('total_volume', 0) for item in data)
+                    total_workouts = sum(item.get('workout_count', 0) for item in data)
+                    doc.append(f"- Total recorded days: {len(data)}")
+                    doc.append(f"- Total workouts: {total_workouts}")
+                    doc.append(f"- Total volume: {total_volume:.1f} kg")
+            
+            elif table_name == "personal_records":
+                if data:
+                    exercises_with_pr = len(set(item.get('exercise_id') for item in data if item.get('exercise_id')))
+                    doc.append(f"- Exercises with PR: {exercises_with_pr}")
+                    
+                    max_weight = max((item.get('max_weight', 0) for item in data), default=0)
+                    doc.append(f"- Highest PR weight: {max_weight:.1f} kg")
             
             elif table_name == "body_parts":
                 names = [item.get('name', 'Unknown') for item in data]

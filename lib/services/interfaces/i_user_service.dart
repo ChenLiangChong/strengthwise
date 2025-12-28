@@ -12,6 +12,9 @@ abstract class IUserService {
   /// 獲取當前用戶的完整資料
   Future<UserModel?> getCurrentUserProfile();
   
+  /// 獲取指定用戶的完整資料（by UID）
+  Future<UserModel?> getUserProfile(String userId);
+  
   /// 更新用戶資料
   Future<bool> updateUserProfile({
     String? displayName,

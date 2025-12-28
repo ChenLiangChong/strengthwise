@@ -2,13 +2,41 @@
 
 > StrengthWise 專案的 Python 工具腳本
 
-**最後更新**：2024年12月26日
+**最後更新**：2024年12月28日
 
 ---
 
 ## 📁 可用腳本
 
-### 1. `export_exercises_supabase.py` - 動作資料導出 ⭐
+### 1. `generate_database_structure_doc.py` - 資料庫結構文檔生成器 ⭐⭐⭐ 🆕
+
+**功能**：從 Supabase 下載完整資料庫結構並生成文檔
+
+**使用方式**：
+```bash
+python scripts/generate_database_structure_doc.py
+```
+
+**輸出**：
+- `docs/DATABASE_STRUCTURE.md` - 完整資料庫結構文檔（含實際資料範例）
+- `database_export/database_schema_<timestamp>.json` - JSON 格式資料庫結構
+
+**功能特色**：
+- ✅ 自動分析所有 11 個表格
+- ✅ 生成完整欄位結構說明
+- ✅ 包含實際資料範例
+- ✅ 統計各表格記錄數
+- ✅ 生成 Markdown 格式文檔
+
+**需求**：
+- Python 3.x
+- supabase-py
+- python-dotenv
+- 需要配置 `.env` 文件（SUPABASE_URL 和 SUPABASE_SERVICE_ROLE_KEY）
+
+---
+
+### 2. `export_exercises_supabase.py` - 動作資料導出 ⭐
 
 **功能**：從 Supabase 下載所有動作資料
 
@@ -37,7 +65,36 @@ python scripts/export_exercises_supabase.py
 
 ---
 
-### 2. `generate_training_data_supabase.py` - 假訓練資料生成 ⭐
+### 2. `export_exercises_supabase.py` - 動作資料導出 ⭐
+
+**功能**：從 Supabase 下載所有動作資料
+
+**使用方式**：
+```bash
+python scripts/export_exercises_supabase.py
+```
+
+**輸出**：
+- `data/exports/exercises_export.json` - 完整 JSON 格式
+- `data/exports/exercises_export.csv` - CSV 格式（適合 Excel）
+- `data/exports/metadata_export.json` - 元數據
+
+**功能特色**：
+- ✅ 下載所有系統動作（794 個）
+- ✅ 下載元數據（body_parts, exercise_types, equipments, joint_types）
+- ✅ 統計分析（訓練類型、身體部位、器材分布）
+- ✅ 多格式導出（JSON + CSV）
+
+**需求**：
+- Python 3.x
+- supabase-py
+- pandas
+- python-dotenv
+- 需要配置 `.env` 文件（SUPABASE_URL 和 SUPABASE_SERVICE_ROLE_KEY）
+
+---
+
+### 3. `generate_training_data_supabase.py` - 假訓練資料生成 ⭐
 
 **功能**：生成專業的一個月訓練假資料
 
@@ -77,7 +134,7 @@ python scripts/generate_training_data_supabase.py 550e8400-e29b-41d4-a716-446655
 
 ---
 
-### 3. `read_exercises_csv.py` - CSV 動作資料讀取
+### 4. `read_exercises_csv.py` - CSV 動作資料讀取
 
 **功能**：從 CSV 讀取動作數據並查找常見動作
 
@@ -98,7 +155,7 @@ python scripts/read_exercises_csv.py
 
 ---
 
-### 4. `reset_workouts_and_templates.py` - 用戶數據重置與假資料生成 ⭐⭐
+### 5. `reset_workouts_and_templates.py` - 用戶數據重置與假資料生成 ⭐⭐
 
 **功能**：刪除用戶所有訓練資料並生成專業的假訓練資料（推拉腿分化）
 
@@ -171,6 +228,32 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 **⚠️ 注意**：
 - `service_role key` 擁有完整權限，**不要提交到 Git**
 - `.env` 文件已加入 `.gitignore`
+
+### 3. 測試用戶 UUID（v2.0 Phase 1）🆕
+
+**開發測試帳號**（2025-12-27 創建）：
+
+| 角色 | Email | UUID | 用途 |
+|------|-------|------|------|
+| 教練 | charlie19960414@gmail.com | `d1798674-0b96-4c47-a7c7-ee20a5372a03` | 主測試帳號（教練端） |
+| 學員 | charlie8519960414@gmail.com | `1d7f5ed6-7759-4abc-9832-9db791e75e4f` | 測試學員（學員端） |
+
+**教練-學員綁定關係**：
+- 綁定 ID: `1acdce3b-9e4d-4e9f-8f35-b238c75047b3`
+- 狀態: `active`
+- 創建時間: 2025-12-27 23:30:21
+
+**使用範例**：
+```bash
+# 生成教練的訓練資料
+python scripts/generate_training_data_supabase.py d1798674-0b96-4c47-a7c7-ee20a5372a03
+
+# 生成學員的訓練資料
+python scripts/generate_training_data_supabase.py 1d7f5ed6-7759-4abc-9832-9db791e75e4f
+
+# 重置教練資料
+python scripts/reset_workouts_and_templates.py d1798674-0b96-4c47-a7c7-ee20a5372a03
+```
 
 ---
 
@@ -274,4 +357,4 @@ python scripts/generate_training_data_supabase.py <user_uuid>
 ---
 
 **維護者**：StrengthWise 開發團隊  
-**最後更新**：2024年12月26日 - Supabase 遷移完成
+**最後更新**：2024年12月28日 - 添加 v2.0 Phase 1 測試帳號

@@ -11,6 +11,9 @@ import '../interfaces/i_workout_service.dart';
 import '../interfaces/i_statistics_service.dart';
 import '../interfaces/i_favorites_service.dart';
 import '../interfaces/i_body_data_service.dart';
+import '../interfaces/i_coaching_relationship_service.dart';
+import '../interfaces/i_appointment_service.dart';
+import '../interfaces/i_availability_slot_service.dart';
 
 import '../supabase/auth_service_supabase.dart';
 import '../supabase/booking_service_supabase.dart';
@@ -21,6 +24,9 @@ import '../supabase/user_service_supabase.dart';
 import '../supabase/workout_service_supabase.dart';
 import '../supabase/statistics_service_supabase.dart';
 import '../supabase/body_data_service_supabase.dart';
+import '../supabase/coaching_relationship_service_supabase.dart';
+import '../appointment_service_supabase.dart';
+import '../availability_slot_service_supabase.dart';
 
 import '../cache/favorites_service.dart';
 import '../core/error_handling_service.dart';
@@ -41,6 +47,9 @@ class ServiceRegistry {
     _registerStatisticsService(serviceLocator);
     _registerFavoritesService(serviceLocator);
     _registerBodyDataService(serviceLocator);
+    _registerCoachingRelationshipService(serviceLocator);
+    _registerAppointmentService(serviceLocator);
+    _registerAvailabilitySlotService(serviceLocator);
   }
 
   /// 註冊身份驗證服務（使用 Supabase 版本）
@@ -157,6 +166,42 @@ class ServiceRegistry {
     if (!serviceLocator.isRegistered<IBodyDataService>()) {
       serviceLocator.registerLazySingleton<IBodyDataService>(
         () => BodyDataServiceSupabase(
+          errorService: serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊教練-學員關係服務（使用 Supabase 版本）
+  static void _registerCoachingRelationshipService(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<ICoachingRelationshipService>()) {
+      serviceLocator.registerLazySingleton<ICoachingRelationshipService>(
+        () => CoachingRelationshipServiceSupabase(
+          Supabase.instance.client,
+          serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊預約服務（Phase 2）
+  static void _registerAppointmentService(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<IAppointmentService>()) {
+      serviceLocator.registerLazySingleton<IAppointmentService>(
+        () => AppointmentServiceSupabase(
+          supabase: Supabase.instance.client,
+          errorService: serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊時段服務（Phase 2）
+  static void _registerAvailabilitySlotService(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<IAvailabilitySlotService>()) {
+      serviceLocator.registerLazySingleton<IAvailabilitySlotService>(
+        () => AvailabilitySlotServiceSupabase(
+          supabase: Supabase.instance.client,
           errorService: serviceLocator<ErrorHandlingService>(),
         ),
       );

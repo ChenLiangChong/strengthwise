@@ -2,7 +2,7 @@
 
 > AI 程式碼助手開發規範與最佳實踐
 
-**最後更新**：2024年12月27日 晚上
+**最後更新**：2024年12月28日 - v2.0 Phase 2 完成（100%）✅
 
 ---
 
@@ -10,12 +10,25 @@
 
 **核心文檔**（⭐ 必讀）：
 1. **[docs/README.md](docs/README.md)** - 📚 文檔導航（入口）
-2. **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - 專案架構和技術棧
-3. **[docs/DATABASE_SUPABASE.md](docs/DATABASE_SUPABASE.md)** - Supabase PostgreSQL 資料庫設計
-4. **[docs/DATABASE_OPTIMIZATION_GUIDE.md](docs/DATABASE_OPTIMIZATION_GUIDE.md)** - 資料庫優化指南
-5. **[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)** - 當前開發進度和下一步任務
-6. **[docs/UI_UX_GUIDELINES.md](docs/UI_UX_GUIDELINES.md)** - UI/UX 設計規範
-7. **[docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)** - 部署指南
+2. **[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)** - 當前開發狀態
+   - v1.0 單機版完成 ✅
+   - v2.0 Phase 1 完成 ✅（教練學員系統）
+   - v2.0 Phase 2 完成 ✅（預約系統 - 100%）⭐
+   - Phase 3 計劃（時間管理與筆記）
+3. **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - 專案架構和技術棧
+4. **[docs/DATABASE_SUPABASE.md](docs/DATABASE_SUPABASE.md)** - Supabase PostgreSQL 資料庫設計
+5. **[docs/SAAS_PLATFORM_ROADMAP.md](docs/SAAS_PLATFORM_ROADMAP.md)** - 完整 SaaS 計劃（Phase 1-5）
+
+**UI/UX 與部署**：
+- **[docs/UI_UX_GUIDELINES.md](docs/UI_UX_GUIDELINES.md)** - UI/UX 設計規範
+- **[docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)** - 部署指南
+
+**工具腳本**：
+- **[scripts/README.md](scripts/README.md)** - Python 工具腳本（含測試帳號）
+
+**已歸檔文檔**：
+- **[docs/archived/](docs/archived/)** - 已完成的重構報告、優化報告、任務文檔
+- **[docs/archived/phase1/](docs/archived/phase1/)** - Phase 1 實作指南（已完成）
 
 ---
 
@@ -73,6 +86,7 @@ final service = WorkoutServiceSupabase();
 - ✅ 為 RLS 欄位建立索引
 - ✅ 使用覆蓋索引（Index-Only Scan）
 - ✅ JSONB 使用 GIN 索引
+- ✅ TSTZRANGE 使用 GiST 索引 + 範圍重疊運算子（`ov`）⭐
 
 ```dart
 // ❌ 錯誤：SELECT * + Offset 分頁
@@ -88,7 +102,109 @@ final data = await supabase
   .lt('scheduled_date', lastCursor)
   .order('scheduled_date', ascending: false)
   .limit(20);
+
+// ✅ 正確：TSTZRANGE 範圍查詢（使用 PostgreSQL 範圍重疊運算子）
+final data = await supabase
+  .from('availability_slots')
+  .select('id, coach_id, time_range, is_available')
+  .filter('time_range', 'ov', '[${startDate.toIso8601String()},${endDate.toIso8601String()})')
+  .order('time_range', ascending: true);
 ```
+
+### 7. 日期時間處理規範 ⭐⭐⭐
+
+**PostgreSQL 時間戳格式轉換**：
+
+PostgreSQL 返回的時間戳格式與 Dart 的 ISO 8601 格式不同，必須進行轉換：
+
+```dart
+/// PostgreSQL 時間戳格式轉換
+/// 
+/// PostgreSQL 格式：
+///   - 無引號：2025-12-15 09:00:00+00
+///   - 有引號："2025-12-15 09:00:00+00"
+/// 
+/// Dart ISO 8601 格式：
+///   - 2025-12-15T09:00:00+00:00
+/// 
+/// 轉換步驟：
+///   1. 移除引號（如果有）
+///   2. 替換第一個空格為 'T'
+///   3. 規範化時區（+00 → +00:00）
+static DateTime _parsePostgresTimestamp(String timestamp) {
+  // 步驟 1：移除引號並修剪空白
+  String cleaned = timestamp.trim();
+  if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+    cleaned = cleaned.substring(1, cleaned.length - 1);
+  }
+
+  // 步驟 2：替換第一個空格為 'T'
+  cleaned = cleaned.replaceFirst(' ', 'T');
+
+  // 步驟 3：規範化時區格式（+00 → +00:00）
+  // 使用正則表達式精確匹配時區部分
+  final timezoneRegex = RegExp(r'([+-]\d{2})$');
+  if (timezoneRegex.hasMatch(cleaned)) {
+    cleaned = cleaned.replaceFirstMapped(
+      timezoneRegex,
+      (match) => '${match.group(1)}:00',
+    );
+  }
+
+  return DateTime.parse(cleaned);
+}
+```
+
+**使用場景**：
+
+1. **TSTZRANGE 解析**（`AvailabilitySlotModel`, `AppointmentModel`）：
+```dart
+factory AvailabilitySlotModel.fromSupabase(Map<String, dynamic> json) {
+  final timeRangeStr = json['time_range'] as String;
+  final range = _parseTimeRange(timeRangeStr); // 使用 _parsePostgresTimestamp
+  
+  return AvailabilitySlotModel(
+    startTime: range['start']!,
+    endTime: range['end']!,
+    // ...
+  );
+}
+
+static Map<String, DateTime> _parseTimeRange(String rangeStr) {
+  // 格式："[2025-12-15 09:00:00+00,2025-12-15 10:00:00+00)"
+  final cleaned = rangeStr.replaceAll('"', '').trim();
+  final inner = cleaned.substring(1, cleaned.length - 1);
+  final parts = inner.split(',');
+  
+  return {
+    'start': _parsePostgresTimestamp(parts[0]),
+    'end': _parsePostgresTimestamp(parts[1]),
+  };
+}
+```
+
+2. **UTC/本地時間轉換**：
+```dart
+// ✅ 日曆視圖：比較本地時間
+List<AvailabilitySlotModel> _getSlotsForDay(DateTime day) {
+  return widget.slots.where((slot) {
+    final slotDate = slot.startTime.toLocal(); // 轉換為本地時間
+    return slotDate.year == day.year &&
+           slotDate.month == day.month &&
+           slotDate.day == day.day;
+  }).toList();
+}
+
+// ✅ 資料庫查詢：使用 UTC 時間
+final data = await supabase
+  .from('availability_slots')
+  .filter('time_range', 'ov', '[${startDate.toUtc().toIso8601String()},${endDate.toUtc().toIso8601String()})');
+```
+
+**常見錯誤**：
+- ❌ 直接使用 `DateTime.parse()` 解析 PostgreSQL 時間戳
+- ❌ 混淆 UTC 和本地時間
+- ❌ 忘記規範化時區格式（+00 vs +00:00）
 
 ---
 
@@ -175,54 +291,145 @@ factory UserModel.fromSupabase(Map<String, dynamic> json) {
 
 **🎉 StrengthWise 單機版正式完成**（2024-12-28）⭐⭐⭐
 
-**最新完成**（2024-12-28）：
-1. **🎊 單機版正式完成**（個人健身記錄功能 100% 完成）
-   - 訓練計劃管理（創建、編輯、模板、執行）✅
-   - 專業統計系統（力量進步、趨勢分析、熱力圖）✅
-   - 身體數據追蹤（體重、體脂、BMI、每日一筆）✅
-   - 自訂動作功能（CRUD + 統計整合）✅
-   - Google Sign-In 登入（Android APK 可用）✅
-   - 資料庫效能優化（查詢提升 80-99%）✅
-   - 全代碼解耦合（Clean Architecture 100%）✅
-   - 主線程優化 v3（卡頓 -96%）✅
+**v1.0 單機版**（2024-12-24 完成）：
+- ✅ 訓練計劃管理（創建、編輯、模板、執行）
+- ✅ 專業統計系統（力量進步、趨勢分析、熱力圖）
+- ✅ 身體數據追蹤（體重、體脂、BMI、每日一筆）
+- ✅ 自訂動作功能（CRUD + 統計整合）
+- ✅ Google Sign-In 登入（Android APK 可用）
+- ✅ 資料庫效能優化（查詢提升 80-99%）
+- ✅ 全代碼解耦合（Clean Architecture 100%）
+- ✅ 主線程優化（卡頓 -96%）
 
-**完成項目**（2024-12-27 深夜）：
-1. **全代碼解耦合完成**（Clean Architecture 100%）⭐⭐⭐
-   - 統計頁面解耦重構（1,951 行 → 16 個檔案）
-   - Booking 頁面重構報告
-   - Supabase Services 解耦報告
-2. **主線程優化 v3 完成**（徹底消除卡頓）⚡⚡⚡
-   - 應用啟動優化（721 frames → <30 frames）
-   - 統計預載入優化（312 frames → <10 frames）
-   - 智能延遲載入策略
-3. 訓練計劃頁面查詢優化（頁面切換秒開）⭐⭐
-4. 統計頁面首頁預載入（秒開優化）⭐
-5. 概覽統計使用彙總表（效能提升 80%+）⭐
-6. 力量進步頁面快取優化
-7. 統計查詢 Bug 修復（時間範圍 + 自訂動作）
-8. 身體數據每日一筆邏輯（upsert 更新機制）🆕
-9. 身體數據圖表優化（X 軸顯示日期標籤）🆕
+**v2.0 Phase 1：教練學員系統**（2024-12-28 完成）：
+1. **資料庫層** ✅
+   - `coaching_relationships` 表 + RLS 策略
+   - Migration SQL 腳本（235 行）
+
+2. **後端層（完全解耦）** ✅
+   - Model: `CoachingRelationshipModel`
+   - Service Interface + 實現（3 子模組）
+   - Controller: `CoachingRelationshipController`
+
+3. **UI 層（6 個組件）** ✅
+   - 學員管理主頁面
+   - 邀請學員 Dialog（雙測試帳號按鈕）
+   - 學員列表卡片
+   - 狀態標籤、空狀態等
+
+4. **功能特色** ✅
+   - 邀請學員（UUID 直接綁定）
+   - 學員列表（統計 + 篩選）
+   - 狀態管理（活躍/待接受/已歸檔）
+   - 歸檔與刪除
+   - 重複綁定檢查
+   - 開發測試輔助
+
+5. **測試結果** ✅
+   - 雙設備（VM + 手機）測試通過
+   - 雙向綁定成功
+   - 所有功能正常運作
+
+**新增檔案**：17 個（Model 1 + Service 5 + Controller 1 + UI 7 + Migration 1 + Doc 2）
+
+**v2.0 Phase 2：預約系統**（2024-12-28 完成）✅：
+
+**✅ 已完成**（100%）：
+1. **資料庫層** ✅
+   - `availability_slots` 表（教練可用時段）
+   - `appointments` 表（預約記錄）
+   - TSTZRANGE 時間範圍類型
+   - GiST 排除約束（物理層防止雙重預約）
+   - 10 個 RLS 策略
+
+2. **Model 層** ✅
+   - `AppointmentModel`（含狀態機）
+   - `AvailabilitySlotModel`（含 RRULE）
+   - `TstzRange` 輔助類別
+   - PostgreSQL 時間戳解析 ⭐
+
+3. **Service 層** ✅
+   - Interface: `IAppointmentService` + `IAvailabilitySlotService`
+   - 實現: `AppointmentServiceSupabase` + `AvailabilitySlotServiceSupabase`
+   - Service Locator 註冊
+
+4. **後端測試** ✅（8/8 通過）
+   - 創建時段 ✅
+   - 創建預約 ✅
+   - 雙重預約防護 ✅ ⭐ 核心功能驗證成功
+   - 確認預約 ✅
+   - RLS 策略 ✅
+   - 可用時段查詢 ✅
+   - 取消預約 ✅
+   - 清理數據 ✅
+
+5. **Controller 層** ✅（完全解耦 + 子模組化）
+   - `AppointmentController`（308 行）+ 4 個子模組
+   - `AvailabilitySlotController`（324 行）+ 4 個子模組
+   - 註冊到 Service Locator
+
+6. **UI 層** ✅（8 個頁面 + 20+ 組件）
+   - 教練管理中心（`CoachHubPage`）- 3 個 Tab
+   - 學員預約中心（`ClientHubPage`）- 2 個 Tab
+   - 教練時段管理頁面（343 行 + 8 個組件）
+   - 學員預約頁面
+   - 預約列表頁面
+   - 預約詳情頁面
+
+7. **功能測試** ✅（12/12 通過）
+   - 教練創建時段 ✅
+   - 學員查看時段 ✅
+   - 學員預約 ✅
+   - 教練確認/拒絕 ✅
+   - 學員取消 ✅
+   - 教練取消 ✅
+   - 預約列表 ✅
+   - 預約詳情 ✅
+   - 下拉刷新 ✅
+   - 狀態篩選 ✅
+   - 雙角色支援 ✅
+
+**技術亮點**：
+- ✅ PostgreSQL TSTZRANGE 正常運作
+- ✅ GiST 排除約束物理層防止雙重預約 ⭐
+- ✅ 10 個 RLS 策略保護資料安全
+- ✅ 狀態機完整運作
+- ✅ iCal RRULE 支援週期性時段
+- ✅ Controller 子模組化設計（8 個子模組）
+- ✅ UI 組件化設計（平均 ~60 行/組件）
+- ✅ 雙角色支援（教練/學員同時可見）
+- ✅ PostgreSQL 時間戳正確解析 ⭐
+
+**新增檔案**：35 個（Model 2 + Service 4 + Controller 10 + UI 28 + Migration 1）
+
+**今天修復的問題**（12 個）：
+1. ✅ UI 渲染錯誤（`BoxConstraints` infinite width）
+2. ✅ 依賴注入錯誤（`IAuthController` 統一使用）
+3. ✅ 教練名稱顯示（`getUserProfile` 查詢）
+4. ✅ 時間格式解析（PostgreSQL → ISO 8601）⭐ 核心修復
+5. ✅ 查詢邏輯（使用 PostgreSQL 範圍重疊運算子 `ov`）
+6. ✅ 空 UUID 問題（`toMap(includeId: false)`）
+7. ✅ null 轉換錯誤（明確型別轉換）
+8. ✅ 日曆時段顯示（UTC/本地時間轉換）
+9. ✅ 教練取消預約功能
+10. ✅ 取消原因動態設置
+11. ✅ 預約詳情頁面路由
+12. ✅ TabController 狀態重置
+
+**Phase 2 完成時間**：1 天（2024-12-28）✅
 
 **效能提升總覽**：
-- **應用啟動**：2.5s+ → **200ms** ⚡ 92%+ 🆕
-- **主線程卡頓**：721 frames → **<30 frames** ⚡ 96%+ 🆕
+- **應用啟動**：2.5s+ → **200ms** ⚡ 92%+
+- **主線程卡頓**：721 frames → **<30 frames** ⚡ 96%+
 - 統計頁面：2-5s → **秒開（<5ms）** ⚡ 99%+
 - 頁面切換（快取）：200-500ms → **<5ms** ⚡ 99%+
-- 動作搜尋：500ms-2s → **<50ms** ⚡ 90%+
-- 訓練計劃：100-200ms → **<20ms** ⚡ 85%+
-- 個人記錄：1-3s → **<10ms** ⚡ 95%+
 
 **架構驗證**（完美的 Clean Architecture）：
 - ✅ Controller 層使用 Interface：100%
 - ✅ View 層使用 Interface：100%
 - ✅ 直接 Supabase 調用：0 處
-- ✅ **全 lib 目錄代碼解耦合完成** 🆕
-  - 統計頁面：16 個模組（主頁面 166 行）
-  - Booking 頁面：7 個模組（主頁面 611 行）
-  - 所有 Views 頁面：9 個目錄，每個都有獨立 widgets
-  - 服務層：9 個服務 → 33 個子模組（7 個目錄）
-- ✅ **主線程優化：<30 frames skip** 🆕
-- ✅ **解耦重構報告：3 份完整報告** 🆕
+- ✅ 主線程優化：<30 frames skip
+- ✅ 全代碼解耦合完成
 
 詳見：[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)
 
@@ -280,11 +487,16 @@ notifyListeners();  // ← 必須
 ### 核心文檔
 - **[docs/README.md](docs/README.md)** - 📚 文檔導航（入口）
 - **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - 專案架構總覽
-- **[docs/DATABASE_SUPABASE.md](docs/DATABASE_SUPABASE.md)** - Supabase PostgreSQL 資料庫設計
+- **[docs/DATABASE_SUPABASE.md](docs/DATABASE_SUPABASE.md)** - Supabase PostgreSQL 資料庫設計（完整）
 - **[docs/DATABASE_OPTIMIZATION_GUIDE.md](docs/DATABASE_OPTIMIZATION_GUIDE.md)** - 資料庫優化指南
-- **[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)** - 開發狀態和下一步任務
+- **[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)** - 開發狀態和下一步任務（含性能優化總覽）
 - **[docs/UI_UX_GUIDELINES.md](docs/UI_UX_GUIDELINES.md)** - UI/UX 設計規範
 - **[docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)** - 部署指南
+
+### 已歸檔文檔（供參考）
+- **[docs/archived/README.md](docs/archived/README.md)** - 歸檔文檔導航
+- **重構與優化報告**：主線程優化、性能瓶頸分析、架構重構指南
+- **階段性任務文檔**：個人資料優化、通知系統、模板除錯
 
 ### 工具腳本
 - **[scripts/README.md](scripts/README.md)** - Python 工具腳本使用指南

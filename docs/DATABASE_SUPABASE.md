@@ -2,7 +2,31 @@
 
 > 完整的 Supabase PostgreSQL 資料庫架構文檔
 
-**最後更新**：2024年12月27日
+**最後更新**：2024年12月28日
+
+---
+
+## 🎯 重大架構升級公告（2024-12-28）
+
+### 從靜態動作庫到基於屬性的動態系統 ⭐⭐⭐
+
+**背景**：v1.0 單機版使用傳統預設動作庫（794 個系統動作），但實際使用中發現：
+- ❌ 預設動作庫極少被使用（教練偏好自訂動作）
+- ❌ 無法支援「身體部位 PR」統計需求（跨動作聚合）
+- ❌ 靜態欄位無法描述複合動作的多重屬性
+
+**v2.0 新架構**：屬性驅動的動態動作系統
+- ✅ 動作由多個屬性標籤組成（胸部、槓鈴、推）
+- ✅ 支援「身體部位 PR」統計（自動聚合）
+- ✅ 支援「單一動作進步」追蹤（e1RM 趨勢）
+- ✅ 寫入時聚合（O(1) 讀取統計數據）
+
+**詳細設計**：請參考 [docs/SAAS_PLATFORM_ROADMAP.md](SAAS_PLATFORM_ROADMAP.md) 第 2.4 章節
+
+**影響範圍**：
+- **新增表格**：`attribute_categories`, `attributes`, `exercise_attributes`, `user_attribute_stats`, `user_exercise_stats`
+- **修改表格**：`exercises`（添加 `is_placeholder`, `default_metric`），`workout_sets`（添加 `is_warmup`, `estimated_1rm`）
+- **實施時間**：v2.0 Phase 2（預計 3-4 週）
 
 ---
 
@@ -12,18 +36,25 @@ StrengthWise 已完全遷移到 **Supabase PostgreSQL**，使用以下架構：
 
 ```
 Supabase PostgreSQL
-├── 核心表格（7 個）✅ 活躍使用中
+├── v1.0 核心表格（7 個）✅ 活躍使用中
 │   ├── users              - 用戶資料
-│   ├── exercises          - 系統動作庫（794 個）
-│   ├── custom_exercises   - 自訂動作（✨ 2024-12-26 新增）
+│   ├── exercises          - 系統動作庫（794 個）⚠️ v2.0 將重構
+│   ├── custom_exercises   - 自訂動作 ⚠️ v2.0 將合併至 exercises
 │   ├── workout_plans      - 訓練計劃（包含記錄）
 │   ├── workout_templates  - 訓練模板
 │   ├── body_data          - 身體數據（體重、體脂等）
 │   └── notes             - 筆記
 │
-├── 元數據表格（2 個）✅ 活躍使用中
-│   ├── body_parts        - 身體部位（8 個）
-│   └── exercise_types    - 訓練類型（3 個）
+├── v1.0 元數據表格（2 個）✅ 活躍使用中
+│   ├── body_parts        - 身體部位（8 個）⚠️ v2.0 將遷移至 attributes
+│   └── exercise_types    - 訓練類型（3 個）⚠️ v2.0 將遷移至 attributes
+│
+├── v2.0 新增表格（5 個）📋 規劃中
+│   ├── attribute_categories  - 屬性分類（muscle_group, equipment, movement_pattern）
+│   ├── attributes            - 屬性標籤（胸部、槓鈴、推）
+│   ├── exercise_attributes   - 動作-屬性關聯（多對多）
+│   ├── user_attribute_stats  - 身體部位統計（自動更新）
+│   └── user_exercise_stats   - 單一動作統計（自動更新）
 │
 ├── 預約系統表格（4 個）⚠️ 已遷移但未啟用
 │   ├── bookings          - 預約
@@ -35,10 +66,16 @@ Supabase PostgreSQL
     └── auth.users        - Supabase Auth（UUID 主鍵）
 ```
 
-**當前狀態**（2025-12-26）：
-- ✅ **核心功能**：7 個核心表格 + 2 個元數據表格（完全運作）
+**當前狀態**（2024-12-28）：
+- ✅ **v1.0 核心功能**：7 個核心表格 + 2 個元數據表格（完全運作）
+- 📋 **v2.0 規劃中**：基於屬性的動態動作庫架構（Phase 2 實施）
 - ⚠️ **預約系統**：4 個表格已遷移，但在單機版中未啟用
-- 🗑️ **已廢棄**：`equipments`, `joint_types` 表格（資料已整合到 `exercises` 表）
+
+**架構遷移計劃**（v2.0）：
+1. **動作庫重構**：`exercises` + `custom_exercises` → 統一的屬性驅動系統
+2. **統計系統升級**：新增 `user_attribute_stats`（身體部位 PR）+ `user_exercise_stats`（單一動作進步）
+3. **觸發器自動化**：訓練完成時自動更新統計數據
+4. **向後相容**：舊數據通過遷移腳本轉換為標籤格式
 
 ---
 
@@ -464,6 +501,208 @@ CREATE TABLE IF NOT EXISTS public.exercise_types (
 ### ~~equipments / joint_types~~ - 已廢棄 🗑️
 
 **說明**：這些元數據表格已不再使用，相關資料已整合到 `exercises` 表格中的對應欄位。
+
+---
+
+## 🎯 v2.0 新增表格設計（規劃中）
+
+### 基於屬性的動態動作庫架構 ⭐⭐⭐
+
+> 詳細設計請參考：[docs/SAAS_PLATFORM_ROADMAP.md](SAAS_PLATFORM_ROADMAP.md) 第 2.4、2.5 章節
+
+#### 1. attribute_categories - 屬性分類
+
+```sql
+CREATE TABLE IF NOT EXISTS public.attribute_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug TEXT UNIQUE NOT NULL, -- 'muscle_group', 'equipment', 'movement_pattern'
+  display_name TEXT NOT NULL, -- '目標肌群', '器材類型', '運動模式'
+  is_system BOOLEAN DEFAULT TRUE,
+  cardinality TEXT CHECK (cardinality IN ('single_select', 'multi_select')) DEFAULT 'multi_select',
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**用途**：定義標籤的類型，確保前端 UI 呈現清晰的分類選項
+
+**預計數據**：
+- `muscle_group`（目標肌群）：胸部、背部、腿部、肩部、手臂、核心
+- `equipment`（器材類型）：槓鈴、啞鈴、機械、徒手、Cable 滑輪
+- `movement_pattern`（運動模式）：推、拉、蹲、髖鉸鏈
+
+---
+
+#### 2. attributes - 屬性標籤
+
+```sql
+CREATE TABLE IF NOT EXISTS public.attributes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  category_id UUID NOT NULL REFERENCES public.attribute_categories(id),
+  name TEXT NOT NULL, -- 'Chest', 'Barbell', 'Push'
+  created_by UUID REFERENCES public.users(id), -- NULL = 系統標籤
+  is_archived BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (name, category_id, created_by)
+);
+
+CREATE INDEX idx_attributes_name ON public.attributes(name text_pattern_ops);
+CREATE INDEX idx_attributes_category ON public.attributes(category_id);
+CREATE INDEX idx_attributes_creator ON public.attributes(created_by) WHERE created_by IS NOT NULL;
+```
+
+**關鍵設計**：`created_by` 欄位實現混合命名空間
+- `NULL`：系統全域標籤（所有用戶可見，不可修改）
+- 有值：教練私有標籤（僅創建者可見）
+
+**RLS 策略**：
+```sql
+CREATE POLICY "attributes_access_policy" ON public.attributes
+FOR SELECT
+USING (
+  created_by IS NULL -- 系統標籤
+  OR created_by = auth.uid() -- 自己創建的標籤
+);
+```
+
+---
+
+#### 3. exercise_attributes - 動作-屬性關聯
+
+```sql
+CREATE TABLE IF NOT EXISTS public.exercise_attributes (
+  exercise_id UUID REFERENCES public.exercises(id) ON DELETE CASCADE,
+  attribute_id UUID REFERENCES public.attributes(id) ON DELETE CASCADE,
+  PRIMARY KEY (exercise_id, attribute_id)
+);
+
+-- 正向查詢索引（查詢動作的所有標籤）
+CREATE INDEX idx_ea_exercise ON public.exercise_attributes(exercise_id);
+
+-- 反向查詢索引（查詢所有「胸部」動作）⭐ 核心統計優化
+CREATE INDEX idx_ea_attribute ON public.exercise_attributes(attribute_id, exercise_id);
+```
+
+**為何使用關聯表而非 JSONB？**
+- ✅ JOIN 和 GROUP BY 操作效能更佳（百萬級數據）
+- ✅ 外鍵約束確保數據完整性
+- ✅ 針對統計查詢可建立覆蓋索引
+
+---
+
+#### 4. user_attribute_stats - 身體部位統計
+
+```sql
+CREATE TABLE IF NOT EXISTS public.user_attribute_stats (
+  user_id UUID NOT NULL REFERENCES public.users(id),
+  attribute_id UUID NOT NULL REFERENCES public.attributes(id),
+  total_lifetime_volume BIGINT DEFAULT 0, -- 生涯累積訓練量
+  max_session_volume BIGINT DEFAULT 0, -- 身體部位 PR（單次訓練最大量）
+  max_session_date TIMESTAMPTZ, -- PR 創建日期
+  last_updated_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (user_id, attribute_id)
+);
+
+CREATE INDEX idx_user_attr_stats_user ON public.user_attribute_stats(user_id);
+CREATE INDEX idx_user_attr_stats_attr ON public.user_attribute_stats(attribute_id);
+```
+
+**用途**：支援「身體部位 PR」統計（如胸部最大單次訓練量）
+
+**更新機制**：透過 PostgreSQL Trigger，當訓練記錄狀態變更為 `completed` 時自動更新
+- 遍歷該次訓練涉及的所有身體部位標籤
+- 計算本次訓練該部位的總訓練量（排除熱身組）
+- 更新 `total_lifetime_volume`
+- 若本次總量 > `max_session_volume`，則更新 PR 值與日期
+
+**效能優勢**：O(1) 讀取統計數據（儀表板秒開）
+
+---
+
+#### 5. user_exercise_stats - 單一動作統計
+
+```sql
+CREATE TABLE IF NOT EXISTS public.user_exercise_stats (
+  user_id UUID NOT NULL REFERENCES public.users(id),
+  exercise_id UUID NOT NULL REFERENCES public.exercises(id),
+  personal_record_weight NUMERIC, -- 最大實際舉起重量
+  personal_record_e1rm NUMERIC, -- 最佳估算 1RM（理論極限）
+  max_volume_single_session NUMERIC, -- 該動作的單次最大訓練量
+  last_performed_at TIMESTAMPTZ, -- 上次訓練時間
+  PRIMARY KEY (user_id, exercise_id)
+);
+
+CREATE INDEX idx_user_ex_stats_user ON public.user_exercise_stats(user_id);
+CREATE INDEX idx_user_ex_stats_recent ON public.user_exercise_stats(last_performed_at DESC);
+```
+
+**用途**：支援「單一動作進步」追蹤（如深蹲 1RM 進步曲線）
+
+**更新機制**：透過 PostgreSQL Trigger，每當新增一組 `is_pr = TRUE` 的數據時自動更新
+
+**應用場景**：
+- 教練查看學員列表時直接顯示「深蹲 1RM: 150kg」
+- 學員查看自訂動作統計卡片
+- 無需遍歷歷史日誌
+
+---
+
+#### 6. workout_sets 表修改（添加關鍵欄位）
+
+```sql
+ALTER TABLE public.workout_sets
+ADD COLUMN is_warmup BOOLEAN DEFAULT FALSE,
+ADD COLUMN estimated_1rm NUMERIC GENERATED ALWAYS AS (
+  CASE WHEN reps > 0 THEN weight_kg * (1 + reps::numeric / 30.0) ELSE 0 END
+) STORED;
+
+CREATE INDEX idx_workout_sets_warmup ON public.workout_sets(is_warmup) WHERE is_warmup = FALSE;
+```
+
+**新增欄位**：
+- `is_warmup`：標記熱身組，統計時排除
+- `estimated_1rm`：生成欄位，自動計算 Epley 公式（寫入時計算，讀取零成本）
+
+**技術優勢**：
+- ✅ 標準化強度指標（100kg x 5 vs 110kg x 3 可直接對比）
+- ✅ 支援單一動作進步追蹤
+
+---
+
+#### 7. exercises 表修改（添加彈性欄位）
+
+```sql
+ALTER TABLE public.exercises
+ADD COLUMN is_placeholder BOOLEAN DEFAULT FALSE,
+ADD COLUMN default_metric TEXT CHECK (default_metric IN ('weight_reps', 'time', 'distance')) DEFAULT 'weight_reps';
+
+CREATE INDEX idx_exercises_placeholder ON public.exercises(is_placeholder) WHERE is_placeholder = TRUE;
+```
+
+**新增欄位**：
+- `is_placeholder`：標記佔位符動作（教練可安排抽象動作，學員執行時選擇具體動作）
+- `default_metric`：預設記錄方式
+
+**佔位符動作應用場景**：
+- 教練安排「水平推」（佔位符）
+- 學員根據健身房設備選擇「啞鈴臥推」或「器械推胸」
+- 系統記錄實際執行動作，但保留原始模板意圖
+
+---
+
+### v2.0 數據遷移策略
+
+**遷移步驟**：
+1. **創建新表結構**：`attribute_categories`, `attributes`, `exercise_attributes`, 統計表
+2. **匯入基礎屬性**：從現有 `body_parts` 和 `exercise_types` 轉換為 `attributes`
+3. **轉換系統動作**：將 794 個系統動作的靜態欄位轉換為標籤關聯
+4. **轉換自訂動作**：合併 `custom_exercises` 至統一的 `exercises` 表
+5. **初始化統計表**：計算歷史數據並填充 `user_attribute_stats` 和 `user_exercise_stats`
+
+**向後相容**：
+- ✅ 舊的 `body_parts` 和 `exercise_types` 表保留為只讀（向後相容 v1.0）
+- ✅ v1.0 App 可繼續使用舊架構
+- ✅ v2.0 App 使用新架構，但可讀取舊數據
 
 ---
 
