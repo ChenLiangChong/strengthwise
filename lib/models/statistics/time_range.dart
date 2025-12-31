@@ -30,12 +30,11 @@ extension TimeRangeExtension on TimeRange {
     final now = DateTime.now();
     switch (this) {
       case TimeRange.week:
-        // ⚡ 修正：本週 = 從週日開始（ISO 8601）
+        // ⚡ 修正：本週 = 從週日開始
         // weekday: 1=週一, 2=週二, ..., 7=週日
         final weekday = now.weekday;
         final daysFromSunday = weekday % 7; // 週日=0, 週一=1, ..., 週六=6
         final sunday = now.subtract(Duration(days: daysFromSunday));
-        // 返回當週週日的 00:00:00
         return DateTime(sunday.year, sunday.month, sunday.day);
       case TimeRange.sevenDays:
         // 🆕 最近七天：從今天往前推 7 天
@@ -50,7 +49,10 @@ extension TimeRangeExtension on TimeRange {
     }
   }
 
-  /// 獲取結束日期
-  DateTime get endDate => DateTime.now();
+  /// 獲取結束日期（當天的 23:59:59）
+  DateTime get endDate {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day, 23, 59, 59);
+  }
 }
 

@@ -1,5 +1,7 @@
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 /// Google 登入提供者
 /// 
@@ -77,11 +79,22 @@ class AuthGoogleProvider {
 
   /// 檢查是否已登入 Google
   Future<bool> isGoogleSignedIn() async {
+    // Windows 不支持 google_sign_in，返回 false
+    if (!kIsWeb && Platform.isWindows) {
+      return false;
+    }
+    
     return await _googleSignIn.isSignedIn();
   }
 
   /// 登出 Google
   Future<void> signOutFromGoogle() async {
+    // Windows 不支持 google_sign_in，直接跳過
+    if (!kIsWeb && Platform.isWindows) {
+      _logDebug('Windows 平台跳過 Google 登出');
+      return;
+    }
+    
     if (await _googleSignIn.isSignedIn()) {
       await _googleSignIn.signOut();
       _logDebug('Google 登出成功');

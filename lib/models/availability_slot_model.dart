@@ -3,6 +3,8 @@
 /// 對應 Supabase `availability_slots` 表
 /// 處理教練設定的可預約時段
 
+import 'package:strengthwise/utils/datetime_utils.dart';
+
 class AvailabilitySlotModel {
   // 基礎欄位
   final String id;
@@ -40,7 +42,7 @@ class AvailabilitySlotModel {
   /// 從 Supabase 資料創建 Model（處理 snake_case 和 TSTZRANGE）
   factory AvailabilitySlotModel.fromSupabase(Map<String, dynamic> json) {
     // 解析 TSTZRANGE 格式
-    final timeRange = _parseTimeRange(json['time_range'] as String);
+    final timeRange = DateTimeUtils.parseTstzRange(json['time_range'] as String);
     
     return AvailabilitySlotModel(
       id: json['id'] as String,
@@ -59,7 +61,7 @@ class AvailabilitySlotModel {
   Map<String, dynamic> toMap({bool includeId = true}) {
     final map = {
       'coach_id': coachId,
-      'time_range': _formatTimeRange(startTime, endTime),
+      'time_range': DateTimeUtils.formatToTstzRange(startTime, endTime),
       'recurrence_rule': recurrenceRule,
       'is_override': isOverride,
       'notes': notes,
@@ -73,59 +75,6 @@ class AvailabilitySlotModel {
     }
 
     return map;
-  }
-
-  /// 解析 PostgreSQL TSTZRANGE 格式
-  /// 範例："[2024-12-28 10:00:00+00,2024-12-28 11:00:00+00)"
-  static Map<String, DateTime> _parseTimeRange(String timeRange) {
-    // 移除前後的 [ 和 )
-    final cleaned = timeRange.substring(1, timeRange.length - 1);
-    
-    // 分割為開始和結束時間
-    final parts = cleaned.split(',');
-    if (parts.length != 2) {
-      throw FormatException('Invalid time range format: $timeRange');
-    }
-    
-    return {
-      'start': _parsePostgresTimestamp(parts[0].trim()),
-      'end': _parsePostgresTimestamp(parts[1].trim()),
-    };
-  }
-
-  /// 解析 PostgreSQL 時間戳格式
-  /// 輸入：2024-12-28 10:00:00+00 或 "2024-12-28 10:00:00+00"
-  /// 輸出：DateTime (UTC)
-  static DateTime _parsePostgresTimestamp(String timestamp) {
-    // PostgreSQL 可能返回帶雙引號的字符串，先移除
-    var cleaned = timestamp.trim();
-    if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
-      cleaned = cleaned.substring(1, cleaned.length - 1);
-    }
-    
-    // PostgreSQL 格式：2024-12-28 10:00:00+00
-    // Dart 期望：2024-12-28T10:00:00+00:00 (ISO 8601)
-    
-    // 1. 將空格替換為 T
-    var normalized = cleaned.replaceFirst(' ', 'T');
-    
-    // 2. 處理時區格式
-    // 使用正則表達式匹配末尾的時區部分
-    // 匹配：+00, +08, -05 等格式
-    final tzPattern = RegExp(r'([+-]\d{2})$');
-    final match = tzPattern.firstMatch(normalized);
-    
-    if (match != null) {
-      // 找到時區，補上 :00
-      normalized = '${normalized.substring(0, match.start)}${match.group(1)}:00';
-    }
-    
-    return DateTime.parse(normalized);
-  }
-
-  /// 格式化為 PostgreSQL TSTZRANGE 格式
-  static String _formatTimeRange(DateTime start, DateTime end) {
-    return '[${start.toIso8601String()},${end.toIso8601String()})';
   }
 
   /// 創建副本（用於更新）

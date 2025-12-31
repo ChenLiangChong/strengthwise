@@ -14,6 +14,7 @@ class ClientListCard extends StatelessWidget {
   final Function(CoachingRelationshipModel) onArchiveClient;
   final Function(CoachingRelationshipModel) onDeleteClient;
   final Function(CoachingRelationshipModel, UserModel)? onClientTap;
+  final Function(CoachingRelationshipModel, UserModel)? onViewClientAvailability; // ⭐ 新增
 
   const ClientListCard({
     super.key,
@@ -25,6 +26,7 @@ class ClientListCard extends StatelessWidget {
     required this.onArchiveClient,
     required this.onDeleteClient,
     this.onClientTap,
+    this.onViewClientAvailability,
   });
 
   @override
@@ -84,6 +86,9 @@ class ClientListCard extends StatelessWidget {
             onTap: onClientTap != null ? () => onClientTap!(relationship, client) : null,
             onArchive: () => _showArchiveConfirmDialog(context, relationship, client),
             onDelete: () => _showDeleteConfirmDialog(context, relationship, client),
+            onViewAvailability: onViewClientAvailability != null 
+                ? () => onViewClientAvailability!(relationship, client)
+                : null,
           );
         },
       ),

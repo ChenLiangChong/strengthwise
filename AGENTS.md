@@ -2,7 +2,7 @@
 
 > AI 程式碼助手開發規範與最佳實踐
 
-**最後更新**：2024年12月28日 - v2.0 Phase 2 完成（100%）✅
+**最後更新**：2024年12月31日 - v2.0 Phase 4A 完成 ✅
 
 ---
 
@@ -14,7 +14,8 @@
    - v1.0 單機版完成 ✅
    - v2.0 Phase 1 完成 ✅（教練學員系統）
    - v2.0 Phase 2 完成 ✅（預約系統 - 100%）⭐
-   - Phase 3 計劃（時間管理與筆記）
+   - v2.0 Phase 3 完成 ✅（視覺化筆記 - 照片功能）⭐
+   - v2.0 Phase 4A 完成 ✅（完整手繪板 - 向量繪圖）⭐⭐⭐
 3. **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - 專案架構和技術棧
 4. **[docs/DATABASE_SUPABASE.md](docs/DATABASE_SUPABASE.md)** - Supabase PostgreSQL 資料庫設計
 5. **[docs/SAAS_PLATFORM_ROADMAP.md](docs/SAAS_PLATFORM_ROADMAP.md)** - 完整 SaaS 計劃（Phase 1-5）
@@ -113,98 +114,64 @@ final data = await supabase
 
 ### 7. 日期時間處理規範 ⭐⭐⭐
 
-**PostgreSQL 時間戳格式轉換**：
+**統一工具類**：所有時間轉換必須使用 `DateTimeUtils`（`lib/utils/datetime_utils.dart`）
 
-PostgreSQL 返回的時間戳格式與 Dart 的 ISO 8601 格式不同，必須進行轉換：
+#### 核心規則
+
+1. **PostgreSQL 時間戳解析**
+   ```dart
+   import 'package:strengthwise/utils/datetime_utils.dart';
+   
+   // ✅ 正確
+   final dt = DateTimeUtils.parsePostgresTimestamp('2025-12-15 09:00:00+00');
+   
+   // ❌ 錯誤：在 Model 中重複實作
+   static DateTime _parsePostgresTimestamp(String timestamp) { }
+   ```
+
+2. **TSTZRANGE 處理**（Model 層）
+   ```dart
+   // 解析
+   final range = DateTimeUtils.parseTstzRange(json['time_range']);
+   
+   // 格式化
+   'time_range': DateTimeUtils.formatToTstzRange(startTime, endTime)
+   ```
+
+3. **UTC 日期比較**（Service 層統計過濾）
+   ```dart
+   // ✅ 正確：使用工具類
+   if (DateTimeUtils.isWithinUtcDateRange(trainingDate, startDate, endDate)) {
+     // 在範圍內
+   }
+   
+   // ❌ 錯誤：手動實作（會導致時區問題）
+   final utcDate = DateTime.utc(date.toUtc().year, date.toUtc().month, ...);
+   ```
+
+#### 時區處理原則 ⭐
+
+訓練記錄按 **UTC 日期** 分組，避免時區轉換導致日期改變：
 
 ```dart
-/// PostgreSQL 時間戳格式轉換
-/// 
-/// PostgreSQL 格式：
-///   - 無引號：2025-12-15 09:00:00+00
-///   - 有引號："2025-12-15 09:00:00+00"
-/// 
-/// Dart ISO 8601 格式：
-///   - 2025-12-15T09:00:00+00:00
-/// 
-/// 轉換步驟：
-///   1. 移除引號（如果有）
-///   2. 替換第一個空格為 'T'
-///   3. 規範化時區（+00 → +00:00）
-static DateTime _parsePostgresTimestamp(String timestamp) {
-  // 步驟 1：移除引號並修剪空白
-  String cleaned = timestamp.trim();
-  if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
-    cleaned = cleaned.substring(1, cleaned.length - 1);
-  }
+// 問題：
+// 數據庫：2025-12-27T16:00:45Z (UTC)
+// 本地：  2025-12-28 00:00:45 (UTC+8)
+// 結果：12/27 的訓練被錯誤地算成 12/28！❌
 
-  // 步驟 2：替換第一個空格為 'T'
-  cleaned = cleaned.replaceFirst(' ', 'T');
-
-  // 步驟 3：規範化時區格式（+00 → +00:00）
-  // 使用正則表達式精確匹配時區部分
-  final timezoneRegex = RegExp(r'([+-]\d{2})$');
-  if (timezoneRegex.hasMatch(cleaned)) {
-    cleaned = cleaned.replaceFirstMapped(
-      timezoneRegex,
-      (match) => '${match.group(1)}:00',
-    );
-  }
-
-  return DateTime.parse(cleaned);
-}
+// 解決：使用 DateTimeUtils.isWithinUtcDateRange()
+// 正確：12/27 UTC 不在 12/28-12/29 UTC 範圍內 ✅
 ```
 
-**使用場景**：
+#### 常見錯誤
 
-1. **TSTZRANGE 解析**（`AvailabilitySlotModel`, `AppointmentModel`）：
-```dart
-factory AvailabilitySlotModel.fromSupabase(Map<String, dynamic> json) {
-  final timeRangeStr = json['time_range'] as String;
-  final range = _parseTimeRange(timeRangeStr); // 使用 _parsePostgresTimestamp
-  
-  return AvailabilitySlotModel(
-    startTime: range['start']!,
-    endTime: range['end']!,
-    // ...
-  );
-}
+- ❌ 直接使用 `DateTime.parse()` 解析 PostgreSQL 時間戳（格式不兼容）
+- ❌ 在 Model 中重複實作時間轉換邏輯
+- ❌ 使用本地時間比較導致時區偏移
 
-static Map<String, DateTime> _parseTimeRange(String rangeStr) {
-  // 格式："[2025-12-15 09:00:00+00,2025-12-15 10:00:00+00)"
-  final cleaned = rangeStr.replaceAll('"', '').trim();
-  final inner = cleaned.substring(1, cleaned.length - 1);
-  final parts = inner.split(',');
-  
-  return {
-    'start': _parsePostgresTimestamp(parts[0]),
-    'end': _parsePostgresTimestamp(parts[1]),
-  };
-}
-```
+#### 完整文檔
 
-2. **UTC/本地時間轉換**：
-```dart
-// ✅ 日曆視圖：比較本地時間
-List<AvailabilitySlotModel> _getSlotsForDay(DateTime day) {
-  return widget.slots.where((slot) {
-    final slotDate = slot.startTime.toLocal(); // 轉換為本地時間
-    return slotDate.year == day.year &&
-           slotDate.month == day.month &&
-           slotDate.day == day.day;
-  }).toList();
-}
-
-// ✅ 資料庫查詢：使用 UTC 時間
-final data = await supabase
-  .from('availability_slots')
-  .filter('time_range', 'ov', '[${startDate.toUtc().toIso8601String()},${endDate.toUtc().toIso8601String()})');
-```
-
-**常見錯誤**：
-- ❌ 直接使用 `DateTime.parse()` 解析 PostgreSQL 時間戳
-- ❌ 混淆 UTC 和本地時間
-- ❌ 忘記規範化時區格式（+00 vs +00:00）
+詳見 `docs/DATETIME_UTILS_GUIDE.md`（包含完整 API 列表、使用範例、測試驗證）
 
 ---
 
@@ -332,9 +299,100 @@ factory UserModel.fromSupabase(Map<String, dynamic> json) {
 
 **新增檔案**：17 個（Model 1 + Service 5 + Controller 1 + UI 7 + Migration 1 + Doc 2）
 
-**v2.0 Phase 2：預約系統**（2024-12-28 完成）✅：
+**v2.0 Phase 2：預約系統**（2024-12-28 完成）✅
 
-**✅ 已完成**（100%）：
+**v2.0 Phase 2.5：時間轉換工具統一化**（2024-12-29 完成）✅：
+- ✅ 創建 `DateTimeUtils` 工具類（9 個方法）
+- ✅ 消除 76 行重複代碼（2 個 Model × 2 個方法）
+- ✅ 簡化 Statistics Service UTC 邏輯
+- ✅ 創建 30 個單元測試（全部通過）
+- ✅ 0 個 linter errors
+- 完成時間：1 天
+
+**v2.0 Phase 3：視覺化筆記與雙向時間管理**（2024-12-30 完成 + 測試通過）✅⭐⭐⭐：
+
+**Phase 3 完整完成**（100% + 測試驗證）：
+- ✅ Migration SQL（469 行，15 個 RLS 策略）
+- ✅ Model 層（7 個類別，完全解耦）
+- ✅ Service 層（5 個檔案 + 3 個子模組）
+- ✅ Storage 配置（3 個 Buckets + RLS 策略）⭐
+- ✅ Controller 層（2 個控制器 + 4 個子模組）
+  - `SessionNoteController`（548 行）+ 4 個子模組
+  - `ClientAvailabilityController`（336 行）
+- ✅ UI 層（18 個頁面/組件）
+  - 筆記列表頁面（SessionNotesListPage）
+  - SOAP 筆記編輯器（SessionNoteEditorPage + 照片上傳）
+  - 筆記詳情頁面（SessionNoteDetailPage）
+  - 照片拍攝與上傳功能（PhotoPickerSheet + PhotoUploadCard）
+  - 學員時間偏好設定頁面（ClientAvailabilityPage + 4 個組件）
+
+**功能特色**（Phase 3）：
+- ✅ SOAP 格式專業筆記（S.O.A.P 四欄位）
+- ✅ 照片拍攝與相簿選擇（image_picker + file_picker for Windows）
+- ✅ Supabase Storage 上傳（進度顯示 + 檔名清理）
+- ✅ Private/Shared 切換（RLS 保護）
+- ✅ Storage RLS 學員隔離（不同學員看不到對方照片）⭐
+- ✅ 筆記刪除自動清理照片
+- ✅ 學員時間偏好設定（TSTZRANGE + 優先級）
+- ✅ 雙向時間管理系統（教練可查看學員偏好）
+- ⏸️ 照片標註功能 → 移至 Phase 4（完整手繪板）
+
+**測試結果**（100% 通過）：
+- ✅ 照片上傳與顯示（跨平台）
+- ✅ Storage RLS 策略（學員隔離驗證）
+- ✅ 筆記創建與綁定
+- ✅ 學員時間偏好設定
+- ✅ 教練查看學員偏好（只讀模式）
+
+**新增檔案**（Phase 3 完整）：26 個檔案，~5,000 行代碼
+- Controller 層：7 個檔案（~1,800 行）
+- UI 層：19 個檔案（~3,200 行）
+
+**v2.0 Phase 4A：完整手繪板**（2024-12-31 完成 + 測試通過）✅⭐⭐⭐：
+
+**Phase 4A 完整完成**（100% + 7 個 Bug 修復）：
+- ✅ Migration SQL（146 行）
+- ✅ Model 層（DrawingNoteModel + 圖層/筆劃/座標點）
+- ✅ Service 層（IDrawingService + DrawingServiceSupabase）
+- ✅ Controller 層（DrawingController + 2 個子模組）
+- ✅ UI 層（7 個組件）
+  - 繪圖畫布頁面（DrawingCanvasPage - 模式切換）⭐
+  - 繪圖查看器（DrawingViewerPage - 只讀模式）
+  - CustomPainter（向量渲染）
+  - 繪圖工具列（4 種工具 + 7 種顏色）
+  - 模板選擇器（4 種底圖）
+
+**功能特色**（Phase 4A）：
+- ✅ 向量繪圖系統（JSONB 儲存，可編輯）⭐
+- ✅ 4 種底圖模板（身體解剖圖）
+- ✅ 4 種繪圖工具（鉛筆/麥克筆/螢光筆/橡皮擦）
+- ✅ 底圖保護（擦除不影響底圖）⭐
+- ✅ 多繪圖支援（根據 drawing.id 區分）
+- ✅ 模式切換（繪圖 vs 查看）⭐
+- ✅ 只讀查看器（zoom + pan）
+- ✅ 權限控制（學員只讀）
+- ✅ Undo/Redo/清空
+
+**Bug 修復**（7 個全部完成）：
+- ✅ 多繪圖保存邏輯（drawing.id 唯一識別）
+- ✅ 編輯保存覆蓋繪圖（重新載入最新資料）
+- ✅ 照片上傳 clientId 缺失（從 selectedNote 獲取）
+- ✅ 工具列溢出（橫向滾動）⭐
+- ✅ GPU 緩衝區錯誤（RepaintBoundary + filterQuality）
+- ✅ 縮放衝突（模式切換）⭐⭐⭐
+- ✅ Debug 輸出（詳細診斷）
+
+**測試結果**（100% 通過）：
+- ✅ 4 種工具正常運作
+- ✅ 橡皮擦不影響底圖 ⭐
+- ✅ 多繪圖不互相覆蓋 ⭐
+- ✅ 模式切換功能 ⭐
+- ✅ 手機適配（工具列滾動）
+
+**新增檔案**（Phase 4A）：17 個檔案
+- Model 1 + Service 2 + Controller 3 + UI 7 + Migration 1
+
+**v2.0 Phase 2 已完成**（100%）：
 1. **資料庫層** ✅
    - `availability_slots` 表（教練可用時段）
    - `appointments` 表（預約記錄）
@@ -418,6 +476,15 @@ factory UserModel.fromSupabase(Map<String, dynamic> json) {
 
 **Phase 2 完成時間**：1 天（2024-12-28）✅
 
+**Phase 2.5 完成**（2024-12-29）✅：
+- ✅ 創建 `lib/utils/datetime_utils.dart` 統一工具類
+- ✅ 重構 `AppointmentModel`（移除 38 行重複代碼）
+- ✅ 重構 `AvailabilitySlotModel`（移除 38 行重複代碼）
+- ✅ 重構 `StatisticsServiceSupabase`（簡化 39 行為 9 行）
+- ✅ 創建 30 個單元測試（全部通過）
+- ✅ 0 個 linter errors
+- 詳見：`docs/DATETIME_UTILS_GUIDE.md`
+
 **效能提升總覽**：
 - **應用啟動**：2.5s+ → **200ms** ⚡ 92%+
 - **主線程卡頓**：721 frames → **<30 frames** ⚡ 96%+
@@ -500,6 +567,46 @@ notifyListeners();  // ← 必須
 
 ### 工具腳本
 - **[scripts/README.md](scripts/README.md)** - Python 工具腳本使用指南
+
+---
+
+## 🎯 下一步工作（2025-01-01 起）
+
+### ⭐⭐⭐ Phase 4B：教練多學員統計視圖（推薦優先）
+
+**預計時間**：2-3 天  
+**核心任務**：
+- [ ] 統計頁面新增學員選擇器（教練模式）
+- [ ] 複用現有 16 個統計組件，支援 `traineeId` 參數
+- [ ] （可選）學員完成率總覽頁面
+
+**為什麼工作量小**：
+- ✅ v1.0 已完成完整統計系統（訓練頻率、力量進步、肌群分析、熱力圖等）
+- ✅ 只需新增學員切換功能，複用現有代碼
+- ✅ 無需重寫統計邏輯或 UI 組件
+
+**技術方案**：
+```dart
+// 統計頁面頂部新增（教練模式）
+if (isCoach) {
+  ClientSelector(
+    clients: coachingController.activeClients,
+    selectedClientId: selectedClientId,
+    onChanged: (clientId) => setState(() => selectedClientId = clientId),
+  )
+}
+
+// 原有統計組件保持不變，只傳入 traineeId
+StatisticsPage(userId: selectedClientId ?? currentUserId)
+```
+
+### 其他選項
+
+- **選項 2**：深度測試與優化（3-5 天）
+- **選項 3**：UX 改進與導航優化（1 週）
+- **選項 4**：準備 Beta 測試（1-2 週）
+
+**詳細任務清單與技術方案**：請查看 [docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md) 末尾的「下一步工作項目」章節
 
 ---
 

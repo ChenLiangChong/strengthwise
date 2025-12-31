@@ -10,6 +10,7 @@ class ClientListItem extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onArchive;
   final VoidCallback? onDelete;
+  final VoidCallback? onViewAvailability; // ⭐ 新增：查看時間偏好
 
   const ClientListItem({
     super.key,
@@ -18,6 +19,7 @@ class ClientListItem extends StatelessWidget {
     this.onTap,
     this.onArchive,
     this.onDelete,
+    this.onViewAvailability,
   });
 
   @override
@@ -84,6 +86,18 @@ class ClientListItem extends StatelessWidget {
                       color: colorScheme.onSurface.withOpacity(0.6),
                     ),
                     itemBuilder: (context) => [
+                      // ⭐ 新增：查看時間偏好
+                      if (relationship.status == 'active' && onViewAvailability != null)
+                        const PopupMenuItem(
+                          value: 'availability',
+                          child: Row(
+                            children: [
+                              Icon(Icons.schedule_outlined),
+                              SizedBox(width: 12),
+                              Text('查看時間偏好'),
+                            ],
+                          ),
+                        ),
                       if (relationship.status == 'active')
                         const PopupMenuItem(
                           value: 'archive',
@@ -107,7 +121,9 @@ class ClientListItem extends StatelessWidget {
                       ),
                     ],
                     onSelected: (value) {
-                      if (value == 'archive' && onArchive != null) {
+                      if (value == 'availability' && onViewAvailability != null) {
+                        onViewAvailability!();
+                      } else if (value == 'archive' && onArchive != null) {
                         onArchive!();
                       } else if (value == 'delete' && onDelete != null) {
                         onDelete!();

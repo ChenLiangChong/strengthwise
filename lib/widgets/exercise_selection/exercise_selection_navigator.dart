@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/favorite_exercise_model.dart';
+import '../../models/statistics/time_range.dart';
 import '../../services/interfaces/i_favorites_service.dart';
 import '../../services/interfaces/i_statistics_service.dart';
 import '../../services/service_locator.dart';
@@ -14,11 +15,13 @@ import 'widgets/exercise_list_view.dart';
 class ExerciseSelectionNavigator extends StatefulWidget {
   final String userId;
   final Function(ExerciseWithRecord exercise)? onExerciseSelected;
+  final TimeRange? timeRange; // 時間範圍過濾（可選）
 
   const ExerciseSelectionNavigator({
     Key? key,
     required this.userId,
     this.onExerciseSelected,
+    this.timeRange,
   }) : super(key: key);
 
   @override
@@ -54,11 +57,37 @@ class _ExerciseSelectionNavigatorState
     _loadTrainingTypes();
   }
 
+  @override
+  void didUpdateWidget(ExerciseSelectionNavigator oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 當時間範圍改變時，重新載入當前層級的數據
+    if (oldWidget.timeRange != widget.timeRange) {
+      _reloadCurrentStep();
+    }
+  }
+
+  /// 重新載入當前層級的數據
+  void _reloadCurrentStep() {
+    switch (_currentStep) {
+      case 0: // 訓練類型
+        _loadTrainingTypes();
+        break;
+      case 1: // 身體部位
+        _loadBodyParts();
+        break;
+      case 4: // 動作列表
+        _loadExercises();
+        break;
+    }
+  }
+
   /// 載入收藏列表
   Future<void> _loadFavorites() async {
     try {
       final ids = await _favoritesService.getFavoriteExerciseIds(widget.userId);
-      setState(() => _favoriteIds = ids.toSet());
+      if (mounted) {
+        setState(() => _favoriteIds = ids.toSet());
+      }
     } catch (e) {
       // 忽略錯誤
     }
@@ -75,6 +104,7 @@ class _ExerciseSelectionNavigatorState
       // 獲取所有有記錄的動作
       final exercises = await _statisticsService.getExercisesWithRecords(
         widget.userId,
+        timeRange: widget.timeRange,
       );
 
       // 從動作中提取訓練類型（去重）
@@ -119,6 +149,7 @@ class _ExerciseSelectionNavigatorState
       final exercises = await _statisticsService.getExercisesWithRecords(
         widget.userId,
         trainingType: _selectedTrainingType,
+        timeRange: widget.timeRange,
       );
 
       final partsSet = <String>{};
@@ -128,12 +159,16 @@ class _ExerciseSelectionNavigatorState
         }
       }
 
-      setState(() {
-        _bodyParts = partsSet.toList()..sort();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _bodyParts = partsSet.toList()..sort();
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -151,6 +186,7 @@ class _ExerciseSelectionNavigatorState
         bodyPart: _selectedBodyPart,
         specificMuscle: _selectedSpecificMuscle,
         equipmentCategory: _selectedEquipmentCategory,
+        timeRange: widget.timeRange,
       );
 
       // 標記收藏狀態
@@ -168,13 +204,15 @@ class _ExerciseSelectionNavigatorState
         );
       }).toList();
 
-      setState(() {
-        _exercises = exercisesWithFavorites;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
       if (mounted) {
+        setState(() {
+          _exercises = exercisesWithFavorites;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
         NotificationUtils.showError(context, '載入動作失敗: $e');
       }
     }
@@ -187,7 +225,9 @@ class _ExerciseSelectionNavigatorState
       
       if (isFavorite) {
         await _favoritesService.removeFavorite(widget.userId, exercise.exerciseId);
-        setState(() => _favoriteIds.remove(exercise.exerciseId));
+        if (mounted) {
+          setState(() => _favoriteIds.remove(exercise.exerciseId));
+        }
       } else {
         await _favoritesService.addFavorite(
           widget.userId,
@@ -195,11 +235,15 @@ class _ExerciseSelectionNavigatorState
           exercise.exerciseName,
           exercise.bodyPart,
         );
-        setState(() => _favoriteIds.add(exercise.exerciseId));
+        if (mounted) {
+          setState(() => _favoriteIds.add(exercise.exerciseId));
+        }
       }
 
       // 更新列表中的收藏狀態
-      _updateExerciseFavoriteStatus(exercise.exerciseId);
+      if (mounted) {
+        _updateExerciseFavoriteStatus(exercise.exerciseId);
+      }
     } catch (e) {
       if (mounted) {
         NotificationUtils.showError(context, '操作失敗: $e');

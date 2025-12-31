@@ -43,17 +43,8 @@ class PersonalRecordsCalculator {
         return [];
       }
 
-      // 批量查詢動作信息
-      final exerciseIds = records
-          .map((item) => item['exercise_id'] as String)
-          .toSet()
-          .toList();
-
-      _logDebug('   🔍 需要查詢 ${exerciseIds.length} 個動作的 body_part');
-
-      final exerciseInfoMap = await _loadExerciseInfo(exerciseIds);
-
       // 構建 PersonalRecord 列表
+      // ⚠️ 重要：View 已包含 body_part，不需要額外查詢
       final result = <PersonalRecord>[];
       final now = DateTime.now();
       final oneWeekAgo = now.subtract(Duration(days: 7));
@@ -64,7 +55,7 @@ class PersonalRecordsCalculator {
           final isNew = achievedDate.isAfter(oneWeekAgo);
           final exerciseId = item['exercise_id'] as String;
           final exerciseName = item['exercise_name'] as String;
-          final bodyPart = exerciseInfoMap[exerciseId] ?? '';
+          final bodyPart = item['body_part'] as String? ?? '';
 
           result.add(PersonalRecord(
             exerciseId: exerciseId,
@@ -140,46 +131,6 @@ class PersonalRecordsCalculator {
 
     _logDebug('✅ 原始方法查詢到 ${result.length} 個個人記錄');
     return result.take(limit).toList();
-  }
-
-  /// 批量載入動作信息
-  Future<Map<String, String>> _loadExerciseInfo(
-      List<String> exerciseIds) async {
-    final exerciseInfoMap = <String, String>{};
-
-    try {
-      // 查詢系統動作
-      final exercisesData = await _dataLoader.getExerciseInfo(exerciseIds);
-
-      final foundSystemIds = <String>{};
-      for (var ex in exercisesData) {
-        final id = ex['id'] as String;
-        final bodyPart = ex['body_part'] as String? ?? '';
-        exerciseInfoMap[id] = bodyPart;
-        foundSystemIds.add(id);
-      }
-
-      // 查詢自訂動作
-      final customExerciseIds =
-          exerciseIds.where((id) => !foundSystemIds.contains(id)).toList();
-
-      if (customExerciseIds.isNotEmpty) {
-        final customExercisesData =
-            await _dataLoader.getCustomExerciseInfo(customExerciseIds);
-
-        for (var ex in customExercisesData) {
-          final id = ex['id'] as String;
-          final bodyPart = ex['body_part'] as String? ?? '';
-          exerciseInfoMap[id] = bodyPart;
-        }
-      }
-    } catch (e) {
-      _logDebug('⚠️ 批量查詢動作信息失敗: $e');
-      _errorService.logError('批量查詢動作信息失敗: $e',
-          type: 'StatisticsServiceError');
-    }
-
-    return exerciseInfoMap;
   }
 
   void _logDebug(String message) {

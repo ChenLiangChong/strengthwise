@@ -117,6 +117,7 @@ abstract class IStatisticsService {
     String? bodyPart,
     String? specificMuscle,
     String? equipmentCategory,
+    TimeRange? timeRange, // 時間範圍過濾（可選）
   });
 }
 

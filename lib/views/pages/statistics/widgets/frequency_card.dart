@@ -32,15 +32,46 @@ class FrequencyCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
+            // 第一行：訓練次數、完整完成、部分完成
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildFrequencyStat(
                   context,
-                  Icons.check_circle,
+                  Icons.event_note,
                   '${frequency.totalWorkouts} 次',
-                  '訓練次數',
+                  '訓練計劃',
                   frequency.comparisonPercentage,
+                ),
+                _buildFrequencyStat(
+                  context,
+                  Icons.check_circle,
+                  '${frequency.completedWorkouts} 次',
+                  '完整完成',
+                  null,
+                  color: Colors.green,
+                ),
+                _buildFrequencyStat(
+                  context,
+                  Icons.schedule,
+                  '${frequency.partialWorkouts} 次',
+                  '部分完成',
+                  null,
+                  color: Colors.orange,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // 第二行：訓練天數、總時長、連續天數
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildFrequencyStat(
+                  context,
+                  Icons.calendar_today,
+                  '${frequency.trainingDays} 天',
+                  '訓練天數',
+                  null,
                 ),
                 _buildFrequencyStat(
                   context,
@@ -70,11 +101,12 @@ class FrequencyCard extends StatelessWidget {
     IconData icon,
     String value,
     String label,
-    String? comparison,
-  ) {
+    String? comparison, {
+    Color? color,
+  }) {
     return Column(
       children: [
-        Icon(icon, color: Colors.blue, size: 32),
+        Icon(icon, color: color ?? Colors.blue, size: 32),
         const SizedBox(height: 8),
         Text(
           value,

@@ -15,6 +15,7 @@ dependencies:
   get_it: ^7.6.0
   shared_preferences: ^2.1.2
   image_picker: ^0.8.7+5
+  file_picker: ^8.1.6  # 用於 Windows 平台選擇檔案
   intl: ^0.20.2
   hive: ^2.2.3
   hive_flutter: ^1.1.0
@@ -39,4 +40,5 @@ flutter:
   
   assets:
     - assets/images/
+    - assets/templates/  # 繪圖底圖模板
     - .env  # 环境变量文件

@@ -6,6 +6,7 @@ import '../../../models/coaching_relationship_model.dart';
 import '../../../models/user_model.dart';
 import 'widgets/client_list_card.dart';
 import 'widgets/invite_client_dialog.dart';
+import '../availability/client_availability_page.dart';
 
 /// 學員管理頁面（教練專用）
 class ClientManagementPage extends StatefulWidget {
@@ -171,6 +172,20 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
         );
       }
     }
+  }
+  
+  /// 查看學員的時間偏好
+  void _viewClientAvailability(CoachingRelationshipModel relationship, UserModel client) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ClientAvailabilityPage(
+          clientId: client.uid,
+          clientName: client.displayName ?? client.email,
+          isViewMode: true, // 教練查看模式（只讀）
+        ),
+      ),
+    );
   }
 
   @override
@@ -339,6 +354,7 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
               onInviteClient: _showInviteDialog,
               onArchiveClient: (relationship) => _archiveClient(relationship.id),
               onDeleteClient: (relationship) => _deleteClient(relationship.id),
+              onViewClientAvailability: _viewClientAvailability, // ⭐ 新增
               onClientTap: (relationship, client) {
                 // TODO: 導航到學員詳情頁面
                 ScaffoldMessenger.of(context).showSnackBar(

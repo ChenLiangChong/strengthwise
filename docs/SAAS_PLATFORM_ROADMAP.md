@@ -2,9 +2,9 @@
 
 > 從單機應用至教練-學員雙端 SaaS 平台的完整轉型計劃
 
-**最後更新**：2024年12月28日  
-**當前狀態**：✅ Phase 2 完成（100%）  
-**v2.0 版本**：Phase 1 完成 ✅ | Phase 2 完成 ✅
+**最後更新**：2024年12月31日  
+**當前狀態**：✅ Phase 4A 完成（100% + 7 個 Bug 修復）⭐⭐⭐  
+**v2.0 版本**：Phase 1 完成 ✅ | Phase 2 完成 ✅ | Phase 3 完成 ✅ | Phase 4A 完成 ✅
 
 ---
 
@@ -496,30 +496,130 @@ CREATE INDEX idx_mv_compliance_coach ON public.mv_client_compliance(coach_id);
 
 ---
 
-### 2.6 筆記功能：SOAP 架構與隱私控制
+### 2.6 視覺化筆記系統：多模態輸入與 SOAP 架構 ⭐ v2.0 新增
 
-#### SOAP 格式（醫療與教練領域標準）
+#### 設計背景：解決教練現場痛點
 
-- **S (Subjective)**：主觀描述（學員說很累）
-- **O (Objective)**：客觀數據（深蹲時膝蓋內夾）
-- **A (Assessment)**：評估（可能臀中肌無力）
-- **P (Plan)**：計畫（增加彈力帶訓練）
+**核心挑戰**：
+- 教練現場教學時不便打字
+- 需要快速標註學員動作問題（如：膝蓋內夾、重心偏移）
+- 傳統純文字筆記效率低、表達不清晰
 
-#### session_notes 表結構
+**解決方案**：
+- ✅ 手繪標註（Canvas 直接畫在身體模板上）
+- ✅ 照片拍攝與標註
+- ✅ 語音錄製與轉文字
+- ✅ JSONB 混合內容結構（文字 + 圖片 + 音訊）
 
-| 欄位名稱 | 資料類型 | 描述 |
+#### session_notes 表結構（v2.0 增強版）
+
+| 欄位名稱 | 資料類型 | 說明 |
 |---------|---------|------|
 | `id` | uuid | Primary Key |
-| `client_id` | uuid | 筆記對象 |
-| `author_id` | uuid | 撰寫者（教練） |
-| `content` | jsonb | 存儲 SOAP 結構 |
-| `visibility` | text | **關鍵**：'private' / 'shared' |
+| `client_id` | uuid | 學員 ID |
+| `coach_id` | uuid | 教練 ID（前版為 author_id） |
+| `appointment_id` | uuid | **新增**：關聯預約 |
+| `workout_log_id` | uuid | **新增**：關聯訓練記錄 |
+| `content` | jsonb | **升級**：混合內容結構（見下方） |
+| `visibility` | text | 'private' / 'shared' |
 | `created_at` | timestamptz | 建立時間 |
+| `updated_at` | timestamptz | **新增**：更新時間 |
+
+#### JSONB 混合內容結構（核心創新）⭐⭐⭐
+
+```json
+{
+  "soap": {
+    "subjective": "學員反應右膝不適",
+    "objective": "深蹲時膝蓋內夾，重心偏右",
+    "assessment": "可能臀中肌無力",
+    "plan": "增加彈力帶訓練"
+  },
+  "visual_elements": [
+    {
+      "type": "drawing",
+      "storage_path": "coach_drawings/uuid-coach/uuid-session/squat-issue.png",
+      "thumbnail_path": "coach_drawings/.../squat-issue_thumb.png",
+      "template": "body_side_squat",
+      "annotations": {
+        "strokes": [...],  // 向量路徑（可選，用於重新編輯）
+        "arrows": [...],
+        "circles": [...]
+      }
+    },
+    {
+      "type": "photo",
+      "storage_path": "session_photos/uuid-coach/uuid-session/knee-tracking.jpg",
+      "caption": "第三組深蹲時膝蓋追蹤"
+    },
+    {
+      "type": "voice_note",
+      "storage_path": "voice_notes/uuid-coach/uuid-session/feedback.m4a",
+      "duration_seconds": 45,
+      "transcription": "記得提醒他下次訓練前加強臀部啟動",
+      "transcription_confidence": 0.92
+    },
+    {
+      "type": "text",
+      "value": "補充：建議增加單腿訓練"
+    }
+  ],
+  "quick_tags": ["姿勢問題", "膝蓋", "深蹲", "需追蹤"],
+  "follow_up_date": "2025-01-05"
+}
+```
+
+**設計優勢**：
+- ✅ 單一筆記可包含多種媒體（圖文音混合）
+- ✅ 保留向量路徑可重新編輯手繪
+- ✅ 語音轉文字自動化（使用 Supabase Edge Functions 調用 Whisper API）
+- ✅ 快速標籤便於搜尋與分類
+
+#### Supabase Storage 架構
+
+**Bucket 配置**：
+
+| Bucket 名稱 | 用途 | Public | Size Limit | MIME Types |
+|------------|------|--------|------------|------------|
+| `coach_drawings` | 手繪圖片 | False | 5MB | image/png, image/jpeg |
+| `session_photos` | 現場照片 | False | 10MB | image/jpeg, image/png |
+| `voice_notes` | 語音筆記 | False | 20MB | audio/m4a, audio/mpeg |
+
+**Storage RLS 策略**（關鍵安全性）：
+
+```sql
+-- 1. 教練上傳圖片到自己的資料夾
+-- 路徑結構: coach_id/session_id/filename.png
+CREATE POLICY "Coaches can upload to own folder"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id IN ('coach_drawings', 'session_photos', 'voice_notes') AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- 2. 教練查看自己上傳的檔案
+CREATE POLICY "Coaches view own files"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (
+  bucket_id IN ('coach_drawings', 'session_photos', 'voice_notes') AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- 3. 學員查看「已分享筆記」的檔案（透過 Signed URL 機制）
+-- 不開放直接 Storage 存取，而是透過 App 層生成臨時網址
+```
+
+**Signed URL 機制**（推薦實作）：
+- App 端讀取筆記時，透過 `supabase.storage.from('coach_drawings').createSignedUrl(path, 86400)` 生成 24 小時有效網址
+- 學員無法遍歷 Storage，只能看到教練明確分享的檔案
+- 網址過期後自動失效，提升安全性
 
 #### 隱私控制 RLS
 
 ```sql
--- 學員只能看被分享的筆記
+-- 學員只能看被分享的筆記（含所有附件）
 CREATE POLICY "Clients view shared notes"
 ON public.session_notes FOR SELECT
 USING (
@@ -527,14 +627,24 @@ USING (
 );
 
 -- 教練看自己撰寫的所有筆記
-CREATE POLICY "Coaches view all authored notes"
+CREATE POLICY "Coaches view own notes"
 ON public.session_notes FOR SELECT
 USING (
-  author_id = auth.uid()
+  coach_id = auth.uid()
+);
+
+-- 教練可更新自己的筆記（含切換分享狀態）
+CREATE POLICY "Coaches update own notes"
+ON public.session_notes FOR UPDATE
+USING (
+  coach_id = auth.uid()
 );
 ```
 
-**安全保障**：學員永遠無法看到 `visibility = 'private'` 的內部評估
+**安全保障**：
+- ✅ 學員永遠無法看到 `visibility = 'private'` 的內部評估
+- ✅ 即使學員取得 Storage 路徑，也無法繞過 RLS 存取檔案
+- ✅ Signed URL 時效性防止長期分享
 
 ---
 
@@ -656,74 +766,339 @@ USING (
 
 ---
 
-### Phase 3：雙向時間管理與筆記（3-4 週）
+### Phase 3：視覺化筆記與雙向時間管理（3-4 週）⭐ 新增
 
-**目標**：完成雙向時間管理與教練記錄功能
+**目標**：解決教練現場教學「不便打字」痛點，實現視覺化筆記與雙向時間管理
 
-#### A. 學員時間偏好系統（新增功能）⭐
+**分階段實作策略**：
+- **Phase 3.0**（2-3 天）：SOAP 筆記 + 照片標註 ✅ 優先
+- **Phase 3.1**（1-2 週）：完整手繪板 + 底圖模板 ⏸️ 後續
+
+#### A. 視覺化筆記系統（核心創新）⭐⭐⭐
+
+**需求背景**：
+- 教練現場教學時不便打字
+- 需要快速標註學員動作問題（如：膝蓋內夾、重心偏移）
+- 支援照片標註、手繪圖、語音轉文字等多模態輸入
+
+**UI 流程設計**：
+```
+學員詳細頁面
+  ↓
+[筆記] Tab
+  ↓
+筆記列表（依日期排序）
+  ├── [+ 新增筆記] 按鈕
+  ├── 筆記卡片 1 (2024-12-30) [Private]
+  ├── 筆記卡片 2 (2024-12-29) [Shared]
+  └── ...
+  ↓
+點擊卡片 → 筆記詳情頁
+  ├── 📝 文字備註（SOAP 格式）
+  │   ├── S (Subjective): 學員說很累
+  │   ├── O (Objective): 深蹲時膝蓋內夾
+  │   ├── A (Assessment): 臀中肌無力
+  │   └── P (Plan): 增加彈力帶訓練
+  │
+  ├── 📷 照片筆記（可標註）
+  │   ├── 照片 1 + 圓圈/箭頭/文字標註
+  │   ├── 照片 2
+  │   └── [+ 新增照片] 按鈕
+  │
+  └── [切換 Private/Shared] 按鈕
+```
+
+**資料庫設計**：
+
+1. **`session_notes` 表**（混合內容）
+
+| 欄位名稱 | 資料類型 | 說明 |
+|---------|---------|------|
+| `id` | uuid | Primary Key |
+| `client_id` | uuid | 學員 ID |
+| `coach_id` | uuid | 教練 ID |
+| `appointment_id` | uuid | 關聯預約（可選） |
+| `workout_log_id` | uuid | 關聯訓練記錄（可選） |
+| `content` | jsonb | **核心**：混合內容結構 |
+| `visibility` | text | 'private' / 'shared' |
+| `created_at` | timestamptz | 建立時間 |
+
+2. **JSONB 內容結構**（支援多模態）
+
+```json
+{
+  "soap": {
+    "subjective": "學員反應右膝不適",
+    "objective": "深蹲時膝蓋內夾，重心偏右",
+    "assessment": "可能臀中肌無力",
+    "plan": "增加彈力帶訓練"
+  },
+  "visual_elements": [
+    {
+      "type": "drawing",
+      "storage_path": "coach_drawings/uuid-coach/uuid-session/squat-issue.png",
+      "thumbnail_path": "coach_drawings/uuid-coach/uuid-session/squat-issue_thumb.png",
+      "template": "body_front", // 使用的底圖模板
+      "annotations": [...] // 可選：向量路徑以便未來編輯
+    },
+    {
+      "type": "photo",
+      "storage_path": "session_photos/uuid-coach/uuid-session/knee-tracking.jpg"
+    },
+    {
+      "type": "voice_note",
+      "storage_path": "voice_notes/uuid-coach/uuid-session/feedback.m4a",
+      "transcription": "記得提醒他下次訓練前加強臀部啟動"
+    }
+  ],
+  "quick_tags": ["姿勢問題", "膝蓋", "深蹲"]
+}
+```
+
+3. **Supabase Storage Buckets**
+
+| Bucket 名稱 | 用途 | Public | Size Limit |
+|------------|------|--------|------------|
+| `coach_drawings` | 手繪圖片 | False | 5MB |
+| `session_photos` | 現場照片 | False | 10MB |
+| `voice_notes` | 語音筆記 | False | 20MB |
+
+**任務清單**：
+
+**Phase 3 完成**（✅ 100% + 測試驗證通過）⭐⭐⭐
+
+**後端 + Controller 層**（已完成 100%）⭐：
+- [x] 創建 `session_notes` 表 + RLS 策略（8 個策略）
+- [x] 創建 3 個 Storage Buckets + Storage RLS 策略
+- [x] 實作 Storage Signed URL 生成函數
+- [x] Model: `SessionNoteModel` + `SoapNoteModel` + `VisualElementModel`（4 種類型）
+- [x] Service Interface: `ISessionNoteService`
+- [x] Service 實現: `SessionNoteServiceSupabase`（3 個子模組）
+- [x] Service Locator 註冊
+- [x] Controller: `SessionNoteController`（548 行 + 4 個子模組）⭐
+- [x] Controller: `ClientAvailabilityController`（336 行）⭐
+
+**Flutter UI**（已完成 100%）：
+- [x] 筆記列表頁面（SessionNotesListPage）
+- [x] SOAP 筆記編輯器（SessionNoteEditorPage + 照片上傳）
+- [x] 筆記詳情頁面（SessionNoteDetailPage）
+- [x] 照片拍攝與上傳功能（PhotoPickerSheet + PhotoUploadCard）
+- [x] 學員時間偏好設定頁面（ClientAvailabilityPage + 4 個組件）
+- [x] 學員中心「我的筆記」Tab
+- [x] 教練查看學員時間偏好入口
+
+**測試驗證**（100% 通過）⭐：
+- [x] 照片上傳與顯示（跨平台）
+- [x] Storage RLS 策略（學員隔離驗證）
+- [x] 筆記創建與綁定
+- [x] 學員時間偏好設定
+- [x] 教練查看學員偏好（只讀模式）
+- [x] Windows 平台相簿選擇（file_picker）
+- [x] 跨平台認證（Google Sign-In 平台檢查）
+
+**Phase 3.1：進階繪圖功能**（⏸️ 後續實作）
+
+- [ ] 完整手繪板組件（`DrawingBoardWidget`）
+  - 自由筆觸繪製（CustomPainter）
+  - 撤銷/重做功能
+  - 圖層管理
+  - 可編輯向量路徑
+- [ ] 底圖模板系統
+  - 內建身體模板（正面、背面、側面等）
+  - 模板選擇器 UI
+  - 分層渲染（底圖 + 標註層）
+- [ ] 語音錄製與轉文字組件（可選）
+
+**技術特色**：
+
+**Phase 3.0**（照片標註）：
+- ✅ SOAP 格式專業筆記（醫療/教練領域標準）
+- ✅ 照片拍攝 + 快速標註（圓圈/箭頭/文字）
+- ✅ Signed URL 機制（24 小時有效）
+- ✅ Private/Shared 切換（RLS 保護）
+- ✅ 快速上手（教練無需學習複雜工具）
+
+**Phase 3.1**（完整繪圖）：
+- ✅ 可編輯向量路徑（JSONB 儲存，重新編輯不失真）
+- ✅ 手繪即存（Canvas → PNG → Supabase Storage）
+- ✅ 分層渲染（底圖 + 標註層，可單獨編輯）
+- ✅ 離線草稿（本地暫存，網路恢復後同步）
+
+**驗收標準**（Phase 3.0）：
+- ✅ 教練可在 30 秒內完成照片標註並儲存
+- ✅ SOAP 筆記結構化（可搜尋、可統計）
+- ✅ Private 筆記學員完全看不到
+- ✅ 切換 Shared 後學員立即可見
+- ✅ 照片清晰可辨（至少 720p）
+
+#### B. 學員時間偏好系統（雙向時間管理）⭐
 
 **需求**：學員設定可運動時間 → 教練主動安排訓練
 
-**任務清單**：
-- [ ] 設計 `client_availability` 表（學員可用時間）
-  - 時間範圍（TSTZRANGE）
-  - 週期性規則（iCal RRULE）
-  - 優先級標記（preferred / available）
-- [ ] RLS 策略：教練可查看活躍學員的時間偏好
-- [ ] 實作 Service Interface + 實現
-- [ ] 實作 Controller 層
-- [ ] Flutter UI：學員設定可用時間
-- [ ] Flutter UI：教練查看學員時間（日曆視圖）
-- [ ] Flutter UI：教練拖拽創建訓練計劃到學員時間
+**資料庫設計**：
 
-**流程設計**：
-1. 學員在 App 設定：「週一三五 18:00-20:00 可運動」
-2. 教練打開學員詳情頁 → 看到學員的時間偏好日曆
-3. 教練點擊學員可用時間 → 直接創建訓練計劃並指派
-4. 學員收到通知：「教練已安排週一 18:00 訓練」
+**`client_availability` 表**
 
-**驗收標準**：
-- ✅ 學員可設定週期性可用時間
-- ✅ 教練可查看學員的時間偏好
-- ✅ 教練可在學員時間內創建訓練計劃
-- ✅ 學員收到訓練計劃通知
-
-#### B. 課程筆記系統（SOAP 格式）
+| 欄位名稱 | 資料類型 | 說明 |
+|---------|---------|------|
+| `id` | uuid | Primary Key |
+| `client_id` | uuid | 學員 ID |
+| `time_range` | tstzrange | 時間範圍 |
+| `recurrence_rule` | text | iCal RRULE（週期性） |
+| `priority` | text | 'preferred' / 'available' / 'avoid' |
+| `notes` | text | 備註（如：健身房最少人的時段） |
 
 **任務清單**：
-- [ ] 實作 `session_notes` 表（SOAP + 隱私控制）
-- [ ] RLS 策略：筆記可見性控制
-- [ ] 實作 Service Interface + 實現
-- [ ] 實作 Controller 層
-- [ ] Flutter UI：SOAP 筆記編輯器（可切換分享狀態）
-- [ ] Flutter UI：學員查看共享筆記
+- [x] 創建 `client_availability` 表 + RLS 策略（7 個策略）
+- [x] Model: `ClientAvailabilityModel`
+- [x] Service Interface + 實現
+- [x] Controller: `ClientAvailabilityController`（336 行）⭐ 完成（2024-12-30）
+  - CRUD、查詢、統計、衝突檢查功能
+  - 批次創建週期性時段支援
+- [ ] Flutter UI：學員設定可用時間（週期性日曆）
+- [ ] Flutter UI：教練查看學員時間偏好（日曆視圖）
+- [ ] Flutter UI：教練在學員時間內安排訓練
 
 **驗收標準**：
-- ✅ 教練撰寫 private 筆記 → 學員無法看到
-- ✅ 教練切換為 shared → 學員立即看到
-- ✅ 支援 SOAP 格式（Subjective, Objective, Assessment, Plan）
+- ✅ 學員可設定週期性時間偏好（如：週一三五 18:00-20:00）
+- ✅ 教練可看到學員的「最佳訓練時段」
+- ✅ 教練安排訓練時，系統提示學員偏好時間
+- ✅ 避免在學員 'avoid' 時段安排訓練
 
 ---
 
-### Phase 4：數據洞察與儀表板（3-4 週）
+### Phase 4A：完整手繪板（1 天）✅ 完成 + 測試通過 🎉
 
-**目標**：教練擁有完整的學員監控儀表板
+**目標**：實現專業的向量繪圖系統，支援底圖模板、可編輯筆劃、多模式切換
+
+#### A. 向量繪圖系統（核心創新）⭐⭐⭐
+
+**技術選型**：
+- **向量繪圖**（不是圖片）：座標點 → JSONB → 可重新編輯
+- **底圖分離**：PNG 底圖（Flutter Assets）+ 向量筆劃（JSONB）
+- **橡皮擦保護**：只擦除筆劃，不影響底圖
+
+**資料庫設計**：
+
+**`session_notes.content` JSONB 結構**（新增 drawing 類型）
+
+```json
+{
+  "visual_elements": [
+    {
+      "type": "drawing",
+      "template_type": "note1",
+      "drawing_data": {
+        "id": "uuid",
+        "layers": [
+          {
+            "id": "layer_1",
+            "strokes": [
+              {
+                "points": [{"x": 100.5, "y": 200.3}],
+                "color": 4278190080,
+                "stroke_width": 3.0,
+                "tool": "pencil"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+**底圖模板**（Flutter Assets）：
+- `note1.png`: 三視圖（前/側/背）
+- `note2.png`: 前視圖
+- `note3.png`: 側視圖
+- `note4.png`: 背視圖
+
+**任務清單**（✅ 100% 完成）：
+
+**後端 + Controller 層**：
+- [x] Migration SQL（146 行）
+- [x] Model: `DrawingNoteModel` + `DrawingLayer` + `DrawingStroke` + `DrawingPoint`
+- [x] Model: `DrawingElementModel` 重構（支援向量 + 圖片）
+- [x] Service Interface: `IDrawingService`
+- [x] Service 實現: `DrawingServiceSupabase`
+- [x] Controller: `DrawingController`（353 行 + 2 個子模組）⭐
+
+**Flutter UI**（7 個組件）：
+- [x] 繪圖畫布頁面（DrawingCanvasPage）
+- [x] 繪圖查看器（DrawingViewerPage - 只讀模式）
+- [x] CustomPainter（向量渲染）
+- [x] 繪圖工具列（4 工具 + 7 顏色）
+- [x] 模板選擇器（4 個按鈕）
+- [x] SOAP 編輯器整合
+- [x] 筆記詳情繪圖卡片
+
+**Bug 修復**（7 個全部完成）⭐：
+- [x] 多繪圖保存邏輯（drawing.id 唯一識別）
+- [x] 編輯保存覆蓋繪圖（重新載入最新資料）
+- [x] 照片上傳 clientId 缺失
+- [x] 工具列溢出（橫向滾動）⭐
+- [x] GPU 緩衝區錯誤（RepaintBoundary）
+- [x] 縮放衝突（模式切換）⭐⭐⭐
+- [x] Debug 輸出
+
+**技術特色**：
+- ✅ 向量繪圖（可編輯、輕量）⭐
+- ✅ JSONB 儲存（無需 Storage）
+- ✅ 底圖保護（擦除不影響底圖）⭐
+- ✅ 多繪圖支援（drawing.id 區分）
+- ✅ 模式切換（繪圖 vs 查看）⭐
+- ✅ 只讀查看器（zoom + pan）
+- ✅ 權限控制（學員只讀）
+- ✅ 手機適配（橫向滾動）⭐
+
+**驗收標準**（全部通過）：
+- ✅ 教練可在 2 分鐘內完成手繪標註
+- ✅ 橡皮擦只擦除筆劃，不會誤擦底圖
+- ✅ 多個不同模板的繪圖可以獨立保存
+- ✅ 繪圖保存後可重新編輯
+- ✅ 學員只能查看，無法編輯
+- ✅ 手機小屏幕工具列可橫向滾動
+- ✅ 繪圖模式和查看模式可自由切換
+
+**新增檔案**：17 個（Model 1 + Service 2 + Controller 3 + UI 7 + Migration 1）
+
+**完成時間**：1 天（2024-12-31）✅
+
+---
+
+### Phase 4B：教練多學員統計視圖（2-3 天）
+
+**目標**：教練可以查看所有學員的統計數據
+
+**重要發現**：v1.0 已完成完整的統計系統（完成率、訓練頻率、力量進步、肌群分析、熱力圖等 16 個模組），Phase 4B 只需要將「個人統計」擴展為「多學員統計」⭐
 
 **任務清單**：
-- [ ] 創建 `mv_client_compliance` 物化視圖
-- [ ] 創建 `mv_volume_by_muscle` 物化視圖
-- [ ] 創建 `mv_strength_progress` 物化視圖
-- [ ] 配置 `pg_cron` 定時刷新（每小時）
-- [ ] 實作風險學員識別查詢
-- [ ] Flutter UI：教練儀表板（合規率、訓練量）
-- [ ] Flutter UI：學員個人進步曲線
-- [ ] Flutter 圖表庫整合（fl_chart）
-- [ ] 性能優化：視圖索引、查詢緩存
+- [ ] 統計頁面新增學員選擇器（DropdownButton）
+  - 教練模式：顯示所有活躍學員列表
+  - 學員模式：只顯示自己的統計
+- [ ] 修改現有統計組件支援 `traineeId` 參數
+  - 複用全部 16 個統計模組（訓練頻率、力量進步、肌群分析、熱力圖等）
+  - 無需重寫，只需傳入 `userId: traineeId`
+- [ ] （可選）學員完成率總覽頁面
+  - 學員列表卡片（頭像 + 姓名 + 完成率）
+  - 點擊進入該學員的詳細統計
+  - 風險學員標記（連續 7 天未訓練 → 紅色標記）
+- [ ] 測試：教練切換查看 5-10 位學員的統計
+
+**技術優勢**：
+- ✅ 統計邏輯已完成（v1.0 完成）
+- ✅ UI 組件已完成（16 個模組）
+- ✅ 圖表庫已整合（fl_chart）
+- ✅ 資料庫索引已優化（秒開載入）
+- ✅ 只需新增學員切換功能
 
 **驗收標準**：
-- ✅ 教練打開儀表板 → 50 位學員數據秒開（<500ms）
-- ✅ 風險學員自動標紅
-- ✅ 點擊學員 → 顯示詳細訓練量、e1RM 曲線
+- ✅ 教練可以從下拉選單選擇學員
+- ✅ 切換學員後，所有統計圖表正常顯示（複用現有組件）
+- ✅ 性能良好（切換秒開，<100ms）
+- ✅ （可選）學員完成率總覽頁面，風險學員自動標紅
 
 ---
 

@@ -2,7 +2,7 @@
 
 > 完整的 Supabase PostgreSQL 資料庫架構文檔
 
-**最後更新**：2024年12月28日
+**最後更新**：2024年12月30日 - v2.0 Phase 3 完成 + 測試通過 ✅
 
 ---
 
@@ -2012,6 +2012,150 @@ ALTER TABLE workout_plans ADD COLUMN IF NOT EXISTS new_field TEXT;
 ```bash
 supabase db push
 ```
+
+---
+
+## 📦 Supabase Storage
+
+### Storage Buckets 配置（Phase 3）
+
+StrengthWise 使用 Supabase Storage 儲存視覺化筆記的圖片資料。
+
+#### Bucket 1: `session_photos`（課程照片）
+
+**用途**：教練拍攝的學員訓練照片
+
+**配置**：
+- **Public**: `false`（私有）
+- **File Size Limit**: 10 MB
+- **Allowed MIME Types**: `image/jpeg`, `image/png`
+
+**資料夾結構**：
+```
+session_photos/
+└── {coach_id}/
+    └── {session_id}/
+        ├── {timestamp}_{filename}.jpg
+        ├── {timestamp}_{filename}.png
+        └── ...
+```
+
+**Storage RLS 策略**（關鍵安全性）：
+
+```sql
+-- 1. 教練上傳照片到自己的資料夾
+-- 路徑結構: coach_id/client_id/filename.png
+CREATE POLICY "Coaches can upload photos"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'session_photos' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- 2. 教練查看自己上傳的照片
+CREATE POLICY "Coaches view own photos"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (
+  bucket_id = 'session_photos' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- 3. 學員查看「共享筆記」的照片（SELECT）
+-- 路徑格式：{coach_id}/{client_id}/{filename}
+-- 邏輯：
+--   - 學員只能看到：路徑中 client_id = 自己，且教練有「共享筆記」給他
+-- 已知限制：如果教練有任何一個共享筆記給學員，學員將能看到該教練為該學員上傳的所有照片，
+--           即使某些照片屬於私人筆記。這是因為 Storage RLS 無法精確到筆記 ID 層級。
+--           若需更精確控制，需改用 Signed URL 方案。
+CREATE POLICY "Clients can view shared session photos"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (
+  bucket_id = 'session_photos'
+  AND ((storage.foldername(name))[2] = (auth.uid())::text) -- client_id 必須是當前用戶
+  AND (EXISTS (
+    SELECT 1 FROM public.session_notes sn
+    WHERE (
+      (sn.coach_id::text = (storage.foldername(name))[1]) -- coach_id 匹配
+      AND (sn.client_id = auth.uid())                     -- client_id 匹配
+      AND (sn.visibility = 'shared')                      -- 筆記必須是共享的
+    )
+  ))
+);
+```
+
+#### Bucket 2: `coach_drawings`（標註圖片）
+
+**用途**：教練標註後的圖片（繪圖/箭頭/文字）
+
+**配置**：
+- **Public**: `false`（私有）
+- **File Size Limit**: 5 MB
+- **Allowed MIME Types**: `image/png`（支援透明度）
+
+**資料夾結構**：
+```
+coach_drawings/
+└── {coach_id}/
+    └── {session_id}/
+        ├── {timestamp}_drawing.png
+        └── ...
+```
+
+#### Bucket 3: `voice_notes`（語音筆記）
+
+**用途**：教練錄製的語音筆記（Phase 4）
+
+**配置**：
+- **Public**: `false`（私有）
+- **File Size Limit**: 50 MB
+- **Allowed MIME Types**: `audio/mpeg`, `audio/wav`, `audio/m4a`
+
+**資料夾結構**：
+```
+voice_notes/
+└── {coach_id}/
+    └── {session_id}/
+        ├── {timestamp}_voice.m4a
+        └── ...
+```
+
+### Storage 使用示例
+
+**Dart 上傳示例**：
+```dart
+final storage = Supabase.instance.client.storage.from('session_photos');
+final file = File(imagePath);
+final fileName = '${DateTime.now().millisecondsSinceEpoch}_$originalName';
+final storagePath = '$coachId/$sessionId/$fileName';
+
+await storage.upload(
+  storagePath,
+  file,
+  fileOptions: FileOptions(contentType: 'image/jpeg'),
+);
+```
+
+**Dart 獲取 Signed URL**（有效期 1 小時）：
+```dart
+final url = await storage.createSignedUrl(storagePath, 3600);
+```
+
+### Storage 限制與最佳實踐
+
+**限制**：
+- 單檔最大 50 MB
+- 總容量視 Supabase 訂閱方案而定
+- Signed URL 有效期最長 1 年
+
+**最佳實踐**：
+- ✅ 上傳前壓縮圖片（建議 < 2 MB）
+- ✅ 使用 Signed URL 保護私有內容
+- ✅ 定期清理過期圖片
+- ✅ 設置合理的 RLS 策略
+- ✅ 監控 Storage 使用量
 
 ---
 

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../models/statistics_model.dart';
 import '../../models/exercise_model.dart';
 import '../../models/favorite_exercise_model.dart';
+import '../../utils/datetime_utils.dart';
 import '../interfaces/i_statistics_service.dart';
 import '../interfaces/i_exercise_service.dart';
 import '../core/error_handling_service.dart';
@@ -31,7 +32,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
   final Map<String, Exercise> _exerciseCache = {};
 
   // ⚡ ExerciseWithRecord 列表快取（避免重複統計）
-  static const int _exerciseCacheVersion = 2;
+  static const int _exerciseCacheVersion = 3; // 🆕 增加版本號清除舊快取
   List<ExerciseWithRecord>? _cachedExercisesWithRecords;
   String? _cachedExercisesUserId;
   Set<String>? _cachedSystemExerciseIds;
@@ -371,21 +372,21 @@ class StatisticsServiceSupabase implements IStatisticsService {
     String? bodyPart,
     String? specificMuscle,
     String? equipmentCategory,
+    TimeRange? timeRange, // 時間範圍過濾（可選）
   }) async {
     try {
       // ⚡ 優化：如果有快取的完整列表，直接從快取過濾
-      if (_cachedExercisesWithRecords != null &&
+      // ⚠️ 注意：如果傳入 timeRange，跳過快取（因為快取是全時間範圍的）
+      if (timeRange == null &&
+          _cachedExercisesWithRecords != null &&
           _cachedExercisesUserId == userId &&
           _cachedExercisesVersion == _exerciseCacheVersion) {
-        print(
-            '[STATISTICS] ✨ 從快取過濾動作列表（${_cachedExercisesWithRecords!.length} 個）');
         var filtered = _cachedExercisesWithRecords!;
 
         // 客戶端過濾
         if (trainingType != null) {
           if (trainingType == '自訂') {
             filtered = filtered.where((e) => e.isCustom).toList();
-            print('[STATISTICS] 過濾出 ${filtered.length} 個自訂動作');
           } else {
             filtered = filtered
                 .where((e) => e.trainingType == trainingType && !e.isCustom)
@@ -396,18 +397,27 @@ class StatisticsServiceSupabase implements IStatisticsService {
           filtered = filtered.where((e) => e.bodyPart == bodyPart).toList();
         }
 
-        print('[STATISTICS] ✅ 過濾後剩餘 ${filtered.length} 個動作');
         return filtered;
       }
 
-      print('[STATISTICS] 🔍 首次查詢，建立動作記錄快取...');
 
-      // 查詢所有已完成的訓練計劃
-      final response = await _supabase
+      // 查詢所有訓練計劃（包括部分完成的）
+      // Parser 會過濾出 set.completed = true 的組
+      var query = _supabase
           .from('workout_plans')
-          .select('id, exercises, completed_date, trainee_id')
-          .eq('trainee_id', userId)
-          .eq('completed', true);
+          .select('id, exercises, completed_date, updated_at, scheduled_date, created_at, trainee_id')
+          .eq('trainee_id', userId);
+
+      // 根據時間範圍過濾（使用訓練實際日期，而非更新日期）
+      // 優先順序：completed_date > scheduled_date > created_at
+      if (timeRange != null) {
+        // ⚠️ Supabase 不支援 COALESCE，所以需要在客戶端過濾
+        // 先用 updated_at 擴大範圍，再在客戶端精確過濾
+        final expandedStartDate = timeRange.startDate.subtract(const Duration(days: 365));
+        query = query.gte('updated_at', expandedStartDate.toIso8601String());
+      }
+
+      final response = await query;
 
       final workoutPlans = response as List<dynamic>;
 
@@ -417,9 +427,47 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
       // 統計每個動作的訓練數據
       final Map<String, _ExerciseRecordData> exerciseStats = {};
+      int filteredCount = 0;
+
+      print('[GET_EXERCISES] 查詢到 ${workoutPlans.length} 個訓練計劃');
+      if (timeRange != null) {
+        print('[GET_EXERCISES] 時間範圍: ${timeRange.startDate.toLocal()} ~ ${timeRange.endDate.toLocal()}');
+      }
 
       for (var planData in workoutPlans) {
         final data = planData as Map<String, dynamic>;
+        
+        // ⚡ 客戶端時間範圍過濾
+        // 優先順序：completed_date > scheduled_date > created_at
+        if (timeRange != null) {
+          final completedDateStr = data['completed_date'] as String?;
+          final scheduledDateStr = data['scheduled_date'] as String?;
+          final createdAtStr = data['created_at'] as String?;
+          
+          DateTime? trainingDate;
+          if (completedDateStr != null) {
+            trainingDate = DateTime.parse(completedDateStr);
+          } else if (scheduledDateStr != null) {
+            trainingDate = DateTime.parse(scheduledDateStr);
+          } else if (createdAtStr != null) {
+            trainingDate = DateTime.parse(createdAtStr);
+          }
+          
+          // ⚠️ 重要：使用 UTC 日期（只比較年月日，忽略時間）
+          // 用戶期望：訓練計劃按 UTC 日期分組，不考慮本地時區
+          if (trainingDate != null) {
+            // 使用 DateTimeUtils 統一工具類進行時間範圍檢查
+            if (!DateTimeUtils.isWithinUtcDateRange(
+              trainingDate,
+              timeRange.startDate,
+              timeRange.endDate,
+            )) {
+              filteredCount++;
+              continue;
+            }
+          }
+        }
+        
         final exercises = data['exercises'] as List<dynamic>? ?? [];
 
         for (var exerciseData in exercises) {
@@ -431,43 +479,64 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
           if (exerciseId == null) continue;
 
+          // ⚡ 先檢查是否有完成的組數
+          bool hasCompletedSets = false;
+          double maxWeight = 0;
+          int completedSetsCount = 0;
+
+          for (var set in sets) {
+            final setMap = set as Map<String, dynamic>;
+            final isCompleted = setMap['completed'] as bool? ?? false;
+            if (isCompleted) {
+              hasCompletedSets = true;
+              completedSetsCount++;
+              final weight = (setMap['weight'] as num?)?.toDouble() ?? 0;
+              if (weight > maxWeight) {
+                maxWeight = weight;
+              }
+            }
+          }
+
+          // ⚠️ 只統計有完成組數的動作
+          if (!hasCompletedSets) continue;
+
           // 累計訓練數據
           if (!exerciseStats.containsKey(exerciseId)) {
-            // 🐛 修復：使用 completed_date 或 updated_at，並處理 null 情況
-            final dateStr = data['completed_date'] as String? ?? 
-                           data['updated_at'] as String? ?? 
+            // ⚡ 計算訓練實際日期（優先順序：completed_date > scheduled_date > created_at）
+            final completedDateStr = data['completed_date'] as String?;
+            final scheduledDateStr = data['scheduled_date'] as String?;
+            final createdAtStr = data['created_at'] as String?;
+            final dateStr = completedDateStr ?? 
+                           scheduledDateStr ?? 
+                           createdAtStr ?? 
                            DateTime.now().toIso8601String();
             
             exerciseStats[exerciseId] = _ExerciseRecordData(
               exerciseId: exerciseId,
               exerciseName: exerciseName,
               lastTrainingDate: DateTime.parse(dateStr),
-              maxWeight: 0,
-              totalSets: 0,
+              maxWeight: maxWeight,
+              totalSets: completedSetsCount,
             );
-          }
+          } else {
+            final stat = exerciseStats[exerciseId]!;
+            stat.totalSets += completedSetsCount;
 
-          final stat = exerciseStats[exerciseId]!;
-          stat.totalSets += sets.length;
-
-          // 🐛 修復：使用 completed_date 或 updated_at，並處理 null 情況
-          final dateStr = data['completed_date'] as String? ?? 
-                         data['updated_at'] as String?;
-          if (dateStr != null) {
-            final updatedAt = DateTime.parse(dateStr);
-            if (updatedAt.isAfter(stat.lastTrainingDate)) {
-              stat.lastTrainingDate = updatedAt;
-            }
-          }
-
-          for (var set in sets) {
-            final setMap = set as Map<String, dynamic>;
-            final isCompleted = setMap['completed'] as bool? ?? false;
-            if (isCompleted) {
-              final weight = (setMap['weight'] as num?)?.toDouble() ?? 0;
-              if (weight > stat.maxWeight) {
-                stat.maxWeight = weight;
+            // ⚡ 更新最後訓練日期（優先順序：completed_date > scheduled_date > created_at）
+            final completedDateStr = data['completed_date'] as String?;
+            final scheduledDateStr = data['scheduled_date'] as String?;
+            final createdAtStr = data['created_at'] as String?;
+            final dateStr = completedDateStr ?? scheduledDateStr ?? createdAtStr;
+            if (dateStr != null) {
+              final trainingDate = DateTime.parse(dateStr);
+              if (trainingDate.isAfter(stat.lastTrainingDate)) {
+                stat.lastTrainingDate = trainingDate;
               }
+            }
+
+            // 更新最大重量
+            if (maxWeight > stat.maxWeight) {
+              stat.maxWeight = maxWeight;
             }
           }
         }
@@ -514,13 +583,41 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
       results.sort((a, b) => b.lastTrainingDate.compareTo(a.lastTrainingDate));
 
-      // ⚡ 快取完整結果
-      _cachedExercisesWithRecords = results;
-      _cachedExercisesUserId = userId;
-      _cachedExercisesVersion = _exerciseCacheVersion;
-      print('[STATISTICS] ✅ 已快取 ${results.length} 個動作記錄（版本 $_exerciseCacheVersion）');
+      // ⚡ 快取完整結果（僅當沒有 timeRange 時）
+      if (timeRange == null) {
+        _cachedExercisesWithRecords = results;
+        _cachedExercisesUserId = userId;
+        _cachedExercisesVersion = _exerciseCacheVersion;
+      }
 
-      return results;
+      if (timeRange != null) {
+        print('[GET_EXERCISES] 過濾掉 $filteredCount/${workoutPlans.length} 個訓練計劃');
+        print('[GET_EXERCISES] 統計到 ${exerciseStats.length} 個不同的動作');
+      }
+
+      // ⚡ 客戶端過濾（與快取邏輯一致）
+      var filtered = results;
+      if (trainingType != null) {
+        if (trainingType == '自訂') {
+          filtered = filtered.where((e) => e.isCustom).toList();
+        } else {
+          filtered = filtered
+              .where((e) => e.trainingType == trainingType && !e.isCustom)
+              .toList();
+        }
+      }
+      if (bodyPart != null) {
+        filtered = filtered.where((e) => e.bodyPart == bodyPart).toList();
+      }
+
+      print('[GET_EXERCISES] 返回 ${filtered.length} 個動作');
+      if (trainingType != null) print('   過濾條件 - 訓練類型: $trainingType');
+      if (bodyPart != null) print('   過濾條件 - 身體部位: $bodyPart');
+      for (var r in filtered.take(3)) {
+        print('   - ${r.exerciseName} (${r.isCustom ? "自訂" : "系統"}, ${r.bodyPart})');
+      }
+
+      return filtered;
     } catch (e) {
       _errorService.logError('獲取有記錄的動作列表失敗: $e');
       return [];
@@ -697,16 +794,12 @@ class StatisticsServiceSupabase implements IStatisticsService {
         exerciseIds.where((id) => !_exerciseCache.containsKey(id)).toList();
 
     if (uncachedIds.isEmpty) {
-      print('[STATISTICS] 所有動作已在快取中');
       return;
     }
-
-    print('[STATISTICS] 批量載入 ${uncachedIds.length} 個動作分類');
 
     try {
       final exercises = await _exerciseService.getExercisesByIds(uncachedIds.cast<String>());
       _exerciseCache.addAll(exercises);
-      print('[STATISTICS] 成功批量載入 ${exercises.length} 個動作分類');
     } catch (e) {
       _errorService.logError('批量載入動作分類失敗: $e', type: 'StatisticsServiceError');
     }

@@ -19,18 +19,20 @@ CREATE TABLE IF NOT EXISTS daily_workout_summary (
   date DATE NOT NULL,
   
   -- 訓練統計
-  workout_count INT DEFAULT 0,              -- 當天完成的訓練次數
-  total_exercises INT DEFAULT 0,            -- 總動作數
-  total_sets INT DEFAULT 0,                 -- 總組數
-  total_volume DECIMAL(10,2) DEFAULT 0,     -- 總訓練量（kg）
+  workout_count INT DEFAULT 0,                    -- 當天有訓練數據的計劃總數（不管完成狀態）
+  completed_workout_count INT DEFAULT 0,          -- 完整完成的訓練計劃數（completed = true）
+  partial_workout_count INT DEFAULT 0,            -- 部分完成的訓練計劃數（completed = false 但有完成組）
+  total_exercises INT DEFAULT 0,                  -- 總動作數
+  total_sets INT DEFAULT 0,                       -- 總組數
+  total_volume DECIMAL(10,2) DEFAULT 0,           -- 總訓練量（kg）
   
   -- 訓練類型分布
-  resistance_training_count INT DEFAULT 0,  -- 阻力訓練次數
-  cardio_count INT DEFAULT 0,               -- 心肺訓練次數
-  mobility_count INT DEFAULT 0,             -- 活動度訓練次數
+  resistance_training_count INT DEFAULT 0,        -- 阻力訓練次數
+  cardio_count INT DEFAULT 0,                     -- 心肺訓練次數
+  mobility_count INT DEFAULT 0,                   -- 活動度訓練次數
   
   -- 時間統計
-  total_training_time INT DEFAULT 0,        -- 總訓練時間（分鐘）
+  total_training_time INT DEFAULT 0,              -- 總訓練時間（分鐘）
   
   -- 元數據
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -94,93 +96,146 @@ END $$;
 -- ============================================================================
 -- 3. 自動更新每日彙總的觸發器
 -- ============================================================================
+-- 
+-- ✅ 更新時間：2024-12-28
+-- ✅ 核心改變：
+--   1. 不依賴 workout_plans.completed 狀態
+--   2. 只統計 set_completed = 'true' 的組
+--   3. 區分「完整完成」和「部分完成」的訓練計劃
+--   4. 支援動態更新（每次更新都重新聚合該日期的所有數據）
+-- 
+-- 統計邏輯：
+--   - workout_count: 有訓練數據的計劃總數
+--   - completed_workout_count: completed = true 的計劃數
+--   - partial_workout_count: completed = false 但有完成組的計劃數
+--   - total_exercises/sets/volume: 基於所有 set_completed = 'true' 的組
+-- ============================================================================
 
--- 觸發器函式：更新每日彙總
 CREATE OR REPLACE FUNCTION update_daily_workout_summary()
 RETURNS TRIGGER AS $$
 DECLARE
   training_date DATE;
-  v_resistance_count INT := 0;  -- ✅ 重新命名避免衝突
-  v_cardio_count INT := 0;      -- ✅ 重新命名避免衝突
-  v_mobility_count INT := 0;    -- ✅ 重新命名避免衝突
-  exercise_item JSONB;
 BEGIN
-  -- 取得訓練日期
-  IF NEW.completed_date IS NOT NULL THEN
-    training_date := NEW.completed_date::DATE;
-  ELSE
-    training_date := NEW.updated_at::DATE;
-  END IF;
-  
-  -- 如果不是已完成的訓練，跳過
-  IF NEW.completed = FALSE THEN
-    RETURN NEW;
-  END IF;
-  
-  -- 計算訓練類型分布（遍歷 JSONB 陣列）
-  FOR exercise_item IN SELECT * FROM jsonb_array_elements(NEW.exercises)
-  LOOP
-    CASE (exercise_item->>'trainingType')
-      WHEN '阻力訓練' THEN v_resistance_count := v_resistance_count + 1;
-      WHEN '心肺適能訓練' THEN v_cardio_count := v_cardio_count + 1;
-      WHEN '活動度與伸展' THEN v_mobility_count := v_mobility_count + 1;
-      ELSE NULL;
-    END CASE;
-  END LOOP;
-  
-  -- 插入或更新彙總記錄
+  -- 使用 completed_date 或 updated_at 作為訓練日期
+  training_date := COALESCE(NEW.completed_date::DATE, NEW.updated_at::DATE);
+
+  -- 重新聚合該日期的所有訓練數據（基於 set_completed）
   INSERT INTO daily_workout_summary (
-    user_id,
-    date,
+    user_id, 
+    date, 
     workout_count,
-    total_exercises,
-    total_sets,
+    completed_workout_count,
+    partial_workout_count,
+    total_exercises, 
+    total_sets, 
     total_volume,
-    resistance_training_count,
-    cardio_count,
-    mobility_count,
+    resistance_training_count, 
+    cardio_count, 
+    mobility_count, 
     updated_at
-  ) VALUES (
-    NEW.trainee_id,
-    training_date,
-    1,
-    COALESCE(NEW.total_exercises, 0)::INT,
-    COALESCE(NEW.total_sets, 0)::INT,
-    COALESCE(NEW.total_volume, 0)::DECIMAL(10,2),
-    v_resistance_count,
-    v_cardio_count,
-    v_mobility_count,
-    NOW()
   )
-  ON CONFLICT (user_id, date)
-  DO UPDATE SET
-    workout_count = daily_workout_summary.workout_count + 1,
-    total_exercises = daily_workout_summary.total_exercises + COALESCE(NEW.total_exercises, 0)::INT,
-    total_sets = daily_workout_summary.total_sets + COALESCE(NEW.total_sets, 0)::INT,
-    total_volume = daily_workout_summary.total_volume + COALESCE(NEW.total_volume, 0)::DECIMAL(10,2),
-    resistance_training_count = daily_workout_summary.resistance_training_count + v_resistance_count,
-    cardio_count = daily_workout_summary.cardio_count + v_cardio_count,
-    mobility_count = daily_workout_summary.mobility_count + v_mobility_count,
-    updated_at = NOW();
+  SELECT
+    wp.trainee_id AS user_id,
+    COALESCE(wp.completed_date::DATE, wp.updated_at::DATE) AS date,
+    
+    -- 總訓練計劃數（有訓練數據的）
+    COUNT(DISTINCT wp.id) AS workout_count,
+    
+    -- 完整完成的訓練計劃數（completed = true）
+    COUNT(DISTINCT CASE WHEN wp.completed = true THEN wp.id END) AS completed_workout_count,
+    
+    -- 部分完成的訓練計劃數（completed = false 但有完成組）
+    COUNT(DISTINCT 
+      CASE 
+        WHEN wp.completed = false 
+        AND EXISTS (
+          SELECT 1 
+          FROM jsonb_array_elements(wp.exercises) AS ex,
+          jsonb_array_elements(ex->'sets') AS s
+          WHERE s->>'completed' = 'true'
+        )
+        THEN wp.id 
+      END
+    ) AS partial_workout_count,
+    
+    -- 統計有至少 1 組完成的不同動作數
+    (
+      SELECT COUNT(DISTINCT ex->>'exerciseId')
+      FROM workout_plans wp2,
+      LATERAL jsonb_array_elements(wp2.exercises) AS ex,
+      LATERAL jsonb_array_elements(ex->'sets') AS s
+      WHERE wp2.trainee_id = wp.trainee_id
+        AND COALESCE(wp2.completed_date::DATE, wp2.updated_at::DATE) = training_date
+        AND s->>'completed' = 'true'
+    )::INT AS total_exercises,
+    
+    -- 統計完成的組數
+    (
+      SELECT COUNT(*)
+      FROM workout_plans wp2,
+      LATERAL jsonb_array_elements(wp2.exercises) AS ex,
+      LATERAL jsonb_array_elements(ex->'sets') AS s
+      WHERE wp2.trainee_id = wp.trainee_id
+        AND COALESCE(wp2.completed_date::DATE, wp2.updated_at::DATE) = training_date
+        AND s->>'completed' = 'true'
+    )::INT AS total_sets,
+    
+    -- 統計完成組的總訓練量
+    (
+      SELECT COALESCE(SUM((s->>'weight')::DECIMAL * (s->>'reps')::INT), 0)
+      FROM workout_plans wp2,
+      LATERAL jsonb_array_elements(wp2.exercises) AS ex,
+      LATERAL jsonb_array_elements(ex->'sets') AS s
+      WHERE wp2.trainee_id = wp.trainee_id
+        AND COALESCE(wp2.completed_date::DATE, wp2.updated_at::DATE) = training_date
+        AND s->>'completed' = 'true'
+        AND (s->>'weight')::DECIMAL > 0
+    )::DECIMAL(10,2) AS total_volume,
+    
+    0 AS resistance_training_count,
+    0 AS cardio_count,
+    0 AS mobility_count,
+    NOW()
+  FROM workout_plans wp
+  WHERE wp.trainee_id = NEW.trainee_id
+    AND COALESCE(wp.completed_date::DATE, wp.updated_at::DATE) = training_date
+  GROUP BY wp.trainee_id, date
   
+  ON CONFLICT (user_id, date) DO UPDATE SET
+    workout_count = EXCLUDED.workout_count,
+    completed_workout_count = EXCLUDED.completed_workout_count,
+    partial_workout_count = EXCLUDED.partial_workout_count,
+    total_exercises = EXCLUDED.total_exercises,
+    total_sets = EXCLUDED.total_sets,
+    total_volume = EXCLUDED.total_volume,
+    updated_at = NOW();
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- 建立觸發器
+-- 建立觸發器（對任何 INSERT/UPDATE 都觸發）
 DROP TRIGGER IF EXISTS trigger_update_daily_summary ON workout_plans;
 CREATE TRIGGER trigger_update_daily_summary
-  AFTER INSERT OR UPDATE OF completed, exercises, total_volume, total_sets
+  AFTER INSERT OR UPDATE
   ON workout_plans
   FOR EACH ROW
   EXECUTE FUNCTION update_daily_workout_summary();
 
 DO $$ BEGIN
   RAISE NOTICE '每日彙總自動更新觸發器建立完成 ✓';
+  RAISE NOTICE '  - 支援基於組完成狀態（set_completed）的統計';
+  RAISE NOTICE '  - 區分完整完成和部分完成的訓練計劃';
+  RAISE NOTICE '  - 自動重新聚合同一天的所有數據';
 END $$;
 
 -- ============================================================================
 -- 4. 自動更新個人記錄（PR）的觸發器
+-- 
+-- ⚠️ 重要修改（2025-12-29）：
+-- - 移除 "completed = TRUE" 檢查
+-- - 改為基於組完成狀態（set.completed）統計 PR
+-- - 這樣部分完成的訓練計劃也會更新 PR
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION update_personal_records()
@@ -194,12 +249,8 @@ DECLARE
   set_item JSONB;
   current_weight DECIMAL;
   current_reps INT;
+  has_completed_set BOOLEAN;
 BEGIN
-  -- 如果不是已完成的訓練，跳過
-  IF NEW.completed = FALSE THEN
-    RETURN NEW;
-  END IF;
-  
   -- 遍歷所有動作
   FOR exercise_item IN SELECT * FROM jsonb_array_elements(NEW.exercises)
   LOOP
@@ -207,12 +258,14 @@ BEGIN
     exercise_name_val := exercise_item->>'exerciseName';
     max_weight_val := 0;
     max_reps_val := 0;
+    has_completed_set := FALSE;
     
     -- 遍歷所有組數，找出最大重量和次數
     FOR set_item IN SELECT * FROM jsonb_array_elements(exercise_item->'sets')
     LOOP
       -- 只統計已完成的組
       IF (set_item->>'completed')::BOOLEAN = TRUE THEN
+        has_completed_set := TRUE;
         current_weight := COALESCE((set_item->>'weight')::DECIMAL, 0);
         current_reps := COALESCE((set_item->>'reps')::INT, 0);
         
@@ -226,14 +279,15 @@ BEGIN
       END IF;
     END LOOP;
     
-    -- 更新 PR 記錄（只在新記錄更高時更新）
-    IF max_weight_val > 0 OR max_reps_val > 0 THEN
+    -- 只在該動作有至少一組完成時才更新 PR
+    IF has_completed_set AND (max_weight_val > 0 OR max_reps_val > 0) THEN
       INSERT INTO personal_records (
         user_id,
         exercise_id,
         exercise_name,
         max_weight,
         max_reps,
+        max_volume,
         achieved_date,
         workout_plan_id,
         updated_at
@@ -243,6 +297,7 @@ BEGIN
         exercise_name_val,
         max_weight_val,
         max_reps_val,
+        max_weight_val * max_reps_val,
         COALESCE(NEW.completed_date::DATE, NEW.updated_at::DATE),
         NEW.id,
         NOW()
@@ -251,6 +306,7 @@ BEGIN
       DO UPDATE SET
         max_weight = GREATEST(personal_records.max_weight, max_weight_val),
         max_reps = GREATEST(personal_records.max_reps, max_reps_val),
+        max_volume = GREATEST(personal_records.max_volume, max_weight_val * max_reps_val),
         achieved_date = CASE 
           WHEN max_weight_val > personal_records.max_weight 
             OR max_reps_val > personal_records.max_reps 
@@ -389,24 +445,20 @@ END $$;
 -- 8. 初始化現有數據的彙總
 -- ============================================================================
 
--- 為現有已完成的訓練記錄生成彙總數據
+-- 為現有訓練記錄生成彙總數據
 DO $$
 DECLARE
   processed_count INT := 0;
 BEGIN
-  -- 使用觸發器函數處理現有數據
-  -- 注意：這可能需要一些時間，取決於數據量
-  
-  -- 刪除現有彙總（重新計算）
-  DELETE FROM daily_workout_summary;
-  DELETE FROM personal_records;
-  
   RAISE NOTICE '開始初始化現有數據的彙總...';
   
-  -- 處理所有已完成的訓練計劃
-  UPDATE workout_plans 
-  SET updated_at = updated_at 
-  WHERE completed = TRUE;
+  -- 刪除現有彙總（重新計算）
+  TRUNCATE TABLE daily_workout_summary;
+  TRUNCATE TABLE personal_records;
+  
+  -- 觸發所有訓練記錄重新計算統計
+  -- 注意：這會觸發 trigger_update_daily_summary 和 trigger_update_pr
+  UPDATE workout_plans SET updated_at = NOW();
   
   -- 統計處理數量
   GET DIAGNOSTICS processed_count = ROW_COUNT;
@@ -430,16 +482,24 @@ DO $$ BEGIN
   RAISE NOTICE '  - 2 個 RPC 統計函數';
   RAISE NOTICE '  - 1 個訓練頻率分析視圖';
   RAISE NOTICE '';
+  RAISE NOTICE '統計邏輯更新（2024-12-28）：';
+  RAISE NOTICE '  ✅ 基於組完成狀態（set_completed）統計';
+  RAISE NOTICE '  ✅ 區分完整完成和部分完成的訓練計劃';
+  RAISE NOTICE '  ✅ 支援動態更新（每次更新都重新聚合）';
+  RAISE NOTICE '  ✅ 不依賴 workout_plans.completed 狀態';
+  RAISE NOTICE '';
   RAISE NOTICE '測試指令：';
-  RAISE NOTICE '  SELECT * FROM daily_workout_summary LIMIT 5;';
-  RAISE NOTICE '  SELECT * FROM personal_records LIMIT 5;';
+  RAISE NOTICE '  SELECT * FROM daily_workout_summary ORDER BY date DESC LIMIT 5;';
+  RAISE NOTICE '  SELECT * FROM personal_records ORDER BY max_weight DESC LIMIT 5;';
   RAISE NOTICE '  SELECT * FROM get_training_statistics(''your_user_id''::UUID);';
   RAISE NOTICE '  SELECT * FROM v_training_frequency WHERE user_id = ''your_user_id''::UUID;';
   RAISE NOTICE '';
   RAISE NOTICE '預期效益：';
-  RAISE NOTICE '  - 統計查詢：從秒級降至毫秒級（提升 60-80%%)';
-  RAISE NOTICE '  - 自動維護：新增訓練時自動更新統計';
+  RAISE NOTICE '  - 統計查詢：從秒級降至毫秒級（提升 60-80%）';
+  RAISE NOTICE '  - 自動維護：新增/更新訓練時自動更新統計';
   RAISE NOTICE '  - PR 追蹤：實時更新個人最佳記錄';
+  RAISE NOTICE '  - 準確統計：支援部分完成的訓練計劃';
   RAISE NOTICE '';
 END $$;
+
 

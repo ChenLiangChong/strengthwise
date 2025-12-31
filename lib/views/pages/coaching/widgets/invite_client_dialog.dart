@@ -190,6 +190,28 @@ class _InviteClientDialogState extends State<InviteClientDialog> {
                   ),
                 ],
               ),
+              
+              const SizedBox(height: 8),
+              
+              // 第三個測試帳號（新增）
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    _clientIdController.text =
+                        'ebfb0df3-c204-4113-b265-19eb1f125aa2';
+                    _notesController.text = '測試學員 3 (chenliangyun850414@gmail.com)';
+                  },
+                  icon: const Icon(Icons.person_add, size: 18),
+                  label:
+                      const Text('測試帳號 3', style: TextStyle(fontSize: 13)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.purple,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ),
 
               const SizedBox(height: 8),
 
@@ -206,7 +228,7 @@ class _InviteClientDialogState extends State<InviteClientDialog> {
                     SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        '開發測試：藍色=良朱帳號 | 綠色=Charlie帳號',
+                        '開發測試：藍色=良朱 | 綠色=Charlie | 紫色=新帳號',
                         style: TextStyle(fontSize: 11, color: Colors.orange),
                       ),
                     ),

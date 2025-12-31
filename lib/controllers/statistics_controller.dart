@@ -95,6 +95,37 @@ class StatisticsController extends ChangeNotifier implements IStatisticsControll
       // 載入統計數據
       _statisticsData = await _statisticsService.getStatistics(_userId!, timeRange);
 
+      // 🐛 DEBUG: 輸出統計數據詳情
+      if (kDebugMode) {
+        print('\n========== 統計頁面 DEBUG ==========');
+        print('📊 時間範圍: ${timeRange.displayName}');
+        print('📊 訓練次數: ${_statisticsData?.frequency.totalWorkouts ?? 0}');
+        print('📊 訓練天數: ${_statisticsData?.volumeHistory.length ?? 0}');
+        print('📊 個人記錄數量: ${_statisticsData?.personalRecords.length ?? 0}');
+        
+        // 輸出個人記錄的 body_part 分布
+        if (_statisticsData != null && _statisticsData!.personalRecords.isNotEmpty) {
+          final bodyPartCount = <String, int>{};
+          for (var pr in _statisticsData!.personalRecords) {
+            bodyPartCount[pr.bodyPart] = (bodyPartCount[pr.bodyPart] ?? 0) + 1;
+          }
+          print('📊 個人記錄 body_part 分布:');
+          bodyPartCount.forEach((bodyPart, count) {
+            print('   - $bodyPart: $count 筆');
+          });
+        }
+        
+        // 輸出訓練量趨勢數據
+        if (_statisticsData != null && _statisticsData!.volumeHistory.isNotEmpty) {
+          print('📊 訓練量趨勢數據點:');
+          for (var point in _statisticsData!.volumeHistory) {
+            print('   - ${point.formattedDate}: 訓練 ${point.workoutCount} 次, 訓練量 ${point.totalVolume.toStringAsFixed(0)} kg');
+          }
+        }
+        
+        print('====================================\n');
+      }
+
       // 生成訓練建議
       _suggestions = _statisticsService.getTrainingSuggestions(_statisticsData!);
 

@@ -66,3 +66,22 @@ export 'note/drawing_point.dart';
 export 'favorite/favorite_exercise.dart';
 export 'favorite/exercise_with_record.dart';
 
+// ========== Phase 2: 教練學員系統 ==========
+
+/// 教練-學員綁定關係
+export 'coaching_relationship_model.dart';
+
+/// 預約系統
+export 'appointment_model.dart';
+export 'availability_slot_model.dart';
+
+/// 學員時間偏好
+export 'client_availability_model.dart';
+
+// ========== Phase 3: 視覺化筆記系統 ==========
+
+/// 課程筆記
+export 'session_note/session_note_model.dart';
+export 'session_note/soap_note_model.dart';
+export 'session_note/visual_element_model.dart';
+

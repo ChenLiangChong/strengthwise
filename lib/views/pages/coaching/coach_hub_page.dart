@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../appointments/coach_slots_management_page.dart';
 import '../appointments/appointments_list_page.dart';
+import '../notes/session_notes_list_page.dart';
 import 'client_management_page.dart';
 
 /// 教練功能整合頁面（Hub Page）
@@ -9,7 +10,7 @@ import 'client_management_page.dart';
 /// 1. 學員管理（Phase 1）
 /// 2. 時段管理（Phase 2）
 /// 3. 我的預約（Phase 2 - 教練視角）
-/// 4. 未來：收入統計、課程筆記等
+/// 4. 課程筆記（Phase 3）⭐ 新增
 class CoachHubPage extends StatefulWidget {
   const CoachHubPage({super.key});
 
@@ -24,7 +25,7 @@ class _CoachHubPageState extends State<CoachHubPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this); // 3 → 4
   }
 
   @override
@@ -44,6 +45,7 @@ class _CoachHubPageState extends State<CoachHubPage>
             Tab(icon: Icon(Icons.people), text: '學員管理'),
             Tab(icon: Icon(Icons.schedule), text: '時段管理'),
             Tab(icon: Icon(Icons.list_alt), text: '我的預約'),
+            Tab(icon: Icon(Icons.note_alt), text: '課程筆記'), // ⭐ 新增
           ],
         ),
       ),
@@ -58,6 +60,9 @@ class _CoachHubPageState extends State<CoachHubPage>
 
           // Tab 3: 我的預約（Phase 2 - 教練視角）
           AppointmentsListPage(isCoachMode: true),
+
+          // Tab 4: 課程筆記（Phase 3）⭐ 新增
+          SessionNotesListPage(),
         ],
       ),
     );

@@ -18,6 +18,10 @@ class StatisticsCalculator {
   }) {
     final totalWorkouts = currentStats.fold<int>(
         0, (sum, row) => sum + (row['workout_count'] as int? ?? 0));
+    final completedWorkouts = currentStats.fold<int>(
+        0, (sum, row) => sum + (row['completed_workout_count'] as int? ?? 0));
+    final partialWorkouts = currentStats.fold<int>(
+        0, (sum, row) => sum + (row['partial_workout_count'] as int? ?? 0));
     final previousWorkouts = previousStats.fold<int>(
         0, (sum, row) => sum + (row['workout_count'] as int? ?? 0));
     final trainingDays = currentStats.length;
@@ -27,6 +31,9 @@ class StatisticsCalculator {
 
     return TrainingFrequency(
       totalWorkouts: totalWorkouts,
+      completedWorkouts: completedWorkouts,
+      partialWorkouts: partialWorkouts,
+      trainingDays: trainingDays,
       totalHours: totalWorkouts.toDouble(),
       averageHours: trainingDays > 0 ? totalWorkouts / trainingDays : 0.0,
       consecutiveDays: consecutiveDays,

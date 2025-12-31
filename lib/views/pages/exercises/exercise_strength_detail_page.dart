@@ -53,17 +53,18 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
     });
 
     try {
-      // 載入力量進步數據
+      // ✅ 載入更多力量進步數據（增加 limit 確保包含目標動作）
+      // 或者直接載入所有動作的數據
       final progressList = await _statisticsService.getStrengthProgress(
         widget.userId,
         widget.timeRange,
-        limit: 100,
+        limit: 1000,  // ← 增加 limit 以包含所有動作
       );
 
       // 找到目標動作
       final progress = progressList.firstWhere(
         (p) => p.exerciseId == widget.exerciseId,
-        orElse: () => throw Exception('找不到該動作的訓練記錄'),
+        orElse: () => throw Exception('找不到該動作的訓練記錄\n請確認在選定的時間範圍內有訓練記錄'),
       );
 
       // 檢查是否已收藏

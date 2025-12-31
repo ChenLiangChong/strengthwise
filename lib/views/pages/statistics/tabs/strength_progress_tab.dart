@@ -46,6 +46,16 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
     _checkFavorites();
   }
 
+  @override
+  void didUpdateWidget(StrengthProgressTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 當時間範圍或用戶 ID 變化時，重新檢查收藏狀態
+    if (oldWidget.timeRange != widget.timeRange ||
+        oldWidget.userId != widget.userId) {
+      _checkFavorites();
+    }
+  }
+
   /// 檢查是否有收藏並刷新列表
   Future<void> _checkFavorites() async {
     try {
@@ -68,6 +78,7 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
     if (widget.statisticsData.strengthProgress.isEmpty) {
       return ExerciseSelectionNavigator(
         userId: widget.userId,
+        timeRange: widget.timeRange, // 傳入時間範圍
         onExerciseSelected: (exerciseId) {
           // 選擇動作後可以刷新數據
           widget.onRefresh?.call();
@@ -112,6 +123,7 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
           ),
           body: ExerciseSelectionNavigator(
             userId: widget.userId,
+            timeRange: widget.timeRange, // 傳入時間範圍
             onExerciseSelected: (exercise) {
               // 導航到動作詳情頁面
               Navigator.of(context)
@@ -127,7 +139,12 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
               )
                   .then((_) {
                 // 🐛 修復：只需要刷新收藏狀態，不需要重新查詢統計數據
-                _checkFavorites();
+                // 使用 post frame callback 確保在框架完成後刷新
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    _checkFavorites();
+                  }
+                });
               });
             },
           ),
@@ -136,7 +153,12 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
     )
         .then((_) {
       // 從選擇頁面返回後，重新檢查收藏狀態
-      _checkFavorites();
+      // 使用 post frame callback 確保在框架完成後刷新
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _checkFavorites();
+        }
+      });
     });
   }
 
@@ -184,6 +206,7 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
         Expanded(
           child: ExerciseSelectionNavigator(
             userId: widget.userId,
+            timeRange: widget.timeRange, // 傳入時間範圍
             onExerciseSelected: (exercise) {
               // 導航到動作詳情頁面（查看力量進步記錄）
               Navigator.of(context)
@@ -199,7 +222,12 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
               )
                   .then((_) {
                 // 🐛 修復：只需要刷新收藏狀態，不需要重新查詢統計數據
-                _checkFavorites();
+                // 使用 post frame callback 確保在框架完成後刷新
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    _checkFavorites();
+                  }
+                });
               });
             },
           ),
@@ -229,7 +257,12 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
     )
         .then((_) {
       // 🐛 修復：只需要刷新收藏狀態，不需要重新查詢統計數據
-      _checkFavorites();
+      // 使用 post frame callback 確保在框架完成後刷新
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _checkFavorites();
+        }
+      });
     });
   }
 }

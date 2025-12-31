@@ -107,51 +107,66 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) {
+      debugPrint('[PROFILE] ❌ 表單驗證失敗');
       return;
     }
     
     // 檢查必填欄位
     if (_gender == null) {
+      debugPrint('[PROFILE] ❌ 性別未選擇');
       NotificationUtils.showWarning(context, '請選擇性別');
       return;
     }
+    
+    debugPrint('[PROFILE] ✅ 開始保存，性別: $_gender');
     
     setState(() {
       _isSaving = true;
     });
     
-    final success = await _userService.updateUserProfile(
-      displayName: _displayNameController.text,
-      nickname: _nicknameController.text,
-      gender: _gender,
-      height: _heightController.text.isNotEmpty ? double.parse(_heightController.text) : null,
-      weight: _weightController.text.isNotEmpty ? double.parse(_weightController.text) : null,
-      age: _ageController.text.isNotEmpty ? int.parse(_ageController.text) : null,
-      birthDate: _birthDate,  // 新增：生日
-      bio: _bioController.text.isNotEmpty ? _bioController.text : null,  // 新增：個人簡介
-      unitSystem: _unitSystem,  // 新增：單位系統
-      isCoach: _isCoach,
-      isStudent: _isStudent,
-      avatarFile: _avatarFile,
-    );
-    
-    setState(() {
-      _isSaving = false;
-    });
-    
-    if (success) {
-      NotificationUtils.showSuccess(context, '個人資料已保存');
+    try {
+      final success = await _userService.updateUserProfile(
+        displayName: _displayNameController.text,
+        nickname: _nicknameController.text,
+        gender: _gender,
+        height: _heightController.text.isNotEmpty ? double.parse(_heightController.text) : null,
+        weight: _weightController.text.isNotEmpty ? double.parse(_weightController.text) : null,
+        age: _ageController.text.isNotEmpty ? int.parse(_ageController.text) : null,
+        birthDate: _birthDate,  // 新增：生日
+        bio: _bioController.text.isNotEmpty ? _bioController.text : null,  // 新增：個人簡介
+        unitSystem: _unitSystem,  // 新增：單位系統
+        isCoach: _isCoach,
+        isStudent: _isStudent,
+        avatarFile: _avatarFile,
+      );
       
-      // 如果是首次設置，完成後導航到主頁
-      if (widget.isFirstTimeSetup) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainHomePage()),
-        );
+      debugPrint('[PROFILE] 保存結果: $success');
+      
+      setState(() {
+        _isSaving = false;
+      });
+      
+      if (success) {
+        NotificationUtils.showSuccess(context, '個人資料已保存');
+        
+        // 如果是首次設置，完成後導航到主頁
+        if (widget.isFirstTimeSetup) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const MainHomePage()),
+          );
+        } else {
+          Navigator.of(context).pop();
+        }
       } else {
-        Navigator.of(context).pop();
+        NotificationUtils.showError(context, '保存失敗，請稍後再試');
       }
-    } else {
-      NotificationUtils.showError(context, '保存失敗，請稍後再試');
+    } catch (e, stack) {
+      debugPrint('[PROFILE] ❌ 保存異常: $e');
+      debugPrint('[PROFILE] Stack: $stack');
+      setState(() {
+        _isSaving = false;
+      });
+      NotificationUtils.showError(context, '保存失敗：$e');
     }
   }
 

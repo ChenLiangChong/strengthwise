@@ -12,6 +12,9 @@ import '../interfaces/i_user_service.dart';
 import '../interfaces/i_coaching_relationship_service.dart';
 import '../interfaces/i_appointment_service.dart';
 import '../interfaces/i_availability_slot_service.dart';
+import '../interfaces/i_session_note_service.dart';
+import '../interfaces/i_client_availability_service.dart';
+import '../interfaces/i_drawing_service.dart';
 import '../core/error_handling_service.dart';
 
 import '../../controllers/interfaces/i_auth_controller.dart';
@@ -35,6 +38,9 @@ import '../../controllers/body_data_controller.dart';
 import '../../controllers/coaching_relationship_controller.dart';
 import '../../controllers/appointment_controller.dart';
 import '../../controllers/availability_slot_controller.dart';
+import '../../controllers/session_note_controller.dart';
+import '../../controllers/client_availability_controller.dart';
+import '../../controllers/drawing_controller.dart';
 
 /// 控制器註冊器
 /// 
@@ -54,6 +60,9 @@ class ControllerRegistry {
     _registerCoachingRelationshipController(serviceLocator);
     _registerAppointmentController(serviceLocator);
     _registerAvailabilitySlotController(serviceLocator);
+    _registerSessionNoteController(serviceLocator);
+    _registerClientAvailabilityController(serviceLocator);
+    _registerDrawingController(serviceLocator);
   }
 
   /// 註冊身份驗證控制器
@@ -192,6 +201,42 @@ class ControllerRegistry {
       serviceLocator.registerFactory<AvailabilitySlotController>(
         () => AvailabilitySlotController(
           serviceLocator<IAvailabilitySlotService>(),
+          serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊課程筆記控制器（Phase 3）
+  static void _registerSessionNoteController(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<SessionNoteController>()) {
+      serviceLocator.registerFactory<SessionNoteController>(
+        () => SessionNoteController(
+          serviceLocator<ISessionNoteService>(),
+          serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊學員時間偏好控制器（Phase 3）
+  static void _registerClientAvailabilityController(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<ClientAvailabilityController>()) {
+      serviceLocator.registerFactory<ClientAvailabilityController>(
+        () => ClientAvailabilityController(
+          serviceLocator<IClientAvailabilityService>(),
+          serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊繪圖控制器（Phase 4A）
+  static void _registerDrawingController(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<DrawingController>()) {
+      serviceLocator.registerFactory<DrawingController>(
+        () => DrawingController(
+          serviceLocator<IDrawingService>(),
           serviceLocator<ErrorHandlingService>(),
         ),
       );
