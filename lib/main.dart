@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'views/splash_screen.dart';
+import 'views/pages/startup/splash_screen.dart';
 import 'services/service_locator.dart';
 import 'services/core/supabase_service.dart';
 import 'services/core/deep_link_service.dart';
