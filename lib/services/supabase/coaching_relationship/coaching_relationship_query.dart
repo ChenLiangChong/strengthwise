@@ -49,7 +49,8 @@ class CoachingRelationshipQuery {
     var query = _supabase
         .from('coaching_relationships')
         .select(_selectFields)
-        .eq('coach_id', coachId);
+        .eq('coach_id', coachId)
+        .not('client_id', 'is', null); // ⭐ 過濾已刪除的學員
 
     // 狀態過濾
     if (status != null) {
@@ -75,7 +76,8 @@ class CoachingRelationshipQuery {
     var query = _supabase
         .from('coaching_relationships')
         .select(_selectFields)
-        .eq('client_id', clientId);
+        .eq('client_id', clientId)
+        .not('coach_id', 'is', null); // ⭐ 過濾已刪除的教練
 
     if (status != null) {
       query = query.eq('status', status);
