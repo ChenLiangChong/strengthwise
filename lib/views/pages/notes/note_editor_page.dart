@@ -8,10 +8,12 @@ import 'widgets/note_title_field.dart';
 import 'widgets/note_text_editor.dart';
 import 'widgets/drawing_area.dart';
 import 'widgets/drawing_toolbar.dart';
+import 'package:strengthwise/models/drawing_note_model.dart'
+    hide DrawingPoint; // For DrawingTool enum
 
 class NoteEditorPage extends StatefulWidget {
   final Note? note;
-  
+
   const NoteEditorPage({
     super.key,
     this.note,
@@ -24,25 +26,25 @@ class NoteEditorPage extends StatefulWidget {
 class _NoteEditorPageState extends State<NoteEditorPage> {
   late final INoteController _controller;
   late final ErrorHandlingService _errorService;
-  
+
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
-  
+
   List<DrawingPoint>? _drawingPoints;
   Color _currentColor = Colors.black;
   double _currentStrokeWidth = 3.0;
   bool _isDrawing = false;
-  
+
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    
+
     // 從服務定位器獲取控制器和服務
     _controller = serviceLocator<INoteController>();
     _errorService = serviceLocator<ErrorHandlingService>();
-    
+
     // 初始化筆記內容
     if (widget.note != null) {
       _titleController.text = widget.note!.title;
@@ -50,28 +52,28 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       _drawingPoints = widget.note!.drawingPoints;
     }
   }
-  
+
   @override
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _saveNote() async {
     // 驗證標題不能為空
     if (_titleController.text.trim().isEmpty) {
       NotificationUtils.showWarning(context, '請輸入筆記標題');
       return;
     }
-    
+
     setState(() {
       _isSaving = true;
     });
-    
+
     try {
       final now = DateTime.now();
-      
+
       // 創建或更新筆記
       if (widget.note == null) {
         // 創建新筆記
@@ -90,40 +92,40 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
           createdAt: widget.note!.createdAt,
           updatedAt: now,
         );
-        
+
         await _controller.updateNote(updatedNote);
       }
-      
+
       if (!mounted) return;
-      
+
       // 返回true表示成功保存
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      
+
       setState(() {
         _isSaving = false;
       });
-      
+
       _errorService.handleError(context, e, customMessage: '保存筆記失敗');
     }
   }
-  
+
   void _toggleDrawingMode() {
     setState(() {
       _isDrawing = !_isDrawing;
     });
   }
-  
+
   void _clearDrawing() {
     setState(() {
       _drawingPoints = null;
     });
   }
-  
+
   void _addDrawingPoint(Offset offset, PointerEvent event) {
     if (!_isDrawing) return;
-    
+
     setState(() {
       _drawingPoints ??= [];
       _drawingPoints!.add(DrawingPoint(
@@ -161,7 +163,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
             controller: _titleController,
             enabled: !_isSaving,
           ),
-          
+
           // 內容區域
           Expanded(
             child: _isDrawing
@@ -180,9 +182,10 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       // 繪圖模式的工具欄
       bottomNavigationBar: _isDrawing
           ? DrawingToolbar(
+              currentTool: DrawingTool.pencil,
               currentColor: _currentColor,
               currentStrokeWidth: _currentStrokeWidth,
-              onClearDrawing: _clearDrawing,
+              onToolChanged: (tool) {},
               onColorChanged: (color) {
                 setState(() {
                   _currentColor = color;
@@ -193,8 +196,13 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                   _currentStrokeWidth = width;
                 });
               },
+              onUndo: () {},
+              onRedo: () {},
+              onClear: _clearDrawing,
+              canUndo: false,
+              canRedo: false,
             )
           : null,
     );
   }
-} 
+}

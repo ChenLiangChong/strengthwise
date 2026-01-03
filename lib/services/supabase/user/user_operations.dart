@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';
 import '../../../models/user_model.dart';
 
 /// 用戶資料操作模組
@@ -19,7 +20,7 @@ class UserOperations {
     try {
       final response = await _supabase
           .from('users')
-          .select('nickname, height, weight')
+          .select('display_name, nickname, gender, height, weight, birth_date')
           .eq('id', userId)
           .maybeSingle();
 
@@ -28,13 +29,16 @@ class UserOperations {
         return false;
       }
 
-      // 檢查必填欄位
+      // ✅ 檢查所有必填欄位
+      final hasDisplayName = response['display_name'] != null && response['display_name'].toString().isNotEmpty;
       final hasNickname = response['nickname'] != null && response['nickname'].toString().isNotEmpty;
+      final hasGender = response['gender'] != null && response['gender'].toString().isNotEmpty;
       final hasHeight = response['height'] != null;
       final hasWeight = response['weight'] != null;
+      final hasBirthDate = response['birth_date'] != null;
 
-      final isCompleted = hasNickname && hasHeight && hasWeight;
-      _logDebug('用戶資料完整度: $isCompleted');
+      final isCompleted = hasDisplayName && hasNickname && hasGender && hasHeight && hasWeight && hasBirthDate;
+      _logDebug('用戶資料完整度: $isCompleted (display_name: $hasDisplayName, nickname: $hasNickname, gender: $hasGender, height: $hasHeight, weight: $hasWeight, birth_date: $hasBirthDate)');
 
       return isCompleted;
     } catch (e) {
@@ -80,7 +84,7 @@ class UserOperations {
       _logDebug('更新用戶資料: $userId');
 
       // 更新時間戳記
-      updateData['profile_updated_at'] = DateTime.now().toIso8601String();
+      updateData['profile_updated_at'] = DateTimeUtils.formatToUtcIso(DateTime.now());
 
       // 執行更新
       await _supabase
@@ -106,7 +110,7 @@ class UserOperations {
           .update({
             'is_coach': isCoach,
             'is_student': !isCoach,
-            'profile_updated_at': DateTime.now().toIso8601String(),
+            'profile_updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
           })
           .eq('id', userId);
 
@@ -127,7 +131,7 @@ class UserOperations {
           .from('users')
           .update({
             'weight': weight,
-            'profile_updated_at': DateTime.now().toIso8601String(),
+            'profile_updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
           })
           .eq('id', userId);
 

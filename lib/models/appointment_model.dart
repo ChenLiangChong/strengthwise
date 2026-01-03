@@ -1,5 +1,5 @@
 /// AppointmentModel - Phase 2 預約模型
-/// 
+///
 /// 對應 Supabase `appointments` 表
 /// 處理教練-學員預約資料
 
@@ -10,27 +10,27 @@ class AppointmentModel {
   final String id;
   final String coachId;
   final String clientId;
-  
+
   // 時間範圍（從 TSTZRANGE 轉換）
   final DateTime startTime;
   final DateTime endTime;
-  
+
   // 狀態
   final AppointmentStatus status;
-  
+
   // 關聯訓練計劃（可選）
   final String? workoutPlanId;
-  
+
   // 備註
   final String? notes;
-  final String? clientNotes;   // 學員備註
-  final String? coachNotes;    // 教練備註（私密）
-  
+  final String? clientNotes; // 學員備註
+  final String? coachNotes; // 教練備註（私密）
+
   // 取消相關
   final String? cancellationReason;
   final String? cancelledBy;
   final DateTime? cancelledAt;
-  
+
   // 時間戳記
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -56,14 +56,15 @@ class AppointmentModel {
   /// 從 Supabase 資料創建 Model（處理 snake_case 和 TSTZRANGE）
   factory AppointmentModel.fromSupabase(Map<String, dynamic> json) {
     // 解析 TSTZRANGE 格式："[2024-12-28 10:00:00+00,2024-12-28 11:00:00+00)"
-    final timeRange = DateTimeUtils.parseTstzRange(json['time_range'] as String);
-    
+    final timeRange =
+        DateTimeUtils.parseTstzRange(json['time_range'] as String);
+
     return AppointmentModel(
       id: json['id'] as String,
       coachId: json['coach_id'] as String,
       clientId: json['client_id'] as String,
-      startTime: timeRange['start']!,
-      endTime: timeRange['end']!,
+      startTime: timeRange['start']!, // ⭐ 已經是本地時間
+      endTime: timeRange['end']!, // ⭐ 已經是本地時間
       status: _parseStatus(json['status'] as String),
       workoutPlanId: json['workout_plan_id'] as String?,
       notes: json['notes'] as String?,
@@ -72,10 +73,13 @@ class AppointmentModel {
       cancellationReason: json['cancellation_reason'] as String?,
       cancelledBy: json['cancelled_by'] as String?,
       cancelledAt: json['cancelled_at'] != null
-          ? DateTime.parse(json['cancelled_at'] as String)
+          ? DateTimeUtils.parseIsoTimestamp(
+              json['cancelled_at'] as String) // ⭐ 統一工具類
           : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTimeUtils.parseIsoTimestamp(
+          json['created_at'] as String), // ⭐ 統一工具類
+      updatedAt: DateTimeUtils.parseIsoTimestamp(
+          json['updated_at'] as String), // ⭐ 統一工具類
     );
   }
 
@@ -92,9 +96,11 @@ class AppointmentModel {
       'coach_notes': coachNotes,
       'cancellation_reason': cancellationReason,
       'cancelled_by': cancelledBy,
-      'cancelled_at': cancelledAt?.toIso8601String(),
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'cancelled_at': cancelledAt != null
+          ? DateTimeUtils.formatToUtcIso(cancelledAt!)
+          : null,
+      'created_at': DateTimeUtils.formatToUtcIso(createdAt),
+      'updated_at': DateTimeUtils.formatToUtcIso(updatedAt),
     };
 
     // 只在 id 不為空且 includeId 為 true 時才包含 id
@@ -184,10 +190,10 @@ class AppointmentModel {
 
 /// 預約狀態枚舉（對應 PostgreSQL appointment_status）
 enum AppointmentStatus {
-  requested,   // 學員請求（待確認）
-  confirmed,   // 教練確認
-  completed,   // 已完成
-  cancelled,   // 已取消
+  requested, // 學員請求（待確認）
+  confirmed, // 教練確認
+  completed, // 已完成
+  cancelled, // 已取消
 }
 
 /// 枚舉擴展方法
@@ -234,4 +240,3 @@ extension AppointmentStatusExtension on AppointmentStatus {
     }
   }
 }
-

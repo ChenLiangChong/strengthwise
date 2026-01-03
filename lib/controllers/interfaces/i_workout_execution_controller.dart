@@ -104,6 +104,11 @@ abstract class IWorkoutExecutionController {
   /// 計算總訓練量
   double calculateTotalVolume();
   
+  /// 檢查是否為教練查看學員訓練
+  /// 
+  /// 當教練查看學員的訓練時，可以編輯（添加動作），但不能幫學員打勾
+  bool isCoachViewingTrainee();
+  
   /// 檢查所有運動是否已完成
   bool allExercisesCompleted();
 } 

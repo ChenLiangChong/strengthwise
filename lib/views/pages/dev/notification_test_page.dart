@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/notifications/adaptive_notification_service.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
-import 'package:strengthwise/widgets/common/rest_timer_overlay.dart';
+import 'package:strengthwise/common_widgets/common/rest_timer_overlay.dart';
 
 /// 通知系統測試頁面
 ///
 /// 用於驗證所有通知場景的視覺效果與互動
-/// 
+///
 /// 使用方式：在 main.dart 的路由表中添加此頁面，或直接 Navigator.push()
 class NotificationTestPage extends StatefulWidget {
   const NotificationTestPage({super.key});
@@ -268,7 +268,8 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
           // 鍵盤測試按鈕
           ElevatedButton.icon(
             onPressed: () {
-              if (_isKeyboardTest && MediaQuery.of(context).viewInsets.bottom > 0) {
+              if (_isKeyboardTest &&
+                  MediaQuery.of(context).viewInsets.bottom > 0) {
                 AdaptiveNotificationService.showError(
                   context,
                   '格式錯誤：此處應為數字',
@@ -339,7 +340,8 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: (color ?? Theme.of(context).colorScheme.primary).withOpacity(0.1),
+            color: (color ?? Theme.of(context).colorScheme.primary)
+                .withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
@@ -358,4 +360,3 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
     );
   }
 }
-

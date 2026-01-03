@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';
 import '../../../models/workout_template_model.dart';
 import '_workout_cache_manager.dart';
 
@@ -48,7 +49,7 @@ class WorkoutTemplateOperations {
       var queryBuilder = _supabase
           .from('workout_templates')
           .select(
-              'id, title, description, plan_type, exercises, training_time, updated_at, user_id, created_at')
+              'id, title, description, plan_type, exercises, updated_at, user_id, created_at')
           .eq('user_id', userId);
 
       // 如果提供了游標，查詢比游標更舊的記錄
@@ -81,7 +82,7 @@ class WorkoutTemplateOperations {
 
       // 如果有結果，打印下一頁的游標（最後一筆的 updated_at）
       if (templates.isNotEmpty) {
-        final nextCursor = templates.last.updatedAt.toIso8601String();
+        final nextCursor = DateTimeUtils.formatToUtcIso(templates.last.updatedAt);
         _logDebug('下一頁游標: $nextCursor');
       }
 
@@ -110,7 +111,7 @@ class WorkoutTemplateOperations {
       final response = await _supabase
           .from('workout_templates')
           .select(
-              'id, user_id, title, description, plan_type, exercises, training_time, created_at, updated_at')
+              'id, user_id, title, description, plan_type, exercises, created_at, updated_at')
           .eq('id', templateId)
           .single();
 
@@ -148,7 +149,6 @@ class WorkoutTemplateOperations {
         'description': template.description,
         'plan_type': template.planType,
         'exercises': template.exercises.map((e) => e.toJson()).toList(),
-        'training_time': template.trainingTime?.toIso8601String(),
       };
 
       final response = await _supabase
@@ -186,7 +186,6 @@ class WorkoutTemplateOperations {
         'description': template.description,
         'plan_type': template.planType,
         'exercises': template.exercises.map((e) => e.toJson()).toList(),
-        'training_time': template.trainingTime?.toIso8601String(),
       };
 
       await _supabase

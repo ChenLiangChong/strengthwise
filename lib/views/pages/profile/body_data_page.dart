@@ -24,7 +24,8 @@ class BodyDataPage extends StatefulWidget {
 
 class _BodyDataPageState extends State<BodyDataPage> {
   late final BodyDataController _controller;
-  DateTime _selectedStartDate = DateTime.now().subtract(const Duration(days: 30));
+  DateTime _selectedStartDate =
+      DateTime.now().subtract(const Duration(days: 30));
   DateTime _selectedEndDate = DateTime.now();
 
   @override
@@ -79,7 +80,8 @@ class _BodyDataPageState extends State<BodyDataPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 64, color: colorScheme.error),
+                    Icon(Icons.error_outline,
+                        size: 64, color: colorScheme.error),
                     const SizedBox(height: 16),
                     Text(controller.error!, style: textTheme.bodyLarge),
                     const SizedBox(height: 16),
@@ -97,7 +99,8 @@ class _BodyDataPageState extends State<BodyDataPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.monitor_weight_outlined, size: 64, color: colorScheme.outline),
+                    Icon(Icons.monitor_weight_outlined,
+                        size: 64, color: colorScheme.outline),
                     const SizedBox(height: 16),
                     Text('尚未有身體數據記錄', style: textTheme.titleLarge),
                     const SizedBox(height: 8),
@@ -138,7 +141,6 @@ class _BodyDataPageState extends State<BodyDataPage> {
     );
   }
 
-
   /// 顯示新增記錄對話框
   Future<void> _showAddRecordDialog() async {
     if (widget.userProfile == null) return;
@@ -151,6 +153,7 @@ class _BodyDataPageState extends State<BodyDataPage> {
 
     final result = await showDialog<bool>(
       context: context,
+      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
       builder: (context) => AlertDialog(
         title: const Text('新增身體數據'),
         content: SingleChildScrollView(
@@ -222,14 +225,18 @@ class _BodyDataPageState extends State<BodyDataPage> {
       }
 
       // 驗證體脂（選填）
-      final bodyFat = bodyFatController.text.isNotEmpty ? double.tryParse(bodyFatController.text) : null;
+      final bodyFat = bodyFatController.text.isNotEmpty
+          ? double.tryParse(bodyFatController.text)
+          : null;
       if (bodyFat != null && (bodyFat < 3 || bodyFat > 60)) {
         NotificationUtils.showError(context, '體脂率範圍應在 3-60%');
         return;
       }
 
       // 驗證肌肉量（選填）
-      final muscleMass = muscleMassController.text.isNotEmpty ? double.tryParse(muscleMassController.text) : null;
+      final muscleMass = muscleMassController.text.isNotEmpty
+          ? double.tryParse(muscleMassController.text)
+          : null;
       if (muscleMass != null && (muscleMass < 10 || muscleMass > 200)) {
         NotificationUtils.showError(context, '肌肉量範圍應在 10-200 kg');
         return;
@@ -265,6 +272,7 @@ class _BodyDataPageState extends State<BodyDataPage> {
   Future<void> _deleteRecord(BodyDataRecord record) async {
     final confirm = await showDialog<bool>(
       context: context,
+      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
       builder: (context) => AlertDialog(
         title: const Text('刪除記錄'),
         content: Text('確定要刪除 ${_formatDate(record.recordDate)} 的記錄嗎？'),

@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../utils/firestore_id_generator.dart';
+import '../../../utils/datetime_utils.dart';
 
 /// 預約資料庫操作
 ///
@@ -88,8 +89,8 @@ class BookingOperations {
     bookingData['id'] = bookingId;
     bookingData['status'] = 'pending';
     bookingData['user_id'] = currentUserId;
-    bookingData['created_at'] = now.toIso8601String();
-    bookingData['updated_at'] = now.toIso8601String();
+    bookingData['created_at'] = DateTimeUtils.formatToUtcIso(now);
+    bookingData['updated_at'] = DateTimeUtils.formatToUtcIso(now);
 
     await _supabase.from('bookings').insert(bookingData);
 
@@ -127,7 +128,7 @@ class BookingOperations {
     }
 
     // 更新時間
-    bookingData['updated_at'] = DateTime.now().toIso8601String();
+    bookingData['updated_at'] = DateTimeUtils.formatToUtcIso(DateTime.now());
 
     await _supabase.from('bookings').update(bookingData).eq('id', bookingId);
 
@@ -168,9 +169,9 @@ class BookingOperations {
 
     await _supabase.from('bookings').update({
       'status': 'cancelled',
-      'updated_at': now.toIso8601String(),
+      'updated_at': DateTimeUtils.formatToUtcIso(now),
       'cancelled_by': cancelledBy,
-      'cancelled_at': now.toIso8601String(),
+      'cancelled_at': DateTimeUtils.formatToUtcIso(now),
     }).eq('id', bookingId);
 
     // 釋放預約的時段（如果有）
@@ -214,8 +215,8 @@ class BookingOperations {
 
     await _supabase.from('bookings').update({
       'status': 'confirmed',
-      'updated_at': now.toIso8601String(),
-      'confirmed_at': now.toIso8601String(),
+      'updated_at': DateTimeUtils.formatToUtcIso(now),
+      'confirmed_at': DateTimeUtils.formatToUtcIso(now),
     }).eq('id', bookingId);
 
     _logDebug('預約確認成功');
@@ -253,7 +254,7 @@ class BookingOperations {
       'original_id': bookingId,
       'booking_data': bookingDetails,
       'deleted_by': currentUserId,
-      'deleted_at': DateTime.now().toIso8601String(),
+      'deleted_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
     });
 
     await _supabase.from('bookings').delete().eq('id', bookingId);
@@ -274,7 +275,7 @@ class BookingOperations {
         .select()
         .eq('coach_id', coachId)
         .eq('is_booked', false)
-        .gte('date_time', now.toIso8601String())
+        .gte('date_time', DateTimeUtils.formatToUtcIso(now))
         .order('date_time', ascending: true);
 
     final slots = (response as List<dynamic>)
@@ -306,7 +307,7 @@ class BookingOperations {
         .from('bookings')
         .select()
         .eq('user_id', userId)
-        .gte('date_time', now.toIso8601String())
+        .gte('date_time', DateTimeUtils.formatToUtcIso(now))
         .eq('status', 'confirmed')
         .order('date_time', ascending: true)
         .limit(5);
@@ -322,7 +323,7 @@ class BookingOperations {
         .from('bookings')
         .select()
         .eq('coach_id', userId)
-        .gte('date_time', now.toIso8601String())
+        .gte('date_time', DateTimeUtils.formatToUtcIso(now))
         .eq('status', 'confirmed')
         .order('date_time', ascending: true)
         .limit(5);
@@ -336,8 +337,8 @@ class BookingOperations {
     // 合併並按時間排序
     final allBookings = [...userBookings, ...coachBookings];
     allBookings.sort((a, b) {
-      final aTime = DateTime.parse(a['date_time'] as String);
-      final bTime = DateTime.parse(b['date_time'] as String);
+      final aTime = DateTimeUtils.parseIsoTimestamp(a['date_time'] as String);
+      final bTime = DateTimeUtils.parseIsoTimestamp(b['date_time'] as String);
       return aTime.compareTo(bTime);
     });
 

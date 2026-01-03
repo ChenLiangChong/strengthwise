@@ -183,6 +183,100 @@ class AuthServiceSupabase implements IAuthService {
     }
   }
 
+  @override
+  bool isOAuthUser() {
+    _ensureInitialized();
+    
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return false;
+      
+      // 檢查用戶的 identities（登入方式）
+      // OAuth 用戶會有 google, github 等 provider
+      // Email 用戶的 provider 是 'email'
+      final identities = user.identities;
+      if (identities == null || identities.isEmpty) {
+        return false;
+      }
+      
+      // 檢查是否有非 email 的 identity
+      final hasOAuth = identities.any((identity) => 
+        identity.provider != 'email'
+      );
+      
+      _logDebug('用戶登入方式: ${hasOAuth ? "OAuth" : "Email"}');
+      return hasOAuth;
+    } catch (e) {
+      _logError('檢查登入方式失敗: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> setPasswordForOAuthUser(String newPassword) async {
+    _ensureInitialized();
+    
+    try {
+      if (newPassword.length < 6) {
+        _logError('密碼長度必須至少 6 個字符');
+        return false;
+      }
+      
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        _logError('用戶未登入');
+        return false;
+      }
+      
+      _logDebug('開始為 OAuth 用戶設置密碼');
+      
+      // 使用 Supabase Auth 的 updateUser 設置密碼
+      final response = await _supabase.auth.updateUser(
+        UserAttributes(
+          password: newPassword,
+        ),
+      );
+      
+      if (response.user == null) {
+        _logError('設置密碼失敗');
+        return false;
+      }
+      
+      _logDebug('密碼設置成功，用戶現在可以使用 Email 登入');
+      return true;
+    } catch (e) {
+      _logError('設置密碼失敗: $e');
+      return false;
+    }
+  }
+
+  @override
+  bool hasPassword() {
+    _ensureInitialized();
+    
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return false;
+      
+      // 檢查用戶的 identities
+      final identities = user.identities;
+      if (identities == null || identities.isEmpty) {
+        return false;
+      }
+      
+      // 如果有 email provider 的 identity，表示已設置密碼
+      final hasEmailProvider = identities.any((identity) => 
+        identity.provider == 'email'
+      );
+      
+      _logDebug('用戶是否已設置密碼: $hasEmailProvider');
+      return hasEmailProvider;
+    } catch (e) {
+      _logError('檢查密碼狀態失敗: $e');
+      return false;
+    }
+  }
+
   /// 確保服務已初始化
   void _ensureInitialized() {
     if (!_isInitialized) {

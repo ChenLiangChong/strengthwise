@@ -208,6 +208,59 @@ class ClientAvailabilityController extends ChangeNotifier {
     return success;
   }
 
+  /// 複製週時段
+  /// 
+  /// 將指定週的時段複製到目標週
+  Future<int> copyWeekAvailabilities({
+    required String clientId,
+    required DateTime sourceWeekStart,
+    required DateTime targetWeekStart,
+  }) async {
+    int copiedCount = 0;
+
+    await _executeOperation(() async {
+      // 計算週的結束日期
+      final sourceWeekEnd = sourceWeekStart.add(const Duration(days: 7));
+
+      // 載入來源週的時段
+      final sourceSlots = await _service.getAvailabilityInRange(
+        clientId: clientId,
+        startDate: sourceWeekStart,
+        endDate: sourceWeekEnd,
+      );
+
+      // 計算時間差（天數）
+      final daysDiff = targetWeekStart.difference(sourceWeekStart).inDays;
+
+      // 複製每個時段
+      for (final slot in sourceSlots) {
+        // 計算新的時間
+        final newStartTime = slot.startTime.add(Duration(days: daysDiff));
+        final newEndTime = slot.endTime.add(Duration(days: daysDiff));
+
+        // 創建新時段
+        final newSlot = ClientAvailabilityModel(
+          id: '', // 會在 create 時生成
+          clientId: clientId,
+          startTime: newStartTime,
+          endTime: newEndTime,
+          priority: slot.priority,
+          notes: slot.notes,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        await _service.createAvailability(newSlot);
+        copiedCount++;
+      }
+
+      // 重新載入時段列表
+      await loadClientAvailabilities(clientId: clientId);
+    }, '複製週時段失敗');
+
+    return copiedCount;
+  }
+
   /// 批次創建週期性時段
   Future<List<ClientAvailabilityModel>> batchCreateRecurring({
     required ClientAvailabilityModel template,

@@ -14,7 +14,6 @@ class WorkoutTemplate {
   final List<WorkoutExercise> exercises; // 訓練動作列表
   final DateTime createdAt;            // 創建時間
   final DateTime updatedAt;            // 更新時間
-  final DateTime? trainingTime;        // 計劃訓練時間
 
   /// 創建一個訓練計劃模板實例
   WorkoutTemplate({
@@ -26,7 +25,6 @@ class WorkoutTemplate {
     required this.exercises,
     required this.createdAt,
     required this.updatedAt,
-    this.trainingTime,
   });
 
   /// 轉換為 JSON 數據格式
@@ -52,7 +50,6 @@ class WorkoutTemplate {
     String? description,
     String? planType,
     List<WorkoutExercise>? exercises,
-    DateTime? trainingTime,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -63,7 +60,6 @@ class WorkoutTemplate {
       description: description ?? this.description,
       planType: planType ?? this.planType,
       exercises: exercises ?? this.exercises,
-      trainingTime: trainingTime ?? this.trainingTime,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -28,6 +28,11 @@ class WorkoutExecutionRecordSaver {
     try {
       if (kDebugMode) {
         print('[RecordSaver] 保存訓練記錄: $workoutRecordId');
+        print('[RecordSaver] 動作數量: ${exerciseRecords.length}');
+        print('[RecordSaver] 動作列表:');
+        for (var i = 0; i < exerciseRecords.length; i++) {
+          print('[RecordSaver]   ${i + 1}. ${exerciseRecords[i].exerciseName}');
+        }
       }
       
       // 獲取現有記錄
@@ -39,6 +44,8 @@ class WorkoutExecutionRecordSaver {
           id: workoutRecordId,
           workoutPlanId: existingRecord.workoutPlanId,
           userId: userId,
+          traineeId: existingRecord.traineeId,  // ⭐ 保留教練學員關係
+          creatorId: existingRecord.creatorId,  // ⭐ 保留創建者 ID
           title: existingRecord.title,
           date: existingRecord.date,
           exerciseRecords: exerciseRecords,
@@ -46,6 +53,7 @@ class WorkoutExecutionRecordSaver {
           completed: overallCompleted,
           createdAt: existingRecord.createdAt,
           trainingTime: trainingTime ?? existingRecord.trainingTime,
+          trainingEndTime: existingRecord.trainingEndTime,  // ⭐ 保留結束時間
         );
         
         final success = await _workoutService.updateRecord(updatedRecord);

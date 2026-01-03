@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import '../../models/workout_template_model.dart';
 import '../../models/workout_record_model.dart';
+import '../../utils/datetime_utils.dart';  // ⭐ 使用時間工具
 import '../interfaces/i_workout_service.dart';
 import '../core/error_handling_service.dart';
 import '../service_locator.dart' show Environment;
@@ -205,6 +206,14 @@ class WorkoutServiceSupabase implements IWorkoutService {
     );
   }
 
+  /// 清除用戶的訓練計劃快取 ⭐
+  @override
+  void clearUserPlansCache(String userId) {
+    _logDebug('🧹 準備清除用戶 $userId 的訓練計劃快取');
+    _cacheManager.clearUserPlans(userId);
+    _logDebug('✅ 已清除用戶 $userId 的訓練計劃快取');
+  }
+
   @override
   Future<List<WorkoutRecord>> getUserRecords({
     String? cursor,
@@ -226,6 +235,7 @@ class WorkoutServiceSupabase implements IWorkoutService {
 
   @override
   Future<List<WorkoutRecord>> getUserPlans({
+    String? userId,  // ⭐ 新增：可選的用戶 ID
     bool? completed,
     DateTime? startDate,
     DateTime? endDate,
@@ -234,13 +244,16 @@ class WorkoutServiceSupabase implements IWorkoutService {
   }) async {
     _ensureInitialized();
 
-    if (currentUserId == null) {
-      _logDebug('獲取用戶計劃：沒有登入用戶');
+    // ⭐ 如果沒有指定 userId，使用當前用戶
+    final targetUserId = userId ?? currentUserId;
+    
+    if (targetUserId == null) {
+      _logDebug('獲取用戶計劃：沒有登入用戶且未指定 userId');
       return [];
     }
 
     return await _recordOps.getUserPlans(
-      userId: currentUserId!,
+      userId: targetUserId,
       completed: completed,
       startDate: startDate,
       endDate: endDate,
@@ -345,7 +358,6 @@ class WorkoutServiceSupabase implements IWorkoutService {
         exerciseRecords: exerciseRecords,
         completed: false,
         createdAt: DateTime.now(),
-        trainingTime: template.trainingTime,
       );
 
       return await createRecord(record);
@@ -380,5 +392,61 @@ class WorkoutServiceSupabase implements IWorkoutService {
       print('[WORKOUT_SERVICE_SUPABASE ERROR] $message');
     }
     _errorService?.logError(message);
+  }
+
+  @override
+  void clearUserCache({String? userId}) {
+    _ensureInitialized();
+    
+    final targetUserId = userId ?? currentUserId;
+    
+    if (targetUserId != null) {
+      _recordOps.clearUserCache(targetUserId);
+      _logDebug('🔄 已清除用戶快取: $targetUserId');
+    } else {
+      _logDebug('⚠️ 無法清除快取：沒有指定 userId 且當前未登入');
+    }
+  }
+
+  @override
+  Future<List<WorkoutRecord>> checkTimeOverlap({
+    required String traineeId,
+    required DateTime startTime,
+    required DateTime endTime,
+    String? excludeRecordId,
+  }) async {
+    _ensureInitialized();
+    
+    try {
+      _logDebug('檢查時間重疊: traineeId=$traineeId, $startTime - $endTime');
+
+      // ⭐ 使用 DateTimeUtils 格式化時間範圍
+      final queryRange = DateTimeUtils.formatToTstzRange(startTime, endTime);
+      
+      // ⭐ 查詢重疊的訓練計畫（使用 PostgreSQL 範圍重疊運算子 &&）
+      var query = _supabase
+          .from('workout_plans')
+          .select('id, trainee_id, creator_id, title, scheduled_date, completed, training_time, training_time_range, exercises, note, created_at, updated_at')
+          .eq('trainee_id', traineeId)
+          .filter('training_time_range', 'ov', queryRange);  // ⭐ 範圍重疊檢查
+      
+      // 排除特定記錄（編輯時使用）
+      if (excludeRecordId != null) {
+        query = query.neq('id', excludeRecordId);
+      }
+      
+      final response = await query;
+      
+      final overlappingRecords = (response as List)
+          .map((data) => WorkoutRecord.fromSupabase(data))
+          .toList();
+      
+      _logDebug('找到 ${overlappingRecords.length} 個重疊的訓練計畫');
+      
+      return overlappingRecords;
+    } catch (e) {
+      _logError('檢查時間重疊失敗: $e');
+      return [];
+    }
   }
 }

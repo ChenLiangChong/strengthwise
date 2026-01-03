@@ -22,7 +22,7 @@ class DateTimeUtils {
   // 私有構造函數（工具類不需要實例化）
   DateTimeUtils._();
 
-  /// PostgreSQL 時間戳格式轉換為 Dart DateTime
+  /// PostgreSQL 時間戳格式轉換為 Dart DateTime（本地時間）
   ///
   /// PostgreSQL 格式範例：
   ///   - 無引號：2025-12-15 09:00:00+00
@@ -35,13 +35,29 @@ class DateTimeUtils {
   ///   1. 移除引號（如果有）
   ///   2. 替換第一個空格為 'T'
   ///   3. 規範化時區（+00 → +00:00）
+  ///   4. ⭐ 轉換為本地時間（預設行為）
   ///
   /// 範例：
   /// ```dart
   /// final dt = DateTimeUtils.parsePostgresTimestamp("2025-12-15 09:00:00+00");
-  /// print(dt); // 2025-12-15T09:00:00.000Z
+  /// print(dt); // 2025-12-15T17:00:00.000+08:00（本地時間，UTC+8）
   /// ```
+  ///
+  /// 如果需要 UTC 時間，使用 [parsePostgresTimestampUtc]
   static DateTime parsePostgresTimestamp(String timestamp) {
+    return parsePostgresTimestampUtc(timestamp).toLocal();
+  }
+
+  /// PostgreSQL 時間戳格式轉換為 Dart DateTime（UTC 時間）
+  ///
+  /// 用於特殊場景（如統計過濾），大部分情況請使用 [parsePostgresTimestamp]
+  ///
+  /// 範例：
+  /// ```dart
+  /// final dt = DateTimeUtils.parsePostgresTimestampUtc("2025-12-15 09:00:00+00");
+  /// print(dt); // 2025-12-15T09:00:00.000Z（UTC 時間）
+  /// ```
+  static DateTime parsePostgresTimestampUtc(String timestamp) {
     // 步驟 1：移除引號並修剪空白
     String cleaned = timestamp.trim();
     if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
@@ -64,17 +80,44 @@ class DateTimeUtils {
     return DateTime.parse(cleaned);
   }
 
-  /// 解析 PostgreSQL TSTZRANGE 字串為開始和結束時間
+  /// 解析 ISO 8601 時間戳為本地時間（統一入口）
+  ///
+  /// 用於解析資料庫中的 created_at, updated_at 等欄位
+  ///
+  /// 範例：
+  /// ```dart
+  /// final dt = DateTimeUtils.parseIsoTimestamp("2025-12-15T09:00:00.000Z");
+  /// print(dt); // 2025-12-15T17:00:00.000+08:00（本地時間，UTC+8）
+  /// ```
+  static DateTime parseIsoTimestamp(String timestamp) {
+    return DateTime.parse(timestamp).toLocal();
+  }
+
+  /// 格式化本地時間為 UTC ISO 8601 字串（用於儲存到資料庫）
+  ///
+  /// 用於插入/更新資料庫中的 created_at, updated_at, scheduled_date 等欄位
+  ///
+  /// 範例：
+  /// ```dart
+  /// final local = DateTime(2025, 12, 15, 17, 0);  // 本地時間 17:00
+  /// final utcStr = DateTimeUtils.formatToUtcIso(local);
+  /// print(utcStr); // "2025-12-15T09:00:00.000Z"（UTC）
+  /// ```
+  static String formatToUtcIso(DateTime localTime) {
+    return localTime.toUtc().toIso8601String();
+  }
+
+  /// 解析 PostgreSQL TSTZRANGE 字串為開始和結束時間（本地時間）
   ///
   /// 格式範例：
   ///   - "[2025-12-15 09:00:00+00,2025-12-15 10:00:00+00)"
   ///   - "\"[2025-12-15 09:00:00+00,2025-12-15 10:00:00+00)\""
   ///
-  /// 返回：
+  /// 返回：本地時間的開始和結束時間
   /// ```dart
   /// {
-  ///   'start': DateTime(2025, 12, 15, 9, 0, 0),
-  ///   'end': DateTime(2025, 12, 15, 10, 0, 0),
+  ///   'start': DateTime(2025, 12, 15, 17, 0, 0), // 本地時間（UTC+8）
+  ///   'end': DateTime(2025, 12, 15, 18, 0, 0),
   /// }
   /// ```
   ///
@@ -83,10 +126,32 @@ class DateTimeUtils {
   /// final range = DateTimeUtils.parseTstzRange(
   ///   "[2025-12-15 09:00:00+00,2025-12-15 10:00:00+00)"
   /// );
-  /// print(range['start']); // 2025-12-15T09:00:00.000Z
+  /// print(range['start']); // 2025-12-15T17:00:00.000+08:00（本地時間）
+  /// print(range['end']);   // 2025-12-15T18:00:00.000+08:00
+  /// ```
+  ///
+  /// 如果需要 UTC 時間，使用 [parseTstzRangeUtc]
+  static Map<String, DateTime> parseTstzRange(String tstzRange) {
+    final utcRange = parseTstzRangeUtc(tstzRange);
+    return {
+      'start': utcRange['start']!.toLocal(),
+      'end': utcRange['end']!.toLocal(),
+    };
+  }
+
+  /// 解析 PostgreSQL TSTZRANGE 字串為開始和結束時間（UTC）
+  ///
+  /// 用於特殊場景（如日期範圍查詢），大部分情況請使用 [parseTstzRange]
+  ///
+  /// 範例：
+  /// ```dart
+  /// final range = DateTimeUtils.parseTstzRangeUtc(
+  ///   "[2025-12-15 09:00:00+00,2025-12-15 10:00:00+00)"
+  /// );
+  /// print(range['start']); // 2025-12-15T09:00:00.000Z（UTC）
   /// print(range['end']);   // 2025-12-15T10:00:00.000Z
   /// ```
-  static Map<String, DateTime> parseTstzRange(String tstzRange) {
+  static Map<String, DateTime> parseTstzRangeUtc(String tstzRange) {
     // 移除外層引號
     String cleaned = tstzRange.replaceAll('"', '').trim();
 
@@ -105,8 +170,8 @@ class DateTimeUtils {
     }
 
     return {
-      'start': parsePostgresTimestamp(parts[0].trim()),
-      'end': parsePostgresTimestamp(parts[1].trim()),
+      'start': parsePostgresTimestampUtc(parts[0].trim()),
+      'end': parsePostgresTimestampUtc(parts[1].trim()),
     };
   }
 

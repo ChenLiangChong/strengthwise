@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';
 import '../../../models/body_data_record.dart';
 import '../../../utils/firestore_id_generator.dart';
 
@@ -29,13 +30,13 @@ class BodyDataOperations {
       final data = {
         'id': id,
         'user_id': record.userId,
-        'record_date': record.recordDate.toIso8601String(),
+        'record_date': DateTimeUtils.formatToUtcIso(record.recordDate),
         'weight': record.weight,
         'body_fat': record.bodyFat,
         'muscle_mass': record.muscleMass,
         'bmi': record.bmi,
         'notes': record.notes,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       };
 
       await _supabase.from('body_data').insert(data);
@@ -59,8 +60,8 @@ class BodyDataOperations {
         'muscle_mass': record.muscleMass,
         'bmi': record.bmi,
         'notes': record.notes,
-        'record_date': record.recordDate.toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
+        'record_date': DateTimeUtils.formatToUtcIso(record.recordDate),
+        'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       };
 
       await _supabase

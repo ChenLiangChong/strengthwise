@@ -1,4 +1,5 @@
 import 'custom_exercise.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';  // ⭐ 新增
 
 /// 自訂動作數據映射器
 ///
@@ -19,10 +20,10 @@ class CustomExerciseMapper {
       description: json['description'] as String? ?? '',
       notes: json['notes'] as String? ?? '',
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
+          ? DateTimeUtils.parseIsoTimestamp(json['created_at'] as String)  // ⭐ 統一工具類
           : DateTime.now(),
       updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
+          ? DateTimeUtils.parseIsoTimestamp(json['updated_at'] as String)  // ⭐ 統一工具類
           : null,
     );
   }
@@ -64,8 +65,8 @@ class CustomExerciseMapper {
       'equipment_en': exercise.equipmentEn,
       'description': exercise.description,
       'notes': exercise.notes,
-      'created_at': exercise.createdAt.toIso8601String(),
-      'updated_at': exercise.updatedAt.toIso8601String(),
+      'created_at': DateTimeUtils.formatToUtcIso(exercise.createdAt),
+      'updated_at': DateTimeUtils.formatToUtcIso(exercise.updatedAt),
     };
   }
 

@@ -1,5 +1,6 @@
 import 'workout_template.dart';
 import 'workout_exercise.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';  // ⭐ 新增
 
 /// 訓練計劃模板數據映射器
 ///
@@ -7,11 +8,6 @@ import 'workout_exercise.dart';
 class WorkoutTemplateMapper {
   /// 從 JSON 創建對象（客戶端格式）
   static WorkoutTemplate fromJson(Map<String, dynamic> json) {
-    DateTime? trainingTime;
-    if (json['trainingTime'] != null) {
-      trainingTime = DateTime.fromMillisecondsSinceEpoch(json['trainingTime']);
-    }
-    
     return WorkoutTemplate(
       id: json['id'] ?? '',
       userId: json['userId'] ?? '',
@@ -21,7 +17,6 @@ class WorkoutTemplateMapper {
       exercises: (json['exercises'] as List<dynamic>?)
           ?.map((e) => WorkoutExercise.fromJson(e as Map<String, dynamic>))
           .toList() ?? [],
-      trainingTime: trainingTime,
       createdAt: json['createdAt'] != null 
           ? DateTime.fromMillisecondsSinceEpoch(json['createdAt']) 
           : DateTime.now(),
@@ -33,11 +28,6 @@ class WorkoutTemplateMapper {
 
   /// 從 Supabase 數據創建對象（snake_case 欄位）
   static WorkoutTemplate fromSupabase(Map<String, dynamic> json) {
-    DateTime? trainingTime;
-    if (json['training_time'] != null) {
-      trainingTime = DateTime.parse(json['training_time']);
-    }
-    
     return WorkoutTemplate(
       id: json['id'] ?? '',
       userId: json['user_id'] ?? '',
@@ -47,12 +37,11 @@ class WorkoutTemplateMapper {
       exercises: (json['exercises'] as List<dynamic>?)
           ?.map((e) => WorkoutExercise.fromJson(e as Map<String, dynamic>))
           .toList() ?? [],
-      trainingTime: trainingTime,
       createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
+          ? DateTimeUtils.parseIsoTimestamp(json['created_at'])  // ⭐ 統一工具類
           : DateTime.now(),
       updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at']) 
+          ? DateTimeUtils.parseIsoTimestamp(json['updated_at'])  // ⭐ 統一工具類
           : DateTime.now(),
     );
   }
@@ -65,9 +54,8 @@ class WorkoutTemplateMapper {
       'description': template.description,
       'planType': template.planType,
       'exercises': template.exercises.map((e) => e.toJson()).toList(),
-      'trainingTime': template.trainingTime?.toIso8601String(),
-      'createdAt': template.createdAt.toIso8601String(),
-      'updatedAt': template.updatedAt.toIso8601String(),
+      'createdAt': DateTimeUtils.formatToUtcIso(template.createdAt),
+      'updatedAt': DateTimeUtils.formatToUtcIso(template.updatedAt),
     };
   }
 }

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'views/splash_screen.dart';
 import 'services/service_locator.dart';
 import 'services/core/supabase_service.dart';
+import 'services/core/deep_link_service.dart';
 import 'services/core/theme_service.dart';
 import 'controllers/theme_controller.dart';
 import 'themes/app_theme.dart';
@@ -76,6 +77,9 @@ Future<void> _quickInitialization() async {
 
   // ⚡ Supabase 必須在這裡初始化（AuthService 依賴它）
   await SupabaseService.initialize();
+
+  // ⚡ 初始化 Deep Link 服務（處理 Email 確認連結）
+  await DeepLinkService.instance.initialize();
 
   // 設置環境（同步）
   setEnvironment(Environment.development);

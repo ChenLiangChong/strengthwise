@@ -118,6 +118,10 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
 
       print('[WorkoutExecutionController] 成功獲取訓練計畫: ${record.workoutPlanId}');
       
+      // ⭐ v2.0 Phase 4C: 保存教練學員信息
+      _dataManager.traineeId = record.traineeId;
+      _dataManager.creatorId = record.creatorId;
+      
       // 設置計劃標題和類型
       _dataManager.planTitle = '訓練記錄';
       _dataManager.planType = '一般訓練';
@@ -209,12 +213,32 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   @override
   bool isToday() => _dataManager.isToday;
   
+  /// 檢查是否為教練查看學員訓練
+  /// 
+  /// 當教練查看學員的訓練時，可以編輯（添加動作），但不能幫學員打勾
+  @override
+  bool isCoachViewingTrainee() {
+    final currentUserId = _authController.user?.uid;
+    return _dataManager.creatorId != null && 
+           _dataManager.traineeId != null &&
+           currentUserId == _dataManager.creatorId &&
+           currentUserId != _dataManager.traineeId;
+  }
+  
   /// 獲取權限檢查器
   WorkoutExecutionPermissionChecker _getPermissionChecker() {
+    // ⭐ 檢查是否為教練查看學員訓練
+    final currentUserId = _authController.user?.uid;
+    final isCoachViewingTrainee = _dataManager.creatorId != null && 
+                                   _dataManager.traineeId != null &&
+                                   currentUserId == _dataManager.creatorId &&
+                                   currentUserId != _dataManager.traineeId;
+    
     return WorkoutExecutionPermissionChecker(
       isToday: _dataManager.isToday,
       isPastDate: _dataManager.isPastDate,
       isFutureDate: _dataManager.isFutureDate,
+      isCoachViewingTrainee: isCoachViewingTrainee,  // ⭐ 傳入角色檢查結果
     );
   }
   
@@ -333,9 +357,10 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
     int restTime,
     {BuildContext? context}
   ) async {
-    if (_dataManager.isPastDate) {
+    // ⚡ 使用統一的權限檢查（支援教練編輯學員訓練）
+    if (!canEdit()) {
       if (context != null) {
-        NotificationUtils.showWarning(context, _dataManager.getPastDateMessage());
+        NotificationUtils.showWarning(context, '無法編輯過去的訓練記錄');
       }
       return;
     }
@@ -379,9 +404,10 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   /// 新增組數到指定運動
   @override
   Future<void> addSetToExercise(int exerciseIndex, {BuildContext? context}) async {
-    if (!canModify()) {
+    // ⚡ 使用統一的權限檢查（今天和未來都可以編輯，教練也可以）
+    if (!canEdit()) {
       if (context != null) {
-        NotificationUtils.showWarning(context, _dataManager.getPastDateMessage());
+        NotificationUtils.showWarning(context, '無法編輯過去的訓練記錄');
       }
       return;
     }
@@ -408,9 +434,10 @@ class WorkoutExecutionController extends ChangeNotifier implements IWorkoutExecu
   /// 刪除訓練動作
   @override
   Future<void> deleteExercise(int exerciseIndex, {BuildContext? context}) async {
-    if (_dataManager.isPastDate) {
+    // ⚡ 使用統一的權限檢查（支援教練編輯學員訓練）
+    if (!canEdit()) {
       if (context != null) {
-        NotificationUtils.showWarning(context, _dataManager.getPastDateMessage());
+        NotificationUtils.showWarning(context, '無法編輯過去的訓練記錄');
       }
       return;
     }

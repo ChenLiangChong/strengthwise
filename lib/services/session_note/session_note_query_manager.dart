@@ -2,7 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:strengthwise/models/session_note/session_note_model.dart';
 
 /// Session Note 查詢管理器（子模組）
-/// 
+///
 /// 職責：處理所有與筆記查詢相關的邏輯
 class SessionNoteQueryManager {
   final SupabaseClient _supabase;
@@ -13,17 +13,23 @@ class SessionNoteQueryManager {
   Future<List<SessionNoteModel>> getCoachNotes({
     required String coachId,
     String? clientId,
+    String? clientName, // ⭐ 新增：用於查詢已刪除學員的筆記
     int limit = 20,
     String? lastNoteId,
   }) async {
     var query = _supabase
         .from('session_notes')
         .select('*')
-        .eq('coach_id', coachId);
+        .eq('coach_id', coachId)
+        .eq('hidden_by_coach', false); // ⭐ 過濾教練已隱藏的筆記
 
     // 依學員篩選
     if (clientId != null) {
+      // ⭐ 正常學員：使用 client_id 查詢
       query = query.eq('client_id', clientId);
+    } else if (clientName != null) {
+      // ⭐ 已刪除的學員：使用 client_name 查詢 + client_id IS NULL
+      query = query.eq('client_name', clientName).isFilter('client_id', null);
     }
 
     // Cursor-based 分頁
@@ -37,15 +43,18 @@ class SessionNoteQueryManager {
       query = query.lt('created_at', lastNote['created_at']);
     }
 
-    final response = await query.order('created_at', ascending: false).limit(limit);
+    final response =
+        await query.order('created_at', ascending: false).limit(limit);
     return (response as List)
         .map((json) => SessionNoteModel.fromSupabase(json))
         .toList();
   }
 
-  /// 取得學員可見的筆記（僅 shared）
+  /// 取得學員可見的筆記（僅 shared，排除已隱藏）
   Future<List<SessionNoteModel>> getClientNotes({
     required String clientId,
+    String? coachId, // ⭐ 新增：用於教練篩選
+    String? coachName, // ⭐ 新增：用於查詢已刪除教練的筆記
     int limit = 20,
     String? lastNoteId,
   }) async {
@@ -53,7 +62,17 @@ class SessionNoteQueryManager {
         .from('session_notes')
         .select('*')
         .eq('client_id', clientId)
-        .eq('visibility', 'shared');
+        .eq('visibility', 'shared')
+        .eq('hidden_by_client', false); // ⭐ 過濾已隱藏的筆記
+
+    // ⭐ 依教練篩選
+    if (coachId != null) {
+      // 正常教練：使用 coach_id 查詢
+      query = query.eq('coach_id', coachId);
+    } else if (coachName != null) {
+      // 已刪除的教練：使用 coach_name 查詢 + coach_id IS NULL
+      query = query.eq('coach_name', coachName).isFilter('coach_id', null);
+    }
 
     // Cursor-based 分頁
     if (lastNoteId != null) {
@@ -66,7 +85,8 @@ class SessionNoteQueryManager {
       query = query.lt('created_at', lastNote['created_at']);
     }
 
-    final response = await query.order('created_at', ascending: false).limit(limit);
+    final response =
+        await query.order('created_at', ascending: false).limit(limit);
     return (response as List)
         .map((json) => SessionNoteModel.fromSupabase(json))
         .toList();
@@ -121,21 +141,22 @@ class SessionNoteQueryManager {
     List<String>? tags,
     int limit = 20,
   }) async {
-    var query = _supabase
-        .from('session_notes')
-        .select('*')
-        .eq('coach_id', coachId);
+    var query =
+        _supabase.from('session_notes').select('*').eq('coach_id', coachId);
 
     // 搜尋標籤（使用 JSONB 查詢）
     if (tags != null && tags.isNotEmpty) {
       // 使用 PostgreSQL JSONB 包含運算子 @>
       // content->'quick_tags' 應包含指定標籤
       for (final tag in tags) {
-        query = query.contains('content', {'quick_tags': [tag]});
+        query = query.contains('content', {
+          'quick_tags': [tag]
+        });
       }
     }
 
-    final response = await query.order('created_at', ascending: false).limit(limit);
+    final response =
+        await query.order('created_at', ascending: false).limit(limit);
 
     var notes = (response as List)
         .map((json) => SessionNoteModel.fromSupabase(json))
@@ -220,4 +241,3 @@ class SessionNoteQueryManager {
     };
   }
 }
-

@@ -1,5 +1,8 @@
 import '../../models/coaching_relationship_model.dart';
 import '../../models/user/user_model.dart';
+import '../../models/client_profile_model.dart';
+import '../../models/client_with_relationship.dart';  // ⭐ 新增
+import '../../models/coach_with_relationship.dart';  // ⭐ 新增
 
 /// 教練-學員關係服務介面
 ///
@@ -37,6 +40,32 @@ abstract class ICoachingRelationshipService {
     String? status,
   });
 
+  /// 獲取學員及其關係狀態（用於筆記篩選器）⭐ 新增
+  ///
+  /// [coachId] 教練 ID
+  /// [status] 過濾狀態（可選）
+  /// 返回：學員及關係狀態列表（包含已刪除的學員）
+  Future<List<ClientWithRelationship>> getCoachClientsWithRelationship(
+    String coachId, {
+    String? status,
+  });
+
+  /// 取得學員的教練列表（含關係狀態）⭐ 新增
+  Future<List<CoachWithRelationship>> getClientCoachesWithRelationship(
+    String clientId, {
+    String? status,
+  });
+
+  /// 根據教練和學員 ID 查詢綁定關係
+  ///
+  /// [coachId] 教練 ID
+  /// [clientId] 學員 ID
+  /// 返回：綁定關係模型（不存在則返回 null）
+  Future<CoachingRelationshipModel?> getRelationshipByUsers(
+    String coachId,
+    String clientId,
+  );
+
   /// 檢查是否存在活躍的教練-學員關係
   ///
   /// [coachId] 教練 ID
@@ -56,7 +85,6 @@ abstract class ICoachingRelationshipService {
   ///
   /// [coachId] 教練 ID
   /// [clientEmail] 學員 Email
-  /// [notes] 備註（可選）
   /// 
   /// 流程：
   /// 1. 查詢學員是否已註冊
@@ -64,21 +92,18 @@ abstract class ICoachingRelationshipService {
   /// 3. 若未註冊，返回錯誤（Phase 1 暫不支援郵件邀請）
   Future<CoachingRelationshipModel> inviteClient(
     String coachId,
-    String clientEmail, {
-    String? notes,
-  });
+    String clientEmail,
+  );
 
   /// 手動建立綁定關係（開發測試用）
   ///
   /// [coachId] 教練 ID
   /// [clientId] 學員 ID
   /// [status] 初始狀態（預設 'pending'）
-  /// [notes] 備註（可選）
   Future<CoachingRelationshipModel> createRelationship(
     String coachId,
     String clientId, {
     String status = 'pending',
-    String? notes,
   });
 
   // ============================================================================
@@ -100,16 +125,41 @@ abstract class ICoachingRelationshipService {
   /// [relationshipId] 關係 ID
   Future<void> archiveRelationship(String relationshipId);
 
-  /// 更新備註
-  ///
-  /// [relationshipId] 關係 ID
-  /// [notes] 新備註內容
-  Future<void> updateNotes(String relationshipId, String notes);
-
   /// 刪除關係（雙方都可刪除）
   ///
   /// [relationshipId] 關係 ID
   Future<void> deleteRelationship(String relationshipId);
+
+  // ============================================================================
+  // 學員檔案管理
+  // ============================================================================
+
+  /// 根據 ID 查詢關係（包含學員檔案）
+  ///
+  /// [relationshipId] 關係 ID
+  /// 返回：綁定關係模型（包含 client_profile）
+  Future<CoachingRelationshipModel?> getRelationshipByIdWithProfile(
+    String relationshipId,
+  );
+
+  /// 根據教練和學員 ID 查詢關係（包含學員檔案）
+  ///
+  /// [coachId] 教練 ID
+  /// [clientId] 學員 ID
+  /// 返回：綁定關係模型（包含 client_profile）
+  Future<CoachingRelationshipModel?> getRelationshipByUsersWithProfile(
+    String coachId,
+    String clientId,
+  );
+
+  /// 更新學員檔案
+  ///
+  /// [relationshipId] 關係 ID
+  /// [profile] 學員檔案
+  Future<void> updateClientProfile({
+    required String relationshipId,
+    required ClientProfile profile,
+  });
 
   // ============================================================================
   // 快取管理

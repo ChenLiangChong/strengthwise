@@ -32,7 +32,11 @@ class CoachingRelationshipCacheManager {
     String? status,
   ) {
     final statusKey = status ?? 'all';
-    return _coachClientsCache[coachId]?[statusKey]?.value;
+    final entry = _coachClientsCache[coachId]?[statusKey];
+    if (entry != null && entry.isValid) {
+      return entry.value;
+    }
+    return null;
   }
 
   /// 獲取學員的教練列表快取
@@ -41,19 +45,31 @@ class CoachingRelationshipCacheManager {
     String? status,
   ) {
     final statusKey = status ?? 'all';
-    return _clientCoachesCache[clientId]?[statusKey]?.value;
+    final entry = _clientCoachesCache[clientId]?[statusKey];
+    if (entry != null && entry.isValid) {
+      return entry.value;
+    }
+    return null;
   }
 
   /// 獲取學員詳情快取
   List<UserModel>? getClientDetails(String coachId, String? status) {
     final cacheKey = '$coachId:${status ?? 'all'}';
-    return _clientDetailsCache[cacheKey]?.value;
+    final entry = _clientDetailsCache[cacheKey];
+    if (entry != null && entry.isValid) {
+      return entry.value;
+    }
+    return null;
   }
 
   /// 獲取活躍關係檢查快取
   bool? getActiveCheck(String coachId, String clientId) {
     final cacheKey = '$coachId:$clientId';
-    return _activeCheckCache[cacheKey]?.value;
+    final entry = _activeCheckCache[cacheKey];
+    if (entry != null && entry.isValid) {
+      return entry.value;
+    }
+    return null;
   }
 
   // ============================================================================
@@ -125,9 +141,16 @@ class CoachingRelationshipCacheManager {
   }
 
   /// 清除特定關係的快取（CRUD 操作後）
-  void clearRelationshipCache(String coachId, String clientId) {
-    clearCoachCache(coachId);
-    clearClientCache(clientId);
+  /// 
+  /// [coachId] 教練 ID（可能為 null，當教練被刪除後）
+  /// [clientId] 學員 ID（可能為 null，當學員被刪除後）
+  void clearRelationshipCache(String? coachId, String? clientId) {
+    if (coachId != null) {
+      clearCoachCache(coachId);
+    }
+    if (clientId != null) {
+      clearClientCache(clientId);
+    }
   }
 }
 

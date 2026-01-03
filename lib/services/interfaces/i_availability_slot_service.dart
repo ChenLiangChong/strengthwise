@@ -168,11 +168,13 @@ class AvailabilitySlotWithBooking {
   final AvailabilitySlotModel slot;
   final bool isBooked;
   final String? appointmentId;  // 如果已預約，關聯的預約 ID
+  final String? bookedByClientId;  // ⭐ 新增：預約者的 client_id
 
   AvailabilitySlotWithBooking({
     required this.slot,
     required this.isBooked,
     this.appointmentId,
+    this.bookedByClientId,  // ⭐ 新增參數
   });
 }
 

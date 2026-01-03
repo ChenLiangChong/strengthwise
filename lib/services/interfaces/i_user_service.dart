@@ -20,6 +20,7 @@ abstract class IUserService {
     String? displayName,
     String? nickname,
     String? gender,
+    bool? genderVisible,  // 性別是否公開
     double? height,
     double? weight,
     int? age,
@@ -38,4 +39,17 @@ abstract class IUserService {
   /// 
   /// 當新增身體數據記錄時，自動同步最新體重到用戶基本資料
   Future<bool> updateUserWeight(String userId, double weight);
+  
+  /// 刪除用戶帳號及所有關聯資料
+  /// 
+  /// 注意：此操作不可逆，會刪除：
+  /// - 教練學員關係
+  /// - 預約記錄
+  /// - 訓練計劃與記錄
+  /// - 身體數據
+  /// - 統計資料
+  /// 
+  /// 保留：
+  /// - 自訂動作（custom_exercises，user_id 設為 NULL）
+  Future<Map<String, dynamic>> deleteUserAccount();
 } 

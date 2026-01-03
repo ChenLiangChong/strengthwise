@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';  // ⭐ 新增
 
 /// 繪圖筆記模型
 class DrawingNoteModel {
@@ -8,6 +9,10 @@ class DrawingNoteModel {
   final List<DrawingLayer> layers;
   final DateTime createdAt;
   final DateTime updatedAt;
+  
+  /// 畫布尺寸（用於跨設備座標縮放）
+  final double canvasWidth;
+  final double canvasHeight;
 
   const DrawingNoteModel({
     required this.id,
@@ -16,6 +21,8 @@ class DrawingNoteModel {
     required this.layers,
     required this.createdAt,
     required this.updatedAt,
+    this.canvasWidth = 800.0, // 預設畫布寬度
+    this.canvasHeight = 600.0, // 預設畫布高度
   });
 
   /// 從 JSONB 解析
@@ -28,8 +35,10 @@ class DrawingNoteModel {
               ?.map((l) => DrawingLayer.fromJson(l as Map<String, dynamic>))
               .toList() ??
           [],
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTimeUtils.parseIsoTimestamp(json['created_at'] as String),  // ⭐ 統一工具類
+      updatedAt: DateTimeUtils.parseIsoTimestamp(json['updated_at'] as String),  // ⭐ 統一工具類
+      canvasWidth: (json['canvas_width'] as num?)?.toDouble() ?? 800.0,
+      canvasHeight: (json['canvas_height'] as num?)?.toDouble() ?? 600.0,
     );
   }
 
@@ -40,8 +49,10 @@ class DrawingNoteModel {
       'session_note_id': sessionNoteId,
       'template_type': templateType,
       'layers': layers.map((l) => l.toJson()).toList(),
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': DateTimeUtils.formatToUtcIso(createdAt),
+      'updated_at': DateTimeUtils.formatToUtcIso(updatedAt),
+      'canvas_width': canvasWidth,
+      'canvas_height': canvasHeight,
     };
   }
 
@@ -52,6 +63,8 @@ class DrawingNoteModel {
     List<DrawingLayer>? layers,
     DateTime? createdAt,
     DateTime? updatedAt,
+    double? canvasWidth,
+    double? canvasHeight,
   }) {
     return DrawingNoteModel(
       id: id ?? this.id,
@@ -60,6 +73,8 @@ class DrawingNoteModel {
       layers: layers ?? this.layers,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      canvasWidth: canvasWidth ?? this.canvasWidth,
+      canvasHeight: canvasHeight ?? this.canvasHeight,
     );
   }
 }

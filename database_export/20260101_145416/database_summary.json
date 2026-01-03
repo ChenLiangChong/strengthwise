@@ -1,0 +1,36 @@
+{
+  "export_time": "20260101_145416",
+  "export_datetime": "2026-01-01T14:54:25.842664",
+  "total_tables": 16,
+  "total_records": 898,
+  "tables": {
+    "v1.0 Core": {
+      "users": 4,
+      "exercises": 794,
+      "custom_exercises": 7,
+      "workout_plans": 0,
+      "workout_templates": 9,
+      "body_data": 14,
+      "notes": 0
+    },
+    "v1.0 Metadata": {
+      "body_parts": 8,
+      "exercise_types": 3
+    },
+    "v2.0 Phase 1": {
+      "coaching_relationships": 5
+    },
+    "v2.0 Phase 2": {
+      "availability_slots": 0,
+      "appointments": 0
+    },
+    "v2.0 Phase 3": {
+      "session_notes": 7,
+      "client_availability": 2
+    },
+    "Optimization": {
+      "daily_workout_summary": 28,
+      "personal_records": 17
+    }
+  }
+}

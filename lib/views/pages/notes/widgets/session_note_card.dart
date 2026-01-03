@@ -8,12 +8,16 @@ import 'package:strengthwise/utils/datetime_utils.dart';
 /// 顯示單個筆記的摘要資訊
 class SessionNoteCard extends StatelessWidget {
   final SessionNoteModel note;
+  final String? clientName; // ⭐ 學員名稱（教練模式）
+  final String? coachName;  // ⭐ 教練名稱（學員模式）
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
   const SessionNoteCard({
     Key? key,
     required this.note,
+    this.clientName,
+    this.coachName,
     required this.onTap,
     required this.onDelete,
   }) : super(key: key);
@@ -33,13 +37,12 @@ class SessionNoteCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 標題列：學員 ID + 狀態標籤
+              // 標題列：筆記標題 + 狀態標籤
               Row(
                 children: [
-                  // 學員 ID（TODO: 未來版本從 UserService 查詢名稱）
                   Expanded(
                     child: Text(
-                      '學員 ${note.clientId.substring(0, 8)}...',
+                      note.title,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -97,14 +100,39 @@ class SessionNoteCard extends StatelessWidget {
                 ],
               ),
               
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               
-              // 創建日期（使用 DateTimeUtils）
+              // 副標題：學員/教練名稱 + 創建日期
               Row(
                 children: [
+                  // ⭐ 頭像（首字母）
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: colorScheme.surfaceVariant,
+                    child: Text(
+                      _getPersonInitial(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  
+                  // 學員/教練名稱
+                  Text(
+                    _getPersonName(),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: coachName == '已刪除的教練' ? Colors.grey : colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  
+                  // 創建日期
                   Icon(
                     Icons.calendar_today,
-                    size: 14,
+                    size: 12,
                     color: colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
@@ -201,6 +229,39 @@ class SessionNoteCard extends StatelessWidget {
     );
   }
 
+  /// 獲取人名首字母（用於頭像）
+  String _getPersonInitial() {
+    // 優先顯示教練名稱（學員模式）
+    if (coachName != null && coachName!.isNotEmpty) {
+      if (coachName == '已刪除的教練') {
+        return '?';
+      }
+      return coachName![0].toUpperCase();
+    }
+    // 其次顯示學員名稱（教練模式）
+    if (clientName != null && clientName!.isNotEmpty) {
+      return clientName![0].toUpperCase();
+    }
+    return '學';
+  }
+
+  /// 獲取顯示的人名
+  String _getPersonName() {
+    // 優先顯示教練名稱（學員模式）
+    if (coachName != null) {
+      return coachName!;
+    }
+    // 其次顯示學員名稱（教練模式）
+    if (clientName != null) {
+      return clientName!;
+    }
+    // ⭐ 處理已刪除的學員（clientId 為 null 或空）
+    if (note.clientId == null || note.clientId!.isEmpty) {
+      return '未知學員';
+    }
+    return '學員 ${note.clientId!.substring(0, 8)}...';
+  }
+
   /// SOAP 筆記預覽
   Widget _buildSoapPreview(BuildContext context, SoapNoteModel soap) {
     final theme = Theme.of(context);
@@ -230,28 +291,28 @@ class SessionNoteCard extends StatelessWidget {
   /// 格式化課程日期（使用 DateTimeUtils）
   String _formatSessionDate(DateTime date) {
     final now = DateTime.now();
-    final localDate = date.toLocal();
+    // ⭐ date 已經是本地時間，不需要 .toLocal()
     
     // 使用 DateTimeUtils 比較 UTC 日期
-    if (DateTimeUtils.isSameUtcDate(localDate, now)) {
-      return '今天 ${localDate.hour.toString().padLeft(2, '0')}:${localDate.minute.toString().padLeft(2, '0')}';
+    if (DateTimeUtils.isSameUtcDate(date, now)) {
+      return '今天 ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     }
     
     final yesterday = now.subtract(const Duration(days: 1));
-    if (DateTimeUtils.isSameUtcDate(localDate, yesterday)) {
-      return '昨天 ${localDate.hour.toString().padLeft(2, '0')}:${localDate.minute.toString().padLeft(2, '0')}';
+    if (DateTimeUtils.isSameUtcDate(date, yesterday)) {
+      return '昨天 ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     }
     
     // 其他日期顯示完整日期
-    return '${localDate.year}/${localDate.month}/${localDate.day} '
-           '${localDate.hour.toString().padLeft(2, '0')}:${localDate.minute.toString().padLeft(2, '0')}';
+    return '${date.year}/${date.month}/${date.day} '
+           '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   /// 格式化更新時間
   String _formatUpdateTime(DateTime date) {
     final now = DateTime.now();
-    final localDate = date.toLocal();
-    final difference = now.difference(localDate);
+    // ⭐ date 已經是本地時間，不需要 .toLocal()
+    final difference = now.difference(date);
     
     if (difference.inMinutes < 1) {
       return '剛剛';
@@ -262,7 +323,7 @@ class SessionNoteCard extends StatelessWidget {
     } else if (difference.inDays < 7) {
       return '${difference.inDays} 天前';
     } else {
-      return '${localDate.year}/${localDate.month}/${localDate.day}';
+      return '${date.year}/${date.month}/${date.day}';
     }
   }
   

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../../models/statistics_model.dart';
-import '../../../../services/service_locator.dart';
-import '../../../../services/interfaces/i_favorites_service.dart';
-import '../../../../widgets/favorites/favorite_exercises_list.dart';
-import '../../../../widgets/exercise_selection/exercise_selection_navigator.dart';
-import '../../exercises/exercise_strength_detail_page.dart';
+import 'package:strengthwise/models/statistics_model.dart';
+import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/services/interfaces/i_favorites_service.dart';
+import 'package:strengthwise/views/pages/profile/widgets/favorite_exercises_list.dart';
+import 'package:strengthwise/views/pages/exercises/widgets/exercise_selection_navigator.dart';
+import 'package:strengthwise/views/pages/exercises/exercise_strength_detail_page.dart';
 
 /// 力量進步 Tab 頁面
 ///
@@ -266,4 +266,3 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
     });
   }
 }
-

@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 class BirthdayPicker extends StatelessWidget {
   final DateTime? selectedDate;
   final ValueChanged<DateTime?> onDateSelected;
+  final bool isRequired;  // 是否為必填
 
   const BirthdayPicker({
     super.key,
     required this.selectedDate,
     required this.onDateSelected,
+    this.isRequired = false,
   });
 
   @override
@@ -30,11 +32,11 @@ class BirthdayPicker extends StatelessWidget {
         }
       },
       child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: '生日',
-          border: OutlineInputBorder(),
-          helperText: '可選',
-          suffixIcon: Icon(Icons.calendar_today),
+        decoration: InputDecoration(
+          labelText: isRequired ? '生日 *' : '生日',
+          border: const OutlineInputBorder(),
+          helperText: isRequired ? '必填' : '可選',
+          suffixIcon: const Icon(Icons.calendar_today),
         ),
         child: Text(
           selectedDate != null

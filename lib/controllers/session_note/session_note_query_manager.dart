@@ -17,6 +17,7 @@ class SessionNoteQueryManager {
   Future<void> loadCoachNotes({
     required String coachId,
     String? clientId,
+    String? clientName, // ⭐ 新增：用於查詢已刪除學員的筆記
     int limit = 20,
     String? lastNoteId,
     bool append = false,
@@ -24,6 +25,7 @@ class SessionNoteQueryManager {
     final notes = await _service.getCoachNotes(
       coachId: coachId,
       clientId: clientId,
+      clientName: clientName, // ⭐ 傳遞參數
       limit: limit,
       lastNoteId: lastNoteId,
     );
@@ -57,14 +59,19 @@ class SessionNoteQueryManager {
   // ==================== 學員端查詢 ====================
   
   /// 載入學員可見的筆記（僅 shared）
+  /// 載入學員可見的筆記（僅 shared）
   Future<void> loadClientNotes({
     required String clientId,
+    String? coachId, // ⭐ 新增：用於教練篩選
+    String? coachName, // ⭐ 新增：用於查詢已刪除教練的筆記
     int limit = 20,
     String? lastNoteId,
     bool append = false,
   }) async {
     final notes = await _service.getClientNotes(
       clientId: clientId,
+      coachId: coachId, // ⭐ 傳遞參數
+      coachName: coachName, // ⭐ 傳遞參數
       limit: limit,
       lastNoteId: lastNoteId,
     );

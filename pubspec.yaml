@@ -28,12 +28,17 @@ dependencies:
   google_sign_in: ^6.1.5     # Google 登入（Supabase Auth 使用）
   elegant_notification: ^2.2.2  # 現代化頂部通知（2025 最佳實踐）
   flutter_animate: ^4.5.0    # 微動畫支援
+  app_links: ^6.3.2          # Deep Link 支援（Email 確認連結）
+  qr_flutter: ^4.1.0         # QR Code 生成
+  mobile_scanner: ^5.1.1     # QR Code 掃描（新一代）
+  permission_handler: ^11.0.0  # 相機權限管理
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
   devtools_mcp_extension: ^0.1.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
@@ -42,3 +47,19 @@ flutter:
     - assets/images/
     - assets/templates/  # 繪圖底圖模板
     - .env  # 环境变量文件
+
+# App Icon 配置 (已停用 - 使用 Flutter 預設)
+# flutter_launcher_icons:
+#   android: true
+#   ios: true
+#   image_path: "picture/splash_screens/master/APP_ICON8_3200x3200_center.png"
+#   adaptive_icon_background: "#0a1628"
+#   adaptive_icon_foreground: "picture/splash_screens/master/APP_ICON8_3200x3200_center.png"
+
+# 啟動畫面配置 (已停用 - 使用 Flutter 預設)
+# flutter_native_splash:
+#   background_image: "picture/splash_screens/master/APP_ICON8_3200x3200_center.png"
+#   color: "#0a1628"
+#   android_gravity: fill
+#   ios_content_mode: scaleAspectFill
+#   fullscreen: true

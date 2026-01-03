@@ -4,7 +4,7 @@ import 'dart:ui' as ui;
 import 'package:strengthwise/views/pages/notes/widgets/annotation_painter.dart';
 
 /// 照片標註頁面
-/// 
+///
 /// 功能：
 /// - 在照片上繪製圓圈
 /// - 繪製箭頭
@@ -25,16 +25,16 @@ class PhotoAnnotationPage extends StatefulWidget {
 class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
   // 標註工具
   AnnotationTool _currentTool = AnnotationTool.none;
-  
+
   // 標註列表
   final List<Annotation> _annotations = [];
-  
+
   // 當前繪製中的標註
   Annotation? _currentAnnotation;
-  
+
   // 顏色
   Color _currentColor = Colors.red;
-  
+
   // 照片尺寸
   ui.Image? _image;
   Size? _imageSize;
@@ -50,7 +50,7 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
     final bytes = await widget.photo.readAsBytes();
     final codec = await ui.instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
-    
+
     setState(() {
       _image = frame.image;
       _imageSize = Size(
@@ -63,12 +63,12 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
   /// 處理觸控開始
   void _onPanStart(DragStartDetails details, Size canvasSize) {
     if (_currentTool == AnnotationTool.none) return;
-    
+
     final localPosition = _convertToImageCoordinates(
       details.localPosition,
       canvasSize,
     );
-    
+
     setState(() {
       switch (_currentTool) {
         case AnnotationTool.circle:
@@ -97,12 +97,12 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
   /// 處理觸控移動
   void _onPanUpdate(DragUpdateDetails details, Size canvasSize) {
     if (_currentAnnotation == null) return;
-    
+
     final localPosition = _convertToImageCoordinates(
       details.localPosition,
       canvasSize,
     );
-    
+
     setState(() {
       if (_currentAnnotation is CircleAnnotation) {
         final circle = _currentAnnotation as CircleAnnotation;
@@ -128,11 +128,11 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
   /// 轉換為照片座標
   Offset _convertToImageCoordinates(Offset screenOffset, Size canvasSize) {
     if (_imageSize == null) return Offset.zero;
-    
+
     // 計算縮放比例
     final scaleX = _imageSize!.width / canvasSize.width;
     final scaleY = _imageSize!.height / canvasSize.height;
-    
+
     return Offset(
       screenOffset.dx * scaleX,
       screenOffset.dy * scaleY,
@@ -142,9 +142,10 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
   /// 顯示文字輸入對話框
   Future<void> _showTextDialog(Offset position) async {
     final controller = TextEditingController();
-    
+
     final text = await showDialog<String>(
       context: context,
+      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
       builder: (context) => AlertDialog(
         title: const Text('添加文字註解'),
         content: TextField(
@@ -167,7 +168,7 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
         ],
       ),
     );
-    
+
     if (text != null && text.isNotEmpty) {
       setState(() {
         _annotations.add(
@@ -207,7 +208,7 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('標註照片'),
@@ -250,7 +251,8 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
                         ),
                         onPanEnd: _onPanEnd,
                         child: CustomPaint(
-                          size: Size(constraints.maxWidth, constraints.maxHeight),
+                          size:
+                              Size(constraints.maxWidth, constraints.maxHeight),
                           painter: AnnotationPainter(
                             image: _image!,
                             annotations: _annotations,
@@ -261,7 +263,7 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
                     },
                   ),
           ),
-          
+
           // 工具列
           Container(
             padding: const EdgeInsets.all(16),
@@ -299,9 +301,9 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // 顏色選擇
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -329,7 +331,7 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
   }) {
     final isSelected = _currentTool == tool;
     final theme = Theme.of(context);
-    
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -341,12 +343,10 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
             });
           },
           style: IconButton.styleFrom(
-            backgroundColor: isSelected
-                ? theme.colorScheme.primaryContainer
-                : null,
-            foregroundColor: isSelected
-                ? theme.colorScheme.onPrimaryContainer
-                : null,
+            backgroundColor:
+                isSelected ? theme.colorScheme.primaryContainer : null,
+            foregroundColor:
+                isSelected ? theme.colorScheme.onPrimaryContainer : null,
           ),
         ),
         Text(
@@ -364,7 +364,7 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
   /// 建立顏色按鈕
   Widget _buildColorButton(Color color) {
     final isSelected = _currentColor == color;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: GestureDetector(
@@ -401,9 +401,9 @@ enum AnnotationTool {
 /// 標註基類
 abstract class Annotation {
   final Color color;
-  
+
   const Annotation({required this.color});
-  
+
   Map<String, dynamic> toJson();
 }
 
@@ -411,13 +411,13 @@ abstract class Annotation {
 class CircleAnnotation extends Annotation {
   final Offset center;
   final double radius;
-  
+
   const CircleAnnotation({
     required this.center,
     required this.radius,
     required Color color,
   }) : super(color: color);
-  
+
   CircleAnnotation copyWith({
     Offset? center,
     double? radius,
@@ -429,7 +429,7 @@ class CircleAnnotation extends Annotation {
       color: color ?? this.color,
     );
   }
-  
+
   @override
   Map<String, dynamic> toJson() {
     return {
@@ -445,13 +445,13 @@ class CircleAnnotation extends Annotation {
 class ArrowAnnotation extends Annotation {
   final Offset start;
   final Offset end;
-  
+
   const ArrowAnnotation({
     required this.start,
     required this.end,
     required Color color,
   }) : super(color: color);
-  
+
   ArrowAnnotation copyWith({
     Offset? start,
     Offset? end,
@@ -463,7 +463,7 @@ class ArrowAnnotation extends Annotation {
       color: color ?? this.color,
     );
   }
-  
+
   @override
   Map<String, dynamic> toJson() {
     return {
@@ -479,13 +479,13 @@ class ArrowAnnotation extends Annotation {
 class TextAnnotation extends Annotation {
   final Offset position;
   final String text;
-  
+
   const TextAnnotation({
     required this.position,
     required this.text,
     required Color color,
   }) : super(color: color);
-  
+
   @override
   Map<String, dynamic> toJson() {
     return {
@@ -496,4 +496,3 @@ class TextAnnotation extends Annotation {
     };
   }
 }
-

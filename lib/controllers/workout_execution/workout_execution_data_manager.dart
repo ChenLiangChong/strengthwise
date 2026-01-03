@@ -12,6 +12,10 @@ class WorkoutExecutionDataManager {
   List<ExerciseRecord> _exerciseRecords = [];
   final TextEditingController _notesController = TextEditingController();
   
+  // ⭐ v2.0 Phase 4C: 教練學員系統
+  String? _traineeId;  // 受訓者 ID
+  String? _creatorId;  // 創建者 ID
+  
   // 日期相關
   DateTime? _planDate;
   bool _isToday = false;
@@ -31,6 +35,8 @@ class WorkoutExecutionDataManager {
   String get planType => _planType;
   List<ExerciseRecord> get exerciseRecords => _exerciseRecords;
   TextEditingController get notesController => _notesController;
+  String? get traineeId => _traineeId;  // ⭐ 新增
+  String? get creatorId => _creatorId;  // ⭐ 新增
   DateTime? get planDate => _planDate;
   bool get isToday => _isToday;
   bool get isPastDate => _isPastDate;
@@ -44,6 +50,8 @@ class WorkoutExecutionDataManager {
   set planTitle(String value) => _planTitle = value;
   set planType(String value) => _planType = value;
   set exerciseRecords(List<ExerciseRecord> value) => _exerciseRecords = value;
+  set traineeId(String? value) => _traineeId = value;  // ⭐ 新增
+  set creatorId(String? value) => _creatorId = value;  // ⭐ 新增
   
   /// 設置當前運動索引
   void setCurrentExerciseIndex(int index) {

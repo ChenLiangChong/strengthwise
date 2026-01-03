@@ -1,9 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../models/workout_record_model.dart';
+import '../../../utils/datetime_utils.dart'; // ⭐ 使用時間工具
 import '_workout_cache_manager.dart';
 
 /// 訓練記錄操作類別
-/// 
+///
 /// 負責訓練記錄的 CRUD 操作
 class WorkoutRecordOperations {
   final SupabaseClient _supabase;
@@ -42,7 +43,8 @@ class WorkoutRecordOperations {
         }
       }
 
-      _logDebug('從 workout_plans 獲取用戶已完成的訓練記錄（Cursor 分頁）, cursor: $cursor, limit: $limit');
+      _logDebug(
+          '從 workout_plans 獲取用戶已完成的訓練記錄（Cursor 分頁）, cursor: $cursor, limit: $limit');
 
       // ⚡ 優化：使用 Cursor-based 分頁（基於 completed_date 欄位）
       var queryBuilder = _supabase
@@ -83,7 +85,7 @@ class WorkoutRecordOperations {
 
       // 如果有結果，打印下一頁的游標（使用 date 欄位）
       if (records.isNotEmpty) {
-        final nextCursor = records.last.date.toIso8601String();
+        final nextCursor = DateTimeUtils.formatToUtcIso(records.last.date);
         _logDebug('下一頁游標: $nextCursor');
       }
 
@@ -112,7 +114,9 @@ class WorkoutRecordOperations {
             // 如果沒有過濾條件，直接返回全部快取
             if (completed == null && startDate == null && endDate == null) {
               _logDebug('⚡ 從快取返回 ${allPlans.length} 個訓練計劃');
-              return limit >= allPlans.length ? allPlans : allPlans.sublist(0, limit);
+              return limit >= allPlans.length
+                  ? allPlans
+                  : allPlans.sublist(0, limit);
             }
 
             // ⚡ 智能過濾：從快取中過濾符合條件的記錄
@@ -120,14 +124,16 @@ class WorkoutRecordOperations {
 
             // 過濾 completed 狀態
             if (completed != null) {
-              filtered = filtered.where((r) => r.completed == completed).toList();
+              filtered =
+                  filtered.where((r) => r.completed == completed).toList();
             }
 
             // 過濾日期範圍
             if (startDate != null || endDate != null) {
               filtered = filtered.where((r) {
                 final schedDate = r.date;
-                if (startDate != null && schedDate.isBefore(startDate)) return false;
+                if (startDate != null && schedDate.isBefore(startDate))
+                  return false;
                 if (endDate != null && schedDate.isAfter(endDate)) return false;
                 return true;
               }).toList();
@@ -144,13 +150,16 @@ class WorkoutRecordOperations {
 
             _logDebug('⚡ 從快取中過濾出 ${filtered.length} 個訓練計劃');
 
-            return limit >= filtered.length ? filtered : filtered.sublist(0, limit);
+            return limit >= filtered.length
+                ? filtered
+                : filtered.sublist(0, limit);
           }
         }
       }
 
       _logDebug('從 workout_plans 獲取用戶訓練計劃（Cursor 分頁）');
-      _logDebug('  - completed: $completed, startDate: $startDate, endDate: $endDate');
+      _logDebug(
+          '  - completed: $completed, startDate: $startDate, endDate: $endDate');
       _logDebug('  - cursor: $cursor, limit: $limit');
 
       // ⚡ 優化：使用 Cursor-based 分頁（基於 scheduled_date 欄位）
@@ -165,14 +174,14 @@ class WorkoutRecordOperations {
         queryBuilder = queryBuilder.eq('completed', completed);
       }
 
-      // 篩選日期範圍
+      // 篩選日期範圍（⭐ 使用 DateTimeUtils 統一處理）
       if (startDate != null) {
-        queryBuilder =
-            queryBuilder.gte('scheduled_date', startDate.toIso8601String());
+        queryBuilder = queryBuilder.gte('scheduled_date',
+            DateTimeUtils.formatToUtcIso(startDate)); // ⭐ 統一工具類
       }
       if (endDate != null) {
-        queryBuilder =
-            queryBuilder.lt('scheduled_date', endDate.toIso8601String());
+        queryBuilder = queryBuilder.lt(
+            'scheduled_date', DateTimeUtils.formatToUtcIso(endDate)); // ⭐ 統一工具類
       }
 
       // 如果提供了游標，查詢比游標更舊/更新的記錄
@@ -201,7 +210,10 @@ class WorkoutRecordOperations {
 
       // ⚡ 智能快取更新
       if (_cacheRecords && cursor == null) {
-        if (completed == null && startDate == null && endDate == null && plans.isNotEmpty) {
+        if (completed == null &&
+            startDate == null &&
+            endDate == null &&
+            plans.isNotEmpty) {
           _cacheManager.updateAllPlansCache(userId, plans);
           _logDebug('⚡ 已快取 ${plans.length} 個訓練計劃（5 分鐘有效）');
         }
@@ -209,7 +221,7 @@ class WorkoutRecordOperations {
 
       // 如果有結果，打印下一頁的游標
       if (plans.isNotEmpty) {
-        final nextCursor = plans.last.date.toIso8601String();
+        final nextCursor = DateTimeUtils.formatToUtcIso(plans.last.date);
         _logDebug('下一頁游標: $nextCursor');
       }
 
@@ -262,22 +274,48 @@ class WorkoutRecordOperations {
       // 生成新的 ID（使用 Firestore 兼容格式）
       final newId = generateId();
 
-      // 準備數據（存入 workout_plans 表）
+      // ⭐ v2.1: 準備數據（使用 DateTimeUtils 統一處理時區）
       final recordData = {
         'id': newId, // 明確指定 ID
         'user_id': userId,
-        'trainee_id': userId,
-        'creator_id': userId,
+        'trainee_id': record.traineeId ?? userId,
+        'creator_id': record.creatorId ?? userId,
         'title': record.title,
         'plan_type': 'self',
-        'scheduled_date': record.date.toIso8601String(),
-        'completed_date':
-            record.completed ? DateTime.now().toIso8601String() : null,
-        'training_time': record.trainingTime?.toIso8601String(),
+        'scheduled_date': DateTimeUtils.formatToUtcIso(record.date), // ⭐ 統一工具類
+        'completed_date': record.completed
+            ? DateTimeUtils.formatToUtcIso(DateTime.now()) // ⭐ 統一工具類
+            : null,
         'exercises': record.exerciseRecords.map((e) => e.toJson()).toList(),
         'completed': record.completed,
         'note': record.notes,
       };
+
+      // ⭐ v2.1: 處理訓練時間範圍（統一使用 record.date 作為開始時間）
+      if (record.trainingEndTime != null) {
+        // 有結束時間，使用 TSTZRANGE
+        final rangeStr = DateTimeUtils.formatToTstzRange(
+          record.date, // ⭐ 統一：scheduled_date = training_time_range 開始時間
+          record.trainingEndTime!,
+        );
+        recordData['training_time_range'] = rangeStr;
+
+        // ⭐ Debug
+        print('[WORKOUT_OPERATIONS] ⏰ 時間範圍:');
+        print('  開始: ${record.date}');
+        print('  結束: ${record.trainingEndTime}');
+        print('  範圍: $rangeStr');
+      } else {
+        // 沒有結束時間，假設 1 小時
+        recordData['training_time_range'] = DateTimeUtils.formatToTstzRange(
+          record.date,
+          record.date.add(const Duration(hours: 1)),
+        );
+      }
+
+      // ⭐ v2.1: 向後兼容：保留舊的 training_time 欄位（等於 scheduled_date）
+      recordData['training_time'] =
+          DateTimeUtils.formatToUtcIso(record.date); // ⭐ 統一工具類
 
       final response = await _supabase
           .from('workout_plans')
@@ -288,13 +326,25 @@ class WorkoutRecordOperations {
       final newRecord = WorkoutRecord.fromSupabase(response);
 
       // ⚡ Optimistic Update：同步更新快取
+      // ⭐ 使用 traineeId 作為快取 key（因為查詢時用 traineeId）
       if (_cacheRecords) {
-        _cacheManager.addRecord(userId, newRecord);
-        _logDebug('⚡ 已同步更新記錄快取');
+        final cacheKey = newRecord.traineeId ?? userId;
+        _cacheManager.addRecord(cacheKey, newRecord);
+        _logDebug('⚡ 已同步更新記錄快取（key: $cacheKey）');
       }
 
       _logDebug('訓練記錄創建成功: ${newRecord.id}');
       return newRecord;
+    } on PostgrestException catch (e) {
+      // ⭐ 捕獲 PostgreSQL 錯誤
+      if (e.message.contains('workout_plans_no_overlap_trainee') ||
+          e.message.contains(
+              'conflicting key value violates exclusion constraint')) {
+        _logError('訓練時間重疊：該學員在此時段已有訓練計畫');
+        throw Exception('訓練時間重疊：該學員在此時段已有訓練計畫，請選擇其他時間');
+      }
+      _logError('創建訓練記錄失敗 (PostgrestException): ${e.message}');
+      rethrow;
     } catch (e) {
       _logError('創建訓練記錄失敗: $e');
       rethrow;
@@ -309,30 +359,62 @@ class WorkoutRecordOperations {
     try {
       _logDebug('更新訓練記錄: ${record.id}');
 
+      // ⭐ v2.1: 準備更新數據，使用 DateTimeUtils 統一處理時區
       final recordData = {
-        'scheduled_date': record.date.toIso8601String(),
-        'completed_date':
-            record.completed ? DateTime.now().toIso8601String() : null,
-        'training_time': record.trainingTime?.toIso8601String(),
+        'trainee_id': record.traineeId ?? userId,
+        'creator_id': record.creatorId ?? userId,
+        'scheduled_date': DateTimeUtils.formatToUtcIso(record.date), // ⭐ 統一工具類
+        'completed_date': record.completed
+            ? DateTimeUtils.formatToUtcIso(DateTime.now()) // ⭐ 統一工具類
+            : null,
         'exercises': record.exerciseRecords.map((e) => e.toJson()).toList(),
         'completed': record.completed,
         'note': record.notes,
       };
 
+      // ⭐ v2.1: 處理訓練時間範圍（統一使用 record.date 作為開始時間）
+      if (record.trainingEndTime != null) {
+        // 有結束時間，使用 TSTZRANGE
+        recordData['training_time_range'] = DateTimeUtils.formatToTstzRange(
+          record.date, // ⭐ 統一：scheduled_date = training_time_range 開始時間
+          record.trainingEndTime!,
+        );
+      } else {
+        // 沒有結束時間，假設 1 小時
+        recordData['training_time_range'] = DateTimeUtils.formatToTstzRange(
+          record.date,
+          record.date.add(const Duration(hours: 1)),
+        );
+      }
+
+      // ⭐ 向後兼容：保留舊的 training_time 欄位（等於 scheduled_date）
+      recordData['training_time'] = DateTimeUtils.formatToUtcIso(record.date);
+
       await _supabase
           .from('workout_plans')
           .update(recordData)
-          .eq('id', record.id)
-          .eq('trainee_id', userId);
+          .eq('id', record.id);  // ⚡ 只用 ID 查詢，不限制 trainee_id（教練也能更新）
 
       // ⚡ Optimistic Update：同步更新快取
+      // ⭐ 使用 traineeId 作為快取 key
       if (_cacheRecords) {
-        _cacheManager.updateRecord(userId, record);
-        _logDebug('⚡ 已同步更新記錄快取');
+        final cacheKey = record.traineeId ?? userId;
+        _cacheManager.updateRecord(cacheKey, record);
+        _logDebug('⚡ 已同步更新記錄快取（key: $cacheKey）');
       }
 
       _logDebug('訓練記錄更新成功');
       return true;
+    } on PostgrestException catch (e) {
+      // ⭐ 捕獲 PostgreSQL 錯誤（更新時也可能違反排除約束）
+      if (e.message.contains('workout_plans_no_overlap_trainee') ||
+          e.message.contains(
+              'conflicting key value violates exclusion constraint')) {
+        _logError('訓練時間重疊：該學員在此時段已有訓練計畫');
+        throw Exception('訓練時間重疊：該學員在此時段已有訓練計畫，請選擇其他時間');
+      }
+      _logError('更新訓練記錄失敗 (PostgrestException): ${e.message}');
+      rethrow;
     } catch (e) {
       _logError('更新訓練記錄失敗: $e');
       return false;
@@ -350,8 +432,7 @@ class WorkoutRecordOperations {
       await _supabase
           .from('workout_plans')
           .delete()
-          .eq('id', recordId)
-          .eq('trainee_id', userId);
+          .eq('id', recordId);  // ⚡ 只用 ID 查詢，不限制 trainee_id（教練也能刪除）
 
       // ⚡ Optimistic Update：同步更新快取
       if (_cacheRecords) {
@@ -390,5 +471,12 @@ class WorkoutRecordOperations {
       _logError('預載入訓練計劃失敗: $e');
     }
   }
-}
 
+  /// 清除特定用戶的快取（用於刷新）⭐
+  void clearUserCache(String userId) {
+    if (_cacheRecords) {
+      _cacheManager.clearUserPlans(userId);
+      _logDebug('🔄 已清除用戶快取: $userId');
+    }
+  }
+}

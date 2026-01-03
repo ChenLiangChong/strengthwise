@@ -1,10 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/availability_slot_model.dart';
+import '../utils/datetime_utils.dart';
 import 'interfaces/i_availability_slot_service.dart';
 import 'core/error_handling_service.dart';
 
 /// AvailabilitySlotServiceSupabase - Phase 2 時段服務實現
-/// 
+///
 /// 實作 IAvailabilitySlotService 接口
 /// 處理所有與 Supabase availability_slots 表的互動
 class AvailabilitySlotServiceSupabase implements IAvailabilitySlotService {
@@ -38,7 +39,7 @@ class AvailabilitySlotServiceSupabase implements IAvailabilitySlotService {
 
       // 時間範圍篩選（使用 PostgreSQL 範圍重疊運算符 &&）
       if (startDate != null && endDate != null) {
-        final rangeStr = '[${startDate.toIso8601String()},${endDate.toIso8601String()})';
+        final rangeStr = DateTimeUtils.formatToTstzRange(startDate, endDate);
         query = query.filter('time_range', 'ov', rangeStr);
       }
 
@@ -112,8 +113,8 @@ class AvailabilitySlotServiceSupabase implements IAvailabilitySlotService {
       // 調用資料庫函數獲取可用時段
       final response = await _supabase.rpc('get_available_slots', params: {
         'p_coach_id': coachId,
-        'p_start_time': startDate.toIso8601String(),
-        'p_end_time': endDate.toIso8601String(),
+        'p_start_time': DateTimeUtils.formatToUtcIso(startDate),
+        'p_end_time': DateTimeUtils.formatToUtcIso(endDate),
       });
 
       final results = response as List;
@@ -124,16 +125,19 @@ class AvailabilitySlotServiceSupabase implements IAvailabilitySlotService {
           'id': json['slot_id'] as String,
           'coach_id': coachId,
           'time_range': json['time_range'] as String,
-          'recurrence_rule': json['recurrence_rule'] as String?,  // 可能為 null
+          'recurrence_rule': json['recurrence_rule'] as String?, // 可能為 null
           'is_override': json['is_override'] as bool? ?? false,
-          'notes': json['notes'] as String?,  // 可能為 null
-          'created_at': json['created_at'] as String? ?? DateTime.now().toIso8601String(),
-          'updated_at': json['updated_at'] as String? ?? DateTime.now().toIso8601String(),
+          'notes': json['notes'] as String?, // 可能為 null
+          'created_at': json['created_at'] as String? ??
+              DateTimeUtils.formatToUtcIso(DateTime.now()),
+          'updated_at': json['updated_at'] as String? ??
+              DateTimeUtils.formatToUtcIso(DateTime.now()),
         });
 
         return AvailabilitySlotWithBooking(
           slot: slot,
           isBooked: json['is_booked'] as bool,
+          bookedByClientId: json['booked_by_client_id'] as String?, // ⭐ 新增
         );
       }).toList();
     } catch (e) {
@@ -169,9 +173,8 @@ class AvailabilitySlotServiceSupabase implements IAvailabilitySlotService {
           .eq('coach_id', coachId)
           .inFilter('status', ['requested', 'confirmed'])
           .gte('time_range',
-              '[${startDate.toIso8601String()},${startDate.toIso8601String()})')
-          .lte('time_range',
-              '[${endDate.toIso8601String()},${endDate.toIso8601String()})');
+              DateTimeUtils.formatToTstzRange(startDate, startDate))
+          .lte('time_range', DateTimeUtils.formatToTstzRange(endDate, endDate));
 
       // 3. 標記已預約時段
       return slots.map((slot) {
@@ -250,9 +253,9 @@ class AvailabilitySlotServiceSupabase implements IAvailabilitySlotService {
           .eq('coach_id', slot.coachId)
           .inFilter('status', ['requested', 'confirmed'])
           .gte('time_range',
-              '[${slot.startTime.toIso8601String()},${slot.startTime.toIso8601String()})')
+              DateTimeUtils.formatToTstzRange(slot.startTime, slot.startTime))
           .lte('time_range',
-              '[${slot.endTime.toIso8601String()},${slot.endTime.toIso8601String()})');
+              DateTimeUtils.formatToTstzRange(slot.endTime, slot.endTime));
 
       return (appointments as List).isNotEmpty;
     } catch (e) {
@@ -423,7 +426,8 @@ class AvailabilitySlotServiceSupabase implements IAvailabilitySlotService {
   Future<List<String>> createSlotsBatch(
       List<AvailabilitySlotModel> slots) async {
     try {
-      final slotsData = slots.map((slot) => slot.toMap(includeId: false)).toList();
+      final slotsData =
+          slots.map((slot) => slot.toMap(includeId: false)).toList();
 
       final response = await _supabase
           .from('availability_slots')
@@ -505,4 +509,3 @@ class AvailabilitySlotServiceSupabase implements IAvailabilitySlotService {
     }
   }
 }
-

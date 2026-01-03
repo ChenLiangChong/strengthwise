@@ -10,6 +10,7 @@ class UserModel {
   final String? photoURL;
   final String? nickname;
   final String? gender;
+  final bool genderVisible;  // 性別是否對其他人可見
   final double? height;
   final double? weight;
   final int? age;
@@ -29,6 +30,7 @@ class UserModel {
     this.photoURL,
     this.nickname,
     this.gender,
+    this.genderVisible = true,  // 預設可見
     this.height,
     this.weight,
     this.age,
@@ -63,6 +65,7 @@ class UserModel {
     String? photoURL,
     String? nickname,
     String? gender,
+    bool? genderVisible,
     double? height,
     double? weight,
     int? age,
@@ -80,6 +83,7 @@ class UserModel {
       photoURL: photoURL ?? this.photoURL,
       nickname: nickname ?? this.nickname,
       gender: gender ?? this.gender,
+      genderVisible: genderVisible ?? this.genderVisible,
       height: height ?? this.height,
       weight: weight ?? this.weight,
       age: age ?? this.age,

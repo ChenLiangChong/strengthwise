@@ -13,6 +13,27 @@ class DrawingController extends ChangeNotifier {
     this._errorService,
   );
 
+  // ==================== 靜態暫存區（新建模式）====================
+  /// ⭐ 臨時繪圖暫存區（sessionNoteId -> DrawingNoteModel）
+  static final Map<String, DrawingNoteModel> _temporaryDrawings = {};
+  
+  /// 獲取臨時繪圖（用於保存筆記時）
+  static DrawingNoteModel? getTemporaryDrawing(String sessionNoteId) {
+    return _temporaryDrawings[sessionNoteId];
+  }
+  
+  /// 設置臨時繪圖（用於載入現有繪圖到暫存）
+  static void setTemporaryDrawing(String sessionNoteId, DrawingNoteModel drawing) {
+    _temporaryDrawings[sessionNoteId] = drawing;
+    debugPrint('[DRAWING_CONTROLLER] 💾 設置臨時繪圖: $sessionNoteId');
+  }
+  
+  /// 清除臨時繪圖（保存成功後）
+  static void clearTemporaryDrawing(String sessionNoteId) {
+    _temporaryDrawings.remove(sessionNoteId);
+    debugPrint('[DRAWING_CONTROLLER] 🗑️ 清除臨時繪圖: $sessionNoteId');
+  }
+
   // ==================== 狀態管理 ====================
   DrawingNoteModel? _currentDrawing;
   int _currentLayerIndex = 0;
@@ -79,12 +100,31 @@ class DrawingController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _currentDrawing = await _drawingService.getDrawing(sessionNoteId, templateType: templateType);
-      
-      if (_currentDrawing != null) {
-        debugPrint('[DRAWING_CONTROLLER] ✅ 載入成功：繪圖 ID=${_currentDrawing!.id}');
+      // ⭐ 優先檢查靜態暫存區（臨時 ID）
+      if (sessionNoteId.startsWith('temp-')) {
+        final tempDrawing = _temporaryDrawings[sessionNoteId];
+        if (tempDrawing != null) {
+          // 檢查模板類型是否匹配
+          if (templateType == null || tempDrawing.templateType == templateType) {
+            _currentDrawing = tempDrawing;
+            debugPrint('[DRAWING_CONTROLLER] ✅ 從暫存區載入成功：繪圖 ID=${_currentDrawing!.id}');
+            debugPrint('[DRAWING_CONTROLLER] 📐 圖層數量: ${_currentDrawing!.layers.length}');
+            _currentLayerIndex = 0;
+            _undoStack.clear();
+            _redoStack.clear();
+            return; // 提前返回
+          }
+        }
+        debugPrint('[DRAWING_CONTROLLER] ℹ️ 暫存區找不到繪圖，創建新的');
       } else {
-        debugPrint('[DRAWING_CONTROLLER] ⚠️ 找不到繪圖');
+        // 從資料庫載入
+        _currentDrawing = await _drawingService.getDrawing(sessionNoteId, templateType: templateType);
+        
+        if (_currentDrawing != null) {
+          debugPrint('[DRAWING_CONTROLLER] ✅ 從資料庫載入成功：繪圖 ID=${_currentDrawing!.id}');
+        } else {
+          debugPrint('[DRAWING_CONTROLLER] ⚠️ 找不到繪圖');
+        }
       }
       
       _currentLayerIndex = 0;
@@ -102,8 +142,18 @@ class DrawingController extends ChangeNotifier {
 
   // ==================== 繪圖操作 ====================
   /// 開始繪製（觸控按下）
-  void startDrawing(Offset position) {
+  void startDrawing(Offset position, [Size? canvasSize]) {
     if (_currentDrawing == null || currentLayer == null) return;
+
+    // 首次繪製時記錄畫布尺寸
+    if (canvasSize != null && 
+        (_currentDrawing!.canvasWidth == 800.0 || _currentDrawing!.canvasHeight == 600.0)) {
+      debugPrint('[DRAWING_CONTROLLER] 📐 記錄畫布尺寸: ${canvasSize.width} x ${canvasSize.height}');
+      _currentDrawing = _currentDrawing!.copyWith(
+        canvasWidth: canvasSize.width,
+        canvasHeight: canvasSize.height,
+      );
+    }
 
     // 保存當前狀態到撤銷堆疊
     _saveToUndoStack();
@@ -314,15 +364,52 @@ class DrawingController extends ChangeNotifier {
   }
 
   // ==================== 儲存 ====================
+  /// 保存繪圖（自動重試 3 次，使用指數退避）
   Future<void> saveDrawing() async {
     if (_currentDrawing == null) return;
 
-    try {
-      await _drawingService.saveDrawing(_currentDrawing!);
-    } catch (e) {
-      _errorService.logError('保存繪圖失敗: $e', type: 'DrawingControllerError');
-      _errorMessage = '保存繪圖失敗';
-      notifyListeners();
+    // ⭐ 暫存模式：臨時 ID 保存到靜態暫存區
+    if (_currentDrawing!.sessionNoteId.startsWith('temp-')) {
+      _temporaryDrawings[_currentDrawing!.sessionNoteId] = _currentDrawing!;
+      debugPrint('[DRAWING_CONTROLLER] 💾 繪圖已暫存到記憶體: ${_currentDrawing!.sessionNoteId}');
+      debugPrint('[DRAWING_CONTROLLER] 📦 暫存區大小: ${_temporaryDrawings.length}');
+      return; // 跳過資料庫保存
+    }
+
+    const maxRetries = 3;
+    int attempt = 0;
+
+    while (attempt < maxRetries) {
+      try {
+        await _drawingService.saveDrawing(_currentDrawing!);
+        
+        // ✅ 成功：清除錯誤訊息
+        if (_errorMessage != null) {
+          _errorMessage = null;
+          notifyListeners();
+        }
+        return; // 成功，退出重試循環
+      } catch (e) {
+        attempt++;
+        
+        // 記錄錯誤
+        _errorService.logError(
+          '保存繪圖失敗 (嘗試 $attempt/$maxRetries): $e',
+          type: 'DrawingControllerError',
+        );
+
+        if (attempt >= maxRetries) {
+          // ❌ 最終失敗：顯示錯誤訊息
+          _errorMessage = '保存繪圖失敗，請檢查網路連線';
+          notifyListeners();
+          break;
+        } else {
+          // ⏳ 重試：使用指數退避（200ms, 400ms, 800ms）
+          final delayMs = 200 * (1 << (attempt - 1));
+          debugPrint('[DRAWING_CONTROLLER] 🔄 ${delayMs}ms 後重試...');
+          await Future.delayed(Duration(milliseconds: delayMs));
+        }
+      }
     }
   }
 

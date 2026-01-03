@@ -1,418 +1,216 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../../models/user_model.dart';
-import '../../../services/interfaces/i_user_service.dart';
-import '../../../services/service_locator.dart';
-import '../../../utils/notification_utils.dart';
-import '../../main_home_page.dart';
-import 'widgets/profile_avatar_editor.dart';
-import 'widgets/gender_selector.dart';
-import 'widgets/unit_system_selector.dart';
-import 'widgets/birthday_picker.dart';
-import 'widgets/role_selector.dart';
+import 'package:strengthwise/controllers/profile_controller.dart';
+import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/utils/notification_utils.dart';
+import 'package:strengthwise/views/pages/home/main_home_page.dart';
+import 'package:strengthwise/views/pages/profile/widgets/profile_form_content.dart';
 
+/// 個人資料設置頁面
+///
+/// 完全解耦架構：
+/// - View 層：只負責 UI 邏輯和事件分發
+/// - Controller 層：透過 Provider 提供狀態
+/// - 最小元件：表單內容拆成獨立 Widget
 class ProfileSettingsPage extends StatefulWidget {
   final bool isFirstTimeSetup;
-  
+
   const ProfileSettingsPage({
     super.key,
     this.isFirstTimeSetup = false,
   });
 
   @override
-  _ProfileSettingsPageState createState() => _ProfileSettingsPageState();
+  State<ProfileSettingsPage> createState() => _ProfileSettingsPageState();
 }
 
 class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
-  late final IUserService _userService;
+  late final ProfileController _controller;
   final _formKey = GlobalKey<FormState>();
-  
-  UserModel? _userProfile;
-  bool _isLoading = true;
-  bool _isSaving = false;
+
+  // 本地狀態（不屬於全局狀態）
   File? _avatarFile;
-  
-  // 表單控制器
   final TextEditingController _displayNameController = TextEditingController();
   final TextEditingController _nicknameController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
-  final TextEditingController _bioController = TextEditingController();  // 新增：個人簡介
-  
+  final TextEditingController _bioController = TextEditingController();
+
   String? _gender;
-  DateTime? _birthDate;  // 新增：生日
-  String _unitSystem = 'metric';  // 新增：單位系統（預設公制）
+  bool _genderVisible = true;
+  DateTime? _birthDate;
+  String _unitSystem = 'metric';
   bool _isCoach = false;
   bool _isStudent = true;
 
   @override
   void initState() {
     super.initState();
-    _userService = serviceLocator<IUserService>();
+    _controller = serviceLocator<ProfileController>();
     _loadUserProfile();
   }
-  
+
   @override
   void dispose() {
     _displayNameController.dispose();
     _nicknameController.dispose();
     _heightController.dispose();
     _weightController.dispose();
-    _ageController.dispose();
-    _bioController.dispose();  // 新增
+    _bioController.dispose();
     super.dispose();
   }
-  
+
+  /// 載入用戶資料
   Future<void> _loadUserProfile() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
-    final userProfile = await _userService.getCurrentUserProfile();
-    
-    if (userProfile != null) {
+    await _controller.loadUserProfile();
+
+    final userProfile = _controller.userProfile;
+    if (userProfile != null && mounted) {
       setState(() {
-        _userProfile = userProfile;
         _displayNameController.text = userProfile.displayName ?? '';
         _nicknameController.text = userProfile.nickname ?? '';
         _gender = userProfile.gender;
+        _genderVisible = userProfile.genderVisible;
         _heightController.text = userProfile.height?.toString() ?? '';
         _weightController.text = userProfile.weight?.toString() ?? '';
-        _ageController.text = userProfile.age?.toString() ?? '';
-        _bioController.text = userProfile.bio ?? '';  // 新增：個人簡介
-        _birthDate = userProfile.birthDate;  // 新增：生日
-        _unitSystem = userProfile.unitSystem ?? 'metric';  // 新增：單位系統
-        _isCoach = userProfile.isCoach ?? false;
-        _isStudent = userProfile.isStudent ?? true;
+        _bioController.text = userProfile.bio ?? '';
+        _birthDate = userProfile.birthDate;
+        _unitSystem = userProfile.unitSystem ?? 'metric';
+
+        if (!widget.isFirstTimeSetup) {
+          _isCoach = userProfile.isCoach;
+          _isStudent = userProfile.isStudent;
+        }
       });
     }
-    
-    setState(() {
-      _isLoading = false;
-    });
   }
-  
+
+  /// 選擇照片
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    
+
     if (pickedFile != null) {
       setState(() {
         _avatarFile = File(pickedFile.path);
       });
     }
   }
-  
+
+  /// 保存個人資料
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) {
-      debugPrint('[PROFILE] ❌ 表單驗證失敗');
       return;
     }
-    
+
     // 檢查必填欄位
     if (_gender == null) {
-      debugPrint('[PROFILE] ❌ 性別未選擇');
       NotificationUtils.showWarning(context, '請選擇性別');
       return;
     }
-    
-    debugPrint('[PROFILE] ✅ 開始保存，性別: $_gender');
-    
-    setState(() {
-      _isSaving = true;
-    });
-    
-    try {
-      final success = await _userService.updateUserProfile(
-        displayName: _displayNameController.text,
-        nickname: _nicknameController.text,
-        gender: _gender,
-        height: _heightController.text.isNotEmpty ? double.parse(_heightController.text) : null,
-        weight: _weightController.text.isNotEmpty ? double.parse(_weightController.text) : null,
-        age: _ageController.text.isNotEmpty ? int.parse(_ageController.text) : null,
-        birthDate: _birthDate,  // 新增：生日
-        bio: _bioController.text.isNotEmpty ? _bioController.text : null,  // 新增：個人簡介
-        unitSystem: _unitSystem,  // 新增：單位系統
-        isCoach: _isCoach,
-        isStudent: _isStudent,
-        avatarFile: _avatarFile,
-      );
-      
-      debugPrint('[PROFILE] 保存結果: $success');
-      
-      setState(() {
-        _isSaving = false;
-      });
-      
-      if (success) {
-        NotificationUtils.showSuccess(context, '個人資料已保存');
-        
-        // 如果是首次設置，完成後導航到主頁
-        if (widget.isFirstTimeSetup) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const MainHomePage()),
-          );
-        } else {
-          Navigator.of(context).pop();
-        }
+
+    if (_heightController.text.isEmpty) {
+      NotificationUtils.showWarning(context, '請填寫身高');
+      return;
+    }
+
+    if (_weightController.text.isEmpty) {
+      NotificationUtils.showWarning(context, '請填寫體重');
+      return;
+    }
+
+    if (_birthDate == null) {
+      NotificationUtils.showWarning(context, '請選擇生日');
+      return;
+    }
+
+    // 使用 Controller 保存
+    final success = await _controller.updateUserProfile(
+      displayName: _displayNameController.text,
+      nickname: _nicknameController.text,
+      gender: _gender,
+      genderVisible: _genderVisible,
+      height: double.parse(_heightController.text),
+      weight: double.parse(_weightController.text),
+      birthDate: _birthDate,
+      bio: _bioController.text.isNotEmpty ? _bioController.text : null,
+      unitSystem: _unitSystem,
+      isCoach: widget.isFirstTimeSetup ? false : _isCoach,
+      isStudent: widget.isFirstTimeSetup ? true : _isStudent,
+      avatarFile: _avatarFile,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      NotificationUtils.showSuccess(context, '個人資料已保存');
+
+      // 首次設置完成後跳轉主頁
+      if (widget.isFirstTimeSetup) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MainHomePage()),
+        );
       } else {
-        NotificationUtils.showError(context, '保存失敗，請稍後再試');
+        Navigator.of(context).pop();
       }
-    } catch (e, stack) {
-      debugPrint('[PROFILE] ❌ 保存異常: $e');
-      debugPrint('[PROFILE] Stack: $stack');
-      setState(() {
-        _isSaving = false;
-      });
-      NotificationUtils.showError(context, '保存失敗：$e');
+    } else {
+      NotificationUtils.showError(
+        context,
+        _controller.errorMessage ?? '保存失敗，請稍後再試',
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-    
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isFirstTimeSetup ? '完成您的個人資料' : '編輯個人資料'),
-        // 如果是首次設置，禁用返回按鈕
-        automaticallyImplyLeading: !widget.isFirstTimeSetup,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (widget.isFirstTimeSetup)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 20.0),
-                  child: Text(
-                    '請完成您的個人資料設置，以便我們能夠為您提供更好的服務',
-                    style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  ),
-                ),
-              
-              // 頭像部分
-              ProfileAvatarEditor(
-                photoURL: _userProfile?.photoURL,
+    return ChangeNotifierProvider<ProfileController>.value(
+      value: _controller,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.isFirstTimeSetup ? '完成您的個人資料' : '編輯個人資料'),
+          automaticallyImplyLeading: !widget.isFirstTimeSetup,
+        ),
+        body: Consumer<ProfileController>(
+          builder: (context, controller, child) {
+            // 首次載入顯示 Loading
+            if (controller.isLoading && controller.userProfile == null) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: ProfileFormContent(
+                formKey: _formKey,
+                isFirstTimeSetup: widget.isFirstTimeSetup,
+                isOAuthUser: controller.isOAuthUser,
+                displayNameController: _displayNameController,
+                nicknameController: _nicknameController,
+                heightController: _heightController,
+                weightController: _weightController,
+                bioController: _bioController,
+                photoURL: controller.userProfile?.photoURL,
                 avatarFile: _avatarFile,
+                gender: _gender,
+                genderVisible: _genderVisible,
+                birthDate: _birthDate,
+                unitSystem: _unitSystem,
+                isSaving: controller.isLoading,
                 onPickImage: _pickImage,
+                onGenderChanged: (value) => setState(() => _gender = value),
+                onGenderVisibleChanged: (value) =>
+                    setState(() => _genderVisible = value),
+                onBirthDateChanged: (value) =>
+                    setState(() => _birthDate = value),
+                onUnitSystemChanged: (value) =>
+                    setState(() => _unitSystem = value),
+                onSave: _saveProfile,
               ),
-              
-              const SizedBox(height: 20),
-              
-              // 顯示名稱
-              TextFormField(
-                controller: _displayNameController,
-                decoration: const InputDecoration(
-                  labelText: '顯示名稱',
-                  border: OutlineInputBorder(),
-                  helperText: '這將顯示在您的個人資料頁面',
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '請輸入顯示名稱';
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // 昵稱
-              TextFormField(
-                controller: _nicknameController,
-                decoration: const InputDecoration(
-                  labelText: '昵稱',
-                  border: OutlineInputBorder(),
-                  helperText: '這將顯示在應用內的社交互動中',
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '請輸入昵稱';
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // 性別選擇
-              GenderSelector(
-                selectedGender: _gender,
-                onChanged: (value) {
-                  setState(() {
-                    _gender = value;
-                  });
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // 身高
-              TextFormField(
-                controller: _heightController,
-                decoration: const InputDecoration(
-                  labelText: '身高 (cm)',
-                  border: OutlineInputBorder(),
-                  helperText: '可選',
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    try {
-                      final height = double.parse(value);
-                      if (height <= 0 || height > 250) {
-                        return '請輸入有效的身高 (0-250 cm)';
-                      }
-                    } catch (e) {
-                      return '請輸入有效的數字';
-                    }
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // 體重
-              TextFormField(
-                controller: _weightController,
-                decoration: const InputDecoration(
-                  labelText: '體重 (kg)',
-                  border: OutlineInputBorder(),
-                  helperText: '可選',
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    try {
-                      final weight = double.parse(value);
-                      if (weight <= 0 || weight > 300) {
-                        return '請輸入有效的體重 (0-300 kg)';
-                      }
-                    } catch (e) {
-                      return '請輸入有效的數字';
-                    }
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // 年齡
-              TextFormField(
-                controller: _ageController,
-                decoration: const InputDecoration(
-                  labelText: '年齡',
-                  border: OutlineInputBorder(),
-                  helperText: '可選',
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    try {
-                      final age = int.parse(value);
-                      if (age <= 0 || age > 120) {
-                        return '請輸入有效的年齡 (1-120)';
-                      }
-                    } catch (e) {
-                      return '請輸入有效的數字';
-                    }
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // 生日
-              BirthdayPicker(
-                selectedDate: _birthDate,
-                onDateSelected: (date) {
-                  setState(() {
-                    _birthDate = date;
-                  });
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // 個人簡介
-              TextFormField(
-                controller: _bioController,
-                decoration: const InputDecoration(
-                  labelText: '個人簡介',
-                  border: OutlineInputBorder(),
-                  helperText: '可選 - 介紹您自己，讓其他人更了解您',
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 4,
-                maxLength: 200,
-                keyboardType: TextInputType.multiline,
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // 單位系統選擇
-              UnitSystemSelector(
-                selectedUnit: _unitSystem,
-                onChanged: (value) {
-                  setState(() {
-                    _unitSystem = value!;
-                  });
-                },
-              ),
-              
-              const SizedBox(height: 20),
-              
-              // 用戶角色選擇
-              RoleSelector(
-                isCoach: _isCoach,
-                isStudent: _isStudent,
-                onCoachChanged: (value) {
-                  setState(() {
-                    _isCoach = value;
-                  });
-                },
-                onStudentChanged: (value) {
-                  setState(() {
-                    _isStudent = value;
-                  });
-                },
-              ),
-              
-              const SizedBox(height: 30),
-              
-              // 保存按鈕
-              Center(
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _saveProfile,
-                    child: _isSaving 
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : Text(
-                            widget.isFirstTimeSetup ? '完成設置' : '保存資料', 
-                            style: const TextStyle(fontSize: 18)
-                          ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
-} 
+}

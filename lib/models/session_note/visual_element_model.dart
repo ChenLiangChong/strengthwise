@@ -1,3 +1,5 @@
+import 'package:strengthwise/utils/datetime_utils.dart';  // ⭐ 新增
+
 /// 視覺元素基類（抽象類）
 /// 
 /// Phase 3: 視覺化筆記系統
@@ -66,10 +68,10 @@ class DrawingElementModel extends VisualElementModel {
       thumbnailPath: json['thumbnail_path'] as String?,
       templateType: json['template_type'] as String?,
       createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at'] as String)
+          ? DateTimeUtils.parseIsoTimestamp(json['created_at'] as String)  // ⭐ 統一工具類
           : null,
       updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
+          ? DateTimeUtils.parseIsoTimestamp(json['updated_at'] as String)  // ⭐ 統一工具類
           : null,
     );
   }
@@ -82,8 +84,8 @@ class DrawingElementModel extends VisualElementModel {
       if (drawingData != null) 'drawing_data': drawingData,
       if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
       if (templateType != null) 'template_type': templateType,
-      if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
-      if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
+      if (createdAt != null) 'created_at': DateTimeUtils.formatToUtcIso(createdAt!),
+      if (updatedAt != null) 'updated_at': DateTimeUtils.formatToUtcIso(updatedAt!),
     };
   }
 

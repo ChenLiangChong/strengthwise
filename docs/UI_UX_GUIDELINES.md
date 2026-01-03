@@ -704,12 +704,228 @@ Row(
 // ❌ 錯誤：固定寬度可能導致小螢幕溢出
 Container(width: 350, child: Card())
 
-// ✅ 正確：使用百分比或 padding
+//✅ 正確：使用百分比或 padding
 Padding(
   padding: EdgeInsets.symmetric(horizontal: 16),
   child: Card(),
 )
 ```
+
+### 6.4 統一卡片組件（UnifiedSlotCard）
+
+> **設計原則**：保持 Material Design 3 的 ListTile 默認樣式，統一視覺語言
+
+#### 組件說明
+
+`UnifiedSlotCard` 用於顯示時間時段資訊（學員時間偏好、教練時段管理），統一兩端的 UI 設計。
+
+#### 核心設計決策 ⭐
+
+| 設計元素 | 決策 | 理由 |
+|---------|------|------|
+| **基礎組件** | `ListTile` | Flutter 標準組件，自動處理間距和響應式 |
+| **卡片圓角** | `12dp` | 比 16dp 更精緻，視覺上更現代 |
+| **卡片間距** | `12dp` | 標準間距，視覺密度適中 |
+| **圖標樣式** | `CircleAvatar` | 統一使用圓形背景，視覺一致性 |
+| **圖標透明度** | `0.2` | ListTile 默認值 |
+| **文字樣式** | ListTile 默認 | 不自訂 fontWeight 或 fontSize |
+| **trailing 樣式** | 刪除按鈕或箭頭 | 統一交互模式 |
+
+#### 完整實作範例
+
+```dart
+import 'package:flutter/material.dart';
+
+/// 統一的時段卡片組件
+/// 
+/// 用於學員時間偏好和教練時段管理
+class UnifiedSlotCard extends StatelessWidget {
+  final String timeRange;
+  final IconData icon;
+  final Color iconColor;
+  final Color? iconBackgroundColor;
+  final String? subtitle;
+  final String? additionalInfo;
+  final VoidCallback? onTap;
+  final VoidCallback? onDelete;
+  final bool showChevron;
+
+  const UnifiedSlotCard({
+    super.key,
+    required this.timeRange,
+    required this.icon,
+    required this.iconColor,
+    this.iconBackgroundColor,
+    this.subtitle,
+    this.additionalInfo,
+    this.onTap,
+    this.onDelete,
+    this.showChevron = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: iconBackgroundColor ?? iconColor.withOpacity(0.2),
+          child: Icon(icon, color: iconColor),
+        ),
+        title: Text(timeRange), // 使用 ListTile 默認樣式
+        subtitle: (additionalInfo != null || subtitle != null)
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (additionalInfo != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      additionalInfo!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.primary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              )
+            : null,
+        trailing: showChevron
+            ? const Icon(Icons.chevron_right)
+            : (onDelete != null
+                ? IconButton(
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: colorScheme.error,
+                    ),
+                    onPressed: onDelete,
+                    tooltip: '刪除時段',
+                  )
+                : null),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+```
+
+#### 使用範例
+
+**學員時間偏好（顯示刪除按鈕）**：
+```dart
+UnifiedSlotCard(
+  timeRange: '09:00 - 10:00',
+  icon: Icons.star,
+  iconColor: Colors.amber,
+  subtitle: '這段時間精神最好',
+  onTap: () => _editSlot(slot),
+  onDelete: () => _deleteSlot(slot.id),
+)
+```
+
+**教練時段管理（行事曆底部，顯示刪除按鈕）**：
+```dart
+UnifiedSlotCard(
+  timeRange: '09:00 - 10:00',
+  icon: slot.isRecurring ? Icons.repeat : Icons.event,
+  iconColor: slot.isRecurring ? Colors.blue : Colors.green,
+  additionalInfo: slot.getRecurrenceDescription(),
+  subtitle: slot.notes,
+  onTap: () => _showSlotDetails(slot),
+  onDelete: () => _deleteSlot(slot.id),
+)
+```
+
+**導航場景（顯示箭頭）**：
+```dart
+UnifiedSlotCard(
+  timeRange: '09:00 - 10:00',
+  icon: Icons.event,
+  iconColor: Colors.green,
+  onTap: () => Navigator.push(...),
+  showChevron: true, // 顯示箭頭而非刪除按鈕
+)
+```
+
+#### ❌ 常見錯誤
+
+**錯誤 1：自訂文字樣式**
+```dart
+// ❌ 不要自訂 title 的樣式
+title: Text(
+  timeRange,
+  style: theme.textTheme.titleMedium?.copyWith(
+    fontWeight: FontWeight.w600, // 會破壞統一性
+  ),
+)
+
+// ✅ 使用 ListTile 默認樣式
+title: Text(timeRange)
+```
+
+**錯誤 2：使用手動 Row/Column 佈局**
+```dart
+// ❌ 不要手動構建佈局
+child: Padding(
+  padding: EdgeInsets.all(16),
+  child: Row(
+    children: [
+      CircleAvatar(...),
+      SizedBox(width: 16),
+      Expanded(child: Column(...)),
+    ],
+  ),
+)
+
+// ✅ 使用 ListTile
+child: ListTile(
+  leading: CircleAvatar(...),
+  title: Text(...),
+  subtitle: ...,
+)
+```
+
+**錯誤 3：不一致的圓角**
+```dart
+// ❌ 使用 16dp 圓角
+borderRadius: BorderRadius.circular(16)
+
+// ✅ 統一使用 12dp
+borderRadius: BorderRadius.circular(12)
+```
+
+#### 設計檢查清單
+
+使用此組件前，請確認：
+- [ ] 使用 `ListTile` 作為基礎組件
+- [ ] 圓角統一為 `12dp`
+- [ ] 不自訂 `title` 的文字樣式
+- [ ] 圖標使用 `CircleAvatar` + `0.2` 透明度
+- [ ] `trailing` 只有刪除按鈕或箭頭兩種
+- [ ] 卡片間距為 `12dp`
 
 ---
 

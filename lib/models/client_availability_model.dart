@@ -91,20 +91,21 @@ class ClientAvailabilityModel {
   /// 從 Supabase JSON 創建實例
   factory ClientAvailabilityModel.fromSupabase(Map<String, dynamic> json) {
     // 解析 TSTZRANGE 格式（與 Phase 2 一致）
+    // ⭐ DateTimeUtils.parseTstzRange 已自動轉換為本地時間
     final timeRangeMap = DateTimeUtils.parseTstzRange(json['time_range'] as String);
     
     return ClientAvailabilityModel(
       id: json['id'] as String,
       clientId: json['client_id'] as String,
-      startTime: timeRangeMap['start']!,
-      endTime: timeRangeMap['end']!,
+      startTime: timeRangeMap['start']!,  // ⭐ 已經是本地時間
+      endTime: timeRangeMap['end']!,      // ⭐ 已經是本地時間
       recurrenceRule: json['recurrence_rule'] as String?,
       priority: AvailabilityPriority.fromJson(
         json['priority'] as String? ?? 'available',
       ),
       notes: json['notes'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTimeUtils.parseIsoTimestamp(json['created_at'] as String),  // ⭐ 統一工具類
+      updatedAt: DateTimeUtils.parseIsoTimestamp(json['updated_at'] as String),  // ⭐ 統一工具類
     );
   }
 

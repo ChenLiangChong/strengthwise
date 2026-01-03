@@ -72,6 +72,7 @@ class SessionNoteController extends ChangeNotifier {
   Future<void> loadCoachNotes({
     required String coachId,
     String? clientId,
+    String? clientName, // ⭐ 新增：用於查詢已刪除學員的筆記
     int limit = 20,
     String? lastNoteId,
     bool append = false,
@@ -80,6 +81,7 @@ class SessionNoteController extends ChangeNotifier {
       await _query.loadCoachNotes(
         coachId: coachId,
         clientId: clientId,
+        clientName: clientName, // ⭐ 傳遞參數
         limit: limit,
         lastNoteId: lastNoteId,
         append: append,
@@ -95,6 +97,8 @@ class SessionNoteController extends ChangeNotifier {
   /// 載入學員可見的筆記（僅 shared）
   Future<void> loadClientNotes({
     required String clientId,
+    String? coachId, // ⭐ 新增：用於教練篩選
+    String? coachName, // ⭐ 新增：用於查詢已刪除教練的筆記
     int limit = 20,
     String? lastNoteId,
     bool append = false,
@@ -102,6 +106,8 @@ class SessionNoteController extends ChangeNotifier {
     await _executeOperation(() async {
       await _query.loadClientNotes(
         clientId: clientId,
+        coachId: coachId, // ⭐ 傳遞參數
+        coachName: coachName, // ⭐ 傳遞參數
         limit: limit,
         lastNoteId: lastNoteId,
         append: append,
@@ -205,6 +211,27 @@ class SessionNoteController extends ChangeNotifier {
       await _crud.deleteNote(noteId);
       success = true;
     }, '刪除筆記失敗');
+    
+    return success;
+  }
+
+  /// 隱藏筆記（教練或學員）⭐ 新增
+  /// 
+  /// 當關係為 archived 時，雙方可以選擇「移除」共享筆記，
+  /// 實際上是 UPDATE hidden_by_client/hidden_by_coach = true。
+  /// 
+  /// [noteId] 筆記 ID
+  /// [isCoach] true = 教練隱藏，false = 學員隱藏
+  Future<bool> hideNote({
+    required String noteId,
+    required bool isCoach,
+  }) async {
+    bool success = false;
+    
+    await _executeOperation(() async {
+      await _noteService.hideNote(noteId: noteId, isCoach: isCoach);
+      success = true;
+    }, '隱藏筆記失敗');
     
     return success;
   }

@@ -2,7 +2,7 @@
 
 > 完整的 Supabase PostgreSQL 資料庫架構文檔
 
-**最後更新**：2024年12月30日 - v2.0 Phase 3 完成 + 測試通過 ✅
+**最後更新**：2026年1月1日 - v2.2 資料庫修復完成 ✅
 
 ---
 
@@ -27,6 +27,40 @@
 - **新增表格**：`attribute_categories`, `attributes`, `exercise_attributes`, `user_attribute_stats`, `user_exercise_stats`
 - **修改表格**：`exercises`（添加 `is_placeholder`, `default_metric`），`workout_sets`（添加 `is_warmup`, `estimated_1rm`）
 - **實施時間**：v2.0 Phase 2（預計 3-4 週）
+
+---
+
+## 🔧 v2.2 資料庫修復（2026-01-01）✅
+
+### 修復內容
+
+**1. Personal Records Body Part 欄位** ⭐⭐⭐
+- **問題**：`personal_records.body_part` 一直是 `NULL`，導致 `personal_records_top_by_body_part` 視圖無資料
+- **修復**：觸發器自動從 `exercises.body_parts[1]` 查詢並填入
+- **Migration**：`010_fix_personal_records_body_part.sql`
+
+**2. 統計觸發器支援布林值**
+- **問題**：觸發器只支援 `completed: "true"` 字串格式
+- **修復**：同時支援字串和布林值（向後相容 100%）
+- **Migration**：`009_fix_trigger_bool_support.sql`
+
+**3. 可用時段查詢函數修復**
+- **問題**：`get_available_slots()` 函數邏輯錯誤
+- **修復**：重新實作函數，正確查詢並排除已預約時段
+- **Migration**：`008_fix_get_available_slots.sql`
+
+### 專案整理
+
+**Python 腳本整理**：
+- 刪除 6 個臨時檢查工具
+- 保留 8 個核心工具
+- 更新 `scripts/README.md`
+
+**Migrations 整理**：
+- 刪除 3 個臨時 SQL 檔案
+- 新增 3 個修復檔案（v2.2）
+- 更新 `migrations/README.md`
+- 最終結構：19 → 11 個（-42%）
 
 ---
 
@@ -270,7 +304,13 @@ CREATE INDEX idx_workout_plans_completed ON public.workout_plans (completed, sch
 **重要欄位說明**：
 - `id`: TEXT 類型（20 字符 Firestore ID）
 - `completed`: `false` = 未完成的訓練計劃，`true` = 已完成的訓練記錄
-- `trainee_id`: 受訓者（單機版 = 自己）
+- `trainee_id`: 受訓者 ID（v2.0 Phase 4C 啟用）⭐
+  - 學員自主訓練：trainee_id = 學員本人 ID
+  - 教練指派訓練：trainee_id = 學員 ID, creator_id = 教練 ID
+- `creator_id`: 創建者 ID（v2.0 Phase 4C 啟用）⭐
+  - 學員自主訓練：creator_id = 學員本人 ID
+  - 教練指派訓練：creator_id = 教練 ID
+  - 查詢邏輯：透過 trainee_id 查詢學員的所有訓練，透過 creator_id 篩選特定教練的訓練
 - `creator_id`: 創建者（單機版 = 自己，教練版 = 教練）
 - `exercises`: JSONB 格式，存儲動作配置（組數、次數、重量等）
 
@@ -793,57 +833,27 @@ CREATE POLICY "Users can view their own workout plans"
 
 ---
 
-## 🔍 App 中所有的資料庫查詢
+## 🔍 資料庫查詢架構
 
-> 本章節列出當前 App 中所有實際使用的 Supabase 查詢，按表格分類
+### ✅ Clean Architecture 驗證
 
-**最後更新**：2024年12月27日  
-**資料來源**：`lib/services/*_supabase.dart`
+**架構狀態**：🎉 **完美實現！**
 
-### ✅ 架構驗證結果
+| 層級 | Supabase 使用 | 狀態 |
+|------|--------------|------|
+| **Controller/Model/View/Utils** | ❌ 0 個直接調用 | ✅ 完全隔離 |
+| **Service 層** | ✅ 68 個查詢 | ✅ 集中管理 |
 
-**檢查範圍**：`lib/controllers/`, `lib/models/`, `lib/views/`, `lib/utils/`, `lib/widgets/`
+**關鍵優勢**：
+- ✅ 100% 透過 Interface 使用 Service
+- ✅ 所有查詢集中在 `lib/services/*_supabase.dart`
+- ✅ 完全可測試（Mock Service）
 
-| 目錄 | Supabase 導入 | 直接查詢 | 狀態 |
-|------|--------------|----------|------|
-| **controllers/** | ❌ 0 個 | ❌ 0 個 | ✅ 完全隔離 |
-| **models/** | ❌ 0 個 | ❌ 0 個 | ✅ 完全隔離 |
-| **views/** | ❌ 0 個 | ❌ 0 個 | ✅ 完全隔離 |
-| **utils/** | ❌ 0 個 | ❌ 0 個 | ✅ 完全隔離 |
-| **widgets/** | ❌ 0 個 | ❌ 0 個 | ✅ 完全隔離 |
-| **services/** | ✅ 8 個 | ✅ 68 個 | ✅ 集中管理 |
+### 📊 查詢統計摘要
 
-**結論**：🎉 **完美的 Clean Architecture 實現！**
-
-- ✅ **100% 隔離**：所有 Supabase 查詢都集中在 Service 層
-- ✅ **依賴反轉**：Controller、View 層透過 Interface 使用 Service
-- ✅ **可測試性**：Service 可輕鬆 Mock，便於單元測試
-- ✅ **可維護性**：數據庫查詢邏輯集中管理，易於優化和重構
-
----
-
-### 📊 查詢統計總覽
-
-| 表格 | SELECT | INSERT | UPDATE | DELETE | 總計 |
-|------|--------|--------|--------|--------|------|
-| **workout_plans** | 7 | 2 | 2 | 2 | 13 |
-| **workout_templates** | 2 | 1 | 1 | 1 | 5 |
-| **exercises** | 6 | 0 | 0 | 0 | 6 |
-| **custom_exercises** | 3 | 1 | 1 | 1 | 6 |
-| **users** | 3 | 0 | 3 | 0 | 6 |
-| **body_data** | 2 | 1 | 1 | 1 | 5 |
-| **notes** | 2 | 1 | 1 | 1 | 5 |
-| **exercise_types** | 1 | 0 | 0 | 0 | 1 |
-| **body_parts** | 1 | 0 | 0 | 0 | 1 |
-| **bookings** | 7 | 1 | 2 | 0 | 10 |
-| **available_slots** | 1 | 0 | 0 | 0 | 1 |
-| **SharedPreferences** | 5 | 2 | 1 | 1 | 9 |
-| **總計** | **40** | **9** | **12** | **7** | **68** |
-
-**優化狀態**：
-- ✅ **已優化**：35 個查詢（明確欄位選擇）
-- ⚠️ **需優化**：5 個查詢（使用 `SELECT *`）
-- 🔍 **統計查詢**：8 個（已使用批次查詢優化）
+**總計**：68 個查詢（40 SELECT + 9 INSERT + 12 UPDATE + 7 DELETE）  
+**優化率**：51% 已優化（明確欄位選擇）  
+**主要表格**：workout_plans (13)、bookings (10)、exercises (6)
 
 ---
 
@@ -1933,58 +1943,81 @@ for (var exercise in exercises) {
 
 ## 📁 資料庫遷移檔案
 
-> 所有 SQL 遷移腳本位於 `migrations/` 目錄
+> 所有 SQL 遷移腳本位於 `migrations/` 目錄  
+> **重大優化**（2025-01-01）：從 19 個檔案合併為 7 個 ✅
 
-### 遷移檔案總覽（按功能分類）
+### 新的 Migrations 結構（優化後）
 
-#### 🏗️ 初始 Schema（001-002）
+**完整說明**：請參考 **[migrations/README.md](../migrations/README.md)**
 
-| 檔案 | 說明 | 狀態 |
-|------|------|------|
-| `001_create_core_tables.sql` | 初始核心表格：workout_plans, workout_templates, notes | ✅ 已執行 |
-| `002_create_user_tables.sql` | 用戶系統：users + 預約系統（4 表） | ✅ 已執行 |
+#### v1.0 核心（4 個檔案）
 
-#### 📊 功能擴展（004-012）
+| 檔案 | 合併自 | 說明 | 大小 |
+|------|--------|------|------|
+| `001_v1_core_tables.sql` | 001+002+004 | 所有基礎表格（exercises, users, workout_plans, body_data 等） | 23 KB |
+| `002_v1_initial_data.sql` | 008+009+011 | 系統資料（794 個動作 + 元數據修正） | 317 KB |
+| `003_v1_enhancements.sql` | 012+015+016+017+018+019+020 | 功能增強（自訂動作、索引、全文搜尋、View） | 40 KB |
+| `004_v1_optimization.sql` | 026 | 統計彙總表（Materialized View + 觸發器） | 18 KB |
 
-| 檔案 | 說明 | 狀態 |
-|------|------|------|
-| `004_create_body_data_table.sql` | 身體數據表（體重、體脂、BMI、肌肉量） | ✅ 已執行 |
-| `008_update_exercise_naming.sql` | 動作命名標準化（794 個動作） | ✅ 已執行 |
-| `009_fix_bilingual_metadata_tables.sql` | 修復元數據雙語系統（body_parts, exercise_types） | ✅ 已執行 |
-| `011_force_sync_body_parts.sql` | 強制同步身體部位資料 | ✅ 已執行 |
-| `012_create_custom_exercises_table.sql` | 自訂動作表 | ✅ 已執行 |
+#### v2.0 功能（3 個檔案）
 
-#### 🔧 資料修復（016-017）
+| 檔案 | 合併自 | 說明 | 大小 |
+|------|--------|------|------|
+| `005_v2_phase1_coaching.sql` | 021 | 教練學員系統（coaching_relationships + 8 RLS） | 8 KB |
+| `006_v2_phase2_appointments.sql` | 022 | 預約系統（availability_slots, appointments + 10 RLS） | 13 KB |
+| `007_v2_phase3_notes.sql` | 023+024+025 | 視覺化筆記（SOAP 筆記、照片、手繪板、時間偏好） | 26 KB |
 
-| 檔案 | 說明 | 狀態 |
-|------|------|------|
-| `016_add_training_type_to_custom_exercises.sql` | 自訂動作加入 training_type 欄位 | ✅ 已執行 |
-| `017_fix_cardio_stretch_body_part.sql` | 修復心肺/伸展動作的 body_part | ✅ 已執行 |
-
-#### ⚡ 效能優化（015, 018-019）
-
-| 檔案 | 說明 | 狀態 | 效益 |
-|------|------|------|------|
-| **Phase 1** - `015_performance_optimization_phase1_indexes.sql` | 17 個索引（覆蓋索引 + GIN + 複合） | ✅ **已執行** | **70-85% 提升** |
-| **Phase 2** - `018_performance_optimization_phase2_fulltext.sql` | pgroonga 全文搜尋（8 索引 + 3 函式） | ✅ **已執行** | **90%+ 提升** |
-| **Phase 3** - `019_performance_optimization_phase3_stats_summary.sql` | 統計彙總表 + 觸發器（daily_workout_summary, personal_records） | ✅ **100% 完成** | **80-95% 提升** |
-
-**效能優化詳情**：請參考 `docs/DATABASE_OPTIMIZATION_GUIDE.md`
+**優化成果**：
+- ✅ 從 19 個 → 7 個檔案（-63%）
+- ✅ 清晰的版本劃分（v1.0 vs v2.0）
+- ✅ 只需要 v1.0？執行前 4 個即可
+- ✅ 完整功能？執行全部 7 個
+- ✅ 舊檔案已歸檔至 `archived_original/`
 
 ---
 
 ### 如何執行遷移
 
-1. **登入 Supabase Dashboard**
-2. **進入 SQL Editor**
-3. **複製貼上 SQL 檔案內容**
-4. **點擊 Run 執行**
+#### 完整部署（v1.0 + v2.0）
+
+依序執行 **7 個檔案**：
+
+```bash
+# v1.0 核心
+001_v1_core_tables.sql
+002_v1_initial_data.sql
+003_v1_enhancements.sql
+004_v1_optimization.sql
+
+# v2.0 功能
+005_v2_phase1_coaching.sql
+006_v2_phase2_appointments.sql
+007_v2_phase3_notes.sql
+```
+
+#### 僅部署 v1.0（單機版）
+
+只需執行前 **4 個檔案**。
+
+#### 執行方式
+
+**方法 1：Supabase Dashboard**
+1. 登入 Supabase Dashboard
+2. 進入 SQL Editor
+3. 依序貼上每個檔案內容並執行
+
+**方法 2：psql 命令列**
+```bash
+psql -U postgres -d strengthwise -f migrations/001_v1_core_tables.sql
+# ... 依序執行其他檔案
+```
 
 **注意事項**：
-- ⚠️ 必須按照編號順序執行（001 → 002 → 004 → ...）
-- ⚠️ Phase 2 需要先啟用 `pgroonga` 擴展
-- ✅ 所有遷移都是非破壞性操作（使用 `IF NOT EXISTS`）
-- ✅ 可以重複執行（冪等性）
+- ⚠️ 必須按照編號順序執行（001 → 007）
+- ⚠️ v2.0 的表格依賴 v1.0 的 `users` 表
+- ⚠️ 需要先啟用 `pgroonga` 擴展（全文搜尋）
+- ✅ 所有遷移使用 `IF NOT EXISTS`（冪等性）
+- ✅ 可以重複執行（不會破壞資料）
 
 ---
 

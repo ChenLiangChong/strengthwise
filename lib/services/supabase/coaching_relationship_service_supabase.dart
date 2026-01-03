@@ -2,6 +2,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../interfaces/i_coaching_relationship_service.dart';
 import '../../models/coaching_relationship_model.dart';
 import '../../models/user/user_model.dart';
+import '../../models/client_profile_model.dart';
+import '../../models/client_with_relationship.dart'; // ⭐ 新增
+import '../../models/coach_with_relationship.dart'; // ⭐ 新增
 import '../core/error_handling_service.dart';
 import 'coaching_relationship/coaching_relationship_query.dart';
 import 'coaching_relationship/coaching_relationship_operations.dart';
@@ -118,9 +121,7 @@ class CoachingRelationshipServiceSupabase
       }
 
       // 批量查詢用戶資料（避免 N+1 問題）
-      final response = await _supabase
-          .from('users')
-          .select('''
+      final response = await _supabase.from('users').select('''
             id,
             email,
             display_name,
@@ -128,8 +129,7 @@ class CoachingRelationshipServiceSupabase
             is_coach,
             is_student,
             profile_created_at
-          ''')
-          .inFilter('id', clientIds);
+          ''').inFilter('id', clientIds);
 
       final data = response as List<dynamic>;
       final users = data
@@ -143,6 +143,145 @@ class CoachingRelationshipServiceSupabase
     } catch (e) {
       _errorService.logError(
         '獲取學員詳情失敗: $e',
+        type: 'CoachingRelationshipServiceError',
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<ClientWithRelationship>> getCoachClientsWithRelationship(
+    String coachId, {
+    String? status,
+  }) async {
+    try {
+      // 1. 查詢所有關係（包含已刪除的學員）
+      final relationships = await _query.queryCoachClients(
+        coachId,
+        status: status,
+      );
+
+      // 2. 提取有效的學員 ID（過濾 null）
+      final validClientIds = relationships
+          .where((r) => r.clientId != null)
+          .map((r) => r.clientId!)
+          .toList();
+
+      // 3. 批量查詢用戶資料
+      Map<String, UserModel> usersMap = {};
+      if (validClientIds.isNotEmpty) {
+        final response = await _supabase.from('users').select('''
+              id,
+              email,
+              display_name,
+              photo_url,
+              is_coach,
+              is_student,
+              profile_created_at
+            ''').inFilter('id', validClientIds);
+
+        final data = response as List<dynamic>;
+        for (final json in data) {
+          final user = UserModel.fromSupabase(json as Map<String, dynamic>);
+          usersMap[user.uid] = user;
+        }
+      }
+
+      // 4. 組合結果（關係 + 用戶資料）
+      final results = <ClientWithRelationship>[];
+      for (final relationship in relationships) {
+        final user = relationship.clientId != null
+            ? usersMap[relationship.clientId!]
+            : null;
+
+        results.add(ClientWithRelationship(
+          user: user,
+          relationship: relationship,
+        ));
+      }
+
+      return results;
+    } catch (e) {
+      _errorService.logError(
+        '獲取學員及關係狀態失敗: $e',
+        type: 'CoachingRelationshipServiceError',
+      );
+      rethrow;
+    }
+  }
+
+  /// ⭐ 新增：取得學員的教練列表（含關係狀態）
+  @override
+  Future<List<CoachWithRelationship>> getClientCoachesWithRelationship(
+    String clientId, {
+    String? status,
+  }) async {
+    try {
+      // 1. 查詢所有關係（包含已刪除的教練）
+      final relationships = await _query.queryClientCoaches(
+        clientId,
+        status: status,
+      );
+
+      // 2. 提取有效的教練 ID（過濾 null）
+      final validCoachIds = relationships
+          .where((r) => r.coachId != null)
+          .map((r) => r.coachId!)
+          .toList();
+
+      // 3. 批量查詢用戶資料
+      Map<String, UserModel> usersMap = {};
+      if (validCoachIds.isNotEmpty) {
+        final response = await _supabase.from('users').select('''
+              id,
+              email,
+              display_name,
+              photo_url,
+              is_coach,
+              is_student,
+              profile_created_at
+            ''').inFilter('id', validCoachIds);
+
+        final data = response as List<dynamic>;
+        for (final json in data) {
+          final user = UserModel.fromSupabase(json as Map<String, dynamic>);
+          usersMap[user.uid] = user;
+        }
+      }
+
+      // 4. 組合結果（關係 + 用戶資料）
+      final results = <CoachWithRelationship>[];
+      for (final relationship in relationships) {
+        final user = relationship.coachId != null
+            ? usersMap[relationship.coachId!]
+            : null;
+
+        results.add(CoachWithRelationship(
+          user: user,
+          relationship: relationship,
+        ));
+      }
+
+      return results;
+    } catch (e) {
+      _errorService.logError(
+        '獲取教練及關係狀態失敗: $e',
+        type: 'CoachingRelationshipServiceError',
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CoachingRelationshipModel?> getRelationshipByUsers(
+    String coachId,
+    String clientId,
+  ) async {
+    try {
+      return await _query.queryByUsers(coachId, clientId);
+    } catch (e) {
+      _errorService.logError(
+        '查詢綁定關係失敗: $e',
         type: 'CoachingRelationshipServiceError',
       );
       rethrow;
@@ -194,9 +333,8 @@ class CoachingRelationshipServiceSupabase
   @override
   Future<CoachingRelationshipModel> inviteClient(
     String coachId,
-    String clientEmail, {
-    String? notes,
-  }) async {
+    String clientEmail,
+  ) async {
     try {
       // 查詢學員是否已註冊
       final response = await _supabase
@@ -216,7 +354,6 @@ class CoachingRelationshipServiceSupabase
         coachId: coachId,
         clientId: clientId,
         status: 'pending',
-        notes: notes,
       );
 
       // 清除快取
@@ -237,14 +374,12 @@ class CoachingRelationshipServiceSupabase
     String coachId,
     String clientId, {
     String status = 'pending',
-    String? notes,
   }) async {
     try {
       final relationship = await _operations.createRelationship(
         coachId: coachId,
         clientId: clientId,
         status: status,
-        notes: notes,
       );
 
       // 清除快取
@@ -347,29 +482,6 @@ class CoachingRelationshipServiceSupabase
   }
 
   @override
-  Future<void> updateNotes(String relationshipId, String notes) async {
-    try {
-      final relationship = await _query.queryById(relationshipId);
-      if (relationship == null) {
-        throw Exception('找不到該綁定關係');
-      }
-
-      await _operations.updateNotes(
-        relationshipId: relationshipId,
-        notes: notes,
-      );
-
-      _cache.clearCoachCache(relationship.coachId);
-    } catch (e) {
-      _errorService.logError(
-        '更新備註失敗: $e',
-        type: 'CoachingRelationshipServiceError',
-      );
-      rethrow;
-    }
-  }
-
-  @override
   Future<void> deleteRelationship(String relationshipId) async {
     try {
       final relationship = await _query.queryById(relationshipId);
@@ -410,5 +522,61 @@ class CoachingRelationshipServiceSupabase
   void clearClientCache(String clientId) {
     _cache.clearClientCache(clientId);
   }
-}
 
+  // ============================================================================
+  // 學員檔案管理
+  // ============================================================================
+
+  @override
+  Future<CoachingRelationshipModel?> getRelationshipByIdWithProfile(
+    String relationshipId,
+  ) async {
+    try {
+      return await _query.queryByIdWithProfile(relationshipId);
+    } catch (e) {
+      _errorService.logError(
+        '獲取關係詳情失敗（含檔案）: $e',
+        type: 'CoachingRelationshipServiceError',
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CoachingRelationshipModel?> getRelationshipByUsersWithProfile(
+    String coachId,
+    String clientId,
+  ) async {
+    try {
+      return await _query.queryByUsersWithProfile(coachId, clientId);
+    } catch (e) {
+      _errorService.logError(
+        '根據用戶獲取關係詳情失敗（含檔案）: $e',
+        type: 'CoachingRelationshipServiceError',
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> updateClientProfile({
+    required String relationshipId,
+    required ClientProfile profile,
+  }) async {
+    try {
+      await _operations.updateClientProfile(
+        relationshipId: relationshipId,
+        profile: profile,
+      );
+
+      // 清除快取
+      _cache.clearAll();
+    } catch (e) {
+      _errorService.logError(
+        '更新學員檔案失敗: $e',
+        type: 'CoachingRelationshipServiceError',
+      );
+      rethrow;
+    }
+  }
+}

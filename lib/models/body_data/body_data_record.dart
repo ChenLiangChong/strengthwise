@@ -1,3 +1,5 @@
+import 'package:strengthwise/utils/datetime_utils.dart';  // ⭐ 新增
+
 /// 身體數據記錄模型
 /// 記錄體重、體脂、BMI 等身體指標的歷史數據
 class BodyDataRecord {
@@ -30,15 +32,15 @@ class BodyDataRecord {
     return BodyDataRecord(
       id: json['id'] as String,
       userId: json['user_id'] as String,
-      recordDate: DateTime.parse(json['record_date'] as String),
+      recordDate: DateTimeUtils.parseIsoTimestamp(json['record_date'] as String),  // ⭐ 統一工具類
       weight: (json['weight'] as num).toDouble(),
       bodyFat: json['body_fat'] != null ? (json['body_fat'] as num).toDouble() : null,
       muscleMass: json['muscle_mass'] != null ? (json['muscle_mass'] as num).toDouble() : null,
       bmi: json['bmi'] != null ? (json['bmi'] as num).toDouble() : null,
       notes: json['notes'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTimeUtils.parseIsoTimestamp(json['created_at'] as String),  // ⭐ 統一工具類
       updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at'] as String) 
+          ? DateTimeUtils.parseIsoTimestamp(json['updated_at'] as String)  // ⭐ 統一工具類
           : null,
     );
   }
@@ -48,14 +50,14 @@ class BodyDataRecord {
     return {
       'id': id,
       'user_id': userId,
-      'record_date': recordDate.toIso8601String(),
+      'record_date': DateTimeUtils.formatToUtcIso(recordDate),
       'weight': weight,
       'body_fat': bodyFat,
       'muscle_mass': muscleMass,
       'bmi': bmi,
       'notes': notes,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
+      'created_at': DateTimeUtils.formatToUtcIso(createdAt),
+      'updated_at': updatedAt != null ? DateTimeUtils.formatToUtcIso(updatedAt!) : null,
     };
   }
 

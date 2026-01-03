@@ -15,6 +15,7 @@ import '../interfaces/i_availability_slot_service.dart';
 import '../interfaces/i_session_note_service.dart';
 import '../interfaces/i_client_availability_service.dart';
 import '../interfaces/i_drawing_service.dart';
+import '../interfaces/i_invite_code_service.dart';
 import '../core/error_handling_service.dart';
 
 import '../../controllers/interfaces/i_auth_controller.dart';
@@ -41,6 +42,10 @@ import '../../controllers/availability_slot_controller.dart';
 import '../../controllers/session_note_controller.dart';
 import '../../controllers/client_availability_controller.dart';
 import '../../controllers/drawing_controller.dart';
+import '../../controllers/client_management_controller.dart';
+import '../../controllers/coach_management_controller.dart';
+import '../../controllers/delete_account_controller.dart';
+import '../../controllers/profile_controller.dart';
 
 /// 控制器註冊器
 /// 
@@ -63,6 +68,10 @@ class ControllerRegistry {
     _registerSessionNoteController(serviceLocator);
     _registerClientAvailabilityController(serviceLocator);
     _registerDrawingController(serviceLocator);
+    _registerClientManagementController(serviceLocator);
+    _registerCoachManagementController(serviceLocator);
+    _registerDeleteAccountController(serviceLocator);
+    _registerProfileController(serviceLocator);
   }
 
   /// 註冊身份驗證控制器
@@ -177,6 +186,8 @@ class ControllerRegistry {
       serviceLocator.registerFactory<CoachingRelationshipController>(
         () => CoachingRelationshipController(
           serviceLocator<ICoachingRelationshipService>(),
+          serviceLocator<IUserService>(),
+          serviceLocator<IInviteCodeService>(),
           serviceLocator<ErrorHandlingService>(),
         ),
       );
@@ -238,6 +249,58 @@ class ControllerRegistry {
         () => DrawingController(
           serviceLocator<IDrawingService>(),
           serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊學員管理控制器（Phase 4C - 教練端）
+  static void _registerClientManagementController(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<ClientManagementController>()) {
+      serviceLocator.registerFactory<ClientManagementController>(
+        () => ClientManagementController(
+          serviceLocator<ICoachingRelationshipService>(),
+          serviceLocator<IWorkoutService>(),
+          serviceLocator<IClientAvailabilityService>(),
+          serviceLocator<IUserService>(),
+          serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊教練管理控制器（Phase 4C - 學員端）
+  static void _registerCoachManagementController(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<CoachManagementController>()) {
+      serviceLocator.registerFactory<CoachManagementController>(
+        () => CoachManagementController(
+          serviceLocator<ICoachingRelationshipService>(),
+          serviceLocator<IWorkoutService>(),
+          serviceLocator<IUserService>(),
+          serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊刪除帳號控制器
+  static void _registerDeleteAccountController(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<DeleteAccountController>()) {
+      serviceLocator.registerFactory<DeleteAccountController>(
+        () => DeleteAccountController(
+          userService: serviceLocator<IUserService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊個人資料控制器
+  static void _registerProfileController(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<ProfileController>()) {
+      serviceLocator.registerFactory<ProfileController>(
+        () => ProfileController(
+          userService: serviceLocator<IUserService>(),
+          authService: serviceLocator<IAuthService>(),
         ),
       );
     }

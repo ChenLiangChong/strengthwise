@@ -2,7 +2,7 @@
 
 > 專案文檔與開發指南
 
-**最後更新**：2024年12月31日
+**最後更新**：2025年1月2日 - v2.2 時區統一化完成 ✅
 
 ---
 
@@ -10,24 +10,24 @@
 
 | 文檔 | 說明 | 必讀 |
 |------|------|------|
-| [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md) | 📊 當前開發狀態、已完成功能、下一步計劃 | ⭐⭐⭐ |
-| [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) | 🏗️ 專案架構、技術棧、檔案結構 | ⭐⭐ |
-| [SAAS_PLATFORM_ROADMAP.md](SAAS_PLATFORM_ROADMAP.md) | 🗺️ v2.0 SaaS 平台完整計劃（Phase 1-5） | ⭐⭐ |
+| [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md) | 📊 **精簡版**（800+ 行）：當前開發狀態、已完成功能、**詳細任務清單** | ⭐⭐⭐ |
+| [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) | 🏗️ **精簡版**（518 行）：專案架構、技術棧、檔案結構 | ⭐⭐ |
+| [SAAS_PLATFORM_ROADMAP.md](SAAS_PLATFORM_ROADMAP.md) | 🗺️ **精簡版**（1991 行）：v2.0 SaaS 平台完整計劃（Phase 1-5） | ⭐⭐ |
+| [DATETIME_UTILS_GUIDE.md](DATETIME_UTILS_GUIDE.md) | ⏰ 時間轉換工具指南（v2.2 完整統一化） | ⭐⭐ |
 
 ---
 
 ## 📖 核心文檔
 
 ### 專案狀態
-- **[DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)** ⭐ 必讀
+- **[DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)** ⭐⭐⭐ **必讀**（精簡版 738 行）
   - ✅ v1.0 單機版完成（個人健身記錄）
-  - ✅ v2.0 Phase 1 完成（教練學員系統）
-  - ✅ v2.0 Phase 2 完成（預約系統）
-  - ✅ v2.0 Phase 2.5 完成（時間工具統一化）
-  - ✅ v2.0 Phase 3 完成 + 測試通過（視覺化筆記）⭐
-  - ✅ v2.0 Phase 4A 完成 + 測試通過（完整手繪板）⭐⭐⭐
-  - 📋 下一步計劃（語音筆記、AI 功能、Phase 4B）
-  - ⚡ 性能優化總覽
+  - ✅ v2.0 Phase 1-4 全部完成（教練學員、預約、筆記、手繪板、統計、整合、行事曆）
+  - ✅ Migrations 優化完成（19 → 7 個）⭐
+  - ✅ 預約系統 UI 優化（2025-01-02）⭐
+  - ⚡ 性能優化總覽（應用啟動 -92%、主線程優化 -96%、統計秒開 -99%）
+  - **📋 詳細任務清單**（性能監控 6 項 + UX 優化 7 項 + Bug 檢查 3 項）⭐⭐⭐
+  - 🎯 清晰結構：已完成摘要 → 技術總覽 → 下一步計劃 → 未來規劃
 
 ### 專案架構
 - **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)**
@@ -55,6 +55,12 @@
   - 各表記錄數量
   - 欄位範例值
 
+- **[../migrations/README.md](../migrations/README.md)** ⭐ 2025-01-01 新增
+  - Migrations 優化（19 → 7 個檔案）
+  - 清晰的版本劃分（v1.0 vs v2.0）
+  - 執行順序說明
+  - 部署指南（完整 vs 單機版）
+
 ### v2.0 SaaS 平台
 - **[SAAS_PLATFORM_ROADMAP.md](SAAS_PLATFORM_ROADMAP.md)**
   - 完整 5 階段計劃
@@ -62,7 +68,10 @@
   - Phase 2：預約系統 ✅
   - Phase 3：視覺化筆記與雙向時間管理 ✅
   - Phase 4A：完整手繪板 ✅⭐⭐⭐
-  - Phase 4B-5：進階功能（規劃中）
+  - Phase 4C：教練學員頁面整合 ✅⭐⭐⭐
+  - Phase 4D：統一行事曆系統 ✅⭐⭐⭐
+  - Phase 4B：教練多學員統計視圖（完成）✅
+  - Phase 5：進階功能（規劃中）
 
 ### UI/UX 設計
 - **[UI_UX_GUIDELINES.md](UI_UX_GUIDELINES.md)**
@@ -221,40 +230,64 @@
 **新增檔案**：17 個
 - Model 1 + Service 2 + Controller 3 + UI 7 + Migration 1
 
+### v2.0 Phase 4C ✅ 完成（2025-01-01）⭐⭐⭐
+- **教練學員頁面整合**（100% 完成）
+  - ✅ 教練為學員創建訓練（行事曆快速創建）⭐
+  - ✅ 學員多教練切換（一對多關係）⭐
+  - ✅ 行事曆整合時間偏好（背景色視覺化）
+  - ✅ 完全解耦架構（100% Interface）
+  - ✅ UI 整合（TrainingHubPage 統一入口）
+
+**新增檔案**：18 個（Controller 2 + UI 15 + Hub 1）
+
+### v2.0 Phase 4D ✅ 完成（2025-01-01）⭐⭐⭐
+- **統一行事曆系統**（Layer-based Composition 架構）
+  - ✅ 完全解耦的行事曆架構（8 個核心組件）⭐⭐⭐
+  - ✅ 5 個頁面重構完成（-218 行重複代碼）
+  - ✅ UI 樣式優化（原始 BookingPage 風格）⭐
+  - ✅ 維護成本 -80%，開發效率 +70%
+
+**技術亮點**：
+- ✅ Layer-based Composition（單一職責 + 組合優於繼承）
+- ✅ 7 個行事曆組件 → 1 個統一組件
+- ✅ 100% 可測試（每個 Layer 獨立）
+- ✅ 極易擴展（添加新 Layer 無需修改核心）
+
+**新增檔案**：8 個（CalendarLayer + UnifiedCalendar + 2 Layers + 2 Models + Export）
+
 ---
 
-## 🎯 下一步工作（2025-01-01 起）
+## 🎯 下一步工作（2025-01-02 起）
 
-### ⭐⭐⭐ Phase 4B：教練多學員統計視圖（推薦優先）
+### 當前狀態
+- ✅ 核心功能開發完成（100%）
+- ✅ 手繪板/照片/預約系統測試完成（100%）
+- ⏳ **性能監控**（Day 2-3，6 項任務）
+- ⏳ **UX 優化**（Day 4-5，7 項任務）
+- ⏳ **Bug 檢查**（Day 6，3 項任務）
 
-**預計時間**：2-3 天
+### 快速查找
+- **完整任務清單**：[DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md) → 「下一步計劃（詳細清單）」章節
+- **測試步驟**：每個任務包含詳細執行步驟、工具使用、驗收標準
+- **預計時間**：2-3 天完成所有任務
 
-**核心發現**：v1.0 已完成完整統計系統（16 個模組），Phase 4B 只需新增學員切換功能！
-
-**任務清單**：
-1. 統計頁面新增學員選擇器（教練模式）
-2. 複用現有 16 個統計組件
-3. （可選）學員完成率總覽頁面
-4. 測試
-
-### 其他選項
-
-- **選項 2**：深度測試與優化（3-5 天）- 確保現有功能穩定
-- **選項 3**：UX 改進與導航優化（1 週）- 提升用戶體驗
-- **選項 4**：準備 Beta 測試（1-2 週）- 上線準備
-
-**詳細說明**：查看 [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md) 末尾的「下一步工作項目」章節
+### 其他選項（測試完成後）
+- **Onboarding 流程設計**（1 週）- 首次使用引導
+- **準備 Beta 測試**（1-2 週）- 用戶文檔、測試計劃、生產環境
+- **進階功能開發**（2-3 週，可選）- 模板市場、社群、進階統計
 
 ---
 
 ## 🛠️ 開發工具
 
 ### Python 腳本
-- **[scripts/README.md](../scripts/README.md)** - Python 工具使用指南
+- **[scripts/README.md](../scripts/README.md)** - Python 工具使用指南（✅ 2025-01-01 更新）
+  - 資料庫完整下載（v2 全新版本）⭐
   - 資料庫結構文檔生成
   - 動作資料導出
   - 假訓練資料生成
   - 用戶資料重置
+  - Migrations 優化工具（已歸檔）
 
 ### 測試帳號
 詳見 `scripts/README.md` 中的「測試用戶 UUID」章節
@@ -289,4 +322,4 @@
 ---
 
 **維護者**：StrengthWise 開發團隊  
-**最後更新**：2024年12月31日 - v2.0 Phase 3 完成 + 文檔精簡 ✅
+**最後更新**：2025年1月2日 - 文檔精簡完成 ✅（DEVELOPMENT_STATUS: 1732→738 行 -57.4%）

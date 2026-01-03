@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../models/custom_exercise_model.dart';
-import '../../../controllers/interfaces/i_custom_exercise_controller.dart';
-import '../../../services/core/error_handling_service.dart';
-import '../../../services/service_locator.dart';
-import '../../../utils/notification_utils.dart';
-import '../../../widgets/exercises/custom_exercise_dialog.dart';
+import 'package:strengthwise/models/custom_exercise_model.dart';
+import 'package:strengthwise/controllers/interfaces/i_custom_exercise_controller.dart';
+import 'package:strengthwise/services/core/error_handling_service.dart';
+import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/utils/notification_utils.dart';
+import 'package:strengthwise/views/pages/exercises/widgets/custom_exercise_dialog.dart';
 
 class CustomExercisesPage extends StatefulWidget {
   const CustomExercisesPage({super.key});
@@ -236,7 +236,8 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.fitness_center, size: 14, color: Colors.grey[600]),
+                        Icon(Icons.fitness_center,
+                            size: 14, color: Colors.grey[600]),
                         const SizedBox(width: 4),
                         Text(exercise.bodyPart),
                       ],
@@ -244,7 +245,8 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.sports_handball, size: 14, color: Colors.grey[600]),
+                        Icon(Icons.sports_handball,
+                            size: 14, color: Colors.grey[600]),
                         const SizedBox(width: 4),
                         Text(exercise.equipment),
                       ],
@@ -342,6 +344,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
       String exerciseId, String exerciseName) async {
     final confirmed = await showDialog<bool>(
       context: context,
+      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
       builder: (context) => AlertDialog(
         title: const Text('確認刪除'),
         content: Text('確定要刪除 "$exerciseName" 嗎？此操作不可撤銷。'),

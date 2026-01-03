@@ -1,18 +1,26 @@
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import '../services/interfaces/i_coaching_relationship_service.dart';
+import '../services/interfaces/i_user_service.dart';
+import '../services/interfaces/i_invite_code_service.dart';
 import '../services/core/error_handling_service.dart';
 import '../models/coaching_relationship_model.dart';
 import '../models/user/user_model.dart';
+import '../models/invite_code_model.dart';
 
 /// 教練-學員關係控制器
 ///
 /// 管理教練與學員的綁定關係、邀請、查詢等業務邏輯
 class CoachingRelationshipController extends ChangeNotifier {
   final ICoachingRelationshipService _relationshipService;
+  final IUserService _userService;
+  final IInviteCodeService _inviteCodeService;
   final ErrorHandlingService _errorService;
 
   CoachingRelationshipController(
     this._relationshipService,
+    this._userService,
+    this._inviteCodeService,
     this._errorService,
   );
 
@@ -86,9 +94,8 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// [notes] 備註（可選）
   Future<bool> inviteClient(
     String coachId,
-    String clientEmail, {
-    String? notes,
-  }) async {
+    String clientEmail,
+  ) async {
     _setLoading(true);
     _clearError();
 
@@ -96,7 +103,6 @@ class CoachingRelationshipController extends ChangeNotifier {
       await _relationshipService.inviteClient(
         coachId,
         clientEmail,
-        notes: notes,
       );
 
       // 重新載入列表
@@ -116,12 +122,10 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// [coachId] 教練 ID
   /// [clientId] 學員 ID
   /// [status] 初始狀態（預設 'active'）
-  /// [notes] 備註
   Future<bool> createRelationship(
     String coachId,
     String clientId, {
     String status = 'active',
-    String? notes,
   }) async {
     _setLoading(true);
     _clearError();
@@ -131,7 +135,6 @@ class CoachingRelationshipController extends ChangeNotifier {
         coachId,
         clientId,
         status: status,
-        notes: notes,
       );
 
       // 重新載入列表
@@ -169,25 +172,42 @@ class CoachingRelationshipController extends ChangeNotifier {
     }
   }
 
-  /// 更新學員備註
+  /// 歸檔關係（通用方法）⭐ 新增
   ///
-  /// [relationshipId] 關係 ID
-  /// [notes] 新備註內容
-  Future<bool> updateClientNotes(
-    String relationshipId,
-    String notes,
-  ) async {
+  /// 適用於學員端解除綁定，不重新載入列表
+  ///
+  /// [relationshipId] 綁定關係 ID
+  Future<bool> archiveRelationship(String relationshipId) async {
     _setLoading(true);
     _clearError();
 
     try {
-      await _relationshipService.updateNotes(relationshipId, notes);
+      await _relationshipService.archiveRelationship(relationshipId);
       return true;
     } catch (e) {
-      _handleError('更新備註失敗', e);
+      _handleError('解除綁定失敗', e);
       return false;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  /// 根據教練和學員 ID 查詢綁定關係
+  ///
+  /// [coachId] 教練 ID
+  /// [clientId] 學員 ID
+  Future<CoachingRelationshipModel?> getRelationshipByUsers(
+    String coachId,
+    String clientId,
+  ) async {
+    try {
+      return await _relationshipService.getRelationshipByUsers(coachId, clientId);
+    } catch (e) {
+      _errorService.logError(
+        '查詢綁定關係失敗: $e',
+        type: 'CoachingRelationshipControllerError',
+      );
+      return null;
     }
   }
 
@@ -315,6 +335,230 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// 清除所有快取
   void clearCache() {
     _relationshipService.clearCache();
+  }
+
+  // ============================================================================
+  // QR Code 綁定功能
+  // ============================================================================
+
+  /// 生成當前用戶的 QR Code 數據
+  /// 
+  /// [currentRole] - 'coach' 或 'client'
+  /// 返回 JSON 字串，包含用戶資訊
+  Future<String> generateMyQRData(String currentRole) async {
+    try {
+      final currentUser = await _userService.getCurrentUserProfile();
+      if (currentUser == null) {
+        throw Exception('無法獲取當前用戶資訊');
+      }
+
+      final qrData = {
+        'type': currentRole == 'coach' ? 'coach_invite' : 'client_request',
+        'role': currentRole,
+        'user_id': currentUser.uid,
+        'name': currentUser.displayName ?? currentUser.email,
+        'email': currentUser.email,
+        'timestamp': DateTime.now().toIso8601String(),
+        'app': 'strengthwise',
+        'version': '1.0',
+      };
+
+      return jsonEncode(qrData);
+    } catch (e) {
+      _handleError('生成 QR Code 失敗', e);
+      rethrow;
+    }
+  }
+
+  /// 掃描並綁定 QR Code
+  /// 
+  /// [qrData] - 掃描到的 QR Code 內容（JSON 字串）
+  /// [myRole] - 我的角色 ('coach' 或 'client')
+  /// 返回：true = 成功，false = 失敗
+  Future<bool> scanAndBind({
+    required String qrData,
+    required String myRole,
+  }) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      // 解析 QR Code
+      final Map<String, dynamic> data = jsonDecode(qrData);
+
+      // 驗證 QR Code 格式
+      if (data['app'] != 'strengthwise') {
+        _errorMessage = '無效的 QR Code（不是 StrengthWise 應用）';
+        notifyListeners();
+        return false;
+      }
+
+      final scannedRole = data['role'] as String?;
+      final scannedUserId = data['user_id'] as String?;
+      // final scannedName = data['name'] as String?; // 暫不使用
+
+      if (scannedRole == null || scannedUserId == null) {
+        _errorMessage = 'QR Code 格式錯誤';
+        notifyListeners();
+        return false;
+      }
+
+      // 驗證角色匹配
+      if (myRole == 'coach' && scannedRole != 'client') {
+        _errorMessage = '請掃描學員的 QR Code';
+        notifyListeners();
+        return false;
+      }
+
+      if (myRole == 'client' && scannedRole != 'coach') {
+        _errorMessage = '請掃描教練的 QR Code';
+        notifyListeners();
+        return false;
+      }
+
+      // 獲取當前用戶
+      final currentUser = await _userService.getCurrentUserProfile();
+      if (currentUser == null) {
+        _errorMessage = '無法獲取當前用戶資訊';
+        notifyListeners();
+        return false;
+      }
+
+      // 檢查是否掃描自己
+      if (scannedUserId == currentUser.uid) {
+        _errorMessage = '不能綁定自己';
+        notifyListeners();
+        return false;
+      }
+
+      // ✅ 驗證對方用戶是否存在於 public.users
+      final scannedUser = await _userService.getUserProfile(scannedUserId);
+      if (scannedUser == null) {
+        _errorMessage = '對方用戶不存在或尚未完成註冊\n請確認對方已完成首次登入';
+        notifyListeners();
+        return false;
+      }
+
+      // 創建關係
+      String coachId, traineeId;
+      if (myRole == 'coach') {
+        coachId = currentUser.uid;
+        traineeId = scannedUserId;
+      } else {
+        coachId = scannedUserId;
+        traineeId = currentUser.uid;
+      }
+
+      // 創建新關係（直接設為 active，QR Code 綁定無需審核）
+      await _relationshipService.createRelationship(
+        coachId,
+        traineeId,
+        status: 'active',
+      );
+
+      _clearError();
+      _setLoading(false);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _handleError('綁定失敗', e);
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  /// 驗證 QR Code 格式（不創建關係，僅返回資訊）
+  /// 
+  /// 用於掃描後顯示確認對話框
+  Map<String, dynamic>? validateQRCode(String qrData) {
+    try {
+      final Map<String, dynamic> data = jsonDecode(qrData);
+
+      if (data['app'] != 'strengthwise') {
+        return null;
+      }
+
+      return {
+        'role': data['role'],
+        'user_id': data['user_id'],
+        'name': data['name'],
+        'email': data['email'],
+        'timestamp': data['timestamp'],
+      };
+    } catch (e) {
+      debugPrint('[COACHING] QR Code 解析失敗: $e');
+      return null;
+    }
+  }
+
+  // ============================================================================
+  // 邀請碼功能（遠端綁定）
+  // ============================================================================
+
+  /// 生成邀請碼（教練專用）
+  ///
+  /// [coachId] - 教練 ID
+  /// 返回邀請碼模型（包含 code 和 expiresAt）
+  Future<InviteCodeModel?> generateInviteCode(String coachId) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final inviteCode = await _inviteCodeService.generateInviteCode(coachId);
+
+      _setLoading(false);
+      return inviteCode;
+    } catch (e) {
+      _handleError('生成邀請碼失敗', e);
+      _setLoading(false);
+      return null;
+    }
+  }
+
+  /// 使用邀請碼綁定教練（學員專用）
+  ///
+  /// [code] - 邀請碼
+  /// [traineeId] - 學員 ID
+  /// 返回：true = 成功，false = 失敗
+  Future<bool> useInviteCode({
+    required String code,
+    required String traineeId,
+  }) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      // 驗證並使用邀請碼（返回教練 ID）
+      final coachId = await _inviteCodeService.validateAndUseCode(
+        code: code,
+        traineeId: traineeId,
+      );
+
+      // ✅ 驗證教練是否存在於 public.users
+      final coachUser = await _userService.getUserProfile(coachId);
+      if (coachUser == null) {
+        _errorMessage = '教練用戶不存在或尚未完成註冊\n請確認教練已完成首次登入';
+        notifyListeners();
+        _setLoading(false);
+        return false;
+      }
+
+      // 創建新關係（直接設為 active，邀請碼綁定無需審核）
+      await _relationshipService.createRelationship(
+        coachId,
+        traineeId,
+        status: 'active',
+      );
+
+      _clearError();
+      _setLoading(false);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _handleError('使用邀請碼失敗', e);
+      _setLoading(false);
+      return false;
+    }
   }
 
   // ============================================================================

@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';
 import '../../../models/note_model.dart';
 import '../../../utils/firestore_id_generator.dart';
 import 'note_data_parser.dart';
@@ -69,8 +70,8 @@ class NoteOperations {
       'title': title,
       'text_content': textContent,
       'drawing_points': drawingPoints?.map((p) => p.toMap()).toList(),
-      'created_at': now.toIso8601String(),
-      'updated_at': now.toIso8601String(),
+      'created_at': DateTimeUtils.formatToUtcIso(now),
+      'updated_at': DateTimeUtils.formatToUtcIso(now),
     };
     
     await _supabase.from('notes').insert(noteData);
@@ -102,7 +103,7 @@ class NoteOperations {
           'title': note.title,
           'text_content': note.textContent,
           'drawing_points': note.drawingPoints?.map((p) => p.toMap()).toList(),
-          'updated_at': now.toIso8601String(),
+          'updated_at': DateTimeUtils.formatToUtcIso(now),
         })
         .eq('id', note.id)
         .eq('user_id', userId);

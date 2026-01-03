@@ -1,4 +1,5 @@
 import '../../../models/note_model.dart';
+import '../../../utils/datetime_utils.dart';
 
 /// 筆記資料解析器
 class NoteDataParser {
@@ -17,8 +18,8 @@ class NoteDataParser {
       title: data['title'] as String,
       textContent: data['text_content'] as String? ?? '',
       drawingPoints: drawingPoints,
-      createdAt: DateTime.parse(data['created_at'] as String),
-      updatedAt: DateTime.parse(data['updated_at'] as String),
+      createdAt: DateTimeUtils.parseIsoTimestamp(data['created_at'] as String),
+      updatedAt: DateTimeUtils.parseIsoTimestamp(data['updated_at'] as String),
     );
   }
 }

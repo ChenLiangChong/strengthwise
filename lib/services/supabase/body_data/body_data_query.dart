@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';
 import '../../../models/body_data_record.dart';
 
 /// 身體數據查詢模組
@@ -35,11 +36,11 @@ class BodyDataQuery {
           .eq('user_id', userId);
 
       if (startDate != null) {
-        query = query.gte('record_date', startDate.toIso8601String());
+        query = query.gte('record_date', DateTimeUtils.formatToUtcIso(startDate));
       }
 
       if (endDate != null) {
-        query = query.lte('record_date', endDate.toIso8601String());
+        query = query.lte('record_date', DateTimeUtils.formatToUtcIso(endDate));
       }
 
       query = query.order('record_date', ascending: false);
@@ -121,8 +122,8 @@ class BodyDataQuery {
           .from('body_data')
           .select()
           .eq('user_id', userId)
-          .gte('record_date', startOfDay.toIso8601String())
-          .lte('record_date', endOfDay.toIso8601String())
+          .gte('record_date', DateTimeUtils.formatToUtcIso(startOfDay))
+          .lte('record_date', DateTimeUtils.formatToUtcIso(endOfDay))
           .order('created_at', ascending: false)
           .limit(1);
 

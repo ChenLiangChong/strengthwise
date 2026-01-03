@@ -30,12 +30,14 @@ class SessionNoteServiceSupabase implements ISessionNoteService {
   Future<List<SessionNoteModel>> getCoachNotes({
     required String coachId,
     String? clientId,
+    String? clientName, // ⭐ 新增：用於查詢已刪除學員的筆記
     int limit = 20,
     String? lastNoteId,
   }) {
     return _queryManager.getCoachNotes(
       coachId: coachId,
       clientId: clientId,
+      clientName: clientName, // ⭐ 傳遞參數
       limit: limit,
       lastNoteId: lastNoteId,
     );
@@ -44,11 +46,15 @@ class SessionNoteServiceSupabase implements ISessionNoteService {
   @override
   Future<List<SessionNoteModel>> getClientNotes({
     required String clientId,
+    String? coachId, // ⭐ 新增：用於教練篩選
+    String? coachName, // ⭐ 新增：用於查詢已刪除教練的筆記
     int limit = 20,
     String? lastNoteId,
   }) {
     return _queryManager.getClientNotes(
       clientId: clientId,
+      coachId: coachId, // ⭐ 傳遞參數
+      coachName: coachName, // ⭐ 傳遞參數
       limit: limit,
       lastNoteId: lastNoteId,
     );
@@ -110,6 +116,14 @@ class SessionNoteServiceSupabase implements ISessionNoteService {
   @override
   Future<SessionNoteModel> toggleVisibility(String noteId) {
     return _operations.toggleVisibility(noteId);
+  }
+
+  @override
+  Future<void> hideNote({
+    required String noteId,
+    required bool isCoach,
+  }) {
+    return _operations.hideNote(noteId: noteId, isCoach: isCoach);
   }
 
   // ==================== Storage 操作（委派給 StorageManager）====================

@@ -154,5 +154,27 @@ class WorkoutCacheManager {
     _templatesListCacheTime = null;
     _templatesListCachedUserId = null;
   }
+
+  /// 清除特定用戶的訓練計劃快取 ⭐
+  void clearUserPlans(String userId) {
+    // 清除該用戶的全部計劃快取
+    if (_allPlansCachedUserId == userId) {
+      _allPlansCache = null;
+      _allPlansCacheTime = null;
+      _allPlansCachedUserId = null;
+    }
+    
+    // 清除該用戶的已完成記錄快取
+    if (_completedRecordsCachedUserId == userId) {
+      _completedRecordsCache = null;
+      _completedRecordsCacheTime = null;
+      _completedRecordsCachedUserId = null;
+    }
+    
+    // 清除該用戶相關的單個記錄快取
+    _recordCache.removeWhere((key, record) => 
+      record.traineeId == userId || record.userId == userId
+    );
+  }
 }
 

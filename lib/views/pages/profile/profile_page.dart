@@ -1,73 +1,41 @@
 import 'package:flutter/material.dart';
-import '../../../models/user_model.dart';
-import '../../../services/interfaces/i_auth_service.dart';
-import '../../../services/interfaces/i_user_service.dart';
-import '../../../services/service_locator.dart';
-import '../../login_page.dart';
-import 'profile_settings_page.dart';
-import 'body_data_page.dart';
-import '../statistics/statistics_page_v2.dart';
-import '../coaching/coach_hub_page.dart';
-import '../appointments/client_hub_page.dart';
-import 'widgets/profile_header_card.dart';
-import 'widgets/profile_detail_card.dart';
-import 'widgets/profile_menu_item.dart';
-import 'widgets/profile_role_switch.dart';
-import 'widgets/profile_theme_switcher.dart';
-import 'widgets/profile_logout_button.dart';
+import 'package:provider/provider.dart';
+import 'package:strengthwise/controllers/profile_controller.dart';
+import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/views/pages/auth/login_page.dart';
+import 'package:strengthwise/views/pages/profile/profile_settings_page.dart';
+import 'package:strengthwise/views/pages/profile/body_data_page.dart';
+import 'package:strengthwise/views/pages/statistics/statistics_page_v2.dart';
+import 'package:strengthwise/views/pages/profile/widgets/profile_header_card.dart';
+import 'package:strengthwise/views/pages/profile/widgets/profile_detail_card.dart';
+import 'package:strengthwise/views/pages/profile/widgets/profile_menu_item.dart';
+import 'package:strengthwise/views/pages/profile/widgets/profile_role_switch.dart';
+import 'package:strengthwise/views/pages/profile/widgets/profile_theme_switcher.dart';
+import 'package:strengthwise/views/pages/profile/widgets/profile_logout_button.dart';
 
-class ProfilePage extends StatefulWidget {
+class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => serviceLocator<ProfileController>()..loadUserProfile(),
+      child: const _ProfilePageContent(),
+    );
+  }
 }
 
-class _ProfilePageState extends State<ProfilePage> {
-  late final IUserService _userService;
-  late final IAuthService _authService;
-
-  UserModel? _userProfile;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    // 從服務定位器獲取服務
-    _userService = serviceLocator<IUserService>();
-    _authService = serviceLocator<IAuthService>();
-    _loadUserProfile();
-  }
-
-  Future<void> _loadUserProfile() async {
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-      });
-    }
-
-    final userProfile = await _userService.getCurrentUserProfile();
-
-    if (userProfile != null && mounted) {
-      setState(() {
-        _userProfile = userProfile;
-      });
-    }
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
+class _ProfilePageContent extends StatelessWidget {
+  const _ProfilePageContent();
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    final controller = context.watch<ProfileController>();
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (controller.isLoading && controller.userProfile == null) {
       return const Center(child: CircularProgressIndicator());
     }
-
-    final colorScheme = Theme.of(context).colorScheme;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -76,21 +44,21 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             // 用戶資料卡片
             ProfileHeaderCard(
-              userProfile: _userProfile,
+              userProfile: controller.userProfile,
               onEditProfile: () async {
                 await Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => const ProfileSettingsPage(),
                   ),
                 );
-                _loadUserProfile();
+                controller.loadUserProfile();
               },
               onViewBodyData: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
-                        BodyDataPage(userProfile: _userProfile),
+                        BodyDataPage(userProfile: controller.userProfile),
                   ),
                 );
               },
@@ -99,13 +67,13 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 24),
 
             // 詳細資訊卡片
-            if (_userProfile != null)
-              ProfileDetailCard(userProfile: _userProfile!),
+            if (controller.userProfile != null)
+              ProfileDetailCard(userProfile: controller.userProfile!),
 
             const SizedBox(height: 24),
 
             // 功能菜單
-            _buildMenuSection(context, colorScheme),
+            _buildMenuSection(context, colorScheme, controller),
 
             const SizedBox(height: 24),
 
@@ -122,8 +90,8 @@ class _ProfilePageState extends State<ProfilePage> {
             // 登出按鈕
             ProfileLogoutButton(
               onLogout: () async {
-                await _authService.signOut();
-                if (mounted) {
+                await controller.signOut();
+                if (context.mounted) {
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(builder: (_) => const LoginPage()),
                   );
@@ -137,8 +105,12 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   /// 功能菜單區塊
-  Widget _buildMenuSection(BuildContext context, ColorScheme colorScheme) {
-    final isCoach = _userProfile?.isCoach ?? false;
+  Widget _buildMenuSection(
+    BuildContext context,
+    ColorScheme colorScheme,
+    ProfileController controller,
+  ) {
+    final isCoach = controller.userProfile?.isCoach ?? false;
 
     return Column(
       children: [
@@ -158,42 +130,6 @@ class _ProfilePageState extends State<ProfilePage> {
           },
         ),
 
-        // 教練管理中心（僅教練可見）
-        if (isCoach) ...[
-          const SizedBox(height: 16),
-          ProfileMenuItem(
-            icon: Icons.business_center,
-            iconColor: Colors.blue,
-            title: '教練管理中心',
-            subtitle: '學員管理、時段設定、預約管理',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CoachHubPage(),
-                ),
-              );
-            },
-          ),
-        ],
-
-        // 學員預約中心（所有用戶都可見）
-        const SizedBox(height: 16),
-        ProfileMenuItem(
-          icon: Icons.event_note,
-          iconColor: Colors.purple,
-          title: '學員預約中心',
-          subtitle: '預約課程、查看預約記錄',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ClientHubPage(),
-              ),
-            );
-          },
-        ),
-
         const SizedBox(height: 16),
         const Divider(),
         const SizedBox(height: 16),
@@ -201,11 +137,24 @@ class _ProfilePageState extends State<ProfilePage> {
         // 教練模式切換
         ProfileRoleSwitch(
           title: '教練模式',
-          subtitle: '開啟教練功能',
+          subtitle: '開啟教練功能（課程頁面顯示教練中心）',
           value: isCoach,
           onChanged: (value) async {
-            await _userService.toggleUserRole(value);
-            _loadUserProfile();
+            final success = await controller.toggleCoachRole(value);
+            
+            // 顯示提示訊息
+            if (context.mounted && success) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    value 
+                      ? '✅ 已開啟教練模式\n請到「課程」頁面進入教練中心' 
+                      : '✅ 已關閉教練模式\n教練功能已隱藏'
+                  ),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
           },
         ),
       ],

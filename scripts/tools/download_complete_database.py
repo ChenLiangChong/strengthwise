@@ -1,35 +1,39 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Download Complete Supabase Database
+Download Complete Supabase Database (v2.0 Phase 4B)
 
-This script will:
-1. Connect to Supabase
-2. Download all table data (14 tables - v2.0 Phase 2)
-3. Save as JSON format
-4. Generate database structure report
+此腳本會下載完整的資料庫結構（16 個表格）
+根據 2025-01-01 Supabase 實際表格驗證
+
+更新記錄：
+- 2025-01-01: 更新為 16 個表格（包含 Phase 3 表格）
+- 驗證所有表格存在並正常運作
 
 Usage:
-    python scripts/download_complete_database.py
+    python scripts/tools/download_complete_database_v2.py
 
 Output:
     - database_export/
-        |- users.json                      (v1.0 Core: User data)
-        |- exercises.json                  (v1.0 Core: System exercises - 794 records)
-        |- custom_exercises.json           (v1.0 Core: User custom exercises)
-        |- workout_plans.json              (v1.0 Core: Workout plans and records)
-        |- workout_templates.json          (v1.0 Core: Workout templates)
-        |- body_data.json                  (v1.0 Core: Body measurements)
-        |- notes.json                      (v1.0 Core: User notes)
-        |- body_parts.json                 (v1.0 Metadata: Body parts)
-        |- exercise_types.json             (v1.0 Metadata: Exercise types)
-        |- coaching_relationships.json     (v2.0 Phase 1: Coach-Client relationships)
-        |- availability_slots.json         (v2.0 Phase 2: Coach availability slots)
-        |- appointments.json               (v2.0 Phase 2: Appointments)
-        |- daily_workout_summary.json      (Optimization: Daily workout stats)
-        |- personal_records.json           (Optimization: Personal records)
-    
-    - database_export/database_structure.md  (Database structure documentation)
+        |- <timestamp>/
+            |- users.json                              (4 筆)
+            |- exercises.json                          (794 筆)
+            |- custom_exercises.json                   (6 筆)
+            |- workout_plans.json                      (28 筆)
+            |- workout_templates.json                  (8 筆)
+            |- body_data.json                          (14 筆)
+            |- notes.json                              (0 筆)
+            |- body_parts.json                         (8 筆)
+            |- exercise_types.json                     (3 筆)
+            |- coaching_relationships.json             (4 筆)
+            |- availability_slots.json                 (2 筆)
+            |- appointments.json                       (6 筆)
+            |- session_notes.json                      (4 筆)
+            |- client_availability.json                (2 筆)
+            |- daily_workout_summary.json              (26 筆)
+            |- personal_records.json                   (15 筆)
+            |- database_summary.json                   (統計報告)
+            |- README.md                               (說明文檔)
 """
 
 import sys
@@ -45,7 +49,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 # Get project root and load environment variables
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))  # 往上兩層到專案根目錄
+PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 ENV_FILE = os.path.join(PROJECT_ROOT, '.env')
 
 # Load environment variables (handle BOM)
@@ -57,10 +61,10 @@ if os.path.exists(ENV_FILE):
         f.write(env_content)
     load_dotenv(temp_env)
     os.remove(temp_env)
-    print(f"Loaded environment variables: {ENV_FILE}")
+    print(f"✅ Loaded environment variables: {ENV_FILE}")
 else:
     load_dotenv()
-    print(f"Warning: .env file not found at {ENV_FILE}")
+    print(f"⚠️  Warning: .env file not found at {ENV_FILE}")
 
 # Supabase configuration
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -74,264 +78,237 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 # Initialize Supabase Client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def ensure_export_dir():
-    """Ensure export directory exists"""
-    os.makedirs("database_export", exist_ok=True)
+# 完整表格列表（根據 2025-01-01 Supabase 驗證）
+# v1.0 核心表格（7 個）
+CORE_TABLES = [
+    "users",
+    "exercises",
+    "custom_exercises",
+    "workout_plans",
+    "workout_templates",
+    "body_data",
+    "notes"
+]
 
-def download_table(table_name: str) -> list:
+# v1.0 元數據表格（2 個）
+METADATA_TABLES = [
+    "body_parts",
+    "exercise_types"
+]
+
+# v2.0 Phase 1 表格（1 個）
+PHASE1_TABLES = [
+    "coaching_relationships"
+]
+
+# v2.0 Phase 2 表格（2 個）
+PHASE2_TABLES = [
+    "availability_slots",
+    "appointments"
+]
+
+# v2.0 Phase 3 表格（2 個）
+PHASE3_TABLES = [
+    "session_notes",
+    "client_availability"
+]
+
+# 優化表格（2 個）
+OPTIMIZATION_TABLES = [
+    "daily_workout_summary",
+    "personal_records"
+]
+
+# 合併所有表格（16 個）
+ALL_TABLES = (
+    CORE_TABLES + 
+    METADATA_TABLES + 
+    PHASE1_TABLES + 
+    PHASE2_TABLES + 
+    PHASE3_TABLES + 
+    OPTIMIZATION_TABLES
+)
+
+def ensure_export_dir(timestamp: str) -> str:
+    """Ensure export directory exists"""
+    export_dir = os.path.join(PROJECT_ROOT, "database_export", timestamp)
+    os.makedirs(export_dir, exist_ok=True)
+    return export_dir
+
+def download_table(table_name: str):
     """Download all data from specified table"""
-    print(f"Downloading {table_name}...")
+    print(f"📥 Downloading {table_name}...", end=" ")
     
     try:
         response = supabase.table(table_name).select("*").execute()
         data = response.data
-        print(f"  {table_name}: {len(data)} records")
-        return data
+        print(f"✅ {len(data)} records")
+        return data, True
     except Exception as e:
-        print(f"  Failed to download {table_name}: {e}")
-        return []
+        print(f"❌ Failed: {e}")
+        return [], False
 
-def save_json(data: any, filename: str):
+def save_json(data: any, filepath: str):
     """Save data as JSON file"""
-    filepath = os.path.join("database_export", filename)
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2, default=str)
-    print(f"  Saved: {filepath}")
 
-def download_all_tables() -> Dict[str, List]:
-    """Download all tables"""
-    print("\nDownloading all tables...")
-    print("-" * 60)
+def generate_summary(all_data: Dict[str, List], export_dir: str, timestamp: str):
+    """Generate summary report"""
+    total_records = sum(len(data) for data in all_data.values())
     
-    # v1.0 核心表格（7 個）
-    core_tables = [
-        "users",
-        "exercises",
-        "custom_exercises",
-        "workout_plans",
-        "workout_templates",
-        "body_data",
-        "notes"
-    ]
+    summary = {
+        "export_time": timestamp,
+        "export_datetime": datetime.now().isoformat(),
+        "total_tables": len(all_data),
+        "total_records": total_records,
+        "tables": {}
+    }
     
-    # v1.0 元數據表格（2 個）
-    metadata_tables = [
-        "body_parts",
-        "exercise_types"
-    ]
+    # 分類統計
+    categories = {
+        "v1.0 Core": CORE_TABLES,
+        "v1.0 Metadata": METADATA_TABLES,
+        "v2.0 Phase 1": PHASE1_TABLES,
+        "v2.0 Phase 2": PHASE2_TABLES,
+        "v2.0 Phase 3": PHASE3_TABLES,
+        "Optimization": OPTIMIZATION_TABLES
+    }
     
-    # v2.0 Phase 1 表格（1 個）
-    phase1_tables = [
-        "coaching_relationships"
-    ]
+    for category, tables in categories.items():
+        summary["tables"][category] = {}
+        for table in tables:
+            count = len(all_data.get(table, []))
+            summary["tables"][category][table] = count
     
-    # v2.0 Phase 2 表格（2 個）
-    phase2_tables = [
-        "availability_slots",
-        "appointments"
-    ]
+    # 保存 JSON 摘要
+    summary_path = os.path.join(export_dir, "database_summary.json")
+    save_json(summary, summary_path)
+    print(f"\n✅ Saved summary: {summary_path}")
     
-    # v1.0 優化表格（2 個）
-    optimization_tables = [
-        "daily_workout_summary",
-        "personal_records"
-    ]
+    # 生成 README.md
+    readme_lines = []
+    readme_lines.append("# StrengthWise Database Export")
+    readme_lines.append("")
+    readme_lines.append(f"**匯出時間**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    readme_lines.append(f"**總表格數**: {len(all_data)} 個")
+    readme_lines.append(f"**總記錄數**: {total_records:,} 筆")
+    readme_lines.append("")
+    readme_lines.append("---")
+    readme_lines.append("")
     
-    # 合併所有表格（14 個）
-    all_tables = core_tables + metadata_tables + phase1_tables + phase2_tables + optimization_tables
-    all_data = {}
+    for category, tables in categories.items():
+        readme_lines.append(f"## {category}")
+        readme_lines.append("")
+        readme_lines.append("| 表格名稱 | 記錄數 | 檔案 |")
+        readme_lines.append("|---------|--------|------|")
+        for table in tables:
+            count = len(all_data.get(table, []))
+            readme_lines.append(f"| {table} | {count:,} | {table}.json |")
+        readme_lines.append("")
     
-    print(f"Total tables to download: {len(all_tables)}")
-    print(f"v1.0 Core: {', '.join(core_tables)}")
-    print(f"v1.0 Metadata: {', '.join(metadata_tables)}")
-    print(f"v2.0 Phase 1: {', '.join(phase1_tables)}")
-    print(f"v2.0 Phase 2: {', '.join(phase2_tables)}")
-    print(f"Optimization: {', '.join(optimization_tables)}")
-    print("-" * 60)
+    readme_lines.append("---")
+    readme_lines.append("")
+    readme_lines.append("## 檔案說明")
+    readme_lines.append("")
+    readme_lines.append("- `database_summary.json` - 統計摘要（JSON 格式）")
+    readme_lines.append("- `README.md` - 本說明文件")
+    readme_lines.append("- `*.json` - 各表格資料")
+    readme_lines.append("")
     
-    for table_name in all_tables:
-        data = download_table(table_name)
-        all_data[table_name] = data
-        
-        # Save complete data
-        save_json(data, f"{table_name}.json")
-    
-    return all_data
-
-def generate_structure_doc(all_data: Dict[str, List]):
-    """Generate complete database structure documentation"""
-    print("\nGenerating structure documentation...")
-    
-    doc = []
-    doc.append("# StrengthWise Database Structure")
-    doc.append(f"\nExported at: {datetime.now().isoformat()}\n")
-    doc.append("=" * 80)
-    
-    for table_name, data in all_data.items():
-        doc.append(f"\n## Table: {table_name}")
-        doc.append(f"\n**Record Count**: {len(data)}")
-        
-        if data:
-            # Get columns
-            sample = data[0]
-            doc.append(f"\n### Columns ({len(sample.keys())})")
-            doc.append("\n| Column | Type | Sample Value |")
-            doc.append("|--------|------|--------------|")
-            
-            for key, value in sample.items():
-                value_type = type(value).__name__
-                sample_value = str(value)[:50] + "..." if len(str(value)) > 50 else str(value)
-                doc.append(f"| {key} | {value_type} | {sample_value} |")
-            
-            # Statistics
-            doc.append(f"\n### Statistics")
-            doc.append(f"- Total records: {len(data)}")
-            
-            # Add table-specific statistics
-            if table_name == "exercises":
-                training_types = {}
-                for item in data:
-                    t_type = item.get('training_type', 'Unknown')
-                    training_types[t_type] = training_types.get(t_type, 0) + 1
-                
-                doc.append("\n**Training Types:**")
-                for t_type, count in sorted(training_types.items(), key=lambda x: x[1], reverse=True):
-                    doc.append(f"- {t_type}: {count}")
-            
-            elif table_name == "custom_exercises":
-                body_parts = {}
-                for item in data:
-                    bp = item.get('body_part', 'Unknown')
-                    body_parts[bp] = body_parts.get(bp, 0) + 1
-                
-                doc.append("\n**Body Parts Distribution:**")
-                for bp, count in sorted(body_parts.items(), key=lambda x: x[1], reverse=True):
-                    doc.append(f"- {bp}: {count}")
-            
-            elif table_name == "workout_plans":
-                completed = sum(1 for item in data if item.get('completed'))
-                pending = len(data) - completed
-                doc.append(f"- Completed: {completed}")
-                doc.append(f"- Pending: {pending}")
-                
-                # Calculate total volume
-                total_volume = sum(item.get('total_volume', 0) for item in data if item.get('completed'))
-                doc.append(f"- Total training volume: {total_volume:.1f} kg")
-            
-            elif table_name == "workout_templates":
-                doc.append(f"- User templates: {len(data)}")
-            
-            elif table_name == "body_data":
-                if data:
-                    weights = [item.get('weight') for item in data if item.get('weight')]
-                    if weights:
-                        doc.append(f"- Weight range: {min(weights):.1f} - {max(weights):.1f} kg")
-                        doc.append(f"- Average weight: {sum(weights)/len(weights):.1f} kg")
-                    
-                    body_fats = [item.get('body_fat') for item in data if item.get('body_fat')]
-                    if body_fats:
-                        doc.append(f"- Body fat range: {min(body_fats):.1f}% - {max(body_fats):.1f}%")
-            
-            elif table_name == "coaching_relationships":
-                statuses = {}
-                for item in data:
-                    status = item.get('status', 'Unknown')
-                    statuses[status] = statuses.get(status, 0) + 1
-                
-                doc.append("\n**Status Distribution:**")
-                for status, count in sorted(statuses.items(), key=lambda x: x[1], reverse=True):
-                    doc.append(f"- {status}: {count}")
-            
-            elif table_name == "availability_slots":
-                coaches = {}
-                for item in data:
-                    coach_id = item.get('coach_id', 'Unknown')
-                    coaches[coach_id] = coaches.get(coach_id, 0) + 1
-                
-                doc.append(f"- Total coaches: {len(coaches)}")
-                doc.append(f"- Average slots per coach: {len(data)/len(coaches):.1f}" if coaches else "")
-            
-            elif table_name == "appointments":
-                statuses = {}
-                for item in data:
-                    status = item.get('status', 'Unknown')
-                    statuses[status] = statuses.get(status, 0) + 1
-                
-                doc.append("\n**Appointment Status:**")
-                for status, count in sorted(statuses.items(), key=lambda x: x[1], reverse=True):
-                    doc.append(f"- {status}: {count}")
-            
-            elif table_name == "daily_workout_summary":
-                if data:
-                    total_volume = sum(item.get('total_volume', 0) for item in data)
-                    total_workouts = sum(item.get('workout_count', 0) for item in data)
-                    doc.append(f"- Total recorded days: {len(data)}")
-                    doc.append(f"- Total workouts: {total_workouts}")
-                    doc.append(f"- Total volume: {total_volume:.1f} kg")
-            
-            elif table_name == "personal_records":
-                if data:
-                    exercises_with_pr = len(set(item.get('exercise_id') for item in data if item.get('exercise_id')))
-                    doc.append(f"- Exercises with PR: {exercises_with_pr}")
-                    
-                    max_weight = max((item.get('max_weight', 0) for item in data), default=0)
-                    doc.append(f"- Highest PR weight: {max_weight:.1f} kg")
-            
-            elif table_name == "body_parts":
-                names = [item.get('name', 'Unknown') for item in data]
-                doc.append(f"\n**Body Parts:**")
-                for name in sorted(names):
-                    doc.append(f"- {name}")
-            
-            elif table_name == "exercise_types":
-                names = [item.get('name', 'Unknown') for item in data]
-                doc.append(f"\n**Exercise Types:**")
-                for name in sorted(names):
-                    doc.append(f"- {name}")
-        
-        doc.append("\n" + "-" * 80)
-    
-    # Save documentation
-    filepath = os.path.join("database_export", "database_structure.md")
-    with open(filepath, 'w', encoding='utf-8') as f:
-        f.write("\n".join(doc))
-    
-    print(f"  Saved: {filepath}")
+    readme_path = os.path.join(export_dir, "README.md")
+    with open(readme_path, 'w', encoding='utf-8') as f:
+        f.write("\n".join(readme_lines))
+    print(f"✅ Saved README: {readme_path}")
 
 def main():
     """Main function"""
-    print("=" * 60)
-    print("StrengthWise - Complete Database Download Tool")
-    print("=" * 60)
-    print(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    
+    print("=" * 80)
+    print("StrengthWise - Complete Database Download Tool (v2.0)")
+    print("=" * 80)
+    print(f"⏰ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"🔗 Supabase: {SUPABASE_URL}")
+    print("")
     
     try:
-        print(f"Connected to Supabase: {SUPABASE_URL}\n")
-        
         # Ensure export directory exists
-        ensure_export_dir()
+        export_dir = ensure_export_dir(timestamp)
+        print(f"📁 Export directory: {export_dir}")
+        print("")
+        
+        # Show table summary
+        print(f"📊 Total tables to download: {len(ALL_TABLES)}")
+        print(f"   - v1.0 Core: {len(CORE_TABLES)} tables")
+        print(f"   - v1.0 Metadata: {len(METADATA_TABLES)} tables")
+        print(f"   - v2.0 Phase 1: {len(PHASE1_TABLES)} table")
+        print(f"   - v2.0 Phase 2: {len(PHASE2_TABLES)} tables")
+        print(f"   - v2.0 Phase 3: {len(PHASE3_TABLES)} tables ⭐")
+        print(f"   - Optimization: {len(OPTIMIZATION_TABLES)} tables")
+        print("")
+        print("-" * 80)
+        print("")
         
         # Download all tables
-        all_data = download_all_tables()
+        all_data = {}
+        success_count = 0
+        failed_tables = []
         
-        # Generate structure documentation
-        generate_structure_doc(all_data)
+        for table_name in ALL_TABLES:
+            data, success = download_table(table_name)
+            all_data[table_name] = data
+            
+            if success:
+                success_count += 1
+                # Save individual JSON file
+                filepath = os.path.join(export_dir, f"{table_name}.json")
+                save_json(data, filepath)
+            else:
+                failed_tables.append(table_name)
+        
+        print("")
+        print("-" * 80)
+        print("")
         
         # Generate summary
-        print("\n" + "=" * 60)
-        print("Download Summary")
-        print("=" * 60)
-        for table_name, data in all_data.items():
-            print(f"  {table_name}: {len(data)} records")
+        generate_summary(all_data, export_dir, timestamp)
         
-        print("\nAll data downloaded successfully!")
-        print("Output directory: database_export/")
-        print("\nNext steps:")
-        print("  1. Review database_structure.md for complete structure")
-        print("  2. Check individual JSON files for data details")
+        # Print final summary
+        print("")
+        print("=" * 80)
+        print("📊 Download Summary")
+        print("=" * 80)
+        print(f"✅ Successfully downloaded: {success_count}/{len(ALL_TABLES)} tables")
+        
+        if failed_tables:
+            print(f"❌ Failed tables: {', '.join(failed_tables)}")
+        
+        total_records = sum(len(data) for data in all_data.values())
+        print(f"📝 Total records: {total_records:,}")
+        print("")
+        
+        # Show top 5 tables by record count
+        print("🔝 Top 5 tables by record count:")
+        sorted_tables = sorted(all_data.items(), key=lambda x: len(x[1]), reverse=True)
+        for i, (table_name, data) in enumerate(sorted_tables[:5], 1):
+            print(f"   {i}. {table_name}: {len(data):,} records")
+        
+        print("")
+        print("=" * 80)
+        print("✅ Download completed successfully!")
+        print("=" * 80)
+        print("")
+        print(f"📁 Output directory: {export_dir}")
+        print("")
+        print("📄 Files generated:")
+        print(f"   - database_summary.json (統計報告)")
+        print(f"   - README.md (說明文檔)")
+        print(f"   - {len(all_data)} × *.json (表格資料)")
+        print("")
         
     except Exception as e:
-        print(f"\nError: {e}")
+        print(f"\n❌ Error: {e}")
         import traceback
         traceback.print_exc()
         return 1

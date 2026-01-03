@@ -3,7 +3,7 @@ import 'package:strengthwise/models/session_note/session_note_model.dart';
 import 'session_note_storage_manager.dart';
 
 /// Session Note 操作管理器（子模組）
-/// 
+///
 /// 職責：處理筆記的 CRUD 操作
 class SessionNoteOperations {
   final SupabaseClient _supabase;
@@ -15,11 +15,8 @@ class SessionNoteOperations {
   Future<SessionNoteModel> createNote(SessionNoteModel note) async {
     final data = note.toSupabase(includeId: false);
 
-    final response = await _supabase
-        .from('session_notes')
-        .insert(data)
-        .select()
-        .single();
+    final response =
+        await _supabase.from('session_notes').insert(data).select().single();
 
     return SessionNoteModel.fromSupabase(response);
   }
@@ -39,7 +36,7 @@ class SessionNoteOperations {
   }
 
   /// 刪除筆記
-  /// 
+  ///
   /// 會同時刪除：
   /// 1. Storage 中的所有照片
   /// 2. 資料庫中的筆記記錄
@@ -99,5 +96,52 @@ class SessionNoteOperations {
 
     return SessionNoteModel.fromSupabase(response);
   }
-}
 
+  /// 隱藏筆記（教練或學員）⭐ 新增
+  ///
+  /// 當關係為 archived 時，雙方可以選擇「移除」共享筆記，
+  /// 實際上是 UPDATE hidden_by_client/hidden_by_coach = true。
+  ///
+  /// **自動清理邏輯**：
+  /// 如果更新後雙方都已隱藏（hidden_by_client = true AND hidden_by_coach = true），
+  /// 則自動呼叫 deleteNote() 真正刪除記錄（包含 Storage 檔案清理）。
+  ///
+  /// [noteId] 筆記 ID
+  /// [isCoach] true = 教練隱藏（更新 hidden_by_coach），false = 學員隱藏（更新 hidden_by_client）
+  Future<void> hideNote({
+    required String noteId,
+    required bool isCoach,
+  }) async {
+    // 1. 先查詢當前狀態
+    final currentNote = await _supabase
+        .from('session_notes')
+        .select('hidden_by_client, hidden_by_coach')
+        .eq('id', noteId)
+        .maybeSingle();
+
+    if (currentNote == null) {
+      throw Exception('筆記不存在');
+    }
+
+    final currentHiddenByClient =
+        currentNote['hidden_by_client'] as bool? ?? false;
+    final currentHiddenByCoach =
+        currentNote['hidden_by_coach'] as bool? ?? false;
+
+    // 2. 更新隱藏狀態
+    final updateData =
+        isCoach ? {'hidden_by_coach': true} : {'hidden_by_client': true};
+
+    await _supabase.from('session_notes').update(updateData).eq('id', noteId);
+
+    // 3. 檢查是否雙方都已隱藏（包含本次更新）
+    final bothHidden = isCoach
+        ? (currentHiddenByClient && true) // 教練隱藏 + 學員已隱藏
+        : (true && currentHiddenByCoach); // 學員隱藏 + 教練已隱藏
+
+    // 4. 如果雙方都隱藏，真正刪除記錄（包含 Storage 清理）
+    if (bothHidden) {
+      await deleteNote(noteId);
+    }
+  }
+}

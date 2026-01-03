@@ -2,44 +2,91 @@
 
 > 智慧型重訓追蹤應用 - 用數據驅動你的訓練進步
 
-一個基於 Flutter 與 Supabase 打造的跨平台健身訓練記錄 App，讓你輕鬆管理訓練計劃、記錄每一組動作，並透過數據分析追蹤你的肌力成長。
+一個基於 Flutter 與 Supabase 打造的**專業級教練學員管理與訓練記錄平台**，支援個人訓練追蹤、教練學員管理、預約系統、SOAP 筆記、手繪板等完整功能。
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.16+-02569B?logo=flutter)](https://flutter.dev/)
 [![Supabase](https://img.shields.io/badge/Supabase-Latest-3ECF8E?logo=supabase)](https://supabase.com/)
 [![Dart](https://img.shields.io/badge/Dart-3.1+-0175C2?logo=dart)](https://dart.dev/)
 
+**最新版本**：v2.2（2026-01-02）✅  
+**專案狀態**：🚀 生產就緒 (Production Ready)
+
 ---
 
 ## ✨ 核心功能
 
-### 🏋️ 訓練管理
-- **訓練計劃**：創建、編輯、刪除訓練計劃
-- **訓練模板**：保存常用的訓練計劃為模板，快速創建新計劃
-- **訓練執行**：實時記錄每一組的重量、次數、完成狀態
-- **自動保存**：訓練過程中自動保存進度，不怕資料遺失
+### 👤 個人訓練系統（v1.0）
 
-### 📊 數據記錄與統計分析 ⭐
-- **完整記錄**：記錄每次訓練的詳細數據
-- **訓練備註**：為每次訓練添加備註
-- **歷史查詢**：查看過往的訓練記錄
-- **專業統計系統**：✅ 模組化設計（16 個獨立元件）
-  - 📈 訓練頻率、訓練量趨勢圖表
-  - 💪 力量進步追蹤、個人最佳記錄（PR）
-  - 🎯 肌群平衡分析、訓練日曆熱力圖
-  - ⚡ 秒開載入（首頁預載入 + 智能快取）
-- **身體數據**：✅ 體重、體脂、BMI、肌肉量追蹤（含趨勢圖）
+**🏋️ 訓練管理**
+- ✅ 訓練計劃創建、編輯、刪除（支援時間範圍設定）
+- ✅ 訓練模板系統（快速創建常用計劃）
+- ✅ 實時訓練記錄（每組單獨編輯、自動保存）
+- ✅ 統一行事曆視圖（UnifiedCalendar + 雙層疊加）
 
-### 💪 運動庫
-- **794 個專業動作**：完整的運動動作資料庫，涵蓋各大肌群
-- **階層式瀏覽**：依訓練類型（阻力/心肺/活動度）、身體部位、動作分類輕鬆查找
-- **自訂動作**：✅ 創建專屬的自訂動作
-- **動作搜尋**：✅ 繁體中文全文搜尋（pgroonga）
-- **動作詳情**：查看動作說明和相關資訊
+**📊 專業統計分析**（16 個獨立模組）
+- ✅ 訓練頻率統計（週/月/季/年）
+- ✅ 訓練量趨勢圖表（fl_chart）
+- ✅ 力量進步追蹤（個人最佳記錄 PR）
+- ✅ 肌群平衡分析（雷達圖）
+- ✅ 訓練日曆熱力圖（7x5 格式）
+- ✅ 身體數據追蹤（體重/體脂/BMI/肌肉量 + 趨勢圖）
+- ⚡ 秒開載入（首頁預載入 + 智能快取）
 
-### 🗓️ 行事曆
-- **月曆視圖**：一眼看清所有訓練安排
-- **快速創建**：點擊日期快速創建訓練計劃
-- **進度追蹤**：查看已完成和未完成的訓練
+**💪 運動庫**
+- ✅ 794 個專業動作（完整雙語資料）
+- ✅ 階層式瀏覽（訓練類型/身體部位/動作分類）
+- ✅ 繁體中文全文搜尋（pgroonga）
+- ✅ 自訂動作系統（CRUD + 統計整合）
+
+---
+
+### 👥 教練學員系統（v2.0）⭐⭐⭐
+
+**Phase 1：雙向綁定與管理**
+- ✅ 教練邀請學員（UUID 綁定）
+- ✅ 學員接受/拒絕邀請
+- ✅ 雙向訓練記錄查看
+- ✅ 教練為學員創建訓練計劃
+
+**Phase 2：預約系統**
+- ✅ 教練時段管理（單次 + 週期性 RRULE）
+- ✅ 學員線上預約
+- ✅ 物理層防雙重預約（GiST 排除約束）
+- ✅ 狀態管理（待確認/已確認/已完成/已取消/已拒絕）
+
+**Phase 3：視覺化筆記系統**
+- ✅ SOAP 格式專業筆記（Subjective, Objective, Assessment, Plan）
+- ✅ 照片拍攝與上傳（Supabase Storage）
+- ✅ Private/Shared 切換（學員可見性控制）
+- ✅ 學員時間偏好設定（行事曆模式 + 優先級）
+
+**Phase 4：進階功能**
+- ✅ 完整手繪板（4 種底圖 + 4 種工具 + 向量繪圖）
+- ✅ 教練多學員統計視圖（複用 16 個統計模組）
+- ✅ 教練學員中心整合（4 個 Tab 統一導航）
+- ✅ 統一行事曆系統（訓練計劃 + 時間偏好雙層疊加）
+
+---
+
+### 🛠️ 技術特色
+
+**時區統一化（v2.2）** ⭐
+- ✅ 全項目統一使用 `DateTimeUtils` 工具類
+- ✅ 40+ 個文件，消除 120+ 處重複代碼
+- ✅ Model 層所有 `DateTime` 都是本地時間
+- ✅ Service 層統一 UTC 轉換
+- ✅ UI 層零轉換（開箱即用）
+
+**資料庫優化**
+- ✅ Phase 1-4 完整優化（索引 + 全文搜尋 + 彙總表 + Cursor 分頁）
+- ✅ 查詢效能提升 80-99%（統計頁面秒開）
+- ✅ pgroonga 全文搜尋（繁體中文優化）
+- ✅ TSTZRANGE 時間範圍查詢（GiST 索引）
+
+**效能優化** ⚡
+- ✅ 主線程優化 v3（卡頓 -96%）
+- ✅ 首頁預載入 + 智能快取
+- ✅ 所有頁面秒開（<5ms）
 
 ---
 
@@ -84,12 +131,18 @@
 
 ### 技術棧
 
-- **框架**：Flutter 3.16+
-- **語言**：Dart 3.1+
-- **後端**：Supabase PostgreSQL (Database, Auth, Storage)
-- **狀態管理**：Provider (ChangeNotifier)
-- **依賴注入**：GetIt (Service Locator Pattern)
-- **本地儲存**：SharedPreferences
+| 分類 | 技術 | 版本 |
+|------|------|------|
+| **框架** | Flutter | 3.16+ |
+| **語言** | Dart | 3.1+ |
+| **後端** | Supabase PostgreSQL | Latest |
+| **認證** | Supabase Auth | Latest |
+| **儲存** | Supabase Storage | Latest |
+| **狀態管理** | Provider (ChangeNotifier) | - |
+| **依賴注入** | GetIt (Service Locator) | - |
+| **本地儲存** | SharedPreferences | - |
+| **圖表** | fl_chart | Latest |
+| **全文搜尋** | pgroonga | Latest |
 
 ### 架構模式
 
@@ -105,20 +158,49 @@ Service (資料存取層)
 Model (資料模型層)
 ```
 
+**特色**：
+- ✅ 100% Interface 使用（完全解耦）
+- ✅ 60+ 獨立元件（模組化設計）
+- ✅ 統一時間轉換工具（DateTimeUtils）
+- ✅ 統一錯誤處理（ErrorHandlingService）
+
 ### 專案結構
 
 ```
 strengthwise/
-├── lib/             # Flutter 核心程式碼
-│   ├── models/      # 資料模型
-│   ├── services/    # 服務層（資料存取）
-│   ├── controllers/ # 控制器層（業務邏輯）
-│   └── views/       # UI 層（頁面和元件）
-├── scripts/         # Python 和 Dart 工具腳本
-├── docs/            # 專案文檔
-├── assets/          # 靜態資源
-└── ...
+├── lib/                    # Flutter 核心程式碼
+│   ├── models/             # 資料模型（與 Supabase 對接）
+│   ├── services/           # 服務層（資料存取）
+│   │   ├── interfaces/     # Service Interface
+│   │   └── supabase/       # Supabase 實作
+│   ├── controllers/        # 控制器層（業務邏輯）
+│   │   └── interfaces/     # Controller Interface
+│   ├── views/              # UI 層（頁面和元件）
+│   │   ├── pages/          # 完整頁面
+│   │   └── widgets/        # 可復用元件
+│   └── utils/              # 工具類（DateTimeUtils 等）
+├── scripts/                # Python 工具腳本（8 個核心工具）
+│   └── tools/              # 資料庫下載、假資料生成等
+├── migrations/             # 資料庫 Migrations（11 個檔案）
+├── docs/                   # 專案文檔（完整技術文檔）
+├── assets/                 # 靜態資源
+└── test/                   # 測試檔案
 ```
+
+### 代碼統計（v2.2）
+
+| 項目 | 數量 |
+|------|------|
+| 總行數 | 50,000+ |
+| Model 類別 | 30+ |
+| Service 類別 | 20+ |
+| Controller 類別 | 25+ |
+| 獨立 Widget 元件 | 60+ |
+| 統計模組 | 16 |
+| 資料庫表格 | 16 |
+| RLS 策略 | 50+ |
+| Migrations | 11 |
+| Python 工具 | 8 |
 
 ---
 
@@ -170,143 +252,183 @@ strengthwise/
 
 使用 **Supabase PostgreSQL** 作為資料庫，主要表格：
 
-| 表格 | 說明 | 狀態 |
-|------|------|------|
-| `users` | 用戶資料 | ✅ |
-| `workout_plans` | 訓練計劃和記錄（統一） | ✅ |
-| `workout_templates` | 訓練模板 | ✅ |
-| `exercises` | 公共運動庫（794 個專業動作） | ✅ |
-| `custom_exercises` | 用戶自訂動作 | ✅ |
-| `body_data` | 身體數據記錄 | ✅ |
-| `daily_workout_summary` | 每日訓練彙總表（效能優化） | ✅ |
-| `personal_records` | 個人最佳記錄彙總表 | ✅ |
+### 核心表格（v1.0）
 
-**效能優化**（2024-12-27 完成）：
-- ✅ Phase 1-4 資料庫優化（索引 + 全文搜尋 + 彙總表 + Cursor 分頁）
-- ✅ 查詢效能提升 80-99%（統計頁面秒開）
+| 表格 | 說明 | 記錄數 |
+|------|------|--------|
+| `users` | 用戶資料（與 Supabase Auth 同步） | - |
+| `workout_plans` | 訓練計劃和記錄（統一表） | - |
+| `workout_templates` | 訓練模板 | - |
+| `exercises` | 系統動作庫 | 794 |
+| `custom_exercises` | 用戶自訂動作 | - |
+| `body_data` | 身體數據記錄 | - |
+
+### 彙總表（效能優化）
+
+| 表格 | 說明 | 效能提升 |
+|------|------|---------|
+| `daily_workout_summary` | 每日訓練彙總表 | 99%+ |
+| `personal_records` | 個人最佳記錄彙總表 | 95%+ |
+
+### 教練學員系統（v2.0）
+
+| 表格 | 說明 |
+|------|------|
+| `coaching_relationships` | 教練學員關係 |
+| `availability_slots` | 教練可用時段（RRULE 週期性） |
+| `appointments` | 預約記錄 |
+| `session_notes` | SOAP 格式課程筆記 |
+| `client_availability_preferences` | 學員時間偏好 |
+| `drawing_notes` | 手繪板向量繪圖 |
+
+### 資料庫特色
+
+**效能優化**
+- ✅ Phase 1-4 完整優化（索引 + 全文搜尋 + 彙總表 + Cursor 分頁）
+- ✅ 查詢效能提升 80-99%
 - ✅ pgroonga 全文搜尋（繁體中文優化）
+- ✅ TSTZRANGE 時間範圍查詢（GiST 索引）
 
-詳細設計請參考 [docs/DATABASE_SUPABASE.md](docs/DATABASE_SUPABASE.md)。
+**安全性**
+- ✅ 50+ 個 RLS 策略（Row Level Security）
+- ✅ 物理層防雙重預約（GiST 排除約束）
+- ✅ Storage 檔案隔離（Private/Shared）
 
----
-
-## 📖 文檔
-
-### 給開發者
-
-- **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - 專案架構和技術棧
-- **[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)** - 當前開發進度
-- **[docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md)** - 資料庫設計
-
-### 給 AI Agent
-
-- **[AGENTS.md](AGENTS.md)** - AI 開發指南
-- **[docs/README.md](docs/README.md)** - 文檔導航
-- **[docs/cursor_tasks/](docs/cursor_tasks/)** - 任務文檔
+**詳細設計**：請參考 [docs/DATABASE_SUPABASE.md](docs/DATABASE_SUPABASE.md)
 
 ---
 
-## 🗺️ 開發路線圖
+## 📖 文檔導航
 
-### 🎉 單機版正式完成（v1.0）- 2024-12-28 ⭐⭐⭐
+### 📚 核心文檔（必讀）
 
-**核心功能**（100% 完成）：
-- [x] 用戶認證（Supabase Auth + Google Sign-In）
-- [x] 訓練計劃管理（創建、編輯、刪除、模板）
-- [x] 訓練執行和記錄（實時保存、每組單獨編輯）
-- [x] 運動庫（794 個專業動作 + 階層式瀏覽）
-- [x] 自訂動作功能（CRUD + 統計整合）
-- [x] 行事曆視圖（月曆 + 快速創建）
-- [x] 個人資料編輯
+| 文檔 | 說明 | 適合對象 |
+|------|------|---------|
+| **[docs/README.md](docs/README.md)** | 📚 文檔導航（入口） | 所有人 |
+| **[AGENTS.md](AGENTS.md)** | AI 開發指南 | AI Agent / 開發者 |
+| **[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)** ⭐ | 開發狀態（精簡版 800+ 行） | 所有人 |
+| **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** | 專案架構和技術棧 | 開發者 |
+| **[docs/DATABASE_SUPABASE.md](docs/DATABASE_SUPABASE.md)** | Supabase PostgreSQL 資料庫設計 | 後端開發者 |
 
-**專業統計系統** ⭐（16 個模組）：
-- [x] 統計頁面模組化重構（1,951 行 → 16 個元件）
-- [x] 訓練頻率統計（本週/本月/三個月/全年）
-- [x] 訓練量趨勢圖表（使用 fl_chart）
-- [x] 力量進步追蹤（個人最佳記錄 PR）
-- [x] 肌群平衡分析（雷達圖）
-- [x] 訓練日曆熱力圖（7x5 熱力圖）
-- [x] 完成率統計
-- [x] 身體數據追蹤（體重/體脂/BMI/肌肉量 + 趨勢圖）🆕
+### 🛠️ 技術指南
 
-**效能優化** ⚡（極致優化）：
-- [x] Phase 1-4 資料庫優化（提升 80-99%）
-- [x] 主線程優化 v3（卡頓 -96%）🆕
-- [x] 所有頁面秒開（<5ms）
-- [x] pgroonga 全文搜尋（繁體中文）
-- [x] 智能快取與預載入
+| 文檔 | 說明 |
+|------|------|
+| **[docs/DATETIME_UTILS_GUIDE.md](docs/DATETIME_UTILS_GUIDE.md)** | 時間轉換工具指南（v2.2 完整） |
+| **[docs/UI_UX_GUIDELINES.md](docs/UI_UX_GUIDELINES.md)** | UI/UX 設計規範 |
+| **[docs/DATABASE_OPTIMIZATION_GUIDE.md](docs/DATABASE_OPTIMIZATION_GUIDE.md)** | 資料庫優化指南 |
+| **[docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)** | 部署指南 |
 
-**技術架構**（生產級別）：
-- [x] MVVM + Clean Architecture（100% Interface 使用）
-- [x] 全代碼解耦合（60+ 獨立元件）🆕
-- [x] Supabase PostgreSQL（完全移除 Firebase）
-- [x] 依賴注入（GetIt Service Locator）
+### 🎯 設計文檔
 
-### 🚧 進行中（v1.1 - 實測與優化）
+| 文檔 | 說明 |
+|------|------|
+| **[docs/SAAS_PLATFORM_ROADMAP.md](docs/SAAS_PLATFORM_ROADMAP.md)** | 完整 SaaS 計劃（Phase 1-5） |
+| **[docs/UNIFIED_TIME_PICKER_DESIGN.md](docs/UNIFIED_TIME_PICKER_DESIGN.md)** | 統一時間設定模組設計 |
 
-- [ ] 實際使用測試（2-4 週）
-- [ ] 根據反饋修復 Bug
-- [ ] UI/UX 細節調整
-- [ ] 準備應用商店資料
+### 🔧 工具腳本
 
-### ✅ 已完成（v2.0）
+| 文檔 | 說明 |
+|------|------|
+| **[scripts/README.md](scripts/README.md)** | Python 工具腳本使用指南（8 個核心工具） |
+| **[migrations/README.md](migrations/README.md)** | 資料庫 Migrations 執行指南（11 個檔案） |
 
-- [x] 教練-學員雙邊平台（Phase 1）⭐
-  - 學員綁定與管理
-  - 雙向統計與訓練記錄查看
-- [x] 預約系統（Phase 2）⭐
-  - 教練時段管理
-  - 學員線上預約
-  - 狀態管理（待確認/已確認/已完成/已取消）
-  - 雙重預約物理層防護
-- [x] 視覺化筆記系統（Phase 3）⭐⭐
-  - SOAP 格式專業筆記
-  - 照片上傳與標註
-  - Private/Shared 切換
-  - Storage 檔案管理
-  - 學員時間偏好設定
-- [x] 完整手繪板（Phase 4A）⭐⭐⭐
-  - 向量繪圖系統（JSONB 儲存）
-  - 4 種底圖模板（身體解剖圖）
-  - 4 種繪圖工具（鉛筆/麥克筆/螢光筆/橡皮擦）
-  - 底圖保護（擦除不影響底圖）
-  - 多繪圖支援（drawing.id 唯一識別）
-  - 模式切換（繪圖 vs 查看）
-  - 只讀查看器（zoom + pan）
-  - 權限控制（學員只讀）
-  - 手機適配（橫向滾動工具列）
-  - 7 個 Bug 修復
+---
 
-### 🎯 下一步工作（v2.0 Phase 4B）
+## 🗺️ 版本歷程
 
-**Phase 4B：教練多學員統計視圖** ⭐⭐⭐（預計 2-3 天）
-- [ ] 統計頁面新增學員選擇器（教練模式）
-- [ ] 複用現有 16 個統計組件
-- [ ] （可選）學員完成率總覽頁面
+### 🎉 v2.2 - 時區統一化與專案整理（2026-01-02）✅
 
-**重要發現**：v1.0 已完成完整統計系統，Phase 4B 只需新增學員切換功能！
+**時區統一化** ⭐
+- ✅ 全項目統一使用 `DateTimeUtils` 工具類
+- ✅ 40+ 個文件，消除 120+ 處重複代碼
+- ✅ Model 層所有 `DateTime` 都是本地時間
+- ✅ 完整測試通過
 
-### 🔮 未來計劃（v2.0+）
+**資料庫修復與整理**
+- ✅ 修復 `personal_records.body_part` 欄位（從 exercises 表自動查詢）
+- ✅ 修復統計觸發器支援布林值（向後相容）
+- ✅ 修復 `get_available_slots()` 函數
+- ✅ Python 工具腳本整理（14 → 8 個，-43%）
+- ✅ Migrations 檔案整理（19 → 11 個，-42%）
 
-- [ ] 深度測試與優化（3-5 天）
-  - 手繪板跨設備測試
-  - 照片與筆記功能測試
-  - 性能監控與優化
-- [ ] UX 改進與導航優化（1 週）
-  - 首次使用引導
-  - 導航結構優化
-  - 空狀態頁面設計
-- [ ] 準備 Beta 測試（1-2 週）
-  - 用戶文檔撰寫
-  - 生產環境配置
-  - 錯誤追蹤設置
+### 🎉 v2.1 - 訓練時間範圍（2025-01-02）✅
+
+- ✅ `training_time_range` TSTZRANGE 欄位
+- ✅ 資料庫層排除約束（防止雙重預約）
+- ✅ 應用層重疊檢查
+- ✅ GiST 索引優化
+
+### 🎉 v2.0 - 教練學員平台（2024-12-28 ~ 2025-01-01）✅
+
+**Phase 1：教練學員系統**
+- ✅ 雙向綁定與管理
+- ✅ 教練為學員創建訓練
+
+**Phase 2：預約系統**
+- ✅ 教練時段管理（RRULE 週期性）
+- ✅ 學員線上預約
+- ✅ 物理層防雙重預約
+
+**Phase 3：視覺化筆記**
+- ✅ SOAP 格式專業筆記
+- ✅ 照片上傳與標註
+- ✅ 學員時間偏好設定
+
+**Phase 4：進階功能**
+- ✅ 完整手繪板（向量繪圖）
+- ✅ 教練多學員統計視圖
+- ✅ 教練學員中心整合
+- ✅ 統一行事曆系統
+
+### 🎉 v1.0 - 單機版（2024-12-24）✅
+
+**核心功能**
+- ✅ 用戶認證（Supabase Auth + Google Sign-In）
+- ✅ 訓練計劃管理（創建、編輯、刪除、模板）
+- ✅ 訓練執行和記錄（實時保存、每組單獨編輯）
+- ✅ 運動庫（794 個專業動作 + 階層式瀏覽）
+- ✅ 自訂動作功能（CRUD + 統計整合）
+- ✅ 行事曆視圖（月曆 + 快速創建）
+
+**專業統計系統**（16 個模組）
+- ✅ 訓練頻率、訓練量趨勢、力量進步追蹤
+- ✅ 肌群平衡分析、訓練日曆熱力圖
+- ✅ 身體數據追蹤（體重/體脂/BMI/肌肉量）
+
+**效能優化**
+- ✅ Phase 1-4 資料庫優化（提升 80-99%）
+- ✅ 主線程優化 v3（卡頓 -96%）
+- ✅ 所有頁面秒開（<5ms）
+
+**技術架構**
+- ✅ MVVM + Clean Architecture（100% Interface 使用）
+- ✅ 全代碼解耦合（60+ 獨立元件）
+- ✅ Supabase PostgreSQL（完全移除 Firebase）
+
+---
+
+## 🔮 未來規劃
+
+### 短期（1-2 個月）
+- [ ] 深度測試與優化
+- [ ] UX 改進與導航優化
+- [ ] 準備 Beta 測試
+- [ ] 用戶文檔撰寫
+
+### 中期（3-6 個月）
 - [ ] 語音筆記與 AI 功能
   - 語音轉文字（Whisper API）
   - 智能筆記建議（GPT-4）
   - 訓練計劃推薦
 - [ ] 數據匯出（CSV/PDF）
 - [ ] 訓練提醒通知
+
+### 長期（6 個月以上）
 - [ ] 社交功能
+- [ ] 多語言支援
+- [ ] Web 版本
+- [ ] Apple Watch / Wear OS 支援
 
 ---
 

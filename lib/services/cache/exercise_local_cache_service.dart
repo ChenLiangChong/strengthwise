@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';
 import '../../models/exercise_model.dart';
 
 /// 動作本地快取服務
@@ -35,11 +36,51 @@ class ExerciseLocalCacheService {
       if (!kIsWeb) {
         await Hive.initFlutter();
       }
-      _box = await Hive.openBox(_boxName);
-      print('[EXERCISE_CACHE] 本地快取初始化完成');
+      
+      // ⚡ 嘗試打開 Box，如果失敗則重試
+      int retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          _box = await Hive.openBox(_boxName);
+          print('[EXERCISE_CACHE] 本地快取初始化完成');
+          return;
+        } catch (e) {
+          retryCount++;
+          print('[EXERCISE_CACHE] 初始化失敗 (第 $retryCount/$maxRetries 次): $e');
+          
+          // 如果是鎖文件問題，嘗試刪除並重試
+          if (e.toString().contains('lock failed') || 
+              e.toString().contains('already open')) {
+            print('[EXERCISE_CACHE] 檢測到鎖文件問題，嘗試清理...');
+            
+            try {
+              // 嘗試刪除舊的 Box（如果存在）
+              if (await Hive.boxExists(_boxName)) {
+                await Hive.deleteBoxFromDisk(_boxName);
+                print('[EXERCISE_CACHE] 已刪除舊的快取檔案');
+              }
+              
+              // 等待一小段時間後重試
+              await Future.delayed(Duration(milliseconds: 500 * retryCount));
+            } catch (cleanupError) {
+              print('[EXERCISE_CACHE] 清理失敗: $cleanupError');
+            }
+          }
+          
+          if (retryCount >= maxRetries) {
+            print('[EXERCISE_CACHE] ⚠️ 初始化失敗，將使用無快取模式');
+            // 不拋出錯誤，讓服務在無快取模式下運行
+            _box = null;
+            return;
+          }
+        }
+      }
     } catch (e) {
-      print('[EXERCISE_CACHE] 初始化失敗: $e');
-      rethrow;
+      print('[EXERCISE_CACHE] 初始化過程發生錯誤: $e');
+      // 不拋出錯誤，讓服務在無快取模式下運行
+      _box = null;
     }
   }
   
@@ -100,7 +141,7 @@ class ExerciseLocalCacheService {
       
       await _box!.put(_exercisesKey, exercisesMaps);
       await _box!.put(_versionKey, currentCacheVersion);
-      await _box!.put(_lastUpdateKey, DateTime.now().toIso8601String());
+      await _box!.put(_lastUpdateKey, DateTimeUtils.formatToUtcIso(DateTime.now()));
       
       print('[EXERCISE_CACHE] ✅ 成功保存到本地（${_getDataSize(exercisesMaps)}）');
     } catch (e) {

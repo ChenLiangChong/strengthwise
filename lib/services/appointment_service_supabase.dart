@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/appointment_model.dart';
+import '../utils/datetime_utils.dart';
 import 'interfaces/i_appointment_service.dart';
 import 'core/error_handling_service.dart';
 
@@ -40,11 +41,11 @@ class AppointmentServiceSupabase implements IAppointmentService {
       // 時間範圍篩選（使用 TSTZRANGE 查詢）
       if (startDate != null) {
         query = query.gte('time_range',
-            '[${startDate.toIso8601String()},${startDate.toIso8601String()})');
+            DateTimeUtils.formatToTstzRange(startDate, startDate));
       }
       if (endDate != null) {
         query = query.lte('time_range',
-            '[${endDate.toIso8601String()},${endDate.toIso8601String()})');
+            DateTimeUtils.formatToTstzRange(endDate, endDate));
       }
 
       // 狀態篩選
@@ -82,11 +83,11 @@ class AppointmentServiceSupabase implements IAppointmentService {
 
       if (startDate != null) {
         query = query.gte('time_range',
-            '[${startDate.toIso8601String()},${startDate.toIso8601String()})');
+            DateTimeUtils.formatToTstzRange(startDate, startDate));
       }
       if (endDate != null) {
         query = query.lte('time_range',
-            '[${endDate.toIso8601String()},${endDate.toIso8601String()})');
+            DateTimeUtils.formatToTstzRange(endDate, endDate));
       }
 
       if (status != null) {
@@ -166,9 +167,9 @@ class AppointmentServiceSupabase implements IAppointmentService {
               'notes, client_notes, coach_notes, cancellation_reason, '
               'cancelled_by, cancelled_at, created_at, updated_at')
           .gte('time_range',
-              '[${now.toIso8601String()},${now.toIso8601String()})')
+              DateTimeUtils.formatToTstzRange(now, now))
           .lte('time_range',
-              '[${weekLater.toIso8601String()},${weekLater.toIso8601String()})');
+              DateTimeUtils.formatToTstzRange(weekLater, weekLater));
 
       // 根據角色篩選
       if (isCoach) {
@@ -203,7 +204,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
       // 調用資料庫函數檢查衝突
       final response = await _supabase.rpc('check_appointment_conflict', params: {
         'p_coach_id': coachId,
-        'p_time_range': '[${startTime.toIso8601String()},${endTime.toIso8601String()})',
+        'p_time_range': DateTimeUtils.formatToTstzRange(startTime, endTime),
         'p_exclude_appointment_id': excludeAppointmentId,
       });
 
@@ -291,7 +292,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
     try {
       final updateData = {
         'status': 'confirmed',
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       };
 
       if (coachNotes != null) {
@@ -315,7 +316,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
     try {
       final updateData = {
         'status': 'completed',
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       };
 
       if (coachNotes != null) {
@@ -344,8 +345,8 @@ class AppointmentServiceSupabase implements IAppointmentService {
         'status': 'cancelled',
         'cancellation_reason': reason,
         'cancelled_by': cancelledBy,
-        'cancelled_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
+        'cancelled_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
+        'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       }).eq('id', appointmentId);
     } catch (e) {
       _errorService.logError('取消預約失敗: $e',
@@ -363,8 +364,8 @@ class AppointmentServiceSupabase implements IAppointmentService {
     try {
       await _supabase.from('appointments').update({
         'time_range':
-            '[${newStartTime.toIso8601String()},${newEndTime.toIso8601String()})',
-        'updated_at': DateTime.now().toIso8601String(),
+            DateTimeUtils.formatToTstzRange(newStartTime, newEndTime),
+        'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       }).eq('id', appointmentId).eq('status', 'requested'); // 只允許待確認的預約
     } catch (e) {
       _errorService.logError('重新安排預約失敗: $e',
@@ -381,7 +382,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
     try {
       await _supabase.from('appointments').update({
         'client_notes': clientNotes,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       }).eq('id', appointmentId);
     } catch (e) {
       _errorService.logError('更新學員備註失敗: $e',
@@ -398,7 +399,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
     try {
       await _supabase.from('appointments').update({
         'coach_notes': coachNotes,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       }).eq('id', appointmentId);
     } catch (e) {
       _errorService.logError('更新教練備註失敗: $e',
@@ -415,7 +416,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
     try {
       await _supabase.from('appointments').update({
         'workout_plan_id': workoutPlanId,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       }).eq('id', appointmentId);
     } catch (e) {
       _errorService.logError('關聯訓練計劃失敗: $e',
@@ -455,9 +456,9 @@ class AppointmentServiceSupabase implements IAppointmentService {
           .select('status')
           .eq('coach_id', coachId)
           .gte('time_range',
-              '[${startDate.toIso8601String()},${startDate.toIso8601String()})')
+              DateTimeUtils.formatToTstzRange(startDate, startDate))
           .lte('time_range',
-              '[${endDate.toIso8601String()},${endDate.toIso8601String()})');
+              DateTimeUtils.formatToTstzRange(endDate, endDate));
 
       final appointments = response as List;
 
@@ -494,9 +495,9 @@ class AppointmentServiceSupabase implements IAppointmentService {
           .select('status')
           .eq('client_id', clientId)
           .gte('time_range',
-              '[${startDate.toIso8601String()},${startDate.toIso8601String()})')
+              DateTimeUtils.formatToTstzRange(startDate, startDate))
           .lte('time_range',
-              '[${endDate.toIso8601String()},${endDate.toIso8601String()})');
+              DateTimeUtils.formatToTstzRange(endDate, endDate));
 
       final appointments = response as List;
 

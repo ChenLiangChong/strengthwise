@@ -1,5 +1,6 @@
 import 'workout_record.dart';
 import 'exercise_record.dart';
+import '../../utils/datetime_utils.dart'; // ⭐ 使用時間工具
 
 /// 訓練記錄工廠類
 ///
@@ -11,7 +12,7 @@ class WorkoutRecordFactory {
     if (json['trainingTime'] != null) {
       trainingTime = DateTime.fromMillisecondsSinceEpoch(json['trainingTime']);
     }
-    
+
     return WorkoutRecord(
       id: json['id'] ?? '',
       workoutPlanId: json['workoutPlanId'] ?? '',
@@ -23,42 +24,57 @@ class WorkoutRecordFactory {
           .toList(),
       notes: json['notes'] ?? '',
       completed: json['completed'] ?? false,
-      createdAt: json['createdAt'] != null 
-          ? DateTime.fromMillisecondsSinceEpoch(json['createdAt']) 
+      createdAt: json['createdAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(json['createdAt'])
           : DateTime.now(),
       trainingTime: trainingTime,
     );
   }
 
-  /// 從 Supabase 數據創建對象（從 workout_plans 表，completed=true）
+  /// 從 Supabase 數據創建對象（從 workout_plans 表）
   static WorkoutRecord fromSupabase(Map<String, dynamic> json) {
     DateTime? trainingTime;
-    if (json['training_time'] != null) {
-      trainingTime = DateTime.parse(json['training_time']);
+    DateTime? trainingEndTime;
+
+    // ⭐ v2.1: 處理訓練時間範圍（training_time_range）
+    if (json['training_time_range'] != null) {
+      final timeRange =
+          DateTimeUtils.parseTstzRange(json['training_time_range'] as String);
+      trainingTime = timeRange['start'];      // ⭐ 已經是本地時間
+      trainingEndTime = timeRange['end'];     // ⭐ 已經是本地時間
     }
-    
+    // 向後兼容：舊數據只有 training_time
+    else if (json['training_time'] != null) {
+      trainingTime = DateTimeUtils.parseIsoTimestamp(json['training_time']);  // ⭐ 統一工具類
+      // 如果沒有 end time，假設訓練 1 小時
+      trainingEndTime = trainingTime.add(const Duration(hours: 1));
+    }
+
     // exerciseRecords 從 exercises JSONB 欄位轉換
     final exercisesJson = json['exercises'] as List<dynamic>? ?? [];
-    
+
     return WorkoutRecord(
       id: json['id'] ?? '',
       workoutPlanId: json['id'] ?? '', // workout_plans 的 id 就是 workoutPlanId
       userId: json['trainee_id'] ?? json['user_id'] ?? '',
+      traineeId: json['trainee_id'], // Phase 4C
+      creatorId: json['creator_id'], // Phase 4C
       title: json['title'] ?? '訓練記錄',
-      date: json['completed_date'] != null 
-          ? DateTime.parse(json['completed_date'])
-          : (json['scheduled_date'] != null 
-              ? DateTime.parse(json['scheduled_date']) 
+      date: json['completed_date'] != null
+          ? DateTimeUtils.parseIsoTimestamp(json['completed_date'])  // ⭐ 統一工具類
+          : (json['scheduled_date'] != null
+              ? DateTimeUtils.parseIsoTimestamp(json['scheduled_date'])  // ⭐ 統一工具類
               : DateTime.now()),
       exerciseRecords: exercisesJson
           .map((e) => ExerciseRecord.fromJson(e as Map<String, dynamic>))
           .toList(),
       notes: json['note'] ?? '',
       completed: json['completed'] ?? false,
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
+      createdAt: json['created_at'] != null
+          ? DateTimeUtils.parseIsoTimestamp(json['created_at'])  // ⭐ 統一工具類
           : DateTime.now(),
       trainingTime: trainingTime,
+      trainingEndTime: trainingEndTime, // ⭐ 新增
     );
   }
 
@@ -69,7 +85,7 @@ class WorkoutRecordFactory {
     Map<String, dynamic> planData,
   ) {
     final exercises = (planData['exercises'] as List<dynamic>? ?? []);
-    
+
     DateTime? trainingTime;
     if (planData['trainingTime'] != null) {
       // 支援 DateTime 或 String 格式
@@ -77,14 +93,14 @@ class WorkoutRecordFactory {
       if (timeData is DateTime) {
         trainingTime = timeData;
       } else if (timeData is String) {
-        trainingTime = DateTime.parse(timeData);
+        trainingTime = DateTimeUtils.parseIsoTimestamp(timeData);  // ⭐ 統一工具類
       }
     } else if (planData['trainingHour'] != null) {
       final date = DateTime.now();
       final hour = planData['trainingHour'] as int;
       trainingTime = DateTime(date.year, date.month, date.day, hour, 0);
     }
-    
+
     return WorkoutRecord(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       workoutPlanId: planId,
@@ -92,7 +108,8 @@ class WorkoutRecordFactory {
       title: planData['title'] ?? '訓練記錄',
       date: DateTime.now(),
       exerciseRecords: exercises
-          .map((e) => ExerciseRecord.fromWorkoutExercise(e as Map<String, dynamic>))
+          .map((e) =>
+              ExerciseRecord.fromWorkoutExercise(e as Map<String, dynamic>))
           .toList(),
       completed: false,
       createdAt: DateTime.now(),
@@ -108,9 +125,8 @@ class WorkoutRecordFactory {
       'userId': record.userId,
       'title': record.title,
       'date': record.date.millisecondsSinceEpoch,
-      'exerciseRecords': record.exerciseRecords
-          .map((record) => record.toJson())
-          .toList(),
+      'exerciseRecords':
+          record.exerciseRecords.map((record) => record.toJson()).toList(),
       'notes': record.notes,
       'completed': record.completed,
       'createdAt': record.createdAt.millisecondsSinceEpoch,
@@ -118,4 +134,3 @@ class WorkoutRecordFactory {
     };
   }
 }
-

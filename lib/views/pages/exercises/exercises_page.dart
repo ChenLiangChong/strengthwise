@@ -54,10 +54,54 @@ class _ExercisesPageState extends State<ExercisesPage> {
     // 初始化 ExerciseService
     _exerciseService = serviceLocator<IExerciseService>();
     
-    _logDebug('應用啟動：載入訓練類型...');
+    _logDebug('應用啟動：等待服務初始化...');
 
-    // 載入訓練類型
-    _loadTrainingTypes();
+    // ⚡ 延遲載入，確保服務初始化完成
+    _waitForInitializationAndLoad();
+  }
+  
+  /// 等待服務初始化完成後載入數據
+  Future<void> _waitForInitializationAndLoad() async {
+    // ⚡ 透過重試機制等待服務初始化
+    int retryCount = 0;
+    const maxRetries = 10; // 最多重試 10 次
+    const retryDelay = Duration(milliseconds: 300); // 每次等待 300ms
+    
+    while (retryCount < maxRetries) {
+      try {
+        // 嘗試載入訓練類型
+        await _loadTrainingTypes();
+        // 成功載入，退出循環
+        return;
+      } catch (e) {
+        if (e.toString().contains('運動服務未初始化')) {
+          // 服務還沒準備好，繼續等待
+          _logDebug('服務初始化中... (${retryCount + 1}/$maxRetries)');
+          await Future.delayed(retryDelay);
+          retryCount++;
+        } else {
+          // 其他錯誤，直接顯示錯誤
+          _logDebug('載入訓練類型失敗: $e');
+          
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+            NotificationUtils.showError(context, '載入訓練類型失敗: $e');
+          }
+          return;
+        }
+      }
+    }
+    
+    // 超時失敗
+    _logDebug('⚠️ 服務初始化超時');
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+      NotificationUtils.showError(context, '服務初始化超時，請重新開啟頁面');
+    }
   }
 
   void _logDebug(String message) {

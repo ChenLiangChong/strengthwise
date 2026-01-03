@@ -1,8 +1,8 @@
-# Scripts - 工具腳本（Supabase 版本）
+# Scripts - Python 工具腳本
 
-> StrengthWise 專案的 Python 工具腳本
+> StrengthWise 專案的資料庫管理與測試工具
 
-**最後更新**：2024年12月29日 - 清理過時腳本 ✅
+**最後更新**：2026年1月1日 - v2.2 時區統一化完成 ✅
 
 ---
 
@@ -11,150 +11,192 @@
 ```
 scripts/
 ├── tools/                     # 核心工具（6 個）⭐
-│   ├── generate_database_structure_doc.py  資料庫結構文檔生成器
-│   ├── download_complete_database.py       完整資料庫下載
-│   ├── export_exercises_supabase.py        動作資料導出
-│   ├── generate_training_data_supabase.py  假訓練資料生成
-│   ├── reset_workouts_and_templates.py     用戶數據重置
-│   └── setup_coaching_relationship.py      教練學員關係設置
+│   ├── generate_training_data_with_timezone.py  # 生成假訓練資料（v2.2）⭐⭐⭐
+│   ├── delete_all_workouts.py                   # 刪除訓練記錄
+│   ├── clear_summary_tables.py                  # 清空統計表
+│   ├── reset_statistics.py                      # 重置統計資料
+│   ├── download_complete_database.py            # 完整資料庫下載
+│   ├── generate_database_structure_doc.py       # 資料庫文檔生成
+│   ├── export_exercises_supabase.py             # 動作資料導出
+│   └── setup_coaching_relationship.py           # 教練學員關係設置
 │
 ├── checks/                    # 診斷工具（2 個）
-│   ├── check_env.py           環境變數檢查
-│   └── check_workout_data.py  訓練資料檢查
+│   ├── check_env.py           # 環境變數檢查
+│   └── check_workout_data.py  # 訓練資料檢查
 │
-├── archived/                  # 已歸檔腳本（3 個）
-│   ├── test_dart_query_logic.py
-│   ├── test_query_coverage.py
-│   └── reset_and_generate.bat
-│
-└── README.md                  # 本文檔
+└── archived/                  # 已歸檔工具
+    └── archived_migrations_tools/  # Migrations 優化工具（已完成）
 ```
 
-**總計**：11 個腳本（6 核心工具 + 2 檢查工具 + 3 歸檔）
+**總計**：8 個活躍腳本（6 核心 + 2 檢查）
 
 ---
 
 ## 🚀 快速開始
 
-### 1. 環境設置
+### 環境設置
 
 ```bash
 # 安裝依賴
 pip install supabase-py pandas python-dotenv
 
-# 創建 .env 文件（專案根目錄）
+# 配置環境變數（專案根目錄 .env）
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-### 2. 常用命令
+### 常用工作流程
+
+#### 📊 生成測試資料（完整流程）
 
 ```bash
-# 📊 生成資料庫結構文檔（推薦）
-python scripts/tools/generate_database_structure_doc.py
+# 1. 刪除舊資料
+python scripts/tools/delete_all_workouts.py <user_uuid> -y
 
-# 🏋️ 生成假訓練資料
-python scripts/tools/generate_training_data_supabase.py <user_uuid>
+# 2. 清空統計表
+python scripts/tools/clear_summary_tables.py <user_uuid>
 
-# 🔄 重置用戶數據並生成新資料
-python scripts/tools/reset_workouts_and_templates.py <user_uuid>
+# 3. 生成一個月假資料（會自動觸發統計更新）
+python scripts/tools/generate_training_data_with_timezone.py <user_uuid>
+```
 
-# ✅ 檢查環境配置
-python scripts/checks/check_env.py
+#### 🔧 重置統計資料
+
+```bash
+# 清空統計表並重新計算
+python scripts/tools/reset_statistics.py <user_uuid>
 ```
 
 ---
 
-## 🔧 核心工具 (tools/)
+## 🛠️ 核心工具說明
 
-### 1️⃣ generate_database_structure_doc.py ⭐⭐⭐
-**功能**：從 Supabase 下載完整資料庫結構並生成文檔
+### 1️⃣ generate_training_data_with_timezone.py ⭐⭐⭐
+
+**生成專業的過去一個月訓練假資料**（v2.2 版本）
 
 ```bash
-python scripts/tools/generate_database_structure_doc.py
+python scripts/tools/generate_training_data_with_timezone.py <user_uuid>
 ```
 
-**輸出**：
-- `docs/DATABASE_STRUCTURE.md` - 完整資料庫結構文檔
-- `database_export/database_schema_<timestamp>.json` - JSON 格式
+**特色**：
+- ✅ 正確處理時區（Asia/Taipei UTC+8 → UTC 儲存）
+- ✅ 支援 `training_time_range` (TSTZRANGE) 欄位
+- ✅ 推拉腿分化（Push-Pull-Legs）訓練計劃
+- ✅ 漸進式超負荷（每週 +5% 重量）
+- ✅ 智能休息日安排（週日必休 + 30% 隨機休息）
+- ✅ 隨機訓練時段（早/午/晚）和時長（60-120 分鐘）
+- ✅ 只使用系統動作（不使用自訂動作）
+- ✅ 符合 App 的 JSON 格式（`exerciseId`, `exerciseName`, `sets`）
+- ✅ 自動觸發統計資料更新
+
+**生成內容**：
+- 腿部訓練：深蹲、硬舉、保加利亞分腿蹲、弓步蹲、腿彎舉、臀推（6 個動作）
+- 推日訓練：臥推、上斜推舉、肩推、三頭（4 個動作）
+- 拉日訓練：硬舉、引體向上、划船、二頭（4 個動作）
 
 ---
 
-### 2️⃣ download_complete_database.py ⭐⭐
-**功能**：下載完整的資料庫數據（14 個表格）
+### 2️⃣ delete_all_workouts.py
+
+**刪除用戶所有訓練記錄**
+
+```bash
+# 互動式確認
+python scripts/tools/delete_all_workouts.py <user_uuid>
+
+# 自動確認（用於腳本）
+python scripts/tools/delete_all_workouts.py <user_uuid> -y
+```
+
+**注意**：僅刪除 `workout_plans` 表，不影響統計表
+
+---
+
+### 3️⃣ clear_summary_tables.py
+
+**清空統計彙總表**
+
+```bash
+python scripts/tools/clear_summary_tables.py <user_uuid>
+```
+
+**清空表格**：
+- `daily_workout_summary` - 每日訓練彙總
+- `personal_records` - 個人最佳記錄
+
+**注意**：`personal_records_top_by_body_part` 是視圖，不需要清空
+
+---
+
+### 4️⃣ reset_statistics.py
+
+**完整重置統計資料**
+
+```bash
+python scripts/tools/reset_statistics.py <user_uuid>
+```
+
+**執行步驟**：
+1. 清空 `daily_workout_summary`
+2. 清空 `personal_records`
+3. 觸發所有 `workout_plans` 重新計算
+4. 驗證統計資料數量
+
+---
+
+### 5️⃣ download_complete_database.py
+
+**下載完整資料庫數據**（v2 版本）
 
 ```bash
 python scripts/tools/download_complete_database.py
 ```
 
+**輸出**：`database_export/YYYYMMDD_HHMMSS/` 資料夾包含：
+- 16 個表格的 JSON 檔案
+- `database_summary.json` - 統計摘要
+- `README.md` - 說明文檔
+
+---
+
+### 6️⃣ generate_database_structure_doc.py
+
+**生成資料庫結構文檔**
+
+```bash
+python scripts/tools/generate_database_structure_doc.py
+```
+
 **輸出**：
-- `database_export/*.json` - 各表格的 JSON 檔案
-- `database_export/database_structure.md` - 資料庫結構報告
+- `docs/DATABASE_STRUCTURE.md` - 完整結構文檔
+- `database_export/database_schema_<timestamp>.json` - JSON 格式
 
 ---
 
-### 3️⃣ reset_workouts_and_templates.py ⭐⭐
-**功能**：刪除用戶所有訓練資料並生成專業的假訓練資料
+### 7️⃣ export_exercises_supabase.py
 
-```bash
-# 互動式執行
-python scripts/tools/reset_workouts_and_templates.py <user_uuid>
-
-# 自動確認模式
-python scripts/tools/reset_workouts_and_templates.py <user_uuid> --yes
-```
-
-**特色**：
-- ✅ 推拉腿分化（Push-Pull-Legs Split）
-- ✅ 漸進式超負荷原則（每週 +5% 重量）
-- ✅ 使用真實動作 ID
-- ✅ 智能休息日安排
-
----
-
-### 4️⃣ generate_training_data_supabase.py ⭐
-**功能**：生成專業的一個月訓練假資料
-
-```bash
-python scripts/tools/generate_training_data_supabase.py <user_uuid>
-```
-
----
-
-### 5️⃣ export_exercises_supabase.py ⭐
-**功能**：從 Supabase 下載所有動作資料
+**導出動作資料**
 
 ```bash
 python scripts/tools/export_exercises_supabase.py
 ```
 
-**輸出**：
-- `data/exports/exercises_export.json` - JSON 格式
-- `data/exports/exercises_export.csv` - CSV 格式
-- `data/exports/metadata_export.json` - 元數據
+**輸出**：JSON 和 CSV 格式的動作資料
 
 ---
 
-### 6️⃣ setup_coaching_relationship.py ⭐
-**功能**：建立教練與學員的綁定關係（v2.0 Phase 1）
-
-```bash
-python scripts/tools/setup_coaching_relationship.py
-```
-
----
-
-## 🔍 診斷工具 (checks/)
+## 🔍 診斷工具
 
 ### check_env.py
-驗證 `.env` 檔案配置是否正確
+驗證 `.env` 檔案配置
 
 ```bash
 python scripts/checks/check_env.py
 ```
 
 ### check_workout_data.py
-檢查用戶的訓練計劃資料
+檢查用戶訓練資料
 
 ```bash
 python scripts/checks/check_workout_data.py
@@ -164,89 +206,48 @@ python scripts/checks/check_workout_data.py
 
 ## 📊 測試用戶 UUID
 
-**開發測試帳號**：
-
 | 角色 | Email | UUID |
 |------|-------|------|
 | 教練 | charlie19960414@gmail.com | `d1798674-0b96-4c47-a7c7-ee20a5372a03` |
 | 學員 | charlie8519960414@gmail.com | `1d7f5ed6-7759-4abc-9832-9db791e75e4f` |
 
-**使用範例**：
-```bash
-# 生成教練的訓練資料
-python scripts/tools/generate_training_data_supabase.py d1798674-0b96-4c47-a7c7-ee20a5372a03
-
-# 重置學員資料
-python scripts/tools/reset_workouts_and_templates.py 1d7f5ed6-7759-4abc-9832-9db791e75e4f
-```
-
 ---
 
-## 🗑️ 清理歷史（2024-12-29）
+## 🚨 重要提醒
 
-**已刪除的腳本**（11 個）：
+### 資料庫觸發器
 
-1. **功能重複**（2 個）：
-   - ❌ `tools/download_database.py` → 被 `download_complete_database.py` 取代
-   - ❌ `data-processing/reset_user_data_and_generate.py` → 被 `reset_workouts_and_templates.py` 取代
+以下操作會**自動觸發統計更新**：
+- ✅ `INSERT workout_plans` → 更新 `daily_workout_summary` 和 `personal_records`
+- ✅ `UPDATE workout_plans` → 重新計算統計
 
-2. **一次性數據處理**（5 個）：
-   - ❌ `data-processing/rename_exercises_professional.py` - 動作重命名已完成
-   - ❌ `data-processing/generate_supabase_update.py` - SQL 更新已完成
-   - ❌ `data-processing/export_exercises_latest.py` - 臨時導出工具
-   - ❌ `data-processing/read_exercises_csv.py` - CSV 讀取（已改用 JSON）
-   - ❌ `data-processing/check_and_fix_training_types.py` - 訓練類型已修復
+以下操作**不會自動清理統計表**：
+- ❌ `DELETE workout_plans` → 需要手動執行 `clear_summary_tables.py`
 
-3. **一次性檢查**（4 個）：
-   - ❌ `checks/check_cardio_exercises.py` - 心肺訓練檢查已完成
-   - ❌ `checks/check_special_chars.py` - 特殊字符檢查已完成
-   - ❌ `checks/check_exercise_types_and_custom.py` - 動作類型檢查已完成
-   - ❌ `checks/verify_fixes.py` - 修復驗證已完成
+### 視圖說明
 
-**清理結果**：23 個 → 11 個（-52%）✅
+`personal_records_top_by_body_part` 是**視圖**（VIEW），不是表格：
+- ✅ 自動從 `personal_records` 查詢
+- ✅ 按 `body_part` 分組並取最大重量
+- ✅ 不需要手動清空或更新
 
----
+### 時區處理
 
-## 🚨 安全提醒
-
-1. **保護環境變數**
-   - 不要分享 `.env` 文件
-   - 不要提交 Service Role Key 到 Git
-   - 使用 `.gitignore` 保護敏感資訊
-
-2. **使用前測試**
-   - 先在測試環境執行
-   - 確認用戶 ID 正確
-   - 檢查資料庫權限
-
-3. **資料庫安全**
-   - Service Role Key 繞過 RLS 策略
-   - 謹慎使用寫入操作
-   - 定期備份資料
-
----
-
-## 💡 常見問題
-
-### Q: 找不到 `.env` 文件
-**A**: 請複製 `.env.example` 為 `.env` 並填入正確的 Supabase Keys
-
-### Q: 權限錯誤（403 Forbidden）
-**A**: 確認使用 `SUPABASE_SERVICE_ROLE_KEY` 而非 `SUPABASE_KEY`
-
-### Q: 找不到動作資料
-**A**: 確認 Supabase 中已有動作資料（794 個系統動作）
+- **Python 腳本**：使用 `Asia/Taipei` (UTC+8)
+- **資料庫儲存**：統一使用 UTC
+- **App 顯示**：自動轉為本地時間
 
 ---
 
 ## 📚 相關文檔
 
-- [Supabase 文檔](https://supabase.com/docs)
-- [Supabase Python Client](https://supabase.com/docs/reference/python/introduction)
-- 專案資料庫設計：`docs/DATABASE_SUPABASE.md`
-- 開發指南：`AGENTS.md`
+- **資料庫設計**：`docs/DATABASE_SUPABASE.md`
+- **時區工具指南**：`docs/DATETIME_UTILS_GUIDE.md`
+- **開發指南**：`AGENTS.md`
+- **開發狀態**：`docs/DEVELOPMENT_STATUS.md`
 
 ---
 
 **維護者**：StrengthWise 開發團隊  
-**最後更新**：2024年12月29日 - 清理過時腳本，保留核心工具
+**版本**：v2.2 - 時區統一化完成  
+**最後更新**：2026年1月1日

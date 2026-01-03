@@ -414,7 +414,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
         // ⚠️ Supabase 不支援 COALESCE，所以需要在客戶端過濾
         // 先用 updated_at 擴大範圍，再在客戶端精確過濾
         final expandedStartDate = timeRange.startDate.subtract(const Duration(days: 365));
-        query = query.gte('updated_at', expandedStartDate.toIso8601String());
+        query = query.gte('updated_at', DateTimeUtils.formatToUtcIso(expandedStartDate));
       }
 
       final response = await query;
@@ -446,11 +446,11 @@ class StatisticsServiceSupabase implements IStatisticsService {
           
           DateTime? trainingDate;
           if (completedDateStr != null) {
-            trainingDate = DateTime.parse(completedDateStr);
+            trainingDate = DateTimeUtils.parseIsoTimestamp(completedDateStr);
           } else if (scheduledDateStr != null) {
-            trainingDate = DateTime.parse(scheduledDateStr);
+            trainingDate = DateTimeUtils.parseIsoTimestamp(scheduledDateStr);
           } else if (createdAtStr != null) {
-            trainingDate = DateTime.parse(createdAtStr);
+            trainingDate = DateTimeUtils.parseIsoTimestamp(createdAtStr);
           }
           
           // ⚠️ 重要：使用 UTC 日期（只比較年月日，忽略時間）
@@ -509,12 +509,12 @@ class StatisticsServiceSupabase implements IStatisticsService {
             final dateStr = completedDateStr ?? 
                            scheduledDateStr ?? 
                            createdAtStr ?? 
-                           DateTime.now().toIso8601String();
+                           DateTimeUtils.formatToUtcIso(DateTime.now());
             
             exerciseStats[exerciseId] = _ExerciseRecordData(
               exerciseId: exerciseId,
               exerciseName: exerciseName,
-              lastTrainingDate: DateTime.parse(dateStr),
+              lastTrainingDate: DateTimeUtils.parseIsoTimestamp(dateStr),
               maxWeight: maxWeight,
               totalSets: completedSetsCount,
             );
@@ -528,7 +528,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
             final createdAtStr = data['created_at'] as String?;
             final dateStr = completedDateStr ?? scheduledDateStr ?? createdAtStr;
             if (dateStr != null) {
-              final trainingDate = DateTime.parse(dateStr);
+              final trainingDate = DateTimeUtils.parseIsoTimestamp(dateStr);
               if (trainingDate.isAfter(stat.lastTrainingDate)) {
                 stat.lastTrainingDate = trainingDate;
               }

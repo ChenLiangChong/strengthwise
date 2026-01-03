@@ -47,13 +47,13 @@ class AvailabilitySlotModel {
     return AvailabilitySlotModel(
       id: json['id'] as String,
       coachId: json['coach_id'] as String,
-      startTime: timeRange['start']!,
-      endTime: timeRange['end']!,
+      startTime: timeRange['start']!,  // ⭐ 已經是本地時間
+      endTime: timeRange['end']!,      // ⭐ 已經是本地時間
       recurrenceRule: json['recurrence_rule'] as String?,
       isOverride: json['is_override'] as bool? ?? false,
       notes: json['notes'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTimeUtils.parseIsoTimestamp(json['created_at'] as String),  // ⭐ 統一工具類
+      updatedAt: DateTimeUtils.parseIsoTimestamp(json['updated_at'] as String),  // ⭐ 統一工具類
     );
   }
 
@@ -65,8 +65,8 @@ class AvailabilitySlotModel {
       'recurrence_rule': recurrenceRule,
       'is_override': isOverride,
       'notes': notes,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': DateTimeUtils.formatToUtcIso(createdAt),
+      'updated_at': DateTimeUtils.formatToUtcIso(updatedAt),
     };
 
     // 只在 id 不為空且 includeId 為 true 時才包含 id
@@ -217,7 +217,7 @@ class RecurrenceRule {
           byDay = _parseByDay(value);
           break;
         case 'UNTIL':
-          until = DateTime.parse(value);
+          until = DateTimeUtils.parseIsoTimestamp(value);  // ⭐ 統一工具類
           break;
       }
     }
@@ -243,7 +243,7 @@ class RecurrenceRule {
     }
 
     if (until != null) {
-      parts.add('UNTIL=${until!.toIso8601String()}');
+      parts.add('UNTIL=${DateTimeUtils.formatToUtcIso(until!)}');
     }
 
     return parts.join(';');

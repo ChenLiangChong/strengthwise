@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';
 import '../../../models/coaching_relationship_model.dart';
+import '../../../models/client_profile_model.dart';
 
 /// 教練-學員關係 CRUD 操作
 ///
@@ -14,32 +16,60 @@ class CoachingRelationshipOperations {
   /// [coachId] 教練 ID
   /// [clientId] 學員 ID
   /// [status] 初始狀態（預設 'pending'）
-  /// [notes] 備註
   Future<CoachingRelationshipModel> createRelationship({
     required String coachId,
     required String clientId,
     String status = 'pending',
-    String? notes,
   }) async {
-    // 檢查是否已存在關係
+    // ⭐ 檢查是否已存在關係
     final existing = await _supabase
         .from('coaching_relationships')
-        .select('id')
+        .select('id, status')
         .eq('coach_id', coachId)
         .eq('client_id', clientId)
         .maybeSingle();
 
     if (existing != null) {
-      throw Exception('該學員已存在綁定關係');
+      final existingStatus = existing['status'] as String?;
+      final existingId = existing['id'] as String;
+      
+      // 如果是 active 關係，不允許重複綁定
+      if (existingStatus == 'active') {
+        throw Exception('該學員已存在有效的綁定關係');
+      }
+      
+      // ⭐ 如果是 archived 關係，重新激活（更新狀態為 active）
+      if (existingStatus == 'archived') {
+        final now = DateTimeUtils.formatToUtcIso(DateTime.now());
+        
+        // 執行 UPDATE 操作
+        await _supabase
+            .from('coaching_relationships')
+            .update({
+              'status': 'active',
+              'invited_at': now,
+              'accepted_at': now,
+              'updated_at': now,
+            })
+            .eq('id', existingId);
+        
+        // 重新查詢完整資料
+        final response = await _supabase
+            .from('coaching_relationships')
+            .select('id, coach_id, client_id, coach_name, client_name, status, invited_at, accepted_at, created_at, updated_at, client_profile')
+            .eq('id', existingId)
+            .single();
+        
+        return CoachingRelationshipModel.fromSupabase(response);
+      }
     }
 
     // 創建新關係
-    final now = DateTime.now().toIso8601String();
+    final now = DateTimeUtils.formatToUtcIso(DateTime.now());
     final data = {
       'coach_id': coachId,
       'client_id': clientId,
       'status': status,
-      'notes': notes,
       'invited_at': now,
       'created_at': now,
       'updated_at': now,
@@ -66,12 +96,12 @@ class CoachingRelationshipOperations {
   }) async {
     final data = <String, dynamic>{
       'status': status,
-      'updated_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
     };
 
     // 如果狀態為 active，記錄接受時間
     if (status == 'active' && acceptedAt != null) {
-      data['accepted_at'] = acceptedAt.toIso8601String();
+      data['accepted_at'] = DateTimeUtils.formatToUtcIso(acceptedAt);
     }
 
     await _supabase
@@ -80,27 +110,17 @@ class CoachingRelationshipOperations {
         .eq('id', relationshipId);
   }
 
-  /// 更新備註
+  /// 刪除關係（軟刪除：更新狀態為 archived）
   ///
   /// [relationshipId] 關係 ID
-  /// [notes] 新備註內容
-  Future<void> updateNotes({
-    required String relationshipId,
-    required String notes,
-  }) async {
-    await _supabase.from('coaching_relationships').update({
-      'notes': notes,
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', relationshipId);
-  }
-
-  /// 刪除關係
-  ///
-  /// [relationshipId] 關係 ID
+  /// ⚠️ 不直接刪除記錄，改為歸檔，以便保留歷史數據
   Future<void> deleteRelationship(String relationshipId) async {
     await _supabase
         .from('coaching_relationships')
-        .delete()
+        .update({
+          'status': 'archived',
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
         .eq('id', relationshipId);
   }
 
@@ -116,8 +136,25 @@ class CoachingRelationshipOperations {
   }) async {
     await _supabase.from('coaching_relationships').update({
       'status': status,
-      'updated_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
     }).eq('coach_id', coachId).inFilter('client_id', clientIds);
+  }
+
+  /// 更新學員檔案
+  ///
+  /// [relationshipId] 關係 ID
+  /// [profile] 學員檔案
+  Future<void> updateClientProfile({
+    required String relationshipId,
+    required ClientProfile profile,
+  }) async {
+    await _supabase
+        .from('coaching_relationships')
+        .update({
+          'client_profile': profile.toJson(),
+          'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
+        })
+        .eq('id', relationshipId);
   }
 }
 

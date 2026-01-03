@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';
 import '../models/drawing_note_model.dart';
 import 'interfaces/i_drawing_service.dart';
 
@@ -41,6 +42,12 @@ class DrawingServiceSupabase implements IDrawingService {
     
     debugPrint('[DRAWING_SERVICE] 🆔 生成繪圖 ID: ${drawing.id}');
 
+    // ⭐ 暫存模式：臨時 ID 不保存到資料庫
+    if (sessionNoteId.startsWith('temp-')) {
+      debugPrint('[DRAWING_SERVICE] 💾 臨時 Session ID，不保存到資料庫');
+      return drawing; // 直接返回繪圖對象，不查詢和更新資料庫
+    }
+
     // 讀取現有的 content
     final response = await _supabase
         .from('session_notes')
@@ -58,8 +65,8 @@ class DrawingServiceSupabase implements IDrawingService {
       'type': 'drawing',
       'template_type': templateType,
       'drawing_data': drawing.toJson(),
-      'created_at': now.toIso8601String(),
-      'updated_at': now.toIso8601String(),
+      'created_at': DateTimeUtils.formatToUtcIso(now),
+      'updated_at': DateTimeUtils.formatToUtcIso(now),
     });
     
     debugPrint('[DRAWING_SERVICE] ➕ 添加後視覺元素數量: ${visualElements.length}');
@@ -82,6 +89,12 @@ class DrawingServiceSupabase implements IDrawingService {
     debugPrint('[DRAWING_SERVICE] 🆔 筆記 ID: ${drawing.sessionNoteId}');
     debugPrint('[DRAWING_SERVICE] 📋 模板類型: ${drawing.templateType}');
     debugPrint('[DRAWING_SERVICE] 🆔 繪圖 ID: ${drawing.id}');
+    
+    // ⭐ 暫存模式：如果 sessionNoteId 是臨時 ID，不保存到資料庫
+    if (drawing.sessionNoteId.startsWith('temp-')) {
+      debugPrint('[DRAWING_SERVICE] 💾 臨時繪圖，不保存到資料庫（Session ID: ${drawing.sessionNoteId}）');
+      return; // 跳過資料庫操作
+    }
     
     final updatedDrawing = drawing.copyWith(
       updatedAt: DateTime.now(),
@@ -113,8 +126,8 @@ class DrawingServiceSupabase implements IDrawingService {
             'type': 'drawing',
             'template_type': updatedDrawing.templateType,
             'drawing_data': updatedDrawing.toJson(),
-            'created_at': visualElements[i]['created_at'] ?? updatedDrawing.createdAt.toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'created_at': visualElements[i]['created_at'] ?? DateTimeUtils.formatToUtcIso(updatedDrawing.createdAt),
+            'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
           };
           found = true;
           break;
@@ -129,8 +142,8 @@ class DrawingServiceSupabase implements IDrawingService {
         'type': 'drawing',
         'template_type': updatedDrawing.templateType,
         'drawing_data': updatedDrawing.toJson(),
-        'created_at': updatedDrawing.createdAt.toIso8601String(),
-        'updated_at': updatedDrawing.updatedAt.toIso8601String(),
+        'created_at': DateTimeUtils.formatToUtcIso(updatedDrawing.createdAt),
+        'updated_at': DateTimeUtils.formatToUtcIso(updatedDrawing.updatedAt),
       });
     }
 
@@ -148,6 +161,12 @@ class DrawingServiceSupabase implements IDrawingService {
 
   @override
   Future<DrawingNoteModel?> getDrawing(String sessionNoteId, {String? templateType}) async {
+    // ⭐ 暫存模式：臨時 ID 不查詢資料庫
+    if (sessionNoteId.startsWith('temp-')) {
+      debugPrint('[DRAWING_SERVICE] 💾 臨時 Session ID，從暫存區載入');
+      return null; // 返回 null，Controller 會創建新繪圖
+    }
+    
     final response = await _supabase
         .from('session_notes')
         .select('content')
@@ -173,9 +192,15 @@ class DrawingServiceSupabase implements IDrawingService {
           continue;
         }
         
-        return DrawingNoteModel.fromJson(
+        final drawing = DrawingNoteModel.fromJson(
           element['drawing_data'] as Map<String, dynamic>,
         );
+        
+        // ⭐ 修正 sessionNoteId：使用當前筆記的真實 ID（而非 JSON 中保存的舊值）
+        final correctedDrawing = drawing.copyWith(sessionNoteId: sessionNoteId);
+        debugPrint('[DRAWING_SERVICE] ✅ 載入繪圖成功，修正 sessionNoteId: $sessionNoteId');
+        
+        return correctedDrawing;
       }
     }
 

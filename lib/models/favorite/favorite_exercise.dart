@@ -1,3 +1,5 @@
+import 'package:strengthwise/utils/datetime_utils.dart';
+
 /// 收藏動作模型
 ///
 /// 用於管理使用者收藏的健身動作
@@ -24,9 +26,9 @@ class FavoriteExercise {
       exerciseId: map['exerciseId'] as String,
       exerciseName: map['exerciseName'] as String,
       bodyPart: map['bodyPart'] as String,
-      addedAt: DateTime.parse(map['addedAt'] as String),
+      addedAt: DateTimeUtils.parseIsoTimestamp(map['addedAt'] as String),  // ⭐ 統一工具類
       lastViewedAt: map['lastViewedAt'] != null
-          ? DateTime.parse(map['lastViewedAt'] as String)
+          ? DateTimeUtils.parseIsoTimestamp(map['lastViewedAt'] as String)  // ⭐ 統一工具類
           : null,
     );
   }
@@ -37,8 +39,8 @@ class FavoriteExercise {
       'exerciseId': exerciseId,
       'exerciseName': exerciseName,
       'bodyPart': bodyPart,
-      'addedAt': addedAt.toIso8601String(),
-      'lastViewedAt': lastViewedAt?.toIso8601String(),
+      'addedAt': DateTimeUtils.formatToUtcIso(addedAt),
+      'lastViewedAt': lastViewedAt != null ? DateTimeUtils.formatToUtcIso(lastViewedAt!) : null,
     };
   }
 

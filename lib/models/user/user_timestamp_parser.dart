@@ -1,3 +1,5 @@
+import 'package:strengthwise/utils/datetime_utils.dart';
+
 /// 使用者時間戳解析工具
 ///
 /// 提供統一的時間戳解析邏輯，支援多種格式
@@ -14,7 +16,7 @@ class UserTimestampParser {
     } else if (timestamp is String) {
       // ISO 8601 字串格式（Supabase 常用）
       try {
-        return DateTime.parse(timestamp);
+        return DateTimeUtils.parseIsoTimestamp(timestamp);  // ⭐ 委託給統一工具類
       } catch (e) {
         return null;
       }

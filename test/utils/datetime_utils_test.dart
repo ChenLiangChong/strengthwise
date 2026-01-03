@@ -4,20 +4,23 @@ import 'package:strengthwise/utils/datetime_utils.dart';
 void main() {
   group('DateTimeUtils', () {
     group('parsePostgresTimestamp', () {
-      test('解析無引號時間戳', () {
+      test('解析無引號時間戳（返回本地時間）', () {
         final result = DateTimeUtils.parsePostgresTimestamp(
           '2025-12-15 09:00:00+00',
         );
 
+        // ⭐ 現在返回本地時間（UTC+8 = 17:00）
         expect(result.year, 2025);
         expect(result.month, 12);
         expect(result.day, 15);
-        expect(result.hour, 9);
-        expect(result.minute, 0);
-        expect(result.second, 0);
+        // 本地時間會根據時區不同而不同，所以檢查 UTC 時間
+        final utc = result.toUtc();
+        expect(utc.hour, 9);
+        expect(utc.minute, 0);
+        expect(utc.second, 0);
       });
 
-      test('解析有引號時間戳', () {
+      test('解析有引號時間戳（返回本地時間）', () {
         final result = DateTimeUtils.parsePostgresTimestamp(
           '"2025-12-15 09:00:00+00"',
         );
@@ -25,7 +28,8 @@ void main() {
         expect(result.year, 2025);
         expect(result.month, 12);
         expect(result.day, 15);
-        expect(result.hour, 9);
+        // 檢查 UTC 時間
+        expect(result.toUtc().hour, 9);
       });
 
       test('正確處理時區格式（+00 → +00:00）', () {
@@ -33,8 +37,8 @@ void main() {
           '2025-12-15 09:00:00+00',
         );
 
-        // UTC 時區應該是 0 小時偏移
-        expect(result.timeZoneOffset.inHours, 0);
+        // 轉回 UTC 應該是 09:00
+        expect(result.toUtc().hour, 9);
       });
 
       test('正確處理其他時區（+08）', () {
@@ -42,7 +46,7 @@ void main() {
           '2025-12-15 09:00:00+08',
         );
 
-        // 解析後應該轉換為 UTC 時間
+        // 解析後轉換為 UTC 時間
         // 09:00 +08:00 = 01:00 UTC
         expect(result.toUtc().hour, 1);
         expect(result.toUtc().year, 2025);
@@ -55,7 +59,7 @@ void main() {
           '2025-12-15 09:00:00-05',
         );
 
-        // 解析後應該轉換為 UTC 時間
+        // 解析後轉換為 UTC 時間
         // 09:00 -05:00 = 14:00 UTC
         expect(result.toUtc().hour, 14);
         expect(result.toUtc().year, 2025);
@@ -64,8 +68,36 @@ void main() {
       });
     });
 
+    group('parsePostgresTimestampUtc', () {
+      test('解析無引號時間戳（返回 UTC）', () {
+        final result = DateTimeUtils.parsePostgresTimestampUtc(
+          '2025-12-15 09:00:00+00',
+        );
+
+        expect(result.year, 2025);
+        expect(result.month, 12);
+        expect(result.day, 15);
+        expect(result.hour, 9);
+        expect(result.minute, 0);
+        expect(result.second, 0);
+        expect(result.isUtc, isTrue);
+      });
+
+      test('解析有引號時間戳（返回 UTC）', () {
+        final result = DateTimeUtils.parsePostgresTimestampUtc(
+          '"2025-12-15 09:00:00+00"',
+        );
+
+        expect(result.year, 2025);
+        expect(result.month, 12);
+        expect(result.day, 15);
+        expect(result.hour, 9);
+        expect(result.isUtc, isTrue);
+      });
+    });
+
     group('parseTstzRange', () {
-      test('解析標準 TSTZRANGE', () {
+      test('解析標準 TSTZRANGE（返回本地時間）', () {
         final result = DateTimeUtils.parseTstzRange(
           '[2025-12-15 09:00:00+00,2025-12-15 10:00:00+00)',
         );
@@ -73,19 +105,20 @@ void main() {
         expect(result['start']!.year, 2025);
         expect(result['start']!.month, 12);
         expect(result['start']!.day, 15);
-        expect(result['start']!.hour, 9);
-        expect(result['end']!.hour, 10);
+        // ⭐ 現在返回本地時間，檢查 UTC 時間
+        expect(result['start']!.toUtc().hour, 9);
+        expect(result['end']!.toUtc().hour, 10);
       });
 
-      test('解析帶引號的 TSTZRANGE', () {
+      test('解析帶引號的 TSTZRANGE（返回本地時間）', () {
         final result = DateTimeUtils.parseTstzRange(
           '"[2025-12-15 09:00:00+00,2025-12-15 10:00:00+00)"',
         );
 
         expect(result['start'], isNotNull);
         expect(result['end'], isNotNull);
-        expect(result['start']!.hour, 9);
-        expect(result['end']!.hour, 10);
+        expect(result['start']!.toUtc().hour, 9);
+        expect(result['end']!.toUtc().hour, 10);
       });
 
       test('解析跨天 TSTZRANGE', () {
@@ -93,8 +126,9 @@ void main() {
           '[2025-12-15 23:00:00+00,2025-12-16 01:00:00+00)',
         );
 
-        expect(result['start']!.day, 15);
-        expect(result['end']!.day, 16);
+        // 檢查 UTC 日期
+        expect(result['start']!.toUtc().day, 15);
+        expect(result['end']!.toUtc().day, 16);
       });
 
       test('拋出錯誤：格式無效', () {
@@ -109,6 +143,34 @@ void main() {
           () => DateTimeUtils.parseTstzRange('[2025-12-15 09:00:00+00)'),
           throwsFormatException,
         );
+      });
+    });
+
+    group('parseTstzRangeUtc', () {
+      test('解析標準 TSTZRANGE（返回 UTC）', () {
+        final result = DateTimeUtils.parseTstzRangeUtc(
+          '[2025-12-15 09:00:00+00,2025-12-15 10:00:00+00)',
+        );
+
+        expect(result['start']!.year, 2025);
+        expect(result['start']!.month, 12);
+        expect(result['start']!.day, 15);
+        expect(result['start']!.hour, 9);
+        expect(result['end']!.hour, 10);
+        expect(result['start']!.isUtc, isTrue);
+        expect(result['end']!.isUtc, isTrue);
+      });
+
+      test('解析帶引號的 TSTZRANGE（返回 UTC）', () {
+        final result = DateTimeUtils.parseTstzRangeUtc(
+          '"[2025-12-15 09:00:00+00,2025-12-15 10:00:00+00)"',
+        );
+
+        expect(result['start'], isNotNull);
+        expect(result['end'], isNotNull);
+        expect(result['start']!.hour, 9);
+        expect(result['end']!.hour, 10);
+        expect(result['start']!.isUtc, isTrue);
       });
     });
 

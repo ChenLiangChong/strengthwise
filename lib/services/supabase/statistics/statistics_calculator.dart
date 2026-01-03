@@ -1,5 +1,6 @@
 import '../../../models/statistics_model.dart';
 import '../../../models/exercise_model.dart';
+import '../../../utils/datetime_utils.dart';
 import 'statistics_models.dart';
 
 /// 統計計算器
@@ -47,7 +48,7 @@ class StatisticsCalculator {
     final points = <TrainingVolumePoint>[];
 
     for (var row in summaryData) {
-      final date = DateTime.parse(row['date'] as String);
+      final date = DateTimeUtils.parseIsoTimestamp(row['date'] as String);
       final totalVolume = (row['total_volume'] as num?)?.toDouble() ?? 0.0;
       final totalSets = (row['total_sets'] as int?) ?? 0;
       final workoutCount = (row['workout_count'] as int?) ?? 0;
@@ -241,7 +242,7 @@ class StatisticsCalculator {
     if (summaryData.isEmpty) return 0;
 
     final dates = summaryData
-        .map((row) => DateTime.parse(row['date'] as String))
+        .map((row) => DateTimeUtils.parseIsoTimestamp(row['date'] as String))
         .toList();
 
     dates.sort((a, b) => b.compareTo(a)); // 降序排列

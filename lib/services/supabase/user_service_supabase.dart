@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
-import '../../models/user_model.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';
+import '../../models/user/user_model.dart';
 import '../interfaces/i_user_service.dart';
+import '../interfaces/i_auth_service.dart';
 import '../core/error_handling_service.dart';
 import 'user/user_cache_manager.dart';
 import 'user/user_operations.dart';
@@ -14,6 +16,7 @@ import 'user/user_avatar_manager.dart';
 class UserServiceSupabase implements IUserService {
   final SupabaseClient _supabase;
   final ErrorHandlingService? _errorService;
+  final IAuthService? _authService;  // ✅ 新增：用於完整登出（包含 Google）
   
   // 子模組
   late final UserCacheManager _cacheManager;
@@ -23,8 +26,10 @@ class UserServiceSupabase implements IUserService {
   UserServiceSupabase({
     SupabaseClient? supabase,
     ErrorHandlingService? errorService,
+    IAuthService? authService,  // ✅ 新增參數
   })  : _supabase = supabase ?? Supabase.instance.client,
-        _errorService = errorService {
+        _errorService = errorService,
+        _authService = authService {
     _cacheManager = UserCacheManager();
     _operations = UserOperations(
       supabase: _supabase,
@@ -116,6 +121,7 @@ class UserServiceSupabase implements IUserService {
     String? displayName,
     String? nickname,
     String? gender,
+    bool? genderVisible,
     double? height,
     double? weight,
     int? age,
@@ -139,10 +145,11 @@ class UserServiceSupabase implements IUserService {
       if (displayName != null) updateData['display_name'] = displayName;
       if (nickname != null) updateData['nickname'] = nickname;
       if (gender != null) updateData['gender'] = gender;
+      if (genderVisible != null) updateData['gender_visible'] = genderVisible;
       if (height != null) updateData['height'] = height;
       if (weight != null) updateData['weight'] = weight;
       if (age != null) updateData['age'] = age;
-      if (birthDate != null) updateData['birth_date'] = birthDate.toIso8601String();
+      if (birthDate != null) updateData['birth_date'] = DateTimeUtils.formatToUtcIso(birthDate);
       if (isCoach != null) updateData['is_coach'] = isCoach;
       if (isStudent != null) updateData['is_student'] = isStudent;
       if (bio != null) updateData['bio'] = bio;
@@ -211,6 +218,60 @@ class UserServiceSupabase implements IUserService {
       _logError('更新用戶體重失敗: $e');
       _errorService?.logError('更新用戶體重失敗: $e', type: 'UserServiceError');
       return false;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> deleteUserAccount() async {
+    try {
+      final userId = _currentUserId;
+      if (userId == null) {
+        _logError('用戶未登入');
+        return {
+          'success': false,
+          'error': '用戶未登入',
+        };
+      }
+
+      _logDebug('開始刪除用戶帳號: $userId');
+
+      // 調用 SQL 函數刪除用戶
+      final response = await _supabase.rpc(
+        'delete_user_account',
+        params: {'target_user_id': userId},
+      );
+
+      if (response == null) {
+        throw Exception('刪除用戶帳號失敗：無響應');
+      }
+
+      // 轉換為 Map
+      final result = response as Map<String, dynamic>;
+      
+      if (result['success'] == true) {
+        _logDebug('用戶帳號刪除成功');
+        // ⚡ 清除快取
+        _cacheManager.clearCache();
+        
+        // ✅ 使用 AuthService 登出（會同時登出 Google 和 Supabase）
+        if (_authService != null) {
+          await _authService!.signOut();
+          _logDebug('已執行完整登出（包含 Google）');
+        } else {
+          // 降級方案：只登出 Supabase
+          await _supabase.auth.signOut();
+          _logDebug('只執行 Supabase 登出（AuthService 未注入）');
+        }
+      }
+
+      return result;
+    } catch (e) {
+      _logError('刪除用戶帳號失敗: $e');
+      _errorService?.logError('刪除用戶帳號失敗: $e', type: 'UserServiceError');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
     }
   }
 

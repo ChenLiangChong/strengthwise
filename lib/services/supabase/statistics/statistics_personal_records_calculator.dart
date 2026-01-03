@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../../models/statistics_model.dart';
 import '../../../models/exercise_model.dart';
+import '../../../utils/datetime_utils.dart';
 import '../../core/error_handling_service.dart';
 import 'statistics_data_loader.dart';
 import 'statistics_data_parser.dart';
@@ -51,7 +52,7 @@ class PersonalRecordsCalculator {
 
       for (var item in records) {
         try {
-          final achievedDate = DateTime.parse(item['achieved_date'] as String);
+          final achievedDate = DateTimeUtils.parseIsoTimestamp(item['achieved_date'] as String);
           final isNew = achievedDate.isAfter(oneWeekAgo);
           final exerciseId = item['exercise_id'] as String;
           final exerciseName = item['exercise_name'] as String;

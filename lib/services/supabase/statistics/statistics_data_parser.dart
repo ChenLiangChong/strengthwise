@@ -1,4 +1,5 @@
 import '../../core/error_handling_service.dart';
+import '../../../utils/datetime_utils.dart';
 import 'statistics_models.dart';
 
 /// 統計數據解析器
@@ -59,10 +60,10 @@ class StatisticsDataParser {
       id: id,
       title: data['title'] ?? '未命名訓練',
       completedTime: data['completed_date'] != null
-          ? DateTime.parse(data['completed_date'] as String)
+          ? DateTimeUtils.parseIsoTimestamp(data['completed_date'] as String)
           : (data['scheduled_date'] != null
-              ? DateTime.parse(data['scheduled_date'] as String)
-              : DateTime.parse(data['updated_at'] as String)),
+              ? DateTimeUtils.parseIsoTimestamp(data['scheduled_date'] as String)
+              : DateTimeUtils.parseIsoTimestamp(data['updated_at'] as String)),
       exercises: exercises,
     );
   }

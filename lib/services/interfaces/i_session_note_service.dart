@@ -12,6 +12,7 @@ abstract class ISessionNoteService {
   Future<List<SessionNoteModel>> getCoachNotes({
     required String coachId,
     String? clientId,
+    String? clientName, // ⭐ 新增：用於查詢已刪除學員的筆記
     int limit = 20,
     String? lastNoteId,
   });
@@ -19,6 +20,8 @@ abstract class ISessionNoteService {
   /// 取得學員可見的筆記（僅 shared）
   Future<List<SessionNoteModel>> getClientNotes({
     required String clientId,
+    String? coachId, // ⭐ 新增：用於教練篩選
+    String? coachName, // ⭐ 新增：用於查詢已刪除教練的筆記
     int limit = 20,
     String? lastNoteId,
   });
@@ -57,6 +60,15 @@ abstract class ISessionNoteService {
 
   /// 切換筆記可見性（private <-> shared）
   Future<SessionNoteModel> toggleVisibility(String noteId);
+
+  /// 隱藏筆記（教練或學員）⭐ 新增
+  /// 
+  /// [noteId] 筆記 ID
+  /// [isCoach] true = 教練隱藏，false = 學員隱藏
+  Future<void> hideNote({
+    required String noteId,
+    required bool isCoach,
+  });
 
   // ==================== Storage 操作 ====================
 

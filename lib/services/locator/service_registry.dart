@@ -17,6 +17,8 @@ import '../interfaces/i_availability_slot_service.dart';
 import '../interfaces/i_session_note_service.dart';
 import '../interfaces/i_client_availability_service.dart';
 import '../interfaces/i_drawing_service.dart';
+import '../interfaces/i_invite_code_service.dart';
+import '../interfaces/i_health_assessment_service.dart';
 
 import '../supabase/auth_service_supabase.dart';
 import '../supabase/booking_service_supabase.dart';
@@ -28,11 +30,13 @@ import '../supabase/workout_service_supabase.dart';
 import '../supabase/statistics_service_supabase.dart';
 import '../supabase/body_data_service_supabase.dart';
 import '../supabase/coaching_relationship_service_supabase.dart';
+import '../supabase/health_assessment_service_supabase.dart';
 import '../appointment_service_supabase.dart';
 import '../availability_slot_service_supabase.dart';
 import '../session_note_service_supabase.dart';
 import '../client_availability_service_supabase.dart';
 import '../drawing_service_supabase.dart';
+import '../supabase/invite_code_service_supabase.dart';
 
 import '../cache/favorites_service.dart';
 import '../core/error_handling_service.dart';
@@ -59,6 +63,8 @@ class ServiceRegistry {
     _registerSessionNoteService(serviceLocator);
     _registerClientAvailabilityService(serviceLocator);
     _registerDrawingService(serviceLocator);
+    _registerInviteCodeService(serviceLocator);
+    _registerHealthAssessmentService(serviceLocator);
   }
 
   /// 註冊身份驗證服務（使用 Supabase 版本）
@@ -125,6 +131,7 @@ class ServiceRegistry {
       serviceLocator.registerLazySingleton<IUserService>(
         () => UserServiceSupabase(
           errorService: serviceLocator<ErrorHandlingService>(),
+          authService: serviceLocator<IAuthService>(),  // ✅ 注入 AuthService
         ),
       );
     }
@@ -245,6 +252,29 @@ class ServiceRegistry {
       serviceLocator.registerLazySingleton<IDrawingService>(
         () => DrawingServiceSupabase(
           Supabase.instance.client,
+        ),
+      );
+    }
+  }
+
+  /// 註冊邀請碼服務（v2.2+）
+  static void _registerInviteCodeService(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<IInviteCodeService>()) {
+      serviceLocator.registerLazySingleton<IInviteCodeService>(
+        () => InviteCodeServiceSupabase(
+          Supabase.instance.client,
+        ),
+      );
+    }
+  }
+
+  /// 註冊健康評估服務
+  static void _registerHealthAssessmentService(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<IHealthAssessmentService>()) {
+      serviceLocator.registerLazySingleton<IHealthAssessmentService>(
+        () => HealthAssessmentServiceSupabase(
+          Supabase.instance.client,
+          serviceLocator<ErrorHandlingService>(),
         ),
       );
     }

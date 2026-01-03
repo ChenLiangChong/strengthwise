@@ -3,7 +3,8 @@
 > 統一時間轉換工具的使用指南與實作記錄
 
 **創建日期**：2024年12月29日  
-**狀態**：✅ Phase 2.5 完成
+**最後更新**：2025年1月2日 - v2.2 時區統一化完成 ✅  
+**狀態**：✅ 100% 完成
 
 ---
 
@@ -13,24 +14,31 @@
 2. [核心規範](#核心規範)
 3. [API 參考](#api-參考)
 4. [實作記錄](#實作記錄)
-5. [常見問題](#常見問題)
+5. [v2.2 時區統一化](#v22-時區統一化-2025-01-02)
+6. [常見問題](#常見問題)
 
 ---
 
 ## 快速開始
 
-### 基本使用
+### 基本使用（v2.2 更新）
 
 ```dart
 import 'package:strengthwise/utils/datetime_utils.dart';
 
-// PostgreSQL 時間戳解析
-final dt = DateTimeUtils.parsePostgresTimestamp('2025-12-15 09:00:00+00');
+// ⭐ v2.2 新增：統一解析方法
+final dt = DateTimeUtils.parseIsoTimestamp('2025-12-15T09:00:00Z');
 
-// TSTZRANGE 解析
+// ⭐ v2.2 新增：統一格式化方法
+final utcStr = DateTimeUtils.formatToUtcIso(DateTime.now());
+
+// PostgreSQL 時間戳解析（已有）
+final dt2 = DateTimeUtils.parsePostgresTimestamp('2025-12-15 09:00:00+00');
+
+// TSTZRANGE 解析（已有）
 final range = DateTimeUtils.parseTstzRange('[2025-12-15 09:00:00+00,2025-12-15 10:00:00+00)');
 
-// UTC 日期比較（統計過濾）
+// UTC 日期比較（已有）
 if (DateTimeUtils.isWithinUtcDateRange(trainingDate, startDate, endDate)) {
   // 在範圍內
 }
@@ -42,11 +50,25 @@ if (DateTimeUtils.isWithinUtcDateRange(trainingDate, startDate, endDate)) {
 
 ### 必須遵守 ⭐⭐⭐
 
-1. **所有時間轉換必須使用 `DateTimeUtils`**
-   - ✅ 統一工具類（單一真相來源）
-   - ❌ 禁止在 Model 中重複實作
+1. **所有時間解析必須使用 `parseIsoTimestamp()`**（v2.2 新增）
+   ```dart
+   // ✅ 正確
+   final dt = DateTimeUtils.parseIsoTimestamp(json['created_at']);
+   
+   // ❌ 錯誤
+   final dt = DateTime.parse(json['created_at']); // 禁止直接使用
+   ```
 
-2. **PostgreSQL 時間戳解析**
+2. **所有時間格式化必須使用 `formatToUtcIso()`**（v2.2 新增）
+   ```dart
+   // ✅ 正確
+   'created_at': DateTimeUtils.formatToUtcIso(DateTime.now())
+   
+   // ❌ 錯誤
+   'created_at': DateTime.now().toUtc().toIso8601String() // 禁止直接使用
+   ```
+
+3. **PostgreSQL 時間戳解析**
    ```dart
    // ✅ 正確
    final dt = DateTimeUtils.parsePostgresTimestamp(timestamp);
@@ -55,7 +77,7 @@ if (DateTimeUtils.isWithinUtcDateRange(trainingDate, startDate, endDate)) {
    final dt = DateTime.parse(timestamp); // 格式不兼容
    ```
 
-3. **UTC 日期比較**（統計過濾）
+4. **UTC 日期比較**（統計過濾）
    ```dart
    // ✅ 正確
    if (DateTimeUtils.isWithinUtcDateRange(target, start, end)) { }
@@ -84,12 +106,16 @@ if (DateTimeUtils.isWithinUtcDateRange(trainingDate, startDate, endDate)) {
 
 ## API 參考
 
-### 完整方法列表
+### 完整方法列表（v2.2 更新）
 
 | 方法 | 用途 | 返回值 |
 |------|------|--------|
+| `parseIsoTimestamp()` ⭐ | 解析 ISO 8601 為本地時間 | `DateTime` |
+| `formatToUtcIso()` ⭐ | 格式化本地時間為 UTC ISO | `String` |
 | `parsePostgresTimestamp()` | 解析 PostgreSQL 時間戳 | `DateTime` |
+| `parsePostgresTimestampUtc()` | 解析為 UTC 時間 | `DateTime` |
 | `parseTstzRange()` | 解析 TSTZRANGE 字串 | `Map<String, DateTime>` |
+| `parseTstzRangeUtc()` | 解析為 UTC 時間 | `Map<String, DateTime>` |
 | `formatToTstzRange()` | 格式化為 TSTZRANGE | `String` |
 | `getUtcDate()` | 取得 UTC 日期（忽略時間） | `DateTime` |
 | `compareUtcDates()` | 比較兩個 UTC 日期 | `int` |
@@ -182,9 +208,121 @@ if (DateTimeUtils.isSameUtcDate(dt1, dt2)) {
 
 ---
 
+## v2.2 時區統一化 (2025-01-02) ✅
+
+### 完成狀態：100%
+
+**核心成果**：
+- ✅ 40+ 個文件統一使用 `DateTimeUtils`
+- ✅ 消除 120+ 處重複代碼
+- ✅ Model 層：所有 `DateTime` 都是本地時間
+- ✅ Service 層：統一使用 `formatToUtcIso()`
+- ✅ UI 層：零轉換（不需要 `.toLocal()`）
+- ✅ 零 `DateTime.parse()` 直接使用
+- ✅ 零 `.toUtc().toIso8601String()` 直接使用
+
+### 統一架構
+
+```
+┌────────────────────────────────────────────┐
+│  UI 層（用戶交互）                         │
+│  DateTime（本地時間）                      │
+│  ✅ 直接顯示 slot.startTime.hour           │
+│  ✅ 不需要任何 .toLocal() 轉換             │
+└──────────────┬─────────────────────────────┘
+               │
+┌──────────────▼─────────────────────────────┐
+│  Model 層（數據模型）                      │
+│  fromSupabase():                           │
+│    createdAt: DateTimeUtils                │
+│      .parseIsoTimestamp(json['created_at'])│  ⭐ 統一
+│  toSupabase():                             │
+│    'created_at': DateTimeUtils             │
+│      .formatToUtcIso(createdAt)            │  ⭐ 統一
+└──────────────┬─────────────────────────────┘
+               │
+┌──────────────▼─────────────────────────────┐
+│  Service 層（業務邏輯）                    │
+│  創建：'created_at': DateTimeUtils         │
+│    .formatToUtcIso(DateTime.now())         │  ⭐ 統一
+│  查詢：.gte('scheduled_date',              │
+│    DateTimeUtils.formatToUtcIso(date))     │  ⭐ 統一
+└──────────────┬─────────────────────────────┘
+               │
+┌──────────────▼─────────────────────────────┐
+│  資料庫層（PostgreSQL + Supabase）         │
+│  TIMESTAMPTZ / TSTZRANGE（永遠 UTC）       │
+└────────────────────────────────────────────┘
+```
+
+### 統計數據
+
+**修改的文件：40+ 個**
+- 核心工具：1 個（DateTimeUtils）
+- Model 層：13 個
+- Service 層：23+ 個
+- UI 層：5 個
+
+**消除的重複代碼：120+ 處**
+- `DateTime.parse()` → `DateTimeUtils.parseIsoTimestamp()`：50+ 處
+- `.toUtc().toIso8601String()` → `DateTimeUtils.formatToUtcIso()`：70+ 處
+- 不必要的 `.toLocal()` 調用：10+ 處
+
+### 開發者指南
+
+**新增時間欄位時**：
+
+```dart
+// Model（fromSupabase）
+createdAt: DateTimeUtils.parseIsoTimestamp(json['created_at'] as String)
+
+// Model（toSupabase）
+'created_at': DateTimeUtils.formatToUtcIso(createdAt)
+
+// Service（查詢）
+.gte('created_at', DateTimeUtils.formatToUtcIso(startDate))
+
+// UI（顯示）
+Text('${model.createdAt.hour}:${model.createdAt.minute}')  // 直接用！
+```
+
+**完成時間**：1 天
+
+---
+
 ## 常見問題
 
-### ❌ 錯誤 1：直接使用 DateTime.parse() 解析 PostgreSQL 時間戳
+### ❌ 錯誤 1：直接使用 DateTime.parse()
+
+```dart
+// ❌ 錯誤（v2.2 禁止）
+final dt = DateTime.parse(json['created_at']); 
+
+// ✅ 正確
+final dt = DateTimeUtils.parseIsoTimestamp(json['created_at']);
+```
+
+### ❌ 錯誤 2：直接使用 .toUtc().toIso8601String()
+
+```dart
+// ❌ 錯誤（v2.2 禁止）
+'created_at': DateTime.now().toUtc().toIso8601String()
+
+// ✅ 正確
+'created_at': DateTimeUtils.formatToUtcIso(DateTime.now())
+```
+
+### ❌ 錯誤 3：UI 層使用 .toLocal() 轉換
+
+```dart
+// ❌ 錯誤（Model 已經是本地時間）
+Text('${model.createdAt.toLocal().hour}')
+
+// ✅ 正確
+Text('${model.createdAt.hour}')  // 直接用！
+```
+
+### ❌ 錯誤 4：直接使用 DateTime.parse() 解析 PostgreSQL 時間戳
 
 ```dart
 // ❌ 錯誤
@@ -194,7 +332,7 @@ final dt = DateTime.parse('2025-12-15 09:00:00+00'); // FormatException!
 final dt = DateTimeUtils.parsePostgresTimestamp('2025-12-15 09:00:00+00');
 ```
 
-### ❌ 錯誤 2：使用本地時間比較導致日期偏移
+### ❌ 錯誤 5：使用本地時間比較導致日期偏移
 
 ```dart
 // ❌ 錯誤
@@ -210,7 +348,7 @@ if (trainingDateUtc.day == 27) {
 }
 ```
 
-### ❌ 錯誤 3：重複實作時間轉換邏輯
+### ❌ 錯誤 6：重複實作時間轉換邏輯
 
 ```dart
 // ❌ 錯誤：在 Model 中重複實作
@@ -244,10 +382,11 @@ test('時區邊界測試', () {
 - **工具類源碼**：`lib/utils/datetime_utils.dart`
 - **單元測試**：`test/utils/datetime_utils_test.dart`
 - **開發規範**：`AGENTS.md`（第 7 章節）
-- **專案狀態**：`docs/DEVELOPMENT_STATUS.md`
+- **專案狀態**：`docs/DEVELOPMENT_STATUS.md`（v2.2 章節）
+- **資料庫設計**：`docs/DATABASE_SUPABASE.md`
 
 ---
 
 **維護者**：StrengthWise 開發團隊  
-**最後更新**：2024年12月29日
+**最後更新**：2025年1月2日 - v2.2 時區統一化完成 ✅
 

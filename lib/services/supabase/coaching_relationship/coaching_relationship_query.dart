@@ -14,12 +14,28 @@ class CoachingRelationshipQuery {
     id,
     coach_id,
     client_id,
+    coach_name,
+    client_name,
     status,
-    notes,
     invited_at,
     accepted_at,
     created_at,
     updated_at
+  ''';
+
+  /// 包含學員檔案的欄位（用於詳情查詢）
+  static const String _selectFieldsWithProfile = '''
+    id,
+    coach_id,
+    client_id,
+    coach_name,
+    client_name,
+    status,
+    invited_at,
+    accepted_at,
+    created_at,
+    updated_at,
+    client_profile
   ''';
 
   /// 查詢教練的學員關係
@@ -120,6 +136,24 @@ class CoachingRelationshipQuery {
     return CoachingRelationshipModel.fromSupabase(response);
   }
 
+  /// 根據 ID 查詢單筆關係（包含學員檔案）
+  ///
+  /// 用於學員詳情頁，需要顯示完整學員檔案資訊
+  /// [relationshipId] 關係 ID
+  Future<CoachingRelationshipModel?> queryByIdWithProfile(
+    String relationshipId,
+  ) async {
+    final response = await _supabase
+        .from('coaching_relationships')
+        .select(_selectFieldsWithProfile)
+        .eq('id', relationshipId)
+        .maybeSingle();
+
+    if (response == null) return null;
+
+    return CoachingRelationshipModel.fromSupabase(response);
+  }
+
   /// 查詢教練的學員 ID 列表（用於批量查詢用戶資料）
   ///
   /// [coachId] 教練 ID
@@ -131,7 +165,8 @@ class CoachingRelationshipQuery {
     var query = _supabase
         .from('coaching_relationships')
         .select('client_id')
-        .eq('coach_id', coachId);
+        .eq('coach_id', coachId)
+        .not('client_id', 'is', null); // ⭐ 過濾已刪除的學員
 
     if (status != null) {
       query = query.eq('status', status);
@@ -142,6 +177,45 @@ class CoachingRelationshipQuery {
     return (data as List)
         .map((json) => json['client_id'] as String)
         .toList();
+  }
+
+  /// 根據教練和學員 ID 查詢綁定關係
+  ///
+  /// [coachId] 教練 ID
+  /// [clientId] 學員 ID
+  Future<CoachingRelationshipModel?> queryByUsers(
+    String coachId,
+    String clientId,
+  ) async {
+    final data = await _supabase
+        .from('coaching_relationships')
+        .select(_selectFields)
+        .eq('coach_id', coachId)
+        .eq('client_id', clientId)
+        .maybeSingle();
+
+    if (data == null) return null;
+    return CoachingRelationshipModel.fromSupabase(data);
+  }
+
+  /// 根據教練和學員 ID 查詢綁定關係（包含學員檔案）
+  ///
+  /// 用於學員詳情頁，需要顯示完整學員檔案資訊
+  /// [coachId] 教練 ID
+  /// [clientId] 學員 ID
+  Future<CoachingRelationshipModel?> queryByUsersWithProfile(
+    String coachId,
+    String clientId,
+  ) async {
+    final data = await _supabase
+        .from('coaching_relationships')
+        .select(_selectFieldsWithProfile)
+        .eq('coach_id', coachId)
+        .eq('client_id', clientId)
+        .maybeSingle();
+
+    if (data == null) return null;
+    return CoachingRelationshipModel.fromSupabase(data);
   }
 }
 

@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';
 
 /// 預約通知服務
 ///
@@ -153,7 +154,7 @@ class BookingNotificationService {
         'message': message,
         'booking_id': bookingId,
         'is_read': false,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       });
 
       _logDebug('發送通知成功: $type 至 $recipientId');

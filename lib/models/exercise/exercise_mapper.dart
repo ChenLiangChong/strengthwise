@@ -1,4 +1,5 @@
 import 'exercise.dart';
+import 'package:strengthwise/utils/datetime_utils.dart';
 
 /// 訓練動作數據映射器
 ///
@@ -39,7 +40,7 @@ class ExerciseMapper {
       videoUrl: data['video_url'] ?? '',
       apps: [], // Supabase 資料庫中無此欄位
       createdAt: data['created_at'] != null 
-          ? DateTime.parse(data['created_at']) 
+          ? DateTimeUtils.parseIsoTimestamp(data['created_at'])  // ⭐ 統一工具類
           : DateTime.now(),
     );
   }

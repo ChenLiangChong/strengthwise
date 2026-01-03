@@ -52,6 +52,9 @@ class SupabaseService {
         url: supabaseUrl,
         anonKey: supabaseAnonKey,
         debug: false, // 關閉 debug 日誌減少初始化時間
+        authOptions: const FlutterAuthClientOptions(
+          authFlowType: AuthFlowType.pkce,
+        ),
       );
 
       _client = Supabase.instance.client;

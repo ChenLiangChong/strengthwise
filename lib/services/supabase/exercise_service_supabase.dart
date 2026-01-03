@@ -71,8 +71,14 @@ class ExerciseServiceSupabase implements IExerciseService {
       // 設定環境
       configureForEnvironment(environment);
 
-      // ⚡ 初始化本地快取
-      await _localCache.initialize();
+      // ⚡ 初始化本地快取（允許失敗，降級為無快取模式）
+      try {
+        await _localCache.initialize();
+        _logDebug('✅ 本地快取初始化成功');
+      } catch (e) {
+        _logDebug('⚠️ 本地快取初始化失敗，將使用無快取模式: $e');
+        // 繼續執行，不影響服務初始化
+      }
 
       // 標記為已初始化（必須在預載入前設置，否則預載入會失敗）
       _isInitialized = true;
@@ -82,7 +88,7 @@ class ExerciseServiceSupabase implements IExerciseService {
         _preloadCommonExerciseData();
       }
 
-      _logDebug('運動服務初始化完成');
+      _logDebug('✅ 運動服務初始化完成');
     } catch (e) {
       _logError('運動服務初始化失敗: $e');
       _isInitialized = false; // 初始化失敗時重置狀態
