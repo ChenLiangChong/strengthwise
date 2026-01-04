@@ -3,6 +3,7 @@ import 'package:strengthwise/views/pages/scheduling/appointments/coach_slots_man
 import 'package:strengthwise/views/pages/scheduling/appointments/appointments_list_page.dart';
 import 'package:strengthwise/views/pages/notes/session_notes_list_page.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/client_management_page.dart';
+import 'package:strengthwise/views/pages/relationships/role_coach/tabs/coach_profile_tab.dart';
 
 /// 教練功能整合頁面（Hub Page）
 ///
@@ -25,7 +26,7 @@ class _CoachHubPageState extends State<CoachHubPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this); // 3 → 4
+    _tabController = TabController(length: 5, vsync: this); // 4 → 5（新增我的檔案）
   }
 
   @override
@@ -41,29 +42,34 @@ class _CoachHubPageState extends State<CoachHubPage>
         title: const Text('教練管理中心'),
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true, // 5 個 Tab 需要滾動
           tabs: const [
+            Tab(icon: Icon(Icons.badge), text: '我的檔案'), // ⭐ v2.9 新增
             Tab(icon: Icon(Icons.people), text: '學員管理'),
             Tab(icon: Icon(Icons.schedule), text: '時段管理'),
             Tab(icon: Icon(Icons.list_alt), text: '我的預約'),
-            Tab(icon: Icon(Icons.note_alt), text: '課程筆記'), // ⭐ 新增
+            Tab(icon: Icon(Icons.note_alt), text: '課程筆記'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: const [
-          // Tab 1: 學員管理（Phase 1）
+          // Tab 1: 我的檔案（v2.9）⭐ 新增
+          CoachProfileTab(),
+
+          // Tab 2: 學員管理（Phase 1）
           ClientManagementPage(),
 
-          // Tab 2: 時段管理（Phase 2）
+          // Tab 3: 時段管理（Phase 2）
           CoachSlotsManagementPage(),
 
-          // Tab 3: 我的預約（Phase 2 - 教練視角）
+          // Tab 4: 我的預約（Phase 2 - 教練視角）
           AppointmentsListPage(isCoachMode: true),
 
-          // Tab 4: 課程筆記（Phase 3）⭐ 加入搜尋/篩選功能
+          // Tab 5: 課程筆記（Phase 3）
           SessionNotesListPage(
-            showClientFilter: true, // ⭐ 啟用學員篩選功能
+            showClientFilter: true,
           ),
         ],
       ),

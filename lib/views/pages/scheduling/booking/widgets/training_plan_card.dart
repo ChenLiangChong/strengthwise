@@ -70,8 +70,12 @@ class TrainingPlanCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ⭐ v2.9: 計算是否可以刪除（只有創建者可以刪除）
+              // 如果 creatorId 為 null（舊記錄），則預設可以刪除（向後相容）
+              // 否則只有創建者可以刪除
               // 標題和類型標籤
-              _buildHeader(context, title, typeInfo, isPastPlan, completed, planId, scheduledDate),
+              _buildHeader(context, title, typeInfo, isPastPlan, completed, planId, scheduledDate, 
+                _canDelete(creatorId, currentUserId, isPastPlan)),
               
               // 描述
               if (description.isNotEmpty) ...[
@@ -168,6 +172,17 @@ class TrainingPlanCard extends StatelessWidget {
     );
   }
   
+  /// ⭐ v2.9: 判斷是否可以刪除訓練計畫
+  /// 
+  /// 只有創建者可以刪除，學員不能刪除教練創建的計畫
+  bool _canDelete(String? creatorId, String? currentUserId, bool isPastPlan) {
+    if (isPastPlan) return false;
+    // 如果 creatorId 為 null（舊記錄），預設可以刪除（向後相容）
+    if (creatorId == null) return true;
+    // 只有創建者可以刪除
+    return currentUserId == creatorId;
+  }
+
   /// 構建標題列（包含標題、類型標籤、編輯和刪除按鈕）
   Widget _buildHeader(
     BuildContext context,
@@ -177,6 +192,7 @@ class TrainingPlanCard extends StatelessWidget {
     bool completed,
     String planId,
     DateTime? scheduledDate,
+    bool canDelete,  // ⭐ v2.9: 新增參數
   ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -225,8 +241,8 @@ class TrainingPlanCard extends StatelessWidget {
             constraints: const BoxConstraints(),
           ),
         
-        // 刪除按鈕（過去的訓練計劃不能刪除）
-        if (!isPastPlan && onDelete != null)
+        // ⭐ v2.9: 刪除按鈕（只有創建者可以刪除）
+        if (canDelete && onDelete != null)
           IconButton(
             icon: const Icon(Icons.delete_outline, size: 20),
             color: Colors.red,

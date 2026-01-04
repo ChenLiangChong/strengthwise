@@ -21,6 +21,7 @@ import '../interfaces/i_invite_code_service.dart';
 import '../interfaces/i_health_assessment_service.dart';
 import '../interfaces/i_coach_display_preferences_service.dart';
 import '../interfaces/i_coach_assessment_note_service.dart';
+import '../interfaces/i_coach_profile_service.dart';
 
 import '../supabase/auth_service_supabase.dart';
 import '../supabase/booking_service_supabase.dart';
@@ -35,6 +36,7 @@ import '../supabase/coaching_relationship_service_supabase.dart';
 import '../supabase/health_assessment_service_supabase.dart';
 import '../supabase/coach_display_preferences_service_supabase.dart';
 import '../supabase/coach_assessment_note_service_supabase.dart';
+import '../supabase/coach_profile_service_supabase.dart';
 import '../appointment_service_supabase.dart';
 import '../availability_slot_service_supabase.dart';
 import '../session_note_service_supabase.dart';
@@ -293,10 +295,20 @@ class ServiceRegistry {
       );
     }
 
-    // 教練評估備註服務 ⭐ 新增
+    // 教練評估備註服務
     if (!serviceLocator.isRegistered<ICoachAssessmentNoteService>()) {
       serviceLocator.registerLazySingleton<ICoachAssessmentNoteService>(
         () => CoachAssessmentNoteServiceSupabase(
+          supabase: Supabase.instance.client,
+          errorService: serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+
+    // 教練公開檔案服務 ⭐ v2.9
+    if (!serviceLocator.isRegistered<ICoachProfileService>()) {
+      serviceLocator.registerLazySingleton<ICoachProfileService>(
+        () => CoachProfileServiceSupabase(
           supabase: Supabase.instance.client,
           errorService: serviceLocator<ErrorHandlingService>(),
         ),

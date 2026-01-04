@@ -3,79 +3,53 @@ import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
+import 'package:strengthwise/views/pages/profile/widgets/coach/coach_profile_content.dart';
 
-/// 教練基本資訊 Tab
+/// 教練基本資訊 Tab（學員中心）
+///
+/// 使用共用的 CoachProfileContent 組件
 class CoachInfoTab extends StatelessWidget {
   final UserModel coach;
-  final String clientId; // ⭐ 新增：學員 ID
+  final String clientId;
 
   const CoachInfoTab({
     super.key,
     required this.coach,
-    required this.clientId, // ⭐ 新增
+    required this.clientId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CoachProfileContent(
+      coachId: coach.uid,
+      email: coach.email,
+      photoUrl: coach.photoURL,
+      isEditable: false, // 學員不能編輯
+      showContactInfo: true,
+      emptyStateTitle: '此教練尚未建立檔案',
+      emptyStateSubtitle: '請稍後再試',
+      dangerZoneWidget: _DangerZone(
+        coach: coach,
+        clientId: clientId,
+      ),
+    );
+  }
+}
+
+/// 危險區域：解除綁定
+class _DangerZone extends StatelessWidget {
+  final UserModel coach;
+  final String clientId;
+
+  const _DangerZone({
+    required this.coach,
+    required this.clientId,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 頭像與基本資訊
-          _buildProfileCard(context, colorScheme),
-          const SizedBox(height: 24),
-
-          // 聯絡資訊
-          _buildSection(
-            context: context,
-            title: '聯絡資訊',
-            icon: Icons.contact_mail,
-            colorScheme: colorScheme,
-            children: [
-              _buildInfoRow(
-                icon: Icons.email,
-                label: 'Email',
-                value: coach.email,
-              ),
-              // 電話暫時隱藏（UserModel 沒有此欄位）
-              // _buildInfoRow(
-              //   icon: Icons.phone,
-              //   label: '電話',
-              //   value: coach.phoneNumber ?? '未設定',
-              // ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // 教練資訊
-          _buildSection(
-            context: context,
-            title: '教練資訊',
-            icon: Icons.fitness_center,
-            colorScheme: colorScheme,
-            children: [
-              _buildInfoRow(
-                icon: Icons.info,
-                label: '簡介',
-                value: coach.bio ?? '未設定',
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-
-          // 危險區域：解除綁定
-          _buildDangerZone(context, colorScheme),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  /// 危險區域：解除綁定 ⭐ 新增
-  Widget _buildDangerZone(BuildContext context, ColorScheme colorScheme) {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.errorContainer.withValues(alpha: 0.1),
@@ -150,7 +124,6 @@ class CoachInfoTab extends StatelessWidget {
     );
   }
 
-  /// 警告項目
   Widget _buildWarningItem(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.only(left: 8, top: 4),
@@ -172,13 +145,12 @@ class CoachInfoTab extends StatelessWidget {
     );
   }
 
-  /// 處理解除綁定 ⭐ 新增
   Future<void> _handleUnbind(BuildContext context) async {
     final colorScheme = Theme.of(context).colorScheme;
 
     final confirmed = await showDialog<bool>(
       context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         icon: Icon(
           Icons.warning_amber_rounded,
@@ -191,7 +163,6 @@ class CoachInfoTab extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 警告區塊
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -219,8 +190,6 @@ class CoachInfoTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // 問題
               Text(
                 '確定要解除與 ${coach.displayName ?? coach.email} 的綁定關係嗎？',
                 style: const TextStyle(
@@ -228,10 +197,7 @@ class CoachInfoTab extends StatelessWidget {
                   fontSize: 16,
                 ),
               ),
-              const SizedBox(height: 8),
-              const SizedBox(height: 8),
-
-              // 負面影響（紅色）
+              const SizedBox(height: 16),
               _buildDialogItem(
                 context,
                 icon: Icons.notes,
@@ -239,8 +205,6 @@ class CoachInfoTab extends StatelessWidget {
                 color: colorScheme.error,
               ),
               const SizedBox(height: 12),
-
-              // 正面說明（藍色）
               _buildDialogItem(
                 context,
                 icon: Icons.check_circle_outline,
@@ -290,13 +254,11 @@ class CoachInfoTab extends StatelessWidget {
       return;
     }
 
-    // ⭐ 修正：使用 archiveRelationship 而不是 deleteRelationship
     final success =
         await relationshipController.archiveRelationship(relationship.id);
     if (context.mounted) {
       if (success) {
         NotificationUtils.showSuccess(context, '已解除綁定');
-        // ⭐ 返回上一頁並傳遞成功結果，觸發刷新
         Navigator.of(context).pop(true);
       } else {
         NotificationUtils.showError(
@@ -307,7 +269,6 @@ class CoachInfoTab extends StatelessWidget {
     }
   }
 
-  /// Dialog 項目（帶顏色圖標）
   Widget _buildDialogItem(
     BuildContext context, {
     required IconData icon,
@@ -326,173 +287,8 @@ class CoachInfoTab extends StatelessWidget {
               text,
               style: TextStyle(
                 fontSize: 13,
-                color: color, // ⭐ 關鍵：文字顏色跟圖標一樣
+                color: color,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 頭像卡片
-  Widget _buildProfileCard(BuildContext context, ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.primaryContainer,
-            colorScheme.secondaryContainer,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          // 頭像
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: colorScheme.primary,
-            backgroundImage:
-                coach.photoURL != null ? NetworkImage(coach.photoURL!) : null,
-            child: coach.photoURL == null
-                ? Text(
-                    coach.displayName?.substring(0, 1).toUpperCase() ??
-                        coach.email.substring(0, 1).toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onPrimary,
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(width: 20),
-          // 姓名與基本資訊
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  coach.displayName ?? coach.email,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.verified_user,
-                      size: 16,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '認證教練',
-                      style: TextStyle(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 資訊區塊
-  Widget _buildSection({
-    required BuildContext context,
-    required String title,
-    required IconData icon,
-    required ColorScheme colorScheme,
-    required List<Widget> children,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.outlineVariant,
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 標題
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: colorScheme.primary),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-          ),
-          // 內容
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: children,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 資訊行
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.grey[600]),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
             ),
           ),
         ],

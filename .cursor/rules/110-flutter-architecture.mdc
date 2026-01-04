@@ -1,104 +1,56 @@
 ---
 description: "Clean Architecture 分層規則、依賴注入與目錄結構強制執行。適用於 lib/ 下所有檔案。"
-globs: "lib/**/*.dart"
+globs: lib/**/*.dart
 alwaysApply: false
 ---
 
 # Flutter 架構規範
 
-## 🏗️ MVVM + Clean Architecture
-
-```
-┌─────────────────────────────────────┐
-│   View Layer (UI)                   │  ← lib/views/
-│   - 只負責顯示和用戶互動              │
-│   - ✅ 100% 使用 Interface           │
-└──────────────┬──────────────────────┘
-               │ Provider/Consumer
-┌──────────────▼──────────────────────┐
-│   Controller Layer (ViewModel)      │  ← lib/controllers/
-│   - Business Logic                  │
-│   - ChangeNotifier                  │
-│   - ✅ 100% 透過 Interface 注入依賴  │
-└──────────────┬──────────────────────┘
-               │ Service Interface
-┌──────────────▼──────────────────────┐
-│   Service Layer (Repository)        │  ← lib/services/
-│   - Data Access                     │
-│   - Supabase Operations             │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│   Model Layer                       │  ← lib/models/
-│   - fromSupabase() / toMap()        │
-│   - Snake_case ↔ camelCase 轉換     │
-└─────────────────────────────────────┘
-```
-
-## ✅ 依賴注入（必須）
-
 <critical>
-所有服務必須透過 `serviceLocator` + Interface 使用
+1. 禁止直接實例化 Service，必須透過 `serviceLocator<Interface>`
+2. 禁止跨層依賴（View 不能直接呼叫 Service）
+3. Controller 必須繼承 `ChangeNotifier`
+4. Model 必須實作 `fromSupabase()` 和 `toMap()`
 </critical>
 
+## 🏗️ 分層架構
+
+```
+View (lib/views/)
+    ↓ Provider/Consumer
+Controller (lib/controllers/)  ← ChangeNotifier
+    ↓ Interface
+Service (lib/services/)
+    ↓
+Model (lib/models/)  ← fromSupabase() / toMap()
+```
+
+## ✅ 正確做法
+
 ```dart
-// ✅ 正確：透過 Interface
+// 依賴注入
 final workoutService = serviceLocator<IWorkoutService>();
 final authController = serviceLocator<IAuthController>();
-
-// ❌ 錯誤：直接實例化
-final service = WorkoutServiceSupabase(); // 違反依賴反轉
 ```
 
-## 📦 Service Locator 註冊
+## ❌ 禁止做法
 
-| 層級 | 註冊方式 | 生命週期 |
-|------|---------|----------|
-| Service | `LazySingleton` | 首次使用時創建，全局共享 |
-| Controller | `Factory` | 每次請求創建新實例 |
-| Utility | `Singleton` | 立即創建，全局共享 |
-
-## 📂 目錄結構
-
-```
-lib/
-├── main.dart
-├── models/                     # 資料模型
-│   └── *.dart                  # fromSupabase() + toMap()
-├── services/
-│   ├── interfaces/             # 服務介面（必須）
-│   │   └── i_*.dart
-│   ├── service_locator.dart    # 依賴注入容器
-│   └── supabase/               # Supabase 實作
-├── controllers/
-│   ├── interfaces/             # 控制器介面（必須）
-│   └── *.dart                  # ChangeNotifier
-├── views/
-│   ├── pages/                  # 按功能模組分類
-│   ├── painters/               # CustomPainter
-│   └── shared/                 # 共用組件
-├── themes/                     # 主題系統
-└── utils/                      # 工具類
+```dart
+// 直接實例化
+final service = WorkoutServiceSupabase();
 ```
 
-## 🚀 新增功能標準流程
+## 📦 註冊方式
+
+| 層級 | 方式 | 生命週期 |
+|------|------|----------|
+| Service | `LazySingleton` | 全局共享 |
+| Controller | `Factory` | 每次新實例 |
+
+## 🚀 新功能流程
 
 ```
-1. 設計 Model (lib/models/)
-   ├── 實作 fromSupabase()
-   └── 實作 toMap()
-   ↓
-2. 創建 Service Interface (lib/services/interfaces/)
-   ↓
-3. 實作 Service (lib/services/supabase/)
-   ↓
-4. 註冊到 Service Locator
-   ↓
-5. 創建 Controller (lib/controllers/)
-   ├── 繼承 ChangeNotifier
-   └── 透過 Interface 注入依賴
-   ↓
-6. 建立 UI (lib/views/pages/)
-   ↓
-7. 測試並驗證
+Model → Interface → Service → 註冊 → Controller → UI → 測試
 ```
+
+詳見：`@docs/PROJECT_OVERVIEW.md`

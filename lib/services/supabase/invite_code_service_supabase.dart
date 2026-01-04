@@ -120,5 +120,33 @@ class InviteCodeServiceSupabase implements IInviteCodeService {
 
     return inviteCode.coachId;
   }
+
+  /// ⭐ 使用邀請碼綁定教練（RPC 版本）
+  ///
+  /// 使用 SECURITY DEFINER RPC 函數，可驗證教練是否存在
+  @override
+  Future<InviteCodeBindResult> bindCoachByInviteCode({
+    required String code,
+    required String traineeId,
+  }) async {
+    final response = await _supabase.rpc(
+      'bind_coach_by_invite_code',
+      params: {
+        'p_code': code.trim().toUpperCase(),
+        'p_trainee_id': traineeId,
+      },
+    );
+
+    // RPC 返回 JSON
+    if (response is Map<String, dynamic>) {
+      return InviteCodeBindResult.fromJson(response);
+    }
+
+    // 異常情況
+    return InviteCodeBindResult(
+      success: false,
+      error: '綁定失敗：無效的回應格式',
+    );
+  }
 }
 

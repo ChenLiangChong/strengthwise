@@ -38,6 +38,9 @@ class ProfileFormContent extends StatelessWidget {
   final ValueChanged<DateTime?> onBirthDateChanged;
   final ValueChanged<String> onUnitSystemChanged;
   final VoidCallback onSave;
+  
+  // 控制是否顯示刪除帳號（改由外層控制位置）
+  final bool showDeleteAccount;
 
   const ProfileFormContent({
     super.key,
@@ -62,6 +65,7 @@ class ProfileFormContent extends StatelessWidget {
     required this.onBirthDateChanged,
     required this.onUnitSystemChanged,
     required this.onSave,
+    this.showDeleteAccount = true,  // 預設顯示
   });
 
   @override
@@ -266,8 +270,8 @@ class ProfileFormContent extends StatelessWidget {
             const OAuthPasswordSection(),
           ],
 
-          // 刪除帳號按鈕（僅在非首次設置時顯示）
-          if (!isFirstTimeSetup) ...[
+          // 刪除帳號按鈕（僅在非首次設置且 showDeleteAccount 為 true 時顯示）
+          if (!isFirstTimeSetup && showDeleteAccount) ...[
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 16),

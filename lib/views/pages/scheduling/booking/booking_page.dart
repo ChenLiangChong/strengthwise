@@ -244,7 +244,7 @@ class _BookingPageState extends State<BookingPage> {
       // WorkoutService 內部有 3 小時快取機制，不會頻繁查詢資料庫
       // ⭐ 明確傳遞 userId，確保查詢的是當前用戶的訓練計劃
       final plans = await _workoutService.getUserPlans(
-        userId: userId,  // ⭐ 明確指定用戶 ID
+        userId: userId, // ⭐ 明確指定用戶 ID
         limit: 100,
       );
 
@@ -281,9 +281,14 @@ class _BookingPageState extends State<BookingPage> {
                   })
               .toList(),
           'completed': plan.completed,
-          'planType': 'self', // WorkoutRecord 沒有 planType，使用預設值
-          'trainee_id': plan.userId, // 使用 userId
-          'creator_id': plan.userId, // 使用 userId
+          // ⭐ v2.9.1 TRN-3: 根據 creatorId 判斷是自主訓練還是教練計畫
+          'planType': (plan.creatorId != null &&
+                  plan.traineeId != null &&
+                  plan.creatorId != plan.traineeId)
+              ? 'trainer'
+              : 'self',
+          'trainee_id': plan.traineeId ?? plan.userId,
+          'creator_id': plan.creatorId ?? plan.userId,
           'dataType': 'plan',
         });
       }
@@ -453,8 +458,36 @@ class _BookingPageState extends State<BookingPage> {
   }
 
   // 刪除訓練計畫
+  // ⭐ v2.9.1: 前端權限檢查，避免依賴 RLS 靜默失敗
   Future<void> _deleteTrainingPlan(String planId, String planTitle) async {
     if (!mounted) return;
+
+    // ⭐ v2.9.1: 先從快取的訓練資料中找到這個計畫，檢查創建者
+    final currentUserId = _authController.user?.uid;
+    final plan = _selectedDayTrainings.firstWhere(
+      (p) => p['id'] == planId,
+      orElse: () => {},
+    );
+
+    if (plan.isEmpty) {
+      NotificationUtils.showError(context, '找不到訓練計畫');
+      return;
+    }
+
+    final creatorId = plan['creator_id'] as String?;
+    final traineeId = plan['trainee_id'] as String?;
+
+    // ⭐ v2.9.1 TRN-2: 權限檢查 - 只有創建者可以刪除
+    // 如果 creatorId 存在且不等於當前用戶，阻止刪除
+    // 如果 creatorId 不存在（舊記錄），則用 traineeId 判斷（自己創建的可以刪）
+    final effectiveCreatorId = creatorId ?? traineeId;
+    if (effectiveCreatorId != null && effectiveCreatorId != currentUserId) {
+      NotificationUtils.showWarning(
+        context,
+        '無法刪除教練安排的訓練計畫，如需調整請聯繫教練',
+      );
+      return;
+    }
 
     // 顯示確認對話框
     final confirmed = await showDialog<bool>(
@@ -483,10 +516,14 @@ class _BookingPageState extends State<BookingPage> {
       print('[BOOKING PAGE] 刪除訓練計畫: $planId');
 
       // 使用 WorkoutService 刪除記錄
-      await _workoutService.deleteRecord(planId);
+      final success = await _workoutService.deleteRecord(planId);
 
       if (mounted) {
-        NotificationUtils.showSuccess(context, '訓練計畫已刪除');
+        if (success) {
+          NotificationUtils.showSuccess(context, '訓練計畫已刪除');
+        } else {
+          NotificationUtils.showError(context, '刪除失敗，請稍後再試');
+        }
 
         // 重新加載訓練計畫
         _loadTrainingPlans();

@@ -1,121 +1,41 @@
 ---
 description: "健康評估系統業務邏輯：PAR-Q+ 問卷、風險評估、教練備註。適用於健康評估相關代碼。"
-globs: "lib/**/health_assessment/**/*.dart, lib/views/pages/relationships/role_coach/health_assessment_page.dart"
+globs: lib/**/health_assessment/**/*.dart,lib/views/pages/relationships/role_coach/health_assessment_page.dart
 alwaysApply: false
 ---
 
 # 健康評估系統（v2.8）
 
-## 📋 系統概述
-
-基於國際 **PAR-Q+（Physical Activity Readiness Questionnaire Plus）** 標準的健康評估系統。
+<critical>
+1. 教練備註必須 RLS 隔離（學員不可見）
+2. 高風險學員必須簽署免責聲明
+3. PAR-Q+ 標準：7 個核心問題
+</critical>
 
 ## 🔄 5 步驟表單
 
-| 步驟 | 標題 | 內容 |
-|------|------|------|
-| 1 | PAR-Q+ 篩檢 | 7 個核心問題（是/否）|
-| 2 | 傷病史 | 過去傷病記錄（新增/編輯/刪除）|
-| 3 | 生活型態 | 運動習慣、職業、睡眠 |
-| 4 | 訓練目標 | 首要/次要目標、時程、承諾 |
-| 5 | 緊急聯絡人 | 姓名、電話、關係 |
+| 步驟 | 內容 |
+|------|------|
+| 1 | PAR-Q+ 篩檢（7 個是/否問題）|
+| 2 | 傷病史 |
+| 3 | 生活型態 |
+| 4 | 訓練目標 |
+| 5 | 緊急聯絡人 |
 
 ## ⚠️ 風險評估
 
-### 三級制
+| 等級 | 條件 |
+|------|------|
+| 🟢 低風險 | PAR-Q+ 全部「否」|
+| 🟡 中風險 | 有「是」但非關鍵 |
+| 🔴 高風險 | 心臟病史、暈眩 |
 
-| 風險等級 | 條件 | 建議 |
-|---------|------|------|
-| 🟢 低風險 | PAR-Q+ 全部「否」| 可安全參與訓練 |
-| 🟡 中風險 | PAR-Q+ 有「是」但非關鍵 | 建議先諮詢醫生 |
-| 🔴 高風險 | 心臟病史、暈眩、骨骼問題 | 必須醫生核可 |
-
-### 免責聲明
-
-高風險學員必須簽署免責聲明才能開始訓練。
-
-## 🏗️ 資料模型
-
-```dart
-// lib/models/health_assessment/health_assessment_model.dart
-class HealthAssessmentModel {
-  final String id;
-  final String clientId;
-  
-  // PAR-Q+ 問題（7 個布林值）
-  final bool heartCondition;
-  final bool chestPain;
-  final bool dizziness;
-  // ...
-  
-  // 風險評估（計算屬性）
-  RiskLevel get riskLevel => _calculateRisk();
-}
-```
-
-## 👨‍🏫 教練功能
-
-### 顯示偏好設定
-
-教練可自訂學員詳情頁顯示欄位（11 個可配置）：
-
-```dart
-// 可配置欄位
-- 聯絡資訊（電話、Email）
-- 基本資料（生日、性別）
-- 體態數據（身高、體重、BMI）
-- 健康狀態（傷病史、PAR-Q+）
-- 訓練目標
-```
-
-### 教練私人備註（v2.8.1）
-
-```dart
-// lib/models/coach_assessment_note_model.dart
-class CoachAssessmentNoteModel {
-  final String id;
-  final String assessmentId;
-  final String coachId;
-  final String? note;  // 教練私人備註
-}
-```
-
-**RLS 隔離**：教練僅能看/改自己的備註，學員完全不可見。
-
-## 📂 核心檔案
-
-```
-lib/
-├── models/health_assessment/
-│   ├── health_assessment_model.dart
-│   └── coach_assessment_note_model.dart
-├── services/
-│   ├── interfaces/i_health_assessment_service.dart
-│   └── supabase/health_assessment_service_supabase.dart
-└── views/pages/relationships/role_coach/
-    ├── health_assessment_page.dart     # 5 步驟表單
-    └── coach_display_preferences_page.dart  # 偏好設定
-```
-
-## 🔐 RLS 策略
+## 🔐 RLS 原則
 
 ```sql
--- 學員可讀寫自己的評估
-CREATE POLICY "Clients can manage own assessments"
-  ON health_assessments FOR ALL
-  USING (auth.uid() = client_id);
-
--- 教練可讀學員的評估（透過關係）
-CREATE POLICY "Coaches can view client assessments"
-  ON health_assessments FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM coaching_relationships
-      WHERE coach_id = auth.uid()
-        AND client_id = health_assessments.client_id
-        AND status = 'active'
-    )
-  );
+-- 學員只能看自己的評估
+-- 教練只能看自己學員的評估
+-- 教練備註對學員完全不可見
 ```
 
 詳見：`@docs/HEALTH_ASSESSMENT_SYSTEM.md`

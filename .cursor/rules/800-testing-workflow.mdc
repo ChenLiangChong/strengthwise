@@ -1,48 +1,35 @@
 ---
 description: "測試策略與工作流程：單元測試、Widget 測試、驗收標準。適用於 test 目錄。"
-globs: "test/**/*.dart"
+globs: test/**/*.dart
 alwaysApply: false
 ---
 
-# 測試策略
+# 測試規範
 
-## 🧪 測試範圍
+<critical>
+1. Service 層必須有單元測試
+2. 測試必須使用 Given-When-Then 結構
+3. 使用 Mock 隔離外部依賴
+</critical>
 
-| 測試類型 | 覆蓋範圍 | 工具 |
-|---------|---------|------|
-| Unit Tests | Service 層、工具類 | `flutter_test` |
-| Widget Tests | UI 組件互動 | `flutter_test` |
-| Integration Tests | 端對端流程 | `integration_test` |
-
-## 📝 測試結構（Given-When-Then）
+## 📝 測試結構
 
 ```dart
 test('應該正確計算訓練總量', () {
   // Arrange (Given)
-  final records = [
-    WorkoutRecord(weight: 100, reps: 5),
-    WorkoutRecord(weight: 80, reps: 10),
-  ];
+  final records = [WorkoutRecord(weight: 100, reps: 5)];
   
   // Act (When)
   final totalVolume = calculator.calculateTotalVolume(records);
   
   // Assert (Then)
-  expect(totalVolume, equals(1300)); // 100*5 + 80*10
+  expect(totalVolume, equals(500));
 });
-```
-
-## 📂 檔案命名
-
-```
-Source: lib/services/workout_service_supabase.dart
-Test:   test/services/workout_service_supabase_test.dart
 ```
 
 ## 🔧 Mock 使用
 
 ```dart
-// 使用 mockito 或 mocktail
 class MockWorkoutService extends Mock implements IWorkoutService {}
 
 test('Controller 應該載入訓練記錄', () async {
@@ -54,38 +41,15 @@ test('Controller 應該載入訓練記錄', () async {
   await controller.loadRecords();
   
   expect(controller.records.length, equals(1));
-  verify(() => mockService.getRecords()).called(1);
 });
 ```
 
 ## ✅ 驗收標準
 
-### 性能指標
-
 | 項目 | 目標值 |
 |------|--------|
 | 冷啟動 | < 200ms |
-| 熱啟動 | < 100ms |
-| 統計頁面（快取）| < 5ms |
-| Frame Skip | < 30 |
+| 統計頁面 | < 5ms |
 | 95% 查詢 | < 50ms |
 
-### 功能驗收
-
-- ✅ 所有 CRUD 操作正常
-- ✅ RLS 策略正確隔離
-- ✅ 時區處理正確
-- ✅ 離線狀態友善提示
-
-## 📊 測試覆蓋
-
-```bash
-# 執行測試
-flutter test
-
-# 生成覆蓋率報告
-flutter test --coverage
-genhtml coverage/lcov.info -o coverage/html
-```
-
-詳見：`@docs/DEVELOPMENT_STATUS.md`（下一步計劃 - 測試章節）
+詳見：`@docs/DEVELOPMENT_STATUS.md`

@@ -20,6 +20,12 @@ class WorkoutRecord {
   final DateTime? trainingTime; // 訓練時間（開始時間）
   final DateTime? trainingEndTime; // 訓練結束時間 ⭐ v2.1
 
+  // ⭐ v2.9.1: 訓練狀態追蹤欄位
+  final DateTime? actualStartTime; // 實際開始訓練的時間
+  final DateTime? actualEndTime; // 實際結束訓練的時間
+  final int elapsedSeconds; // 累計訓練秒數（不含暫停）
+  final String trainingStatus; // pending | in_progress | paused | completed
+
   /// 創建一個訓練記錄實例
   WorkoutRecord({
     required this.id,
@@ -34,7 +40,12 @@ class WorkoutRecord {
     this.completed = false,
     required this.createdAt,
     this.trainingTime,
-    this.trainingEndTime, // ⭐ 新增
+    this.trainingEndTime,
+    // ⭐ v2.9.1: 訓練狀態追蹤
+    this.actualStartTime,
+    this.actualEndTime,
+    this.elapsedSeconds = 0,
+    this.trainingStatus = 'pending',
   });
 
   /// 轉換為 JSON 數據格式
@@ -75,7 +86,12 @@ class WorkoutRecord {
     bool? completed,
     DateTime? createdAt,
     DateTime? trainingTime,
-    DateTime? trainingEndTime, // ⭐ 新增
+    DateTime? trainingEndTime,
+    // ⭐ v2.9.1: 訓練狀態追蹤
+    DateTime? actualStartTime,
+    DateTime? actualEndTime,
+    int? elapsedSeconds,
+    String? trainingStatus,
   }) {
     return WorkoutRecord(
       id: id ?? this.id,
@@ -90,7 +106,11 @@ class WorkoutRecord {
       completed: completed ?? this.completed,
       createdAt: createdAt ?? this.createdAt,
       trainingTime: trainingTime ?? this.trainingTime,
-      trainingEndTime: trainingEndTime ?? this.trainingEndTime, // ⭐ 新增
+      trainingEndTime: trainingEndTime ?? this.trainingEndTime,
+      actualStartTime: actualStartTime ?? this.actualStartTime,
+      actualEndTime: actualEndTime ?? this.actualEndTime,
+      elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
+      trainingStatus: trainingStatus ?? this.trainingStatus,
     );
   }
 

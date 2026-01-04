@@ -394,6 +394,51 @@ class CoachingRelationshipServiceSupabase
     }
   }
 
+  /// ⭐ QR Code 綁定（RPC 版本）
+  @override
+  Future<QrCodeBindResult> bindByQrCode({
+    required String scannedUserId,
+    required String myUserId,
+    required String myRole,
+  }) async {
+    try {
+      final response = await _supabase.rpc(
+        'bind_by_qr_code',
+        params: {
+          'p_scanned_user_id': scannedUserId,
+          'p_my_user_id': myUserId,
+          'p_my_role': myRole,
+        },
+      );
+
+      // RPC 返回 JSON
+      if (response is Map<String, dynamic>) {
+        final result = QrCodeBindResult.fromJson(response);
+        
+        // 成功時清除快取
+        if (result.success && result.coachId != null && result.clientId != null) {
+          _cache.clearRelationshipCache(result.coachId!, result.clientId!);
+        }
+        
+        return result;
+      }
+
+      return QrCodeBindResult(
+        success: false,
+        error: '綁定失敗：無效的回應格式',
+      );
+    } catch (e) {
+      _errorService.logError(
+        'QR Code 綁定失敗: $e',
+        type: 'CoachingRelationshipServiceError',
+      );
+      return QrCodeBindResult(
+        success: false,
+        error: '綁定失敗：$e',
+      );
+    }
+  }
+
   // ============================================================================
   // 更新與管理功能
   // ============================================================================

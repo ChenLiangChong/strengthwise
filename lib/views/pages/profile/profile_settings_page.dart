@@ -7,6 +7,8 @@ import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/home/main_home_page.dart';
 import 'package:strengthwise/views/pages/profile/widgets/profile_form_content.dart';
+import 'package:strengthwise/views/pages/profile/widgets/profile_delete_account_button.dart';
+import 'package:strengthwise/views/pages/profile/coach_profile_form_page.dart';
 
 /// 個人資料設置頁面
 ///
@@ -163,6 +165,39 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     }
   }
 
+  /// ⭐ v2.9: 首次開啟教練模式時引導填寫教練檔案
+  void _promptCoachProfileSetup(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('成為教練！'),
+          content: const Text('您已成功開啟教練模式。現在請填寫您的教練公開檔案，讓學員認識您。'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('稍後再說'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            FilledButton(
+              child: const Text('立即填寫'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CoachProfileFormPage(),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<ProfileController>.value(
@@ -181,31 +216,127 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
 
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
-              child: ProfileFormContent(
-                formKey: _formKey,
-                isFirstTimeSetup: widget.isFirstTimeSetup,
-                isOAuthUser: controller.isOAuthUser,
-                displayNameController: _displayNameController,
-                nicknameController: _nicknameController,
-                heightController: _heightController,
-                weightController: _weightController,
-                bioController: _bioController,
-                photoURL: controller.userProfile?.photoURL,
-                avatarFile: _avatarFile,
-                gender: _gender,
-                genderVisible: _genderVisible,
-                birthDate: _birthDate,
-                unitSystem: _unitSystem,
-                isSaving: controller.isLoading,
-                onPickImage: _pickImage,
-                onGenderChanged: (value) => setState(() => _gender = value),
-                onGenderVisibleChanged: (value) =>
-                    setState(() => _genderVisible = value),
-                onBirthDateChanged: (value) =>
-                    setState(() => _birthDate = value),
-                onUnitSystemChanged: (value) =>
-                    setState(() => _unitSystem = value),
-                onSave: _saveProfile,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 基本資料表單（刪除帳號由外層控制位置）
+                  ProfileFormContent(
+                    formKey: _formKey,
+                    isFirstTimeSetup: widget.isFirstTimeSetup,
+                    isOAuthUser: controller.isOAuthUser,
+                    displayNameController: _displayNameController,
+                    nicknameController: _nicknameController,
+                    heightController: _heightController,
+                    weightController: _weightController,
+                    bioController: _bioController,
+                    photoURL: controller.userProfile?.photoURL,
+                    avatarFile: _avatarFile,
+                    gender: _gender,
+                    genderVisible: _genderVisible,
+                    birthDate: _birthDate,
+                    unitSystem: _unitSystem,
+                    isSaving: controller.isLoading,
+                    onPickImage: _pickImage,
+                    onGenderChanged: (value) => setState(() => _gender = value),
+                    onGenderVisibleChanged: (value) =>
+                        setState(() => _genderVisible = value),
+                    onBirthDateChanged: (value) =>
+                        setState(() => _birthDate = value),
+                    onUnitSystemChanged: (value) =>
+                        setState(() => _unitSystem = value),
+                    onSave: _saveProfile,
+                    showDeleteAccount: false, // 刪除帳號移到最後
+                  ),
+
+                  // ⭐ v2.9: 教練設定區塊（僅非首次設置時顯示）
+                  if (!widget.isFirstTimeSetup) ...[
+                    const SizedBox(height: 32),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    Text(
+                      '教練功能',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '開啟教練模式以使用教練中心功能',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 教練模式開關
+                    SwitchListTile(
+                      title: const Text('教練模式'),
+                      subtitle: const Text('開啟後可在課程頁面看到教練中心'),
+                      value: controller.userProfile?.isCoach ?? false,
+                      onChanged: (value) async {
+                        final success = await controller.toggleCoachRole(value);
+                        if (mounted && success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(value ? '已開啟教練模式' : '已關閉教練模式'),
+                            ),
+                          );
+                          // 首次開啟教練模式時引導填寫教練檔案
+                          if (value && mounted) {
+                            _promptCoachProfileSetup(context);
+                          }
+                        }
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+
+                    // 教練公開檔案入口（僅教練可見）
+                    if (controller.userProfile?.isCoach == true) ...[
+                      const SizedBox(height: 8),
+                      ListTile(
+                        leading: Icon(
+                          Icons.badge_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        title: const Text('教練公開檔案'),
+                        subtitle: const Text('管理您的專業資訊與專長'),
+                        trailing: const Icon(Icons.chevron_right),
+                        contentPadding: EdgeInsets.zero,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const CoachProfileFormPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+
+                    // 刪除帳號區塊（放在最後）
+                    const SizedBox(height: 32),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    Text(
+                      '危險區域',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '刪除帳號後，您的訓練記錄將被永久刪除且無法復原',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    const ProfileDeleteAccountButton(),
+                    const SizedBox(height: 32),
+                  ],
+                ],
               ),
             );
           },

@@ -1,6 +1,6 @@
 ---
 description: "StrengthWise 專案的核心 AI 人格、認知立場與溝通協議。適用於所有 Agent 交互。"
-globs: "*"
+globs: *
 alwaysApply: true
 ---
 
@@ -49,6 +49,8 @@ alwaysApply: true
 2. **不使用 dynamic** - 除非絕對必要且有詳細註解
 3. **不直接操作 Supabase** - 必須透過 Service Interface
 4. **不硬編碼** - 顏色、尺寸、字串都要使用常量或主題
+5. **不主動執行 App** - 需要執行時提示用戶手動執行
+6. **不主動上傳 Git** - 用戶明確要求時才執行
 </critical>
 
 ## 📚 文檔參考

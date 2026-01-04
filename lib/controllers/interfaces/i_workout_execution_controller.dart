@@ -48,9 +48,13 @@ abstract class IWorkoutExecutionController {
   /// 檢查是否可以修改訓練
   bool canModify();
   
-  /// 檢查是否可以編輯（新增/刪除動作、調整重量組數）
+  /// 檢查是否可以編輯（修改重量/次數/新增動作/新增組數）
   /// 過去的訓練不能編輯，今天和未來的可以編輯
   bool canEdit();
+  
+  /// ⭐ v2.9: 檢查是否可以刪除（刪除動作/刪除計畫）
+  /// 只有創建者可以刪除，學員不能刪除教練創建的
+  bool canDelete();
   
   /// 檢查是否可以勾選完成（只有今天的訓練可以勾選完成）
   bool canToggleCompletion();
@@ -89,6 +93,9 @@ abstract class IWorkoutExecutionController {
   /// 新增組數到指定運動
   Future<void> addSetToExercise(int exerciseIndex, {BuildContext? context});
   
+  /// ⭐ v2.9.1 TRN-2: 減少組數（只有創建者可以）
+  Future<void> removeSetFromExercise(int exerciseIndex, {BuildContext? context});
+  
   /// 刪除訓練動作
   Future<void> deleteExercise(int exerciseIndex, {BuildContext? context});
   
@@ -109,6 +116,60 @@ abstract class IWorkoutExecutionController {
   /// 當教練查看學員的訓練時，可以編輯（添加動作），但不能幫學員打勾
   bool isCoachViewingTrainee();
   
+  /// ⭐ v2.9: 檢查是否正在查看別人創建的計畫
+  /// 
+  /// 當前用戶不是創建者時，不能刪除動作或計畫
+  bool isViewingOthersCreatedPlan();
+  
+  /// ⭐ v2.9.1: 是否應該顯示計時器 UI
+  /// 
+  /// 只有「今天」且「不是教練查看學員」的情況才顯示計時功能
+  /// - 過去的訓練：不顯示（只能查看記錄）
+  /// - 未來的訓練：不顯示（只能規劃）
+  /// - 教練查看學員訓練：不顯示（只能安排計畫）
+  bool shouldShowTimerUI();
+  
   /// 檢查所有運動是否已完成
   bool allExercisesCompleted();
+  
+  // =============================================
+  // ⭐ v2.9.1: 訓練狀態追蹤
+  // =============================================
+  
+  /// 獲取訓練狀態：pending | in_progress | paused | completed
+  String get trainingStatus;
+  
+  /// 獲取累計訓練秒數（不含暫停）
+  int get elapsedSeconds;
+  
+  /// 獲取實際開始時間
+  DateTime? get actualStartTime;
+  
+  /// 是否處於準備模式（pending）
+  bool get isPending;
+  
+  /// 是否正在進行中
+  bool get isInProgress;
+  
+  /// 是否已暫停
+  bool get isPaused;
+  
+  /// 是否已完成
+  bool get isCompleted;
+  
+  /// 開始訓練（pending → in_progress）
+  Future<void> startTraining();
+  
+  /// 暫停訓練（in_progress → paused）
+  /// 離開頁面時自動呼叫
+  Future<void> pauseTraining();
+  
+  /// 繼續訓練（paused → in_progress）
+  Future<void> resumeTraining();
+  
+  /// 完成訓練（in_progress → completed）
+  Future<bool> completeTraining({BuildContext? context});
+  
+  /// 更新經過時間（每秒呼叫，僅在 in_progress 時有效）
+  void tickElapsedTime();
 } 

@@ -40,18 +40,30 @@ class WorkoutRecordFactory {
     if (json['training_time_range'] != null) {
       final timeRange =
           DateTimeUtils.parseTstzRange(json['training_time_range'] as String);
-      trainingTime = timeRange['start'];      // ⭐ 已經是本地時間
-      trainingEndTime = timeRange['end'];     // ⭐ 已經是本地時間
+      trainingTime = timeRange['start']; // ⭐ 已經是本地時間
+      trainingEndTime = timeRange['end']; // ⭐ 已經是本地時間
     }
     // 向後兼容：舊數據只有 training_time
     else if (json['training_time'] != null) {
-      trainingTime = DateTimeUtils.parseIsoTimestamp(json['training_time']);  // ⭐ 統一工具類
+      trainingTime =
+          DateTimeUtils.parseIsoTimestamp(json['training_time']); // ⭐ 統一工具類
       // 如果沒有 end time，假設訓練 1 小時
       trainingEndTime = trainingTime.add(const Duration(hours: 1));
     }
 
     // exerciseRecords 從 exercises JSONB 欄位轉換
     final exercisesJson = json['exercises'] as List<dynamic>? ?? [];
+
+    // ⭐ v2.9.1: 解析訓練狀態追蹤欄位
+    DateTime? actualStartTime;
+    DateTime? actualEndTime;
+    if (json['actual_start_time'] != null) {
+      actualStartTime =
+          DateTimeUtils.parseIsoTimestamp(json['actual_start_time']);
+    }
+    if (json['actual_end_time'] != null) {
+      actualEndTime = DateTimeUtils.parseIsoTimestamp(json['actual_end_time']);
+    }
 
     return WorkoutRecord(
       id: json['id'] ?? '',
@@ -61,9 +73,10 @@ class WorkoutRecordFactory {
       creatorId: json['creator_id'], // Phase 4C
       title: json['title'] ?? '訓練記錄',
       date: json['completed_date'] != null
-          ? DateTimeUtils.parseIsoTimestamp(json['completed_date'])  // ⭐ 統一工具類
+          ? DateTimeUtils.parseIsoTimestamp(json['completed_date']) // ⭐ 統一工具類
           : (json['scheduled_date'] != null
-              ? DateTimeUtils.parseIsoTimestamp(json['scheduled_date'])  // ⭐ 統一工具類
+              ? DateTimeUtils.parseIsoTimestamp(
+                  json['scheduled_date']) // ⭐ 統一工具類
               : DateTime.now()),
       exerciseRecords: exercisesJson
           .map((e) => ExerciseRecord.fromJson(e as Map<String, dynamic>))
@@ -71,10 +84,15 @@ class WorkoutRecordFactory {
       notes: json['note'] ?? '',
       completed: json['completed'] ?? false,
       createdAt: json['created_at'] != null
-          ? DateTimeUtils.parseIsoTimestamp(json['created_at'])  // ⭐ 統一工具類
+          ? DateTimeUtils.parseIsoTimestamp(json['created_at']) // ⭐ 統一工具類
           : DateTime.now(),
       trainingTime: trainingTime,
-      trainingEndTime: trainingEndTime, // ⭐ 新增
+      trainingEndTime: trainingEndTime,
+      // ⭐ v2.9.1: 訓練狀態追蹤
+      actualStartTime: actualStartTime,
+      actualEndTime: actualEndTime,
+      elapsedSeconds: json['elapsed_seconds'] as int? ?? 0,
+      trainingStatus: json['training_status'] as String? ?? 'pending',
     );
   }
 
@@ -93,7 +111,7 @@ class WorkoutRecordFactory {
       if (timeData is DateTime) {
         trainingTime = timeData;
       } else if (timeData is String) {
-        trainingTime = DateTimeUtils.parseIsoTimestamp(timeData);  // ⭐ 統一工具類
+        trainingTime = DateTimeUtils.parseIsoTimestamp(timeData); // ⭐ 統一工具類
       }
     } else if (planData['trainingHour'] != null) {
       final date = DateTime.now();
@@ -131,6 +149,11 @@ class WorkoutRecordFactory {
       'completed': record.completed,
       'createdAt': record.createdAt.millisecondsSinceEpoch,
       'trainingTime': record.trainingTime?.millisecondsSinceEpoch,
+      // ⭐ v2.9.1: 訓練狀態追蹤
+      'actualStartTime': record.actualStartTime?.millisecondsSinceEpoch,
+      'actualEndTime': record.actualEndTime?.millisecondsSinceEpoch,
+      'elapsedSeconds': record.elapsedSeconds,
+      'trainingStatus': record.trainingStatus,
     };
   }
 }

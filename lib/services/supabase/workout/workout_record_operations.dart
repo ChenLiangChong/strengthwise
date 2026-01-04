@@ -239,11 +239,13 @@ class WorkoutRecordOperations {
       _logDebug('從 workout_plans 獲取記錄: $recordId');
 
       // ⚡ 優化：明確指定所有需要的欄位（避免 SELECT *）
+      // ⭐ v2.9.1: 新增 actual_start_time, actual_end_time, elapsed_seconds, training_status
       final response = await _supabase
           .from('workout_plans')
           .select(
               'id, user_id, trainee_id, creator_id, title, scheduled_date, completed_date, completed, '
               'total_volume, total_exercises, total_sets, plan_type, exercises, note, training_time, '
+              'actual_start_time, actual_end_time, elapsed_seconds, training_status, '
               'created_at, updated_at')
           .eq('id', recordId)
           .single();
@@ -317,6 +319,18 @@ class WorkoutRecordOperations {
       recordData['training_time'] =
           DateTimeUtils.formatToUtcIso(record.date); // ⭐ 統一工具類
 
+      // ⭐ v2.9.1: 訓練狀態追蹤欄位
+      if (record.actualStartTime != null) {
+        recordData['actual_start_time'] =
+            DateTimeUtils.formatToUtcIso(record.actualStartTime!);
+      }
+      if (record.actualEndTime != null) {
+        recordData['actual_end_time'] =
+            DateTimeUtils.formatToUtcIso(record.actualEndTime!);
+      }
+      recordData['elapsed_seconds'] = record.elapsedSeconds;
+      recordData['training_status'] = record.trainingStatus;
+
       final response = await _supabase
           .from('workout_plans')
           .insert(recordData)
@@ -372,23 +386,37 @@ class WorkoutRecordOperations {
         'note': record.notes,
       };
 
-      // ⭐ v2.1: 處理訓練時間範圍（統一使用 record.date 作為開始時間）
+      // ⭐ v2.1: 處理訓練時間範圍
+      // ⚠️ 注意：必須使用 trainingTime（原始開始時間），而非 date（可能是 completed_date）
+      final rangeStart = record.trainingTime ?? record.date;
       if (record.trainingEndTime != null) {
         // 有結束時間，使用 TSTZRANGE
         recordData['training_time_range'] = DateTimeUtils.formatToTstzRange(
-          record.date, // ⭐ 統一：scheduled_date = training_time_range 開始時間
+          rangeStart,
           record.trainingEndTime!,
         );
       } else {
         // 沒有結束時間，假設 1 小時
         recordData['training_time_range'] = DateTimeUtils.formatToTstzRange(
-          record.date,
-          record.date.add(const Duration(hours: 1)),
+          rangeStart,
+          rangeStart.add(const Duration(hours: 1)),
         );
       }
 
       // ⭐ 向後兼容：保留舊的 training_time 欄位（等於 scheduled_date）
       recordData['training_time'] = DateTimeUtils.formatToUtcIso(record.date);
+
+      // ⭐ v2.9.1: 訓練狀態追蹤欄位
+      if (record.actualStartTime != null) {
+        recordData['actual_start_time'] =
+            DateTimeUtils.formatToUtcIso(record.actualStartTime!);
+      }
+      if (record.actualEndTime != null) {
+        recordData['actual_end_time'] =
+            DateTimeUtils.formatToUtcIso(record.actualEndTime!);
+      }
+      recordData['elapsed_seconds'] = record.elapsedSeconds;
+      recordData['training_status'] = record.trainingStatus;
 
       await _supabase
           .from('workout_plans')

@@ -1,147 +1,68 @@
 ---
 description: "狀態管理規範：Provider、ChangeNotifier、GetIt 使用指南。適用於 Controller 和 Service 層。"
-globs: "lib/controllers/**/*.dart, lib/services/**/*.dart"
+globs: lib/controllers/**/*.dart,lib/services/**/*.dart
 alwaysApply: false
 ---
 
 # 狀態管理規範
 
-## 🔄 Provider + ChangeNotifier
+<critical>
+1. Controller 必須繼承 `ChangeNotifier`
+2. 狀態變更後必須呼叫 `notifyListeners()`
+3. 禁止在 `build()` 中呼叫異步方法
+4. 禁止直接修改列表（必須重新賦值）
+</critical>
 
-### Controller 基本結構
+## ✅ 正確做法
 
 ```dart
+// Controller 結構
 class WorkoutController extends ChangeNotifier {
   final IWorkoutService _workoutService;
-  final IErrorHandlingService _errorService;
-  
-  // 狀態
-  bool _isLoading = false;
-  String? _errorMessage;
   List<WorkoutRecord> _records = [];
   
-  // Getters
-  bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage;
   List<WorkoutRecord> get records => _records;
   
-  // 建構函式：透過 Interface 注入
-  WorkoutController({
-    IWorkoutService? workoutService,
-    IErrorHandlingService? errorService,
-  })  : _workoutService = workoutService ?? serviceLocator<IWorkoutService>(),
-        _errorService = errorService ?? serviceLocator<IErrorHandlingService>();
-  
-  // 更新狀態（必須呼叫 notifyListeners）
   Future<void> loadRecords() async {
-    _isLoading = true;
-    notifyListeners();  // ← 必須
-    
-    try {
-      _records = await _workoutService.getRecords();
-      _errorMessage = null;
-    } catch (e) {
-      _errorService.logError('載入失敗: $e', type: 'WorkoutController');
-      _errorMessage = '載入訓練記錄失敗';
-    } finally {
-      _isLoading = false;
-      notifyListeners();  // ← 必須
-    }
+    _records = await _workoutService.getRecords();
+    notifyListeners();  // 必須
+  }
+  
+  void addRecord(WorkoutRecord record) {
+    _records = [..._records, record];  // 重新賦值
+    notifyListeners();
   }
 }
-```
 
-### UI 層使用
-
-```dart
-// ✅ 使用 Consumer 監聽變化
+// UI 使用
 Consumer<WorkoutController>(
   builder: (context, controller, child) {
-    if (controller.isLoading) {
-      return const CircularProgressIndicator();
-    }
     return ListView.builder(
       itemCount: controller.records.length,
       itemBuilder: (context, index) => RecordCard(controller.records[index]),
     );
   },
 )
-
-// ✅ 使用 context.read 執行一次性操作
-ElevatedButton(
-  onPressed: () => context.read<WorkoutController>().loadRecords(),
-  child: const Text('重新載入'),
-)
 ```
 
-## 📦 GetIt Service Locator
-
-### 註冊服務
+## ❌ 禁止做法
 
 ```dart
-// lib/services/service_locator.dart
-Future<void> setupServiceLocator() async {
-  // Singleton（立即創建）
-  serviceLocator.registerSingleton<IErrorHandlingService>(
-    ErrorHandlingService(),
-  );
-  
-  // LazySingleton（首次使用時創建）
-  serviceLocator.registerLazySingleton<IWorkoutService>(
-    () => WorkoutServiceSupabase(),
-  );
-  
-  // Factory（每次請求創建新實例）
-  serviceLocator.registerFactory<IWorkoutController>(
-    () => WorkoutController(),
-  );
-}
-```
+// 忘記 notifyListeners
+_data = newData;  // UI 不會更新
 
-### 使用服務
+// 直接修改列表
+_records.add(newRecord);  // 不會觸發更新
 
-```dart
-// ✅ 正確：透過 Interface
-final service = serviceLocator<IWorkoutService>();
-
-// ✅ 檢查是否已註冊
-if (serviceLocator.isRegistered<IWorkoutService>()) {
-  // ...
-}
-```
-
-## ⚠️ 常見錯誤
-
-```dart
-// ❌ 忘記呼叫 notifyListeners()
-_data = newData;
-// 需要加上：notifyListeners();
-
-// ❌ 直接修改列表（不會觸發更新）
-_records.add(newRecord);
-// 應該：_records = [..._records, newRecord];
-
-// ❌ 在 build 中呼叫異步方法
-@override
+// build 中呼叫異步
 Widget build(BuildContext context) {
-  controller.loadData();  // 錯誤！會無限循環
-  // ...
+  controller.loadData();  // 無限循環！
 }
 ```
 
-## 🔧 錯誤處理
+## 📦 GetIt 註冊
 
-```dart
-try {
-  await _workoutService.createRecord(record);
-} catch (e) {
-  // 1. 記錄到 ErrorHandlingService
-  _errorService.logError('建立記錄失敗: $e', type: 'WorkoutController');
-  
-  // 2. 設置用戶友善的錯誤訊息
-  _errorMessage = '建立訓練記錄失敗，請稍後再試';
-  
-  // 3. 通知 UI
-  notifyListeners();
-}
-```
+| 層級 | 方式 | 用途 |
+|------|------|------|
+| Service | `LazySingleton` | 全局共享 |
+| Controller | `Factory` | 每次新實例 |

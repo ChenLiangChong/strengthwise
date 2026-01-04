@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:strengthwise/models/health_assessment_models.dart';
+import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
 import 'package:strengthwise/services/interfaces/i_health_assessment_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
+import 'package:strengthwise/views/pages/profile/health_assessment_detail_page.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/health_assessment_page.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/widgets/health_assessment_summary_card.dart';
 import 'package:strengthwise/views/pages/relationships/role_client/widgets/empty_my_health_assessment_card.dart';
@@ -110,8 +111,14 @@ class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
               HealthAssessmentSummaryCard(
                 assessment: _healthAssessment!,
                 onViewFull: () {
-                  // TODO: 實作查看完整報告頁面（未來功能）
-                  NotificationUtils.showInfo(context, '查看完整報告功能開發中');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HealthAssessmentDetailPage(
+                        assessment: _healthAssessment!,
+                      ),
+                    ),
+                  );
                 },
                 onEdit: _showHealthAssessmentEditor,
                 isClientView: true, // ⭐ 學員視角（隱藏教練備註、設定按鈕）

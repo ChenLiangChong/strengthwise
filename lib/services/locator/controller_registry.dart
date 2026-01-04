@@ -46,6 +46,8 @@ import '../../controllers/client_management_controller.dart';
 import '../../controllers/coach_management_controller.dart';
 import '../../controllers/delete_account_controller.dart';
 import '../../controllers/profile_controller.dart';
+import '../../controllers/coach_profile_controller.dart';
+import '../interfaces/i_coach_profile_service.dart';
 
 /// 控制器註冊器
 /// 
@@ -72,6 +74,7 @@ class ControllerRegistry {
     _registerCoachManagementController(serviceLocator);
     _registerDeleteAccountController(serviceLocator);
     _registerProfileController(serviceLocator);
+    _registerCoachProfileController(serviceLocator);
   }
 
   /// 註冊身份驗證控制器
@@ -300,6 +303,18 @@ class ControllerRegistry {
       serviceLocator.registerFactory<ProfileController>(
         () => ProfileController(
           userService: serviceLocator<IUserService>(),
+          authService: serviceLocator<IAuthService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊教練公開檔案控制器 ⭐ v2.9
+  static void _registerCoachProfileController(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<CoachProfileController>()) {
+      serviceLocator.registerFactory<CoachProfileController>(
+        () => CoachProfileController(
+          profileService: serviceLocator<ICoachProfileService>(),
           authService: serviceLocator<IAuthService>(),
         ),
       );

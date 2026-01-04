@@ -431,30 +431,19 @@ class CoachingRelationshipController extends ChangeNotifier {
         return false;
       }
 
-      // ✅ 驗證對方用戶是否存在於 public.users
-      final scannedUser = await _userService.getUserProfile(scannedUserId);
-      if (scannedUser == null) {
-        _errorMessage = '對方用戶不存在或尚未完成註冊\n請確認對方已完成首次登入';
+      // ⭐ 使用 RPC 函數：在資料庫層面完成驗證和綁定
+      final result = await _relationshipService.bindByQrCode(
+        scannedUserId: scannedUserId,
+        myUserId: currentUser.uid,
+        myRole: myRole,
+      );
+
+      if (!result.success) {
+        _errorMessage = result.error ?? '綁定失敗';
         notifyListeners();
+        _setLoading(false);
         return false;
       }
-
-      // 創建關係
-      String coachId, traineeId;
-      if (myRole == 'coach') {
-        coachId = currentUser.uid;
-        traineeId = scannedUserId;
-      } else {
-        coachId = scannedUserId;
-        traineeId = currentUser.uid;
-      }
-
-      // 創建新關係（直接設為 active，QR Code 綁定無需審核）
-      await _relationshipService.createRelationship(
-        coachId,
-        traineeId,
-        status: 'active',
-      );
 
       _clearError();
       _setLoading(false);
@@ -528,27 +517,18 @@ class CoachingRelationshipController extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      // 驗證並使用邀請碼（返回教練 ID）
-      final coachId = await _inviteCodeService.validateAndUseCode(
+      // ⭐ 使用 RPC 函數：在資料庫層面完成所有驗證和綁定
+      final result = await _inviteCodeService.bindCoachByInviteCode(
         code: code,
         traineeId: traineeId,
       );
 
-      // ✅ 驗證教練是否存在於 public.users
-      final coachUser = await _userService.getUserProfile(coachId);
-      if (coachUser == null) {
-        _errorMessage = '教練用戶不存在或尚未完成註冊\n請確認教練已完成首次登入';
+      if (!result.success) {
+        _errorMessage = result.error ?? '綁定失敗';
         notifyListeners();
         _setLoading(false);
         return false;
       }
-
-      // 創建新關係（直接設為 active，邀請碼綁定無需審核）
-      await _relationshipService.createRelationship(
-        coachId,
-        traineeId,
-        status: 'active',
-      );
 
       _clearError();
       _setLoading(false);

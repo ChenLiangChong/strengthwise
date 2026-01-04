@@ -1,76 +1,44 @@
 ---
 description: "Python 工具腳本使用指南：資料庫管理、測試資料生成、統計重置。"
-globs: "scripts/**/*.py"
+globs: scripts/**/*.py
 alwaysApply: false
 ---
 
 # Python 工具腳本
 
-## 🛠️ 核心工具（6 個）
+<critical>
+1. DELETE 不會自動清理統計表，需手動執行 `clear_summary_tables.py`
+2. 時區：Python 用 `Asia/Taipei`，資料庫存 UTC
+</critical>
 
-| 腳本 | 用途 | 命令 |
-|------|------|------|
-| `generate_training_data_with_timezone.py` | 生成假訓練資料 | `python scripts/tools/generate_training_data_with_timezone.py <user_uuid>` |
-| `delete_all_workouts.py` | 刪除訓練記錄 | `python scripts/tools/delete_all_workouts.py <user_uuid> -y` |
-| `clear_summary_tables.py` | 清空統計表 | `python scripts/tools/clear_summary_tables.py <user_uuid>` |
-| `reset_statistics.py` | 重置統計資料 | `python scripts/tools/reset_statistics.py <user_uuid>` |
-| `download_complete_database.py` | 下載完整資料庫 | `python scripts/tools/download_complete_database.py` |
-| `generate_database_structure_doc.py` | 生成資料庫文檔 | `python scripts/tools/generate_database_structure_doc.py` |
+## 🛠️ 核心工具
 
-## 📊 常用工作流程
+| 腳本 | 用途 |
+|------|------|
+| `generate_training_data_with_timezone.py` | 生成假訓練資料 |
+| `delete_all_workouts.py` | 刪除訓練記錄 |
+| `clear_summary_tables.py` | 清空統計表 |
+| `reset_statistics.py` | 重置統計資料 |
+| `download_complete_database.py` | 下載完整資料庫 |
 
-### 生成測試資料
-
-```bash
-# 1. 刪除舊資料
-python scripts/tools/delete_all_workouts.py <user_uuid> -y
-
-# 2. 清空統計表
-python scripts/tools/clear_summary_tables.py <user_uuid>
-
-# 3. 生成一個月假資料
-python scripts/tools/generate_training_data_with_timezone.py <user_uuid>
-```
-
-### 重置統計
+## 📊 常用流程
 
 ```bash
-python scripts/tools/reset_statistics.py <user_uuid>
+# 生成測試資料
+python scripts/tools/delete_all_workouts.py <uuid> -y
+python scripts/tools/clear_summary_tables.py <uuid>
+python scripts/tools/generate_training_data_with_timezone.py <uuid>
+
+# 重置統計
+python scripts/tools/reset_statistics.py <uuid>
 ```
 
 ## 🧪 測試帳號
 
-| 角色 | Email | UUID |
-|------|-------|------|
-| 教練 | charlie19960414@gmail.com | `d1798674-0b96-4c47-a7c7-ee20a5372a03` |
-| 學員 | charlie8519960414@gmail.com | `1d7f5ed6-7759-4abc-9832-9db791e75e4f` |
-
-## ⚙️ 環境設置
-
-```bash
-# 安裝依賴
-pip install supabase-py pandas python-dotenv
-
-# 配置環境變數（專案根目錄 .env）
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
-
-## ⏰ 時區處理
-
-- **Python 腳本**：使用 `Asia/Taipei` (UTC+8)
-- **資料庫儲存**：統一使用 UTC
-- **App 顯示**：自動轉為本地時間
-
-## ⚠️ 重要提醒
-
-### 資料庫觸發器
-
-- ✅ `INSERT workout_plans` → 自動更新統計
-- ❌ `DELETE workout_plans` → 需手動執行 `clear_summary_tables.py`
-
-### 視圖說明
-
-`personal_records_top_by_body_part` 是**視圖**，不需要手動清空
+| 角色 | UUID |
+|------|------|
+| 教練 | `d1798674-0b96-4c47-a7c7-ee20a5372a03` |
+| 學員 | `1d7f5ed6-7759-4abc-9832-9db791e75e4f` |
+| 測試 | `87e64969-90f6-4c8c-b8bc-8828dfa8429a` |
 
 詳見：`@scripts/README.md`

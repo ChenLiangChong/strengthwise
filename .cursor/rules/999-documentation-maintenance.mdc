@@ -1,121 +1,82 @@
 ---
-description: "文檔維護規則：當功能變更時如何同步更新相關文檔。適用於任何代碼修改後的文檔更新。"
+description: "文檔維護通用規則：規則與文檔的分工、各領域規則索引。"
 globs: "*"
 alwaysApply: true
 ---
 
-# 文檔維護規則
-
-## 📋 核心原則
+# 文檔維護通用規則
 
 <critical>
-當完成功能開發或修改代碼後，必須檢查並同步以下文檔
+1. **規則權威來源**：`.cursor/rules/*.mdc` 是硬性規定的唯一來源
+2. **文檔定位**：`docs/*.md` 是說明文檔，提供背景和範例
+3. **不重複**：規則檔只包含規定，詳細說明指向 docs
 </critical>
 
-## 🔄 文檔同步策略
-
-### 層級關係
+## 📐 分工原則
 
 ```
-.cursor/rules/*.mdc    ← 精簡規則（必須遵守的硬性規定）
-        ↓ 指向
-docs/*.md              ← 詳細文檔（完整說明、範例、背景）
+.cursor/rules/*.mdc          docs/*.md
+─────────────────           ─────────────
+硬性規定（禁止、必須）        詳細說明、範例
+Glob 觸發條件               歷史背景、決策原因
+簡短代碼範例                完整使用案例
+更新頻率：低                更新頻率：高
 ```
 
-**原則**：
-- `.mdc` 規則檔：只包含「核心規則」和「禁止事項」
-- `docs/*.md`：包含完整說明、歷史背景、詳細範例
-- **不重複**：規則檔用 `詳見：@docs/xxx.md` 指向詳細內容
+## 📝 何時更新什麼
 
-## 📝 功能開發後必須更新的文檔
-
-### 1. 版本變更時
-
-| 變更類型 | 必須更新 |
+| 變更類型 | 更新位置 |
 |---------|---------|
-| 新增功能 | `docs/DEVELOPMENT_STATUS.md`（版本記錄）|
-| 資料庫變更 | `docs/DATABASE_SUPABASE.md` + `migrations/README.md` |
-| UI 重大變更 | `docs/UI_UX_GUIDELINES.md` |
-| API/架構變更 | `docs/PROJECT_OVERVIEW.md` |
+| 新增功能 | `docs/DEVELOPMENT_STATUS.md` |
+| 新增/修改表格 | → `920-docs-database.mdc` 規範 |
+| UI 設計變更 | → `930-docs-ui.mdc` 規範 |
+| 版本歸檔 | → `940-docs-development.mdc` 規範 |
+| 新增禁止/必須規定 | `.cursor/rules/*.mdc` |
+| 功能說明/範例擴充 | `docs/*.md` |
 
-### 2. 同步檢查清單
+## 📚 各領域文檔規則索引
 
-完成功能後，依序檢查：
+| 領域 | 規則檔案 | 相關文檔 |
+|------|---------|---------|
+| 資料庫 | `920-docs-database.mdc` | DATABASE_SUPABASE.md, DATABASE_HISTORY.md |
+| UI/UX | `930-docs-ui.mdc` | UI_DESIGN_SYSTEM.md, UI_DEVELOPER_GUIDE.md |
+| 開發狀態 | `940-docs-development.mdc` | DEVELOPMENT_STATUS.md, VERSION_HISTORY.md |
+| SaaS 路線圖 | `950-docs-saas.mdc` | SAAS_PLATFORM_ROADMAP.md, SAAS_HISTORY.md |
+| 健康評估 | `960-docs-health-assessment.mdc` | HEALTH_ASSESSMENT_SYSTEM.md |
+| 文檔索引 | `970-docs-readme.mdc` | docs/README.md |
+| 專案總覽 | `980-docs-project-overview.mdc` | PROJECT_OVERVIEW.md |
 
-```
-□ DEVELOPMENT_STATUS.md - 更新版本號和完成項目
-□ 相關功能文檔 - 如 HEALTH_ASSESSMENT_SYSTEM.md
-□ AGENTS.md - 如果修改了開發規範
-□ .cursor/rules/*.mdc - 只有「規則」變更時才更新
-```
+---
 
-### 3. 何時需要更新 .cursor/rules
-
-| 需要更新 | 不需要更新 |
-|---------|-----------|
-| 新增禁止事項 | 只是功能說明 |
-| 修改強制規則 | 新增使用範例 |
-| 新增技術約束 | 背景說明、歷史記錄 |
-| Glob 路徑變更 | 文檔內容擴充 |
-
-## 🎯 更新範例
-
-### 場景 1：新增資料庫表格
+## ✅ 完成功能後檢查清單
 
 ```
-1. 執行 Migration
-2. 更新 docs/DATABASE_SUPABASE.md（新增表格說明）
-3. 更新 migrations/README.md（版本對應）
-4. 更新 docs/DEVELOPMENT_STATUS.md（版本記錄）
-5. 【不需要】更新 .cursor/rules/200-database-supabase.mdc
-   （除非有新的硬性規則）
+□ docs/DEVELOPMENT_STATUS.md - 更新版本號
+□ 相關功能文檔 - 如需要
+□ .cursor/rules/*.mdc - 只有「規則變更」時才更新
+□ 測試完成後 - 歸檔到 VERSION_HISTORY.md
 ```
 
-### 場景 2：新增強制規則
+---
 
-```
-例如：新規定「所有 API 必須有超時設定」
+## 🔄 更新文檔時的檢查流程
 
-1. 更新 .cursor/rules/100-flutter-dart-standards.mdc（新增規則）
-2. 更新 AGENTS.md（同步核心規則）
-3. 更新 docs/PROJECT_OVERVIEW.md（如需要）
-```
+當用戶要求更新 `DEVELOPMENT_STATUS.md` 時：
 
-### 場景 3：新增功能模組
+<critical>
+1. **回顧本次對話**：列出所有代碼/SQL/UI 變更
+2. **判斷影響範圍**：根據變更類型確定需要同步的文檔
+3. **列出清單**：請用戶確認是否有遺漏
+3. **一次性更新**：更新所有相關文檔
+4. **列出清單**：告知用戶更新了哪些文檔
+</critical>
 
-```
-例如：新增「通知系統」
+### 變更類型對應
 
-1. 新增 docs/NOTIFICATION_SYSTEM.md（詳細文檔）
-2. 新增 .cursor/rules/920-domain-notifications.mdc（如有特殊規則）
-3. 更新 docs/DEVELOPMENT_STATUS.md（版本記錄）
-4. 更新 900-documentation-index.mdc（文檔索引）
-```
-
-## ⚠️ 避免重複維護
-
-### 錯誤示範
-
-```
-# .cursor/rules/200-database-supabase.mdc
-（包含 50 行詳細的表格說明 ← 與 docs/ 重複）
-```
-
-### 正確示範
-
-```
-# .cursor/rules/200-database-supabase.mdc
-（只有 5 條核心規則 + 指向 docs/ 的連結）
-
-詳見：`@docs/DATABASE_SUPABASE.md`
-```
-
-## 🔧 自動提醒
-
-當我（AI）完成以下操作時，會主動提醒更新文檔：
-
-1. 新增 Model / Service / Controller
-2. 修改資料庫結構
-3. 新增或修改 RLS 策略
-4. 重大 UI 重構
-5. 新增功能模組
+| 變更類型 | 需要同步 |
+|---------|---------|
+| 新增 SQL migration | migrations/README.md |
+| 新增/修改表格 | DATABASE_SUPABASE.md |
+| UI 組件變更 | UI_DEVELOPER_GUIDE.md |
+| 版本號變更 | PROJECT_OVERVIEW.md、AGENTS.md |
+| 功能測試完成 | VERSION_HISTORY.md（歸檔）|

@@ -13,12 +13,18 @@ class WorkoutExecutionAutoSave {
   }) : _workoutService = workoutService;
   
   /// 自動保存打勾狀態（不顯示「完成訓練」提示）
+  /// ⭐ v2.9.1: 新增訓練狀態追蹤欄位
   Future<bool> saveCheckboxState({
     required String workoutRecordId,
     required String userId,
     required List<ExerciseRecord> exerciseRecords,
     required String notes,
     required bool overallCompleted,
+    // ⭐ v2.9.1: 訓練狀態追蹤欄位
+    String? trainingStatus,
+    int? elapsedSeconds,
+    DateTime? actualStartTime,
+    DateTime? actualEndTime,
   }) async {
     try {
       if (kDebugMode) {
@@ -30,10 +36,13 @@ class WorkoutExecutionAutoSave {
       
       if (existingRecord != null) {
         // 更新記錄
+        // ⭐ v2.9.1: 保留訓練狀態追蹤欄位（優先使用傳入值，否則保留舊值）
         final updatedRecord = WorkoutRecord(
           id: workoutRecordId,
           workoutPlanId: existingRecord.workoutPlanId,
           userId: userId,
+          traineeId: existingRecord.traineeId,  // ⭐ 保留教練學員關係
+          creatorId: existingRecord.creatorId,  // ⭐ 保留創建者 ID
           title: existingRecord.title,
           date: existingRecord.date,
           exerciseRecords: exerciseRecords,
@@ -41,6 +50,12 @@ class WorkoutExecutionAutoSave {
           completed: overallCompleted,
           createdAt: existingRecord.createdAt,
           trainingTime: existingRecord.trainingTime,
+          trainingEndTime: existingRecord.trainingEndTime,
+          // ⭐ v2.9.1: 訓練狀態追蹤（優先傳入值，否則保留舊值）
+          trainingStatus: trainingStatus ?? existingRecord.trainingStatus,
+          elapsedSeconds: elapsedSeconds ?? existingRecord.elapsedSeconds,
+          actualStartTime: actualStartTime ?? existingRecord.actualStartTime,
+          actualEndTime: actualEndTime ?? existingRecord.actualEndTime,
         );
         
         await _workoutService.updateRecord(updatedRecord);

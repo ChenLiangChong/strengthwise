@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/models/coaching_relationship_model.dart';
-import 'package:strengthwise/models/health_assessment_models.dart';
+import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
 import 'package:strengthwise/models/coach_display_preferences_model.dart';
 import 'package:strengthwise/models/coach_assessment_note_model.dart';
 import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
@@ -12,6 +12,7 @@ import 'package:strengthwise/services/interfaces/i_coach_display_preferences_ser
 import 'package:strengthwise/services/interfaces/i_coach_assessment_note_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
+import 'package:strengthwise/views/pages/profile/health_assessment_detail_page.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/widgets/empty_health_assessment_card.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/widgets/health_assessment_summary_card.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/health_assessment_page.dart';
@@ -186,12 +187,13 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
 
   /// 顯示健康評估完整檢視
   Future<void> _showHealthAssessmentFull() async {
+    if (_healthAssessment == null) return;
+    
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => HealthAssessmentPage(
-          clientId: widget.client.uid,
-          clientName: widget.client.displayName ?? widget.client.email,
-          existingAssessment: _healthAssessment,
+        builder: (context) => HealthAssessmentDetailPage(
+          assessment: _healthAssessment!,
+          userName: widget.client.displayName ?? widget.client.email,
         ),
       ),
     );

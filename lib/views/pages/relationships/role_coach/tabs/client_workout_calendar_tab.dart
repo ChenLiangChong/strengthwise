@@ -412,8 +412,16 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
   }
 
   /// 訓練卡片
+  /// ⭐ v2.9.1: 添加編輯/刪除功能
   Widget _buildWorkoutCard(WorkoutRecord workout) {
     final colorScheme = Theme.of(context).colorScheme;
+    final authController = serviceLocator<IAuthController>();
+    final currentUserId = authController.user?.uid;
+    
+    // ⭐ 判斷是否可以刪除（只有創建者可以刪除，且不能是過去的訓練）
+    final isPast = workout.date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+    final isCreator = workout.creatorId == currentUserId;
+    final canDelete = isCreator && !isPast;
 
     // ⭐ v2.1: 格式化時間範圍
     String timeInfo = '';
@@ -465,9 +473,65 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
           '${workout.exerciseRecords.length} 個動作 · '
           '${workout.completed ? '已完成' : '待執行'}',
         ),
-        trailing: const Icon(Icons.chevron_right),
+        // ⭐ v2.9.1: 刪除按鈕（只有創建者可見）
+        trailing: canDelete
+            ? IconButton(
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: colorScheme.error.withOpacity(0.7),
+                ),
+                onPressed: () => _confirmDeleteWorkout(workout),
+                tooltip: '刪除訓練',
+              )
+            : null,
         onTap: () => _viewWorkout(workout),
       ),
     );
+  }
+
+  /// ⭐ v2.9.1: 確認刪除訓練
+  void _confirmDeleteWorkout(WorkoutRecord workout) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('刪除訓練'),
+        content: Text('確定要刪除「${workout.title}」嗎？此操作不能撤銷。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deleteWorkout(workout);
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('刪除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ⭐ v2.9.1: 執行刪除訓練
+  Future<void> _deleteWorkout(WorkoutRecord workout) async {
+    try {
+      final workoutService = serviceLocator<IWorkoutService>();
+      
+      await workoutService.deleteRecord(workout.id);
+      
+      if (mounted) {
+        NotificationUtils.showSuccess(context, '訓練計畫已刪除');
+        // 重新載入數據
+        _loadMonthData(_focusedDay);
+      }
+    } catch (e) {
+      if (mounted) {
+        NotificationUtils.showError(context, '刪除失敗: $e');
+      }
+    }
   }
 }

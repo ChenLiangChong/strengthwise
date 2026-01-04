@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:strengthwise/models/exercise_model.dart';
-import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_execution_controller.dart';
-import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/themes/app_theme.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
@@ -12,6 +10,7 @@ import 'package:strengthwise/views/pages/exercises/exercises_page.dart';
 import 'widgets/workout_info_card.dart';
 import 'widgets/empty_exercise_state.dart';
 import 'widgets/exercise_settings_dialog.dart';
+import 'widgets/rest_timer_widget.dart';
 
 class WorkoutExecutionPage extends StatefulWidget {
   final String workoutRecordId;
@@ -25,12 +24,9 @@ class WorkoutExecutionPage extends StatefulWidget {
   _WorkoutExecutionPageState createState() => _WorkoutExecutionPageState();
 }
 
-class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
+class _WorkoutExecutionPageState extends State<WorkoutExecutionPage>
+    with WidgetsBindingObserver {
   late final IWorkoutExecutionController _executionController;
-
-  // 計時器相關變數
-  DateTime? _workoutStartTime;
-  String _elapsedTime = '00:00:00';
 
   // 新增運動的控制器
   final TextEditingController _newExerciseSetsController =
@@ -45,37 +41,64 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   // 訓練備註控制器
   final TextEditingController _workoutNotesController = TextEditingController();
 
+  // ⭐ v2.9.1: 休息計時器狀態
+  bool _isRestTimerActive = false;
+  int _restSeconds = 90; // 預設 1:30
+
   @override
   void initState() {
     super.initState();
+
+    // 監聽 App 生命週期（離開時暫停）
+    WidgetsBinding.instance.addObserver(this);
 
     // 從服務定位器獲取依賴
     _executionController = serviceLocator<IWorkoutExecutionController>();
 
     _loadWorkoutPlan();
-    // 開始計時
-    _workoutStartTime = DateTime.now();
-    // 啟動計時器更新
+    // ⭐ v2.9.1: 計時器由 Controller 狀態驅動
     _startTimer();
   }
 
-  // 定期更新計時器顯示
+  // ⭐ v2.9.1: 監聯 App 生命週期
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // ⚠️ 只有 paused（切換 App）時才暫停，inactive（螢幕暗掉）不暫停
+    // 這樣用戶運動時螢幕變暗，計時仍會繼續
+    if (state == AppLifecycleState.paused) {
+      if (_executionController.isInProgress) {
+        _executionController.pauseTraining();
+        setState(() {}); // 更新 UI
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      // 回到 App 時更新 UI（如果之前是暫停狀態）
+      setState(() {});
+    }
+  }
+
+  // ⭐ v2.9.1: 定期更新計時器顯示（由 Controller 提供時間）
   void _startTimer() {
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
-        setState(() {
-          final now = DateTime.now();
-          final difference = now.difference(_workoutStartTime!);
-          final hours = difference.inHours.toString().padLeft(2, '0');
-          final minutes =
-              (difference.inMinutes % 60).toString().padLeft(2, '0');
-          final seconds =
-              (difference.inSeconds % 60).toString().padLeft(2, '0');
-          _elapsedTime = '$hours:$minutes:$seconds';
-        });
+        // 只有進行中時才更新 UI
+        if (_executionController.isInProgress) {
+          _executionController.tickElapsedTime();
+          setState(() {}); // 觸發重新構建
+        }
         _startTimer(); // 遞迴調用以繼續計時
       }
     });
+  }
+
+  /// ⭐ v2.9.1: 格式化經過時間
+  String _formatElapsedTime() {
+    final totalSeconds = _executionController.elapsedSeconds;
+    final hours = (totalSeconds ~/ 3600).toString().padLeft(2, '0');
+    final minutes = ((totalSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
+    final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
+    return '$hours:$minutes:$seconds';
   }
 
   // 加載訓練計畫
@@ -90,6 +113,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _newExerciseSetsController.dispose();
     _newExerciseRepsController.dispose();
     _newExerciseWeightController.dispose();
@@ -107,23 +131,191 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
 
   // 顯示無法勾選完成的提示消息
   void _showCannotToggleCompletionMessage() {
+    // ⭐ v2.9.1: 根據不同情況顯示不同提示
     if (_executionController.isCoachViewingTrainee()) {
-      // ⭐ 教練查看學員訓練時，不能幫學員打勾
       NotificationUtils.showWarning(context, '教練無法幫學員勾選完成，請由學員自行完成訓練');
-    } else if (_executionController.isFutureDate()) {
-      NotificationUtils.showWarning(context, '未來的訓練無法勾選完成，請在訓練當天標記');
     } else if (_executionController.isPastDate()) {
       NotificationUtils.showWarning(context, '無法修改過去的訓練記錄');
+    } else if (_executionController.isFutureDate()) {
+      NotificationUtils.showWarning(context, '未來的訓練無法勾選完成，請在訓練當天標記');
+    } else if (_executionController.isPaused) {
+      NotificationUtils.showWarning(context, '請先點擊「繼續訓練」再進行打勾');
+    } else if (_executionController.isPending) {
+      NotificationUtils.showWarning(context, '請先點擊「開始訓練」再進行打勾');
     }
   }
 
-  // 保存訓練記錄
-  Future<void> _saveWorkoutRecord() async {
+  // ⭐ v2.9: 顯示無法刪除的提示消息
+  void _showCannotDeleteMessage() {
+    if (_executionController.isPastDate()) {
+      NotificationUtils.showWarning(context, '無法刪除過去的訓練記錄');
+    } else if (_executionController.isViewingOthersCreatedPlan()) {
+      NotificationUtils.showWarning(context, '無法刪除教練安排的動作，如需調整請聯繫教練');
+    }
+  }
+
+  // ⭐ v2.9.1: 完成訓練（使用新的狀態機）
+  Future<void> _completeTraining() async {
     final success =
-        await _executionController.saveWorkoutRecord(context: context);
-    if (success) {
+        await _executionController.completeTraining(context: context);
+    if (success && mounted) {
       Navigator.pop(context, true);
     }
+  }
+
+  // ⭐ v2.9.1: 顯示休息時間選擇對話框
+  void _showRestTimerDialog() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // 預設選項（秒）
+    final options = [
+      (60, '1:00'),
+      (90, '1:30'),
+      (120, '2:00'),
+      (150, '2:30'),
+      (180, '3:00'),
+      (210, '3:30'),
+      (240, '4:00'),
+      (270, '4:30'),
+      (300, '5:00'),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.spacingMd),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 標題
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppTheme.spacingSm),
+                  child: Row(
+                    children: [
+                      Icon(Icons.timer, color: colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        '選擇休息時間',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Divider(),
+
+                // 時間選項網格
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ...options.map((option) => _buildRestTimeChip(
+                          seconds: option.$1,
+                          label: option.$2,
+                        )),
+                    // 自訂選項
+                    ActionChip(
+                      avatar: const Icon(Icons.edit, size: 18),
+                      label: const Text('自訂'),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showCustomRestTimeDialog();
+                      },
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: AppTheme.spacingMd),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 構建時間選項 Chip
+  Widget _buildRestTimeChip({required int seconds, required String label}) {
+    return ActionChip(
+      label: Text(label),
+      onPressed: () {
+        Navigator.pop(context);
+        _startRestTimer(seconds);
+      },
+    );
+  }
+
+  // 自訂休息時間對話框
+  void _showCustomRestTimeDialog() {
+    final controller = TextEditingController(text: '90');
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('自訂休息時間'),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: '秒數',
+              suffixText: '秒',
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final seconds = int.tryParse(controller.text) ?? 90;
+                Navigator.pop(context);
+                _startRestTimer(seconds);
+              },
+              child: const Text('開始'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 開始休息計時器
+  void _startRestTimer(int seconds) {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _restSeconds = seconds;
+      _isRestTimerActive = true;
+    });
+  }
+
+  // 休息計時器完成
+  void _onRestTimerComplete() {
+    setState(() {
+      _isRestTimerActive = false;
+    });
+    if (mounted) {
+      NotificationUtils.showInfo(context, '休息時間結束，繼續訓練！💪');
+    }
+  }
+
+  // 跳過休息
+  void _onRestTimerSkip() {
+    setState(() {
+      _isRestTimerActive = false;
+    });
   }
 
   // 新增：添加新的訓練動作
@@ -193,9 +385,9 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
 
   // 添加刪除運動的方法
   void _deleteExercise(int exerciseIndex) async {
-    // 檢查是否可以編輯（過去的訓練不能刪除）
-    if (!_executionController.canEdit()) {
-      _showCannotEditMessage();
+    // ⭐ v2.9: 檢查是否可以刪除（只有創建者可以刪除）
+    if (!_executionController.canDelete()) {
+      _showCannotDeleteMessage();
       return;
     }
 
@@ -280,71 +472,47 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 動作資訊卡片（備註、當前狀態等）
-          if (exercise.notes.isNotEmpty || isCurrentExercise)
+          // ⭐ v2.9.1: 簡化 - 只保留「進行中」狀態標示
+          if (isCurrentExercise)
             Container(
               margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
-              padding: const EdgeInsets.all(AppTheme.spacingSm),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingMd,
+                vertical: AppTheme.spacingXs,
+              ),
               decoration: BoxDecoration(
-                color: isCurrentExercise
-                    ? Theme.of(context)
-                        .colorScheme
-                        .primaryContainer
-                        .withOpacity(0.3)
-                    : Theme.of(context)
-                        .colorScheme
-                        .surfaceVariant
-                        .withOpacity(0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withOpacity(0.3),
                 borderRadius:
                     BorderRadius.circular(AppTheme.buttonBorderRadius),
-                border: isCurrentExercise
-                    ? Border.all(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 2,
-                      )
-                    : null,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 2,
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (isCurrentExercise)
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.play_circle_filled,
-                          size: 16,
+                  Icon(
+                    Icons.play_circle_filled,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '進行中',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
                           color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '進行中',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelMedium
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ],
-                    ),
-                  if (exercise.notes.isNotEmpty)
-                    Padding(
-                      padding: EdgeInsets.only(
-                        top: isCurrentExercise ? AppTheme.spacingXs : 0,
-                      ),
-                      child: Text(
-                        '💭 ${exercise.notes}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontStyle: FontStyle.italic,
-                            ),
-                      ),
-                    ),
+                  ),
                 ],
               ),
             ),
 
-          // 新的動作卡片
+          // 動作卡片（備註已整合到卡片內）
           ExerciseCard(
             data: _convertToCardData(index),
             isEditable: _executionController.canEdit(),
@@ -379,12 +547,23 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                 (s) => s.setNumber == setNumber,
               );
               if (setIndex != -1) {
+                // ⭐ v2.9.1: 檢查是否是「勾選完成」（之前未完成）
+                final wasCompleted = exercise.sets[setIndex].completed;
+
                 _executionController.toggleSetCompletion(
                   index,
                   setIndex,
                   context: context,
                 );
                 setState(() {}); // 觸發重新構建
+
+                // ⭐ v2.9.1: 勾選完成時直接彈出休息時間選擇
+                // 只有「勾選完成」且訓練尚未全部完成 且顯示計時 UI 時
+                if (!wasCompleted &&
+                    !_executionController.allExercisesCompleted() &&
+                    _executionController.shouldShowTimerUI()) {
+                  _showRestTimerDialog();
+                }
               }
             },
             onAddSet: () {
@@ -392,186 +571,120 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
               _executionController.addSetToExercise(index, context: context);
               setState(() {}); // 觸發重新構建
             },
-            onMenuTap: () => _showExerciseMenu(context, index),
+            // ⭐ v2.9.1: 新增參數
+            onRemoveSet: _executionController.canDelete()
+                ? () {
+                    HapticFeedback.lightImpact();
+                    _executionController.removeSetFromExercise(index,
+                        context: context);
+                    setState(() {});
+                  }
+                : null,
+            onDelete: _executionController.canDelete()
+                ? () {
+                    _deleteExercise(index);
+                  }
+                : null,
+            canDelete: _executionController.canDelete(),
+            note: exercise.notes.isNotEmpty ? exercise.notes : null,
+            onNoteChanged: (newNote) {
+              _executionController.addExerciseNote(index, newNote,
+                  context: context);
+              setState(() {});
+            },
           ),
         ],
       ),
     );
   }
 
-  // 顯示動作菜單
-  void _showExerciseMenu(BuildContext context, int exerciseIndex) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+  // ⭐ v2.9.1: 菜單功能已整合到卡片
+  // ⭐ v2.9.1 TRN-6: 移除無意義的時鐘功能（_setTrainingHour）
+  // ⭐ v2.9.1: 備註功能已整合到 ExerciseCard 內的輸入框
+
+  // ⭐ v2.9.1: 準備模式的頂部卡片
+  Widget _buildPendingModeCard() {
+    final exerciseRecords = _executionController.getExerciseRecords();
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 標題行
+          Row(
             children: [
-              // 添加備註
-              ListTile(
-                leading: const Icon(Icons.note_add),
-                title: const Text('添加備註'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _addExerciseNote(exerciseIndex);
-                },
+              Icon(
+                Icons.fitness_center,
+                color: Theme.of(context).colorScheme.primary,
               ),
-              // 設為當前動作
-              if (exerciseIndex !=
-                  _executionController.getCurrentExerciseIndex())
-                ListTile(
-                  leading: const Icon(Icons.play_circle_outline),
-                  title: const Text('設為進行中'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    setState(() {
-                      _executionController
-                          .setCurrentExerciseIndex(exerciseIndex);
-                    });
-                  },
-                ),
-              // 刪除動作
-              if (_executionController.canEdit())
-                ListTile(
-                  leading: Icon(Icons.delete,
-                      color: Theme.of(context).colorScheme.error),
-                  title: Text(
-                    '刪除動作',
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.error),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _deleteExercise(exerciseIndex);
-                  },
-                ),
+              const SizedBox(width: 8),
+              Text(
+                '準備訓練',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
             ],
           ),
-        );
-      },
-    );
-  }
+          const SizedBox(height: 12),
 
-  // 設置訓練時間
-  void _setTrainingHour() async {
-    // 是否允許修改
-    final canModifyTime = !_executionController.isPastDate(); // 過去的訓練不能修改時間
+          // 訓練資訊
+          Text(
+            '${exerciseRecords.length} 個動作，共 ${_executionController.calculateTotalSets()} 組',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 8),
 
-    if (!canModifyTime) {
-      NotificationUtils.showWarning(context, '無法修改過去訓練的時間');
-      return;
-    }
-
-    // 顯示時間選擇器
-    final selectedHour = await showDialog<int>(
-      context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
-      builder: (context) => AlertDialog(
-        title: const Text('選擇訓練時間'),
-        content: StatefulBuilder(
-          builder: (context, setState) {
-            return SizedBox(
-              width: double.maxFinite,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('選擇訓練開始的小時', textAlign: TextAlign.center),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.center,
-                    children: List.generate(24, (hour) {
-                      return ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context, hour);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueGrey,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          minimumSize: const Size(50, 40),
-                        ),
-                        child: Text(
-                          '${hour.toString().padLeft(2, '0')}:00',
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+          // 提示文字
+          Text(
+            '您可以在開始前預覽和調整訓練內容',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
           ),
         ],
       ),
     );
-
-    if (selectedHour != null) {
-      // 使用控制器設置訓練時間
-      await _executionController.setTrainingHour(selectedHour,
-          context: context);
-      setState(() {}); // 觸發重新構建
-    }
   }
 
-  // 添加運動備註
-  void _addExerciseNote(int exerciseIndex) {
-    // 檢查是否可以編輯（過去的訓練不能編輯）
-    if (!_executionController.canEdit()) {
-      _showCannotEditMessage();
-      return;
-    }
-
-    final exerciseRecords = _executionController.getExerciseRecords();
-    if (exerciseIndex >= exerciseRecords.length) return;
-
-    final exercise = exerciseRecords[exerciseIndex];
-    final notesController = TextEditingController(text: exercise.notes);
-
-    showDialog(
-      context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
-      builder: (context) => AlertDialog(
-        title: Text('${exercise.exerciseName} 備註'),
-        content: TextField(
-          controller: notesController,
-          decoration: const InputDecoration(
-            labelText: '備註（例如：感覺、困難程度等）',
-            border: OutlineInputBorder(),
+  // ⭐ v2.9.1: 開始訓練按鈕
+  Widget _buildStartTrainingButton() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton.icon(
+          onPressed: () async {
+            HapticFeedback.mediumImpact();
+            await _executionController.startTraining();
+            setState(() {});
+            if (mounted) {
+              NotificationUtils.showSuccess(context, '訓練開始！加油！💪');
+            }
+          },
+          icon: const Icon(Icons.play_arrow, size: 28),
+          label: const Text(
+            '開始訓練',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          maxLines: 3,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              // 先關閉對話框
-              Navigator.pop(context);
-
-              // 使用控制器添加備註
-              await _executionController.addExerciseNote(
-                exerciseIndex,
-                notesController.text,
-                context: context,
-              );
-
-              setState(() {}); // 觸發重新構建
-            },
-            style: ElevatedButton.styleFrom(),
-            child: const Text('保存'),
-          ),
-        ],
       ),
     );
   }
@@ -582,13 +695,32 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     final isSaving = _executionController.isSaving;
     final exerciseRecords = _executionController.getExerciseRecords();
 
+    // ⭐ v2.9.1: 根據訓練狀態決定顯示模式
+    final isPending = _executionController.isPending;
+    final isInProgress = _executionController.isInProgress;
+    final isPaused = _executionController.isPaused;
+    final isCompleted = _executionController.isCompleted;
+
+    // ⭐ v2.9.1: 是否顯示計時器 UI（只有今天 + 非教練查看學員）
+    final showTimerUI = _executionController.shouldShowTimerUI();
+
     return PopScope(
       canPop: false, // 攔截返回
       onPopInvoked: (didPop) async {
         if (didPop) return;
 
-        // ⚡ 如果有未保存的變更且可以編輯（今天或未來），自動保存
-        if (_executionController.isDataChanged &&
+        // ⭐ v2.9.1: 如果正在進行中且顯示計時 UI，暫停訓練並提示
+        if (showTimerUI && isInProgress) {
+          await _executionController.pauseTraining();
+          if (context.mounted) {
+            NotificationUtils.showInfo(
+              context,
+              '訓練已暫停，計時將保存。可隨時返回繼續訓練。',
+            );
+          }
+        }
+        // 如果有未保存的變更且可以編輯，自動保存
+        else if (_executionController.isDataChanged &&
             _executionController.canEdit()) {
           await _executionController.saveWorkoutRecord(context: context);
         }
@@ -602,62 +734,112 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
         appBar: AppBar(
           title: Text(_executionController.getPlanTitle()),
           actions: [
-            // 設置訓練時間按鈕
-            IconButton(
-              icon: const Icon(Icons.access_time),
-              onPressed: _setTrainingHour,
-              tooltip: '設置訓練時間',
-            ),
-            // 完成訓練按鈕
-            IconButton(
-              icon: const Icon(Icons.done_all),
-              onPressed: () {
-                HapticFeedback.mediumImpact(); // 觸覺回饋
-                _saveWorkoutRecord();
-              },
-              tooltip: '完成訓練',
-            ),
+            // ⭐ v2.9.1: 根據狀態顯示不同按鈕
+            // 非計時模式或非準備模式時顯示
+            if (!showTimerUI || !isPending) ...[
+              // ⭐ v2.9.1 TRN-6: 移除無意義的時鐘按鈕
+              // 保存按鈕（保存並離開）
+              IconButton(
+                icon: Icon(isCompleted ? Icons.check : Icons.save),
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  _completeTraining();
+                },
+                tooltip: isCompleted ? '離開' : '保存並離開',
+              ),
+            ],
           ],
         ),
         body: isLoading || isSaving
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
-                  // 頂部信息卡片
-                  WorkoutInfoCard(
-                    planType: _executionController.getPlanType(),
-                    elapsedTime: _elapsedTime,
-                    exerciseCount: exerciseRecords.length,
-                    totalSets: _executionController.calculateTotalSets(),
-                    totalVolume: _executionController.calculateTotalVolume(),
-                    notesController: _workoutNotesController,
-                    onNotesChanged: (value) {
-                      _executionController.setNotes(value);
-                    },
+                  // ⭐ v2.9.1: 休息計時器（固定在頂部，只有顯示計時 UI 時才顯示）
+                  if (showTimerUI && _isRestTimerActive)
+                    RestTimerWidget(
+                      restSeconds: _restSeconds,
+                      isActive: _isRestTimerActive,
+                      onComplete: _onRestTimerComplete,
+                      onSkip: _onRestTimerSkip,
+                    ),
+
+                  // 主要內容區域
+                  Expanded(
+                    child: CustomScrollView(
+                      slivers: [
+                        // 訓練資訊卡片（可滾動）
+                        SliverToBoxAdapter(
+                          child: (showTimerUI && isPending && !isCompleted)
+                              ? _buildPendingModeCard()
+                              : WorkoutInfoCard(
+                                  planType: _executionController.getPlanType(),
+                                  // ⭐ v2.9.1: 只有顯示計時 UI 時才顯示時長
+                                  elapsedTime:
+                                      showTimerUI ? _formatElapsedTime() : null,
+                                  exerciseCount: exerciseRecords.length,
+                                  totalSets:
+                                      _executionController.calculateTotalSets(),
+                                  totalVolume: _executionController
+                                      .calculateTotalVolume(),
+                                  notesController: _workoutNotesController,
+                                  onNotesChanged: (value) {
+                                    _executionController.setNotes(value);
+                                  },
+                                  // ⭐ v2.9.1: 只有顯示計時 UI 時才顯示暫停/繼續
+                                  isPaused: showTimerUI && isPaused,
+                                  onResume: (showTimerUI && isPaused)
+                                      ? () async {
+                                          await _executionController
+                                              .resumeTraining();
+                                          setState(() {});
+                                          if (mounted) {
+                                            NotificationUtils.showInfo(
+                                                context, '訓練已恢復，計時繼續');
+                                          }
+                                        }
+                                      : null,
+                                  isCompleted: isCompleted,
+                                ),
+                        ),
+
+                        // 訓練動作列表
+                        if (exerciseRecords.isEmpty)
+                          SliverFillRemaining(
+                            child: EmptyExerciseState(
+                                onAddExercise: _addNewExercise),
+                          )
+                        else
+                          SliverPadding(
+                            padding: const EdgeInsets.only(bottom: 96),
+                            sliver: SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) => _buildExerciseCard(index),
+                                childCount: exerciseRecords.length,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
 
-                  // 訓練動作列表
-                  Expanded(
-                    child: exerciseRecords.isEmpty
-                        ? EmptyExerciseState(onAddExercise: _addNewExercise)
-                        : ListView.builder(
-                            padding: const EdgeInsets.only(bottom: 96),
-                            itemCount: exerciseRecords.length,
-                            itemBuilder: (context, index) {
-                              return _buildExerciseCard(index);
-                            },
-                          ),
-                  ),
+                  // ⭐ v2.9.1: 準備模式下顯示「開始訓練」按鈕（只有今天 + 非教練查看）
+                  if (showTimerUI &&
+                      isPending &&
+                      !isCompleted &&
+                      exerciseRecords.isNotEmpty)
+                    _buildStartTrainingButton(),
                 ],
               ),
-        // 添加運動的浮動按鈕（過去的訓練不能新增動作）
-        floatingActionButton:
-            _executionController.canEdit() && exerciseRecords.isNotEmpty
-                ? FloatingActionButton(
-                    onPressed: _addNewExercise,
-                    child: const Icon(Icons.add),
-                  )
-                : null,
+        // 添加運動的浮動按鈕
+        // ⭐ v2.9.1: 不顯示計時 UI 時（教練/過去/未來），不受 isPending 限制
+        floatingActionButton: _executionController.canEdit() &&
+                exerciseRecords.isNotEmpty &&
+                (!showTimerUI || !isPending) // 不顯示計時 UI 時可直接新增
+            ? FloatingActionButton(
+                onPressed: _addNewExercise,
+                child: const Icon(Icons.add),
+              )
+            : null,
       ),
     );
   }

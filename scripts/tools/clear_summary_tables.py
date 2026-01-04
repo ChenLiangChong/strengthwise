@@ -49,49 +49,28 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 # 初始化 Supabase Client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def clear_summary_tables(user_id: str = None):
-    """清空統計彙總表"""
+def clear_summary_tables(user_id: str):
+    """清空指定用戶的統計彙總表"""
     print("=" * 60)
     print("清空統計彙總表")
     print("=" * 60)
-    
-    if user_id:
-        print(f"目標用戶: {user_id}")
-    else:
-        print("目標: 所有用戶")
+    print(f"目標用戶: {user_id}")
     
     try:
         # 清空 daily_workout_summary
-        if user_id:
-            result1 = supabase.table('daily_workout_summary')\
-                .delete()\
-                .eq('user_id', user_id)\
-                .execute()
-            deleted_summary = len(result1.data) if result1.data else 0
-        else:
-            # 刪除所有
-            result1 = supabase.table('daily_workout_summary')\
-                .delete()\
-                .neq('id', '00000000-0000-0000-0000-000000000000')\
-                .execute()
-            deleted_summary = len(result1.data) if result1.data else 0
-        
+        result1 = supabase.table('daily_workout_summary')\
+            .delete()\
+            .eq('user_id', user_id)\
+            .execute()
+        deleted_summary = len(result1.data) if result1.data else 0
         print(f"✅ 已清空 daily_workout_summary: {deleted_summary} 筆")
         
         # 清空 personal_records
-        if user_id:
-            result2 = supabase.table('personal_records')\
-                .delete()\
-                .eq('user_id', user_id)\
-                .execute()
-            deleted_pr = len(result2.data) if result2.data else 0
-        else:
-            result2 = supabase.table('personal_records')\
-                .delete()\
-                .neq('id', '00000000-0000-0000-0000-000000000000')\
-                .execute()
-            deleted_pr = len(result2.data) if result2.data else 0
-        
+        result2 = supabase.table('personal_records')\
+            .delete()\
+            .eq('user_id', user_id)\
+            .execute()
+        deleted_pr = len(result2.data) if result2.data else 0
         print(f"✅ 已清空 personal_records: {deleted_pr} 筆")
         
         print("=" * 60)
@@ -104,18 +83,13 @@ def clear_summary_tables(user_id: str = None):
 
 def main():
     """主函數"""
-    user_id = None
+    if len(sys.argv) < 2:
+        print("❌ 必須指定 User ID")
+        print("用法: python clear_summary_tables.py <user_uuid>")
+        sys.exit(1)
     
-    if len(sys.argv) > 1:
-        user_id = sys.argv[1]
-        print(f"使用命令列指定的 User ID: {user_id}")
-    else:
-        print("未指定 User ID，將清空所有用戶的統計資料")
-        confirm = input("確定要繼續嗎？(y/N): ").strip().lower()
-        if confirm != 'y':
-            print("已取消")
-            sys.exit(0)
-    
+    user_id = sys.argv[1]
+    print(f"使用命令列指定的 User ID: {user_id}")
     clear_summary_tables(user_id)
 
 if __name__ == "__main__":

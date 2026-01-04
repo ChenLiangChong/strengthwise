@@ -43,50 +43,34 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 # 初始化 Supabase Client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def reset_statistics(user_id: str = None):
-    """重置統計資料"""
+def reset_statistics(user_id: str):
+    """重置指定用戶的統計資料"""
     print("=" * 60)
     print("重置統計資料")
     print("=" * 60)
-    
-    if user_id:
-        print(f"目標用戶: {user_id}")
-    else:
-        print("目標: 所有用戶")
+    print(f"目標用戶: {user_id}")
     
     try:
         # 步驟 1: 清空 daily_workout_summary
         print("\n步驟 1: 清空 daily_workout_summary...")
-        if user_id:
-            result = supabase.table('daily_workout_summary')\
-                .delete()\
-                .eq('user_id', user_id)\
-                .execute()
-        else:
-            result = supabase.rpc('exec_sql', {
-                'query': 'TRUNCATE TABLE daily_workout_summary;'
-            }).execute()
+        supabase.table('daily_workout_summary')\
+            .delete()\
+            .eq('user_id', user_id)\
+            .execute()
         print(f"✅ 已清空 daily_workout_summary")
         
         # 步驟 2: 清空 personal_records
         print("\n步驟 2: 清空 personal_records...")
-        if user_id:
-            result = supabase.table('personal_records')\
-                .delete()\
-                .eq('user_id', user_id)\
-                .execute()
-        else:
-            result = supabase.rpc('exec_sql', {
-                'query': 'TRUNCATE TABLE personal_records;'
-            }).execute()
+        supabase.table('personal_records')\
+            .delete()\
+            .eq('user_id', user_id)\
+            .execute()
         print(f"✅ 已清空 personal_records")
         
         # 步驟 3: 觸發重新計算
         print("\n步驟 3: 觸發所有訓練記錄重新計算...")
-        # 查詢所有訓練記錄
-        query = supabase.table('workout_plans').select('id')
-        if user_id:
-            query = query.eq('trainee_id', user_id)
+        # 查詢該用戶的訓練記錄
+        query = supabase.table('workout_plans').select('id').eq('trainee_id', user_id)
         
         result = query.execute()
         workout_ids = [row['id'] for row in result.data]
@@ -106,18 +90,18 @@ def reset_statistics(user_id: str = None):
         print("\n步驟 4: 驗證結果...")
         
         # 檢查 daily_workout_summary
-        query = supabase.table('daily_workout_summary').select('*', count='exact')
-        if user_id:
-            query = query.eq('user_id', user_id)
-        result = query.execute()
+        result = supabase.table('daily_workout_summary')\
+            .select('*', count='exact')\
+            .eq('user_id', user_id)\
+            .execute()
         summary_count = result.count if hasattr(result, 'count') else len(result.data)
         print(f"   daily_workout_summary: {summary_count} 筆")
         
         # 檢查 personal_records
-        query = supabase.table('personal_records').select('*', count='exact')
-        if user_id:
-            query = query.eq('user_id', user_id)
-        result = query.execute()
+        result = supabase.table('personal_records')\
+            .select('*', count='exact')\
+            .eq('user_id', user_id)\
+            .execute()
         pr_count = result.count if hasattr(result, 'count') else len(result.data)
         print(f"   personal_records: {pr_count} 筆")
         
@@ -133,18 +117,13 @@ def reset_statistics(user_id: str = None):
 
 def main():
     """主函數"""
-    user_id = None
+    if len(sys.argv) < 2:
+        print("❌ 必須指定 User ID")
+        print("用法: python reset_statistics.py <user_uuid>")
+        sys.exit(1)
     
-    if len(sys.argv) > 1:
-        user_id = sys.argv[1]
-        print(f"使用命令列指定的 User ID: {user_id}")
-    else:
-        print("未指定 User ID，將重置所有用戶的統計資料")
-        confirm = input("確定要繼續嗎？(y/N): ").strip().lower()
-        if confirm != 'y':
-            print("已取消")
-            sys.exit(0)
-    
+    user_id = sys.argv[1]
+    print(f"使用命令列指定的 User ID: {user_id}")
     reset_statistics(user_id)
 
 if __name__ == "__main__":

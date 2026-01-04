@@ -50,40 +50,22 @@ class CoachAssessmentNoteServiceSupabase implements ICoachAssessmentNoteService 
     required String notes,
   }) async {
     try {
-      // 檢查是否已存在
-      final existing = await getNote(
-        coachId: coachId,
-        assessmentId: assessmentId,
-      );
-
-      if (existing != null) {
-        // 更新現有備註
-        final response = await _supabase
-            .from('coach_assessment_notes')
-            .update({
-              'notes': notes,
-            })
-            .eq('coach_id', coachId)
-            .eq('assessment_id', assessmentId)
-            .select()
-            .single();
-
-        return CoachAssessmentNoteModel.fromSupabase(response);
-      } else {
-        // 建立新備註
-        final response = await _supabase
-            .from('coach_assessment_notes')
-            .insert({
-              'id': _uuid.v4(),
+      // ⚡ 使用 upsert 一次查詢完成（利用 unique_coach_assessment_note 約束）
+      final response = await _supabase
+          .from('coach_assessment_notes')
+          .upsert(
+            {
+              'id': _uuid.v4(), // 新增時使用，更新時會被忽略
               'coach_id': coachId,
               'assessment_id': assessmentId,
               'notes': notes,
-            })
-            .select()
-            .single();
+            },
+            onConflict: 'coach_id,assessment_id', // 唯一約束欄位
+          )
+          .select()
+          .single();
 
-        return CoachAssessmentNoteModel.fromSupabase(response);
-      }
+      return CoachAssessmentNoteModel.fromSupabase(response);
     } catch (e) {
       _errorService.logError(
         '建立或更新教練備註失敗: $e',

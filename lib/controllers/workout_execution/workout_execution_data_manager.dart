@@ -29,6 +29,13 @@ class WorkoutExecutionDataManager {
   int? _trainingHour;
   bool _hasScheduledTime = false;
   
+  // ⭐ v2.9.1: 訓練狀態追蹤
+  String _trainingStatus = 'pending'; // pending | in_progress | paused | completed
+  int _elapsedSeconds = 0;
+  DateTime? _actualStartTime;
+  DateTime? _actualEndTime;
+  DateTime? _lastTickTime; // 用於計算經過時間
+  
   // Getters
   String get workoutRecordId => _workoutRecordId;
   String get planTitle => _planTitle;
@@ -45,6 +52,17 @@ class WorkoutExecutionDataManager {
   int? get trainingHour => _trainingHour;
   bool get hasScheduledTime => _hasScheduledTime;
   
+  // ⭐ v2.9.1: 訓練狀態追蹤 Getters
+  String get trainingStatus => _trainingStatus;
+  int get elapsedSeconds => _elapsedSeconds;
+  DateTime? get actualStartTime => _actualStartTime;
+  DateTime? get actualEndTime => _actualEndTime;
+  
+  bool get isPending => _trainingStatus == 'pending';
+  bool get isInProgress => _trainingStatus == 'in_progress';
+  bool get isPaused => _trainingStatus == 'paused';
+  bool get isCompleted => _trainingStatus == 'completed';
+  
   // Setters
   set workoutRecordId(String value) => _workoutRecordId = value;
   set planTitle(String value) => _planTitle = value;
@@ -52,6 +70,12 @@ class WorkoutExecutionDataManager {
   set exerciseRecords(List<ExerciseRecord> value) => _exerciseRecords = value;
   set traineeId(String? value) => _traineeId = value;  // ⭐ 新增
   set creatorId(String? value) => _creatorId = value;  // ⭐ 新增
+  
+  // ⭐ v2.9.1: 訓練狀態追蹤 Setters
+  set trainingStatus(String value) => _trainingStatus = value;
+  set elapsedSeconds(int value) => _elapsedSeconds = value;
+  set actualStartTime(DateTime? value) => _actualStartTime = value;
+  set actualEndTime(DateTime? value) => _actualEndTime = value;
   
   /// 設置當前運動索引
   void setCurrentExerciseIndex(int index) {
@@ -64,6 +88,91 @@ class WorkoutExecutionDataManager {
   void setTrainingHour(int hour) {
     _trainingHour = hour;
     _hasScheduledTime = true;
+  }
+  
+  // =============================================
+  // ⭐ v2.9.1: 訓練狀態追蹤方法
+  // =============================================
+  
+  /// 開始訓練（pending → in_progress）
+  void startTraining() {
+    if (_trainingStatus != 'pending') return;
+    
+    _trainingStatus = 'in_progress';
+    _actualStartTime = DateTime.now();
+    _lastTickTime = DateTime.now();
+  }
+  
+  /// 暫停訓練（in_progress → paused）
+  void pauseTraining() {
+    if (_trainingStatus != 'in_progress') return;
+    
+    // 計算本次經過時間
+    if (_lastTickTime != null) {
+      final now = DateTime.now();
+      _elapsedSeconds += now.difference(_lastTickTime!).inSeconds;
+    }
+    
+    _trainingStatus = 'paused';
+    _lastTickTime = null;
+  }
+  
+  /// 繼續訓練（paused/completed → in_progress）
+  /// ⭐ v2.9.1: 支援從 completed 狀態恢復（用戶取消勾選時）
+  void resumeTraining() {
+    if (_trainingStatus != 'paused' && _trainingStatus != 'completed') return;
+    
+    _trainingStatus = 'in_progress';
+    _lastTickTime = DateTime.now();
+    _actualEndTime = null; // 清除結束時間
+  }
+  
+  /// 完成訓練（in_progress → completed）
+  void completeTraining() {
+    if (_trainingStatus != 'in_progress' && _trainingStatus != 'paused') return;
+    
+    // 如果還在進行中，先計算最後的時間
+    if (_trainingStatus == 'in_progress' && _lastTickTime != null) {
+      final now = DateTime.now();
+      _elapsedSeconds += now.difference(_lastTickTime!).inSeconds;
+    }
+    
+    _trainingStatus = 'completed';
+    _actualEndTime = DateTime.now();
+    _lastTickTime = null;
+  }
+  
+  /// 更新經過時間（每秒呼叫，僅在 in_progress 時有效）
+  /// 返回當前總秒數
+  int tickElapsedTime() {
+    if (_trainingStatus != 'in_progress' || _lastTickTime == null) {
+      return _elapsedSeconds;
+    }
+    
+    final now = DateTime.now();
+    return _elapsedSeconds + now.difference(_lastTickTime!).inSeconds;
+  }
+  
+  /// 從資料庫加載的資料初始化狀態
+  /// ⭐ v2.9.1: 如果是 in_progress，轉為 paused 讓用戶確認後再繼續
+  void initFromRecord({
+    required String trainingStatus,
+    required int elapsedSeconds,
+    DateTime? actualStartTime,
+    DateTime? actualEndTime,
+  }) {
+    _elapsedSeconds = elapsedSeconds;
+    _actualStartTime = actualStartTime;
+    _actualEndTime = actualEndTime;
+    
+    // ⭐ v2.9.1: 如果是 in_progress，自動轉為 paused
+    // 這樣用戶重新進入時會看到「繼續訓練」按鈕，而不是直接開始計時
+    if (trainingStatus == 'in_progress') {
+      _trainingStatus = 'paused';
+      _lastTickTime = null; // 暫停時不計時
+    } else {
+      _trainingStatus = trainingStatus;
+    }
   }
   
   /// 處理日期信息

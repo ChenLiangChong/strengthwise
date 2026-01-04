@@ -23,6 +23,11 @@ class WorkoutExecutionRecordSaver {
     required bool overallCompleted,
     DateTime? planDate,
     DateTime? trainingTime,
+    // ⭐ v2.9.1: 訓練狀態追蹤欄位
+    String trainingStatus = 'pending',
+    int elapsedSeconds = 0,
+    DateTime? actualStartTime,
+    DateTime? actualEndTime,
     BuildContext? context,
   }) async {
     try {
@@ -54,6 +59,11 @@ class WorkoutExecutionRecordSaver {
           createdAt: existingRecord.createdAt,
           trainingTime: trainingTime ?? existingRecord.trainingTime,
           trainingEndTime: existingRecord.trainingEndTime,  // ⭐ 保留結束時間
+          // ⭐ v2.9.1: 訓練狀態追蹤
+          trainingStatus: trainingStatus,
+          elapsedSeconds: elapsedSeconds,
+          actualStartTime: actualStartTime,
+          actualEndTime: actualEndTime,
         );
         
         final success = await _workoutService.updateRecord(updatedRecord);
@@ -82,6 +92,11 @@ class WorkoutExecutionRecordSaver {
           completed: overallCompleted,
           createdAt: DateTime.now(),
           trainingTime: trainingTime,
+          // ⭐ v2.9.1: 訓練狀態追蹤
+          trainingStatus: trainingStatus,
+          elapsedSeconds: elapsedSeconds,
+          actualStartTime: actualStartTime,
+          actualEndTime: actualEndTime,
         );
         
         await _workoutService.createRecord(newRecord);

@@ -82,6 +82,25 @@ class WorkoutExecutionSetOperations {
     return exercise.copyWith(sets: updatedSets);
   }
   
+  /// ⭐ v2.9.1 TRN-2: 減少組數
+  /// 
+  /// 返回更新後的運動記錄（移除最後一組）
+  static ExerciseRecord removeSetFromExercise(ExerciseRecord exercise) {
+    if (exercise.sets.length <= 1) return exercise; // 至少保留 1 組
+    
+    // 移除最後一組
+    final updatedSets = List<SetRecord>.from(exercise.sets)..removeLast();
+    
+    // 重新計算是否全部完成
+    final allSetsCompleted = updatedSets.isNotEmpty && 
+                             updatedSets.every((set) => set.completed);
+    
+    return exercise.copyWith(
+      sets: updatedSets,
+      completed: allSetsCompleted,
+    );
+  }
+  
   /// 添加運動備註
   /// 
   /// 返回更新後的運動記錄

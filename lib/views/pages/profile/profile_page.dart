@@ -5,11 +5,11 @@ import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/auth/login_page.dart';
 import 'package:strengthwise/views/pages/profile/profile_settings_page.dart';
 import 'package:strengthwise/views/pages/profile/body_data_page.dart';
+import 'package:strengthwise/views/pages/profile/coach_profile_view_page.dart';
 import 'package:strengthwise/views/pages/statistics/statistics_page_v2.dart';
 import 'package:strengthwise/views/pages/profile/widgets/profile_header_card.dart';
 import 'package:strengthwise/views/pages/profile/widgets/profile_detail_card.dart';
 import 'package:strengthwise/views/pages/profile/widgets/profile_menu_item.dart';
-import 'package:strengthwise/views/pages/profile/widgets/profile_role_switch.dart';
 import 'package:strengthwise/views/pages/profile/widgets/profile_theme_switcher.dart';
 import 'package:strengthwise/views/pages/profile/widgets/profile_logout_button.dart';
 
@@ -70,6 +70,12 @@ class _ProfilePageContent extends StatelessWidget {
             if (controller.userProfile != null)
               ProfileDetailCard(userProfile: controller.userProfile!),
 
+            // ⭐ v2.9: 教練公開檔案入口（僅教練可見）
+            if (controller.userProfile?.isCoach == true) ...[
+              const SizedBox(height: 16),
+              _buildCoachProfileCard(context, colorScheme),
+            ],
+
             const SizedBox(height: 24),
 
             // 功能菜單
@@ -104,14 +110,39 @@ class _ProfilePageContent extends StatelessWidget {
     );
   }
 
+  /// ⭐ v2.9: 教練公開檔案入口卡片
+  Widget _buildCoachProfileCard(BuildContext context, ColorScheme colorScheme) {
+    return Card(
+      elevation: 1,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: colorScheme.primaryContainer,
+          child: Icon(
+            Icons.badge_outlined,
+            color: colorScheme.onPrimaryContainer,
+          ),
+        ),
+        title: const Text('教練公開檔案'),
+        subtitle: const Text('查看您的專業資訊'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CoachProfileViewPage(isOwner: true),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   /// 功能菜單區塊
   Widget _buildMenuSection(
     BuildContext context,
     ColorScheme colorScheme,
     ProfileController controller,
   ) {
-    final isCoach = controller.userProfile?.isCoach ?? false;
-
     return Column(
       children: [
         // 我的統計
@@ -130,33 +161,6 @@ class _ProfilePageContent extends StatelessWidget {
           },
         ),
 
-        const SizedBox(height: 16),
-        const Divider(),
-        const SizedBox(height: 16),
-
-        // 教練模式切換
-        ProfileRoleSwitch(
-          title: '教練模式',
-          subtitle: '開啟教練功能（課程頁面顯示教練中心）',
-          value: isCoach,
-          onChanged: (value) async {
-            final success = await controller.toggleCoachRole(value);
-            
-            // 顯示提示訊息
-            if (context.mounted && success) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    value 
-                      ? '✅ 已開啟教練模式\n請到「課程」頁面進入教練中心' 
-                      : '✅ 已關閉教練模式\n教練功能已隱藏'
-                  ),
-                  duration: const Duration(seconds: 3),
-                ),
-              );
-            }
-          },
-        ),
       ],
     );
   }

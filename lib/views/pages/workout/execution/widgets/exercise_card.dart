@@ -58,7 +58,7 @@ class SetData {
 /// 訓練動作卡片
 ///
 /// 使用卡片式佈局展示單個動作的所有組數
-/// 包含動作名稱、組數列表、新增組數按鈕
+/// 包含動作名稱、組數列表、新增/減少組數按鈕
 class ExerciseCard extends StatelessWidget {
   /// 動作數據
   final ExerciseCardData data;
@@ -78,8 +78,20 @@ class ExerciseCard extends StatelessWidget {
   /// 新增組數回調
   final VoidCallback onAddSet;
 
-  /// 菜單按鈕點擊回調（替換動作、查看歷史等）
-  final VoidCallback? onMenuTap;
+  /// ⭐ v2.9.1: 減少組數回調
+  final VoidCallback? onRemoveSet;
+
+  /// ⭐ v2.9.1: 刪除動作回調
+  final VoidCallback? onDelete;
+
+  /// ⭐ v2.9.1: 是否可以刪除（用於顯示刪除按鈕）
+  final bool canDelete;
+
+  /// ⭐ v2.9.1: 備註
+  final String? note;
+
+  /// ⭐ v2.9.1: 備註變更回調
+  final Function(String)? onNoteChanged;
 
   const ExerciseCard({
     required this.data,
@@ -88,7 +100,11 @@ class ExerciseCard extends StatelessWidget {
     required this.onSetUpdate,
     required this.onSetComplete,
     required this.onAddSet,
-    this.onMenuTap,
+    this.onRemoveSet,
+    this.onDelete,
+    this.canDelete = false,
+    this.note,
+    this.onNoteChanged,
     super.key,
   });
 
@@ -185,8 +201,9 @@ class ExerciseCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(AppTheme.spacingMd),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 動作名稱
+          // 動作名稱與備註
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,17 +223,50 @@ class ExerciseCard extends StatelessWidget {
                     ),
                   ),
                 ],
+                // ⭐ v2.9.1: 備註輸入框（直接在卡片內編輯）
+                if (isEditable && onNoteChanged != null) ...[
+                  const SizedBox(height: 8),
+                  _NoteInputField(
+                    initialNote: note ?? '',
+                    onNoteChanged: onNoteChanged!,
+                  ),
+                ] else if (note != null && note!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.notes,
+                        size: 14,
+                        color: colorScheme.primary.withOpacity(0.7),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          note!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.primary.withOpacity(0.8),
+                            fontStyle: FontStyle.italic,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
 
-          // 菜單按鈕
-          if (onMenuTap != null)
+          // ⭐ v2.9.1: 刪除按鈕（只有創建者可見，直接調用回調，確認由外層處理）
+          if (canDelete && onDelete != null)
             IconButton(
-              icon: const Icon(Icons.more_horiz),
-              onPressed: onMenuTap,
-              color: colorScheme.onSurface.withOpacity(0.6),
-              tooltip: '動作選項',
+              icon: Icon(
+                Icons.delete_outline,
+                color: colorScheme.error.withOpacity(0.7),
+              ),
+              onPressed: onDelete,
+              tooltip: '刪除動作',
             ),
         ],
       ),
@@ -293,41 +343,182 @@ class ExerciseCard extends StatelessWidget {
     return textWidget;
   }
 
-  /// 構建新增組數按鈕
+  /// ⭐ v2.9.1: 構建組數操作按鈕（新增在左，減少在右）
   Widget _buildAddSetButton(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final canRemove = onRemoveSet != null && data.sets.length > 1;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
-      child: TextButton(
-        onPressed: onAddSet,
-        style: TextButton.styleFrom(
-          minimumSize: const Size.fromHeight(40),
-          backgroundColor: colorScheme.primary.withOpacity(0.1),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add,
-              size: 18,
-              color: colorScheme.primary,
+      child: Row(
+        children: [
+          // 新增組數按鈕（左邊）
+          Expanded(
+            child: TextButton(
+              onPressed: onAddSet,
+              style: TextButton.styleFrom(
+                minimumSize: const Size.fromHeight(40),
+                backgroundColor: colorScheme.primary.withOpacity(0.1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add,
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '新增',
+                    style: TextStyle(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              '新增組數',
-              style: TextStyle(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w600,
+          ),
+
+          // 減少組數按鈕（右邊）
+          if (canRemove) ...[
+            const SizedBox(width: AppTheme.spacingSm),
+            Expanded(
+              child: TextButton(
+                onPressed: onRemoveSet,
+                style: TextButton.styleFrom(
+                  minimumSize: const Size.fromHeight(40),
+                  backgroundColor: colorScheme.error.withOpacity(0.1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.remove,
+                      size: 18,
+                      color: colorScheme.error,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '減少',
+                      style: TextStyle(
+                        color: colorScheme.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
-        ),
+        ],
       ),
+    );
+  }
+}
+
+/// ⭐ v2.9.1: 備註輸入框
+class _NoteInputField extends StatefulWidget {
+  final String initialNote;
+  final Function(String) onNoteChanged;
+
+  const _NoteInputField({
+    required this.initialNote,
+    required this.onNoteChanged,
+  });
+
+  @override
+  State<_NoteInputField> createState() => _NoteInputFieldState();
+}
+
+class _NoteInputFieldState extends State<_NoteInputField> {
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialNote);
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    // 失去焦點時保存
+    if (!_focusNode.hasFocus && _controller.text != widget.initialNote) {
+      widget.onNoteChanged(_controller.text);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return TextField(
+      controller: _controller,
+      focusNode: _focusNode,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontStyle: FontStyle.italic,
+          ),
+      decoration: InputDecoration(
+        hintText: '添加備註...',
+        hintStyle: TextStyle(
+          color: colorScheme.onSurface.withOpacity(0.4),
+          fontStyle: FontStyle.italic,
+          fontSize: 12,
+        ),
+        prefixIcon: Icon(
+          Icons.notes,
+          size: 16,
+          color: colorScheme.primary.withOpacity(0.7),
+        ),
+        prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 0),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(
+            color: colorScheme.outline.withOpacity(0.3),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(
+            color: colorScheme.outline.withOpacity(0.3),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(
+            color: colorScheme.primary,
+          ),
+        ),
+        filled: true,
+        fillColor: colorScheme.surfaceVariant.withOpacity(0.3),
+      ),
+      maxLines: 2,
+      minLines: 1,
+      textInputAction: TextInputAction.done,
+      onSubmitted: (value) {
+        if (value != widget.initialNote) {
+          widget.onNoteChanged(value);
+        }
+      },
     );
   }
 }

@@ -3,6 +3,36 @@ import '../../models/user/user_model.dart';
 import '../../models/client_with_relationship.dart';  // ⭐ 新增
 import '../../models/coach_with_relationship.dart';  // ⭐ 新增
 
+/// QR Code 綁定結果
+class QrCodeBindResult {
+  final bool success;
+  final String? error;
+  final String? relationshipId;
+  final String? coachId;
+  final String? clientId;
+  final String? scannedUserName;
+
+  QrCodeBindResult({
+    required this.success,
+    this.error,
+    this.relationshipId,
+    this.coachId,
+    this.clientId,
+    this.scannedUserName,
+  });
+
+  factory QrCodeBindResult.fromJson(Map<String, dynamic> json) {
+    return QrCodeBindResult(
+      success: json['success'] as bool? ?? false,
+      error: json['error'] as String?,
+      relationshipId: json['relationship_id'] as String?,
+      coachId: json['coach_id'] as String?,
+      clientId: json['client_id'] as String?,
+      scannedUserName: json['scanned_user_name'] as String?,
+    );
+  }
+}
+
 /// 教練-學員關係服務介面
 ///
 /// 定義教練與學員綁定、邀請、查詢等核心功能
@@ -103,6 +133,21 @@ abstract class ICoachingRelationshipService {
     String coachId,
     String clientId, {
     String status = 'pending',
+  });
+
+  /// ⭐ QR Code 綁定（RPC 版本）
+  ///
+  /// 使用 SECURITY DEFINER RPC 函數，可驗證對方用戶是否存在
+  /// 並在資料庫層面完成所有邏輯
+  ///
+  /// [scannedUserId] - 掃描到的用戶 ID
+  /// [myUserId] - 我的用戶 ID
+  /// [myRole] - 我的角色 ('coach' 或 'client')
+  /// 返回綁定結果（包含成功/失敗、錯誤訊息）
+  Future<QrCodeBindResult> bindByQrCode({
+    required String scannedUserId,
+    required String myUserId,
+    required String myRole,
   });
 
   // ============================================================================

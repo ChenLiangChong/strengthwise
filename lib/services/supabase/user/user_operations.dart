@@ -101,17 +101,28 @@ class UserOperations {
   }
   
   /// 切換用戶角色
+  /// 
+  /// ⭐ 注意：is_coach 和 is_student 不互斥
+  /// 用戶可以同時是教練和學員（例如：A 的教練，B 的學員）
   Future<bool> toggleUserRole(String userId, bool isCoach) async {
     try {
       _logDebug('切換用戶角色: isCoach=$isCoach');
 
+      // ⭐ 修正：啟用教練身份時，同時保留學員身份
+      // 只有當用戶明確選擇「只當教練」時才設為 false（目前 UI 沒有這個選項）
+      final updateData = <String, dynamic>{
+        'is_coach': isCoach,
+        'profile_updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
+      };
+
+      // 如果啟用教練身份，確保學員身份也是 true（可同時擁有兩種身份）
+      if (isCoach) {
+        updateData['is_student'] = true;
+      }
+
       await _supabase
           .from('users')
-          .update({
-            'is_coach': isCoach,
-            'is_student': !isCoach,
-            'profile_updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
-          })
+          .update(updateData)
           .eq('id', userId);
 
       _logDebug('用戶角色切換成功');
