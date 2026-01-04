@@ -93,20 +93,6 @@ class HealthAssessmentOperationsManager {
         .eq('is_current', true); // 只更新當前為 true 的記錄
   }
 
-  /// 更新教練備註
-  /// 
-  /// [assessmentId] 評估 ID
-  /// [coachNotes] 教練備註內容
-  Future<void> updateCoachNotes(String assessmentId, String coachNotes) async {
-    await _supabase
-        .from('health_assessments')
-        .update({
-          'coach_notes': coachNotes,
-          'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
-        })
-        .eq('id', assessmentId);
-  }
-
   /// 批次更新評估的 is_current 狀態
   /// 
   /// [updates] Map<評估ID, 是否為當前>

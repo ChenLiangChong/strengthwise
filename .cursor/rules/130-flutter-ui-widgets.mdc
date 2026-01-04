@@ -1,0 +1,168 @@
+---
+description: "Flutter UI 組件設計規範、Widget 使用準則與主題系統。適用於 views 目錄。"
+globs: "lib/views/**/*.dart"
+alwaysApply: false
+---
+
+# Flutter UI 組件規範
+
+## 🎨 設計系統：Kinetic Design
+
+### 字體系統
+
+| 用途 | 字體 | 範例 |
+|------|------|------|
+| UI 文字 | Inter | 按鈕、標題、說明 |
+| 數據顯示 | JetBrains Mono | 重量、次數、計時器 |
+
+### 8 點網格系統
+
+```dart
+// ✅ 所有尺寸必須是 8 的倍數
+SizedBox(height: 8),   // Micro
+SizedBox(height: 16),  // Standard
+SizedBox(height: 24),  // Medium
+SizedBox(height: 32),  // Section Break
+Container(height: 48), // Touch Target (最小)
+
+// ❌ 禁止隨意數值
+Padding(padding: EdgeInsets.all(13)), // 錯誤！
+```
+
+### 觸控目標
+
+```dart
+// ✅ 按鈕最小高度 48dp（菲茨定律）
+ElevatedButton(
+  style: ElevatedButton.styleFrom(
+    minimumSize: const Size.fromHeight(48),
+  ),
+  // ...
+)
+```
+
+## 🎨 主題使用
+
+### 顏色（禁止硬編碼）
+
+```dart
+// ✅ 正確：使用主題
+final primaryColor = Theme.of(context).colorScheme.primary;
+final backgroundColor = Theme.of(context).colorScheme.surface;
+
+// ❌ 錯誤：硬編碼
+final color = Color(0xFF2563EB); // 禁止！
+```
+
+### 文字樣式
+
+```dart
+// ✅ 正確：使用 TextTheme
+Text(
+  '訓練計劃',
+  style: Theme.of(context).textTheme.titleLarge,
+)
+
+// ❌ 錯誤：硬編碼
+Text(
+  '訓練計劃',
+  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+)
+```
+
+## 🧩 Widget 設計原則
+
+### 組合優於繼承
+
+```dart
+// ✅ 透過組合構建複雜 UI
+class WorkoutCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Column(
+        children: [
+          _WorkoutHeader(),
+          _WorkoutContent(),
+          _WorkoutFooter(),
+        ],
+      ),
+    );
+  }
+}
+```
+
+### 提取 Widget（非 Helper Method）
+
+```dart
+// ✅ 正確：獨立 Widget（利用 Flutter 緩存）
+class _WorkoutHeader extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => /* ... */;
+}
+
+// ❌ 錯誤：Helper Method（無法緩存）
+Widget _buildHeader() => /* ... */;
+```
+
+## 📱 響應式設計
+
+```dart
+// 使用 LayoutBuilder 適配不同螢幕
+LayoutBuilder(
+  builder: (context, constraints) {
+    if (constraints.maxWidth > 600) {
+      return _WideLayout();
+    }
+    return _NarrowLayout();
+  },
+)
+
+// 使用 Flex 布局
+Row(
+  children: [
+    Expanded(flex: 2, child: _MainContent()),
+    Expanded(flex: 1, child: _Sidebar()),
+  ],
+)
+```
+
+## ⚡ 性能優化
+
+```dart
+// ✅ 使用 const 構造函數
+const SizedBox(height: 16),
+const EdgeInsets.all(16),
+
+// ✅ ListView 使用 builder
+ListView.builder(
+  itemCount: items.length,
+  itemBuilder: (context, index) => ItemCard(items[index]),
+)
+
+// ✅ 長列表考慮 RepaintBoundary
+RepaintBoundary(
+  child: ExpensiveWidget(),
+)
+```
+
+## 📐 卡片設計
+
+```dart
+// StrengthWise 標準卡片
+Card(
+  elevation: 0, // 平面設計
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(16),
+    side: BorderSide(
+      color: Theme.of(context).colorScheme.outline,
+      width: 1,
+    ),
+  ),
+  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+  child: Padding(
+    padding: const EdgeInsets.all(16),
+    child: /* content */,
+  ),
+)
+```

@@ -388,10 +388,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        note.clientName ?? 
-                        (note.clientId != null && note.clientId!.isNotEmpty 
-                            ? '學員 ${note.clientId!.substring(0, 8)}...'
-                            : '未知學員'),
+                        note.clientName ?? '已刪除的學員',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),

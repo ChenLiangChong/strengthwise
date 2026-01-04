@@ -1,7 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:strengthwise/utils/datetime_utils.dart';
 import '../../../models/coaching_relationship_model.dart';
-import '../../../models/client_profile_model.dart';
 
 /// 教練-學員關係 CRUD 操作
 ///
@@ -56,7 +55,7 @@ class CoachingRelationshipOperations {
         // 重新查詢完整資料
         final response = await _supabase
             .from('coaching_relationships')
-            .select('id, coach_id, client_id, coach_name, client_name, status, invited_at, accepted_at, created_at, updated_at, client_profile')
+            .select('id, coach_id, client_id, coach_name, client_name, status, invited_at, accepted_at, created_at, updated_at')
             .eq('id', existingId)
             .single();
         
@@ -138,23 +137,6 @@ class CoachingRelationshipOperations {
       'status': status,
       'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
     }).eq('coach_id', coachId).inFilter('client_id', clientIds);
-  }
-
-  /// 更新學員檔案
-  ///
-  /// [relationshipId] 關係 ID
-  /// [profile] 學員檔案
-  Future<void> updateClientProfile({
-    required String relationshipId,
-    required ClientProfile profile,
-  }) async {
-    await _supabase
-        .from('coaching_relationships')
-        .update({
-          'client_profile': profile.toJson(),
-          'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
-        })
-        .eq('id', relationshipId);
   }
 }
 

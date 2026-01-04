@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/models/coaching_relationship_model.dart';
-import 'package:strengthwise/models/client_profile_model.dart';
 import 'package:strengthwise/models/health_assessment_models.dart';
+import 'package:strengthwise/models/coach_display_preferences_model.dart';
+import 'package:strengthwise/models/coach_assessment_note_model.dart';
 import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/interfaces/i_coaching_relationship_service.dart';
 import 'package:strengthwise/services/interfaces/i_health_assessment_service.dart';
+import 'package:strengthwise/services/interfaces/i_coach_display_preferences_service.dart';
+import 'package:strengthwise/services/interfaces/i_coach_assessment_note_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
-import 'package:strengthwise/views/pages/relationships/role_coach/widgets/client_profile_card.dart';
-import 'package:strengthwise/views/pages/relationships/role_coach/widgets/empty_client_profile_card.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/widgets/empty_health_assessment_card.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/widgets/health_assessment_summary_card.dart';
-import 'package:strengthwise/views/pages/relationships/role_coach/client_profile_editor_page.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/health_assessment_page.dart';
+import 'package:strengthwise/views/pages/relationships/role_coach/coach_display_preferences_page.dart';
 
 /// 學員基本資訊 Tab
 class ClientInfoTab extends StatefulWidget {
@@ -33,12 +34,17 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
   late final ICoachingRelationshipService _relationshipService;
   late final IAuthController _authController;
   late final IHealthAssessmentService _healthAssessmentService;
+  late final ICoachDisplayPreferencesService _preferencesService;
+  late final ICoachAssessmentNoteService _assessmentNoteService; // ⭐ 新增
 
   CoachingRelationshipModel? _relationship;
   bool _isLoadingProfile = true;
 
   HealthAssessmentModel? _healthAssessment;
   bool _isLoadingHealthAssessment = true;
+  
+  CoachDisplayPreferencesModel? _displayPreferences;
+  CoachAssessmentNoteModel? _coachNote; // ⭐ 新增
 
   @override
   void initState() {
@@ -46,8 +52,11 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
     _relationshipService = serviceLocator<ICoachingRelationshipService>();
     _authController = serviceLocator<IAuthController>();
     _healthAssessmentService = serviceLocator<IHealthAssessmentService>();
+    _preferencesService = serviceLocator<ICoachDisplayPreferencesService>();
+    _assessmentNoteService = serviceLocator<ICoachAssessmentNoteService>(); // ⭐ 新增
     _loadRelationship();
     _loadHealthAssessment();
+    _loadDisplayPreferences();
   }
 
   /// 載入關係（包含學員檔案）
@@ -59,7 +68,7 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
 
     try {
       final relationship =
-          await _relationshipService.getRelationshipByUsersWithProfile(
+          await _relationshipService.getRelationshipByUsersDetailed(
         currentUser.uid,
         widget.client.uid,
       );
@@ -80,43 +89,6 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
     }
   }
 
-  /// 顯示編輯頁面
-  Future<void> _showProfileEditor() async {
-    final result = await Navigator.of(context).push<ClientProfile>(
-      MaterialPageRoute(
-        builder: (context) => ClientProfileEditorPage(
-          existingProfile: _relationship?.clientProfile,
-          clientName: widget.client.displayName ?? widget.client.email,
-        ),
-      ),
-    );
-
-    if (result != null && _relationship != null) {
-      // 儲存檔案
-      try {
-        await _relationshipService.updateClientProfile(
-          relationshipId: _relationship!.id,
-          profile: result,
-        );
-
-        // 重新載入
-        await _loadRelationship();
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('學員檔案已儲存')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('儲存失敗: $e')),
-          );
-        }
-      }
-    }
-  }
-
   /// 載入健康評估
   Future<void> _loadHealthAssessment() async {
     setState(() => _isLoadingHealthAssessment = true);
@@ -126,9 +98,22 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
         widget.client.uid,
       );
 
+      // ⭐ 如果有評估，載入當前教練的備註
+      CoachAssessmentNoteModel? coachNote;
+      if (assessment != null) {
+        final coachId = _authController.user?.uid;
+        if (coachId != null) {
+          coachNote = await _assessmentNoteService.getNote(
+            coachId: coachId,
+            assessmentId: assessment.id,
+          );
+        }
+      }
+
       if (mounted) {
         setState(() {
           _healthAssessment = assessment;
+          _coachNote = coachNote; // ⭐ 儲存備註
           _isLoadingHealthAssessment = false;
         });
       }
@@ -140,6 +125,36 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
         );
       }
     }
+  }
+
+  /// 載入教練顯示偏好
+  Future<void> _loadDisplayPreferences() async {
+    try {
+      final currentUser = _authController.user;
+      if (currentUser == null) return;
+
+      final preferences = await _preferencesService.getPreferences(currentUser.uid);
+      
+      if (mounted) {
+        setState(() {
+          _displayPreferences = preferences;
+        });
+      }
+    } catch (e) {
+      // 靜默失敗，使用預設偏好
+    }
+  }
+
+  /// 顯示偏好設定頁面
+  Future<void> _showPreferencesEditor() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const CoachDisplayPreferencesPage(),
+      ),
+    );
+    
+    // 重新載入偏好
+    await _loadDisplayPreferences();
   }
 
   /// 顯示健康評估編輯頁面
@@ -182,6 +197,33 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
     );
   }
 
+  /// ⭐ 儲存教練備註
+  Future<void> _saveCoachNote(String notes) async {
+    if (_healthAssessment == null) return;
+    
+    try {
+      final currentUser = _authController.user;
+      if (currentUser == null) return;
+
+      await _assessmentNoteService.upsertNote(
+        coachId: currentUser.uid,
+        assessmentId: _healthAssessment!.id,
+        notes: notes,
+      );
+
+      // 重新載入教練備註
+      await _loadHealthAssessment();
+
+      if (mounted) {
+        NotificationUtils.showSuccess(context, '教練備註已儲存');
+      }
+    } catch (e) {
+      if (mounted) {
+        NotificationUtils.showError(context, '儲存教練備註失敗');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -200,32 +242,16 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
                 child: Center(child: CircularProgressIndicator()),
               ),
             )
-          else if (_relationship?.hasClientProfile == true)
-            ClientProfileCard(
-              profile: _relationship!.clientProfile!,
-              onEditTap: _showProfileEditor,
-            )
-          else
-            EmptyClientProfileCard(
-              onCreateTap: _showProfileEditor,
-            ),
-
-          const SizedBox(height: 24),
-
-          // 健康評估卡片 ⭐ 新增
-          if (_isLoadingHealthAssessment)
-            const Card(
-              margin: EdgeInsets.zero,
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            )
+          // 健康評估卡片 ⭐ 主要內容
           else if (_healthAssessment != null)
             HealthAssessmentSummaryCard(
               assessment: _healthAssessment!,
+              preferences: _displayPreferences,
+              coachNote: _coachNote,
               onViewFull: _showHealthAssessmentFull,
               onEdit: _showHealthAssessmentEditor,
+              onConfigurePreferences: _showPreferencesEditor,
+              onCoachNoteChanged: _saveCoachNote, // ⭐ 新增：儲存備註回調
             )
           else
             EmptyHealthAssessmentCard(

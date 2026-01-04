@@ -2,7 +2,7 @@
 
 > 專案文檔與開發指南
 
-**最後更新**：2025年1月2日 - v2.2 時區統一化完成 ✅
+**最後更新**：2026年1月4日 - 文檔整理完成 ✅
 
 ---
 
@@ -50,16 +50,18 @@
   - 索引策略
   - RLS 優化
 
-- **[DATABASE_STRUCTURE.md](DATABASE_STRUCTURE.md)**（自動生成）
-  - 實時資料庫結構快照
-  - 各表記錄數量
-  - 欄位範例值
-
 - **[../migrations/README.md](../migrations/README.md)** ⭐ 2025-01-01 新增
   - Migrations 優化（19 → 7 個檔案）
   - 清晰的版本劃分（v1.0 vs v2.0）
   - 執行順序說明
   - 部署指南（完整 vs 單機版）
+
+### 健康評估系統
+- **[HEALTH_ASSESSMENT_SYSTEM.md](HEALTH_ASSESSMENT_SYSTEM.md)** ⭐ v2.8 新增
+  - 完整 PAR-Q+ 問卷系統
+  - 視覺化評估報告
+  - RLS 隱私保護
+  - 教練評估備註（v2.8.1）✅
 
 ### v2.0 SaaS 平台
 - **[SAAS_PLATFORM_ROADMAP.md](SAAS_PLATFORM_ROADMAP.md)**
@@ -84,6 +86,7 @@
 - **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)**
   - Android APK 建置
   - Google Sign-In 設定
+  - Email Authentication Deep Link 配置 ⭐
   - Supabase 配置
   - 環境變數管理
 
@@ -101,8 +104,10 @@
 **重構與優化報告**（archived/）：
 - `MAIN_THREAD_OPTIMIZATION.md` - 主線程優化報告
 - `ARCHITECTURE_REFACTORING_GUIDE.md` - 架構重構指南
-- `STATISTICS_PAGE_REFACTORING.md` - 統計頁面重構
-- `BOOKING_PAGE_REFACTORING.md` - Booking 頁面重構
+- `PERFORMANCE_BOTTLENECK_ANALYSIS.md` - 性能瓶頸分析
+
+**UI/UX 設計**（archived/ui_ux/）：
+- `UNIFIED_TIME_PICKER_DESIGN.md` - 統一時間選擇器設計（v2.0）
 
 **階段性任務文檔**（archived/cursor_tasks/）：
 - `01-05_TASK_*.md` - 各階段開發任務記錄
@@ -114,6 +119,10 @@
 **Phase 3 文檔**（archived/phase3/）：
 - `PHASE3_IMPLEMENTATION_DECISIONS.md` - Phase 3 設計決策 ✅ 已完成
 - `PHASE3_TEST_PLAN.md` - Phase 3 測試計劃 ✅ 已完成
+
+**v2.8 健康評估系統**（archived/v2.8_health_assessment/）：
+- `COACH_ASSESSMENT_NOTES_IMPLEMENTATION.md` - 教練備註實作
+- `COACH_ASSESSMENT_NOTES_COMPLETED.md` - 完成報告
 
 ---
 
@@ -322,4 +331,4 @@
 ---
 
 **維護者**：StrengthWise 開發團隊  
-**最後更新**：2025年1月2日 - 文檔精簡完成 ✅（DEVELOPMENT_STATUS: 1732→738 行 -57.4%）
+**最後更新**：2026年1月4日 - 文檔整理完成 ✅（減少 3 個重複文檔，新增 1 個歸檔目錄）

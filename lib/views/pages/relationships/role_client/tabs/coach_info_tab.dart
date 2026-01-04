@@ -38,7 +38,7 @@ class CoachInfoTab extends StatelessWidget {
               _buildInfoRow(
                 icon: Icons.email,
                 label: 'Email',
-                value: coach.email ?? '未設定',
+                value: coach.email,
               ),
               // 電話暫時隱藏（UserModel 沒有此欄位）
               // _buildInfoRow(
@@ -359,8 +359,7 @@ class CoachInfoTab extends StatelessWidget {
             child: coach.photoURL == null
                 ? Text(
                     coach.displayName?.substring(0, 1).toUpperCase() ??
-                        coach.email?.substring(0, 1).toUpperCase() ??
-                        'C',
+                        coach.email.substring(0, 1).toUpperCase(),
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -376,7 +375,7 @@ class CoachInfoTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  coach.displayName ?? coach.email ?? '教練',
+                  coach.displayName ?? coach.email,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),

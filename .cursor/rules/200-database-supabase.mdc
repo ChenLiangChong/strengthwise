@@ -1,0 +1,122 @@
+---
+description: "Supabase PostgreSQL 資料庫規範：表格設計、Model 轉換、RLS 策略。適用於 Model 和 Service 層。"
+globs: "lib/models/**/*.dart, lib/services/**/*.dart, migrations/**/*.sql"
+alwaysApply: false
+---
+
+# Supabase 資料庫規範
+
+## 🗄️ 核心表格
+
+### workout_plans（統一表格）
+
+<critical>
+訓練計劃和訓練記錄使用同一個表格，透過 `completed` 欄位區分
+</critical>
+
+```
+workout_plans（PostgreSQL 表格）
+├── completed: false  → 未完成的訓練計劃
+└── completed: true   → 已完成的訓練記錄
+```
+
+**必須包含欄位**：
+```dart
+{
+  'id': TEXT,              // Firestore 相容 ID（20 字符）
+  'user_id': UUID,         // 用戶 ID
+  'trainee_id': UUID,      // 受訓者 ID
+  'creator_id': UUID,      // 創建者 ID
+  'completed': bool,
+  'scheduled_date': TIMESTAMPTZ,
+  'exercises': JSONB,
+}
+```
+
+## 🔄 Model 必須實作
+
+### fromSupabase()
+
+```dart
+factory WorkoutRecord.fromSupabase(Map<String, dynamic> json) {
+  return WorkoutRecord(
+    id: json['id'] as String,
+    userId: json['user_id'] as String,      // snake_case → camelCase
+    traineeId: json['trainee_id'] as String,
+    creatorId: json['creator_id'] as String,
+    completed: json['completed'] as bool? ?? false,
+    // 使用 DateTimeUtils 解析時間
+    scheduledDate: DateTimeUtils.parseIsoTimestamp(json['scheduled_date']),
+    exercises: _parseExercises(json['exercises']),
+  );
+}
+```
+
+### toMap()
+
+```dart
+Map<String, dynamic> toMap() {
+  return {
+    'id': id,
+    'user_id': userId,           // camelCase → snake_case
+    'trainee_id': traineeId,
+    'creator_id': creatorId,
+    'completed': completed,
+    // 使用 DateTimeUtils 格式化時間
+    'scheduled_date': DateTimeUtils.formatToUtcIso(scheduledDate),
+    'exercises': exercises.map((e) => e.toMap()).toList(),
+  };
+}
+```
+
+## 🔐 RLS 策略設計
+
+### 基本原則
+
+```sql
+-- 1. 用戶只能看到自己的資料
+CREATE POLICY "Users can view own data"
+  ON workout_plans FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- 2. 教練可以看到學員的資料
+CREATE POLICY "Coaches can view trainee data"
+  ON workout_plans FOR SELECT
+  USING (
+    auth.uid() = creator_id OR 
+    auth.uid() = trainee_id
+  );
+```
+
+### 索引優化
+
+```sql
+-- RLS 欄位必須建立索引
+CREATE INDEX idx_workout_plans_user_id ON workout_plans(user_id);
+CREATE INDEX idx_workout_plans_trainee_id ON workout_plans(trainee_id);
+CREATE INDEX idx_workout_plans_creator_id ON workout_plans(creator_id);
+```
+
+## 📊 表格總覽
+
+| 類別 | 表格 | 說明 |
+|------|------|------|
+| **v1.0 核心** | `users` | 用戶資料 |
+| | `workout_plans` | 訓練計劃/記錄 |
+| | `workout_templates` | 訓練模板 |
+| | `exercises` | 794 個系統動作 |
+| | `custom_exercises` | 自訂動作 |
+| | `body_data` | 身體數據 |
+| **v2.0 教練** | `coaching_relationships` | 教練學員關係 |
+| | `availability_slots` | 教練可用時段 |
+| | `appointments` | 預約記錄 |
+| | `session_notes` | 課程筆記 |
+| | `drawing_notes` | 手繪板 |
+| **v2.8 健康** | `health_assessments` | 健康評估問卷 |
+| | `coach_assessment_notes` | 教練私人備註 |
+
+## 🔗 完整文檔
+
+詳細 Schema、RLS 策略、索引設計請參考：
+- `@docs/DATABASE_SUPABASE.md`
+- `@migrations/README.md`

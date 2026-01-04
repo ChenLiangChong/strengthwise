@@ -41,7 +41,6 @@ class HealthAssessmentQueryManager {
     version,
     is_current,
     emergency_contact,
-    coach_notes,
     created_at,
     updated_at
   ''';

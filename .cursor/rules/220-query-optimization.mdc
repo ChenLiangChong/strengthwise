@@ -1,0 +1,125 @@
+---
+description: "資料庫查詢效能規範：索引策略、分頁、避免常見問題。適用於 Service 層。"
+globs: "lib/services/**/*.dart"
+alwaysApply: false
+---
+
+# 查詢效能規範
+
+## ⛔ 禁止事項
+
+<critical>
+1. ❌ 使用 `SELECT *`（必須明確指定欄位）
+2. ❌ 使用 Offset 分頁（深層分頁效能差）
+3. ❌ N+1 查詢問題（循環中查詢）
+4. ❌ `COUNT(*)` exact（全表掃描）
+</critical>
+
+## ✅ 必須遵守
+
+### 1. 明確指定欄位
+
+```dart
+// ✅ 正確：只選需要的欄位
+final data = await supabase
+  .from('workout_plans')
+  .select('id, title, scheduled_date, completed')
+  .eq('user_id', userId);
+
+// ❌ 錯誤：SELECT *（浪費 60-80% 頻寬）
+final data = await supabase
+  .from('workout_plans')
+  .select()
+  .eq('user_id', userId);
+```
+
+### 2. Cursor-based 分頁
+
+```dart
+// ✅ 正確：Cursor 分頁（O(1) 恆定速度）
+final data = await supabase
+  .from('workout_plans')
+  .select('id, title, scheduled_date, completed')
+  .lt('scheduled_date', lastCursor)  // 游標定位
+  .order('scheduled_date', ascending: false)
+  .limit(20);
+
+// ❌ 錯誤：Offset 分頁（O(N) 深層分頁慢）
+final data = await supabase
+  .from('workout_plans')
+  .select()
+  .range(100, 119);  // 第 100 頁會很慢
+```
+
+### 3. 批量查詢
+
+```dart
+// ✅ 正確：批量查詢
+final exercises = await supabase
+  .from('exercises')
+  .select('id, name')
+  .in_('id', exerciseIds);
+
+// ❌ 錯誤：N+1 查詢
+for (var id in exerciseIds) {
+  final exercise = await getExerciseById(id);  // 每個都是一次查詢！
+}
+```
+
+### 4. TSTZRANGE 查詢
+
+```dart
+// ✅ 正確：使用範圍重疊運算子 'ov'
+final data = await supabase
+  .from('availability_slots')
+  .select('id, coach_id, time_range, is_available')
+  .filter('time_range', 'ov', '[${startDate.toIso8601String()},${endDate.toIso8601String()})')
+  .order('time_range', ascending: true);
+```
+
+## 📊 效能指標
+
+| 優化項目 | 優化前 | 優化後 | 提升 |
+|---------|--------|--------|------|
+| 統計頁面 | 2-5s | <5ms | 99%+ |
+| 動作搜尋 | 500ms-2s | <50ms | 90%+ |
+| 訓練計劃 | 100-200ms | <20ms | 85%+ |
+| Cursor 分頁 | O(N) | O(1) | 恆定 |
+
+## 🔧 索引策略
+
+```sql
+-- 1. RLS 欄位索引（避免全表掃描）
+CREATE INDEX idx_workout_plans_user_id ON workout_plans(user_id);
+
+-- 2. 覆蓋索引（Index-Only Scan）
+CREATE INDEX idx_covering 
+  ON workout_plans(user_id, completed, scheduled_date DESC) 
+  INCLUDE (id, title);
+
+-- 3. JSONB GIN 索引
+CREATE INDEX idx_exercises_gin ON workout_plans USING GIN (exercises);
+
+-- 4. TSTZRANGE GiST 索引
+CREATE INDEX idx_time_range_gist ON availability_slots USING GiST (time_range);
+```
+
+## 💾 快取策略
+
+```dart
+// 記憶體快取（5 分鐘有效）
+Map<String, _StatisticsCache> _cache = {};
+
+Future<StatisticsData> getStatistics(String userId) async {
+  final cache = _cache[userId];
+  if (cache != null && cache.isValid()) {
+    return cache.data;  // 快取命中
+  }
+  
+  final data = await _fetchStatistics(userId);
+  _cache[userId] = _StatisticsCache(data);
+  return data;
+}
+```
+
+詳見：`@docs/DATABASE_OPTIMIZATION_GUIDE.md`

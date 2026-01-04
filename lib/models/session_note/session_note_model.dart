@@ -13,8 +13,8 @@ class SessionNoteModel {
   /// 筆記標題
   final String title;
 
-  /// 學員 ID
-  final String clientId;
+  /// 學員 ID（可能為 null，如果學員被刪除）⭐ 修改
+  final String? clientId;
 
   /// 教練 ID（可能為 null，如果教練被刪除）⭐ 修改
   final String? coachId;
@@ -61,8 +61,8 @@ class SessionNoteModel {
   const SessionNoteModel({
     required this.id,
     required this.title,
-    required this.clientId,
-    this.coachId, // ⭐ 改為可選
+    this.clientId, // ⭐ 改為可選（學員可能被刪除）
+    this.coachId, // ⭐ 改為可選（教練可能被刪除）
     this.coachName, // ⭐ 名稱快照
     this.clientName, // ⭐ 名稱快照
     this.appointmentId,
@@ -107,7 +107,7 @@ class SessionNoteModel {
     return SessionNoteModel(
       id: json['id'] as String? ?? '',
       title: json['title'] as String? ?? '課程筆記',
-      clientId: json['client_id'] as String? ?? '',
+      clientId: json['client_id'] as String?, // ⭐ 允許為 null（學員被刪除）
       coachId: json['coach_id'] as String?, // ⭐ 允許為 null（教練被刪除）
       coachName: json['coach_name'] as String?, // ⭐ 名稱快照
       clientName: json['client_name'] as String?, // ⭐ 名稱快照

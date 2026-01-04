@@ -135,22 +135,6 @@ class HealthAssessmentServiceSupabase implements IHealthAssessmentService {
     }
   }
 
-  /// 更新教練備註
-  /// 
-  /// [assessmentId] 評估 ID
-  /// [coachNotes] 教練備註內容
-  Future<void> updateCoachNotes(String assessmentId, String coachNotes) async {
-    try {
-      await _operations.updateCoachNotes(assessmentId, coachNotes);
-    } catch (e) {
-      _errorService.logError(
-        '更新教練備註失敗: $e',
-        type: 'HealthAssessmentServiceError',
-      );
-      rethrow;
-    }
-  }
-
   /// 檢查指定學員是否已有當前評估
   /// 
   /// [userId] 學員 ID

@@ -40,9 +40,6 @@ class _ExercisesPageState extends State<ExercisesPage> {
   List<String> _equipmentCategories = [];
   List<String> _equipmentSubcategories = [];
   List<Exercise> _exercises = [];
-  
-  // ⚡ 快取所有動作（一次載入，避免重複查詢）
-  List<Exercise> _allExercisesCache = [];
 
   int _currentStep =
       0; // 當前導航步驟：0=訓練類型, 1=身體部位, 2=特定肌群, 3=器材類別, 4=器材子類別, 5=動作列表

@@ -255,10 +255,11 @@ class SessionNoteCard extends StatelessWidget {
     if (clientName != null) {
       return clientName!;
     }
-    // ⭐ 處理已刪除的學員（clientId 為 null 或空）
-    if (note.clientId == null || note.clientId!.isEmpty) {
-      return '未知學員';
+    // ⭐ 處理已刪除的用戶（ID 為 null）
+    if (note.clientId == null) {
+      return '已刪除的學員';
     }
+    // 後備方案：顯示 ID 前綴
     return '學員 ${note.clientId!.substring(0, 8)}...';
   }
 

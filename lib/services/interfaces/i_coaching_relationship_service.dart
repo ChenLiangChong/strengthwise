@@ -1,6 +1,5 @@
 import '../../models/coaching_relationship_model.dart';
 import '../../models/user/user_model.dart';
-import '../../models/client_profile_model.dart';
 import '../../models/client_with_relationship.dart';  // ⭐ 新增
 import '../../models/coach_with_relationship.dart';  // ⭐ 新增
 
@@ -134,32 +133,23 @@ abstract class ICoachingRelationshipService {
   // 學員檔案管理
   // ============================================================================
 
-  /// 根據 ID 查詢關係（包含學員檔案）
+  /// 根據 ID 查詢詳細關係
   ///
   /// [relationshipId] 關係 ID
-  /// 返回：綁定關係模型（包含 client_profile）
-  Future<CoachingRelationshipModel?> getRelationshipByIdWithProfile(
+  /// 返回：綁定關係模型（完整資訊）
+  Future<CoachingRelationshipModel?> getRelationshipByIdDetailed(
     String relationshipId,
   );
 
-  /// 根據教練和學員 ID 查詢關係（包含學員檔案）
+  /// 根據教練和學員 ID 查詢詳細關係
   ///
   /// [coachId] 教練 ID
   /// [clientId] 學員 ID
-  /// 返回：綁定關係模型（包含 client_profile）
-  Future<CoachingRelationshipModel?> getRelationshipByUsersWithProfile(
+  /// 返回：綁定關係模型（完整資訊）
+  Future<CoachingRelationshipModel?> getRelationshipByUsersDetailed(
     String coachId,
     String clientId,
   );
-
-  /// 更新學員檔案
-  ///
-  /// [relationshipId] 關係 ID
-  /// [profile] 學員檔案
-  Future<void> updateClientProfile({
-    required String relationshipId,
-    required ClientProfile profile,
-  });
 
   // ============================================================================
   // 快取管理

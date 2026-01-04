@@ -1,0 +1,121 @@
+---
+description: "文檔維護規則：當功能變更時如何同步更新相關文檔。適用於任何代碼修改後的文檔更新。"
+globs: "*"
+alwaysApply: true
+---
+
+# 文檔維護規則
+
+## 📋 核心原則
+
+<critical>
+當完成功能開發或修改代碼後，必須檢查並同步以下文檔
+</critical>
+
+## 🔄 文檔同步策略
+
+### 層級關係
+
+```
+.cursor/rules/*.mdc    ← 精簡規則（必須遵守的硬性規定）
+        ↓ 指向
+docs/*.md              ← 詳細文檔（完整說明、範例、背景）
+```
+
+**原則**：
+- `.mdc` 規則檔：只包含「核心規則」和「禁止事項」
+- `docs/*.md`：包含完整說明、歷史背景、詳細範例
+- **不重複**：規則檔用 `詳見：@docs/xxx.md` 指向詳細內容
+
+## 📝 功能開發後必須更新的文檔
+
+### 1. 版本變更時
+
+| 變更類型 | 必須更新 |
+|---------|---------|
+| 新增功能 | `docs/DEVELOPMENT_STATUS.md`（版本記錄）|
+| 資料庫變更 | `docs/DATABASE_SUPABASE.md` + `migrations/README.md` |
+| UI 重大變更 | `docs/UI_UX_GUIDELINES.md` |
+| API/架構變更 | `docs/PROJECT_OVERVIEW.md` |
+
+### 2. 同步檢查清單
+
+完成功能後，依序檢查：
+
+```
+□ DEVELOPMENT_STATUS.md - 更新版本號和完成項目
+□ 相關功能文檔 - 如 HEALTH_ASSESSMENT_SYSTEM.md
+□ AGENTS.md - 如果修改了開發規範
+□ .cursor/rules/*.mdc - 只有「規則」變更時才更新
+```
+
+### 3. 何時需要更新 .cursor/rules
+
+| 需要更新 | 不需要更新 |
+|---------|-----------|
+| 新增禁止事項 | 只是功能說明 |
+| 修改強制規則 | 新增使用範例 |
+| 新增技術約束 | 背景說明、歷史記錄 |
+| Glob 路徑變更 | 文檔內容擴充 |
+
+## 🎯 更新範例
+
+### 場景 1：新增資料庫表格
+
+```
+1. 執行 Migration
+2. 更新 docs/DATABASE_SUPABASE.md（新增表格說明）
+3. 更新 migrations/README.md（版本對應）
+4. 更新 docs/DEVELOPMENT_STATUS.md（版本記錄）
+5. 【不需要】更新 .cursor/rules/200-database-supabase.mdc
+   （除非有新的硬性規則）
+```
+
+### 場景 2：新增強制規則
+
+```
+例如：新規定「所有 API 必須有超時設定」
+
+1. 更新 .cursor/rules/100-flutter-dart-standards.mdc（新增規則）
+2. 更新 AGENTS.md（同步核心規則）
+3. 更新 docs/PROJECT_OVERVIEW.md（如需要）
+```
+
+### 場景 3：新增功能模組
+
+```
+例如：新增「通知系統」
+
+1. 新增 docs/NOTIFICATION_SYSTEM.md（詳細文檔）
+2. 新增 .cursor/rules/920-domain-notifications.mdc（如有特殊規則）
+3. 更新 docs/DEVELOPMENT_STATUS.md（版本記錄）
+4. 更新 900-documentation-index.mdc（文檔索引）
+```
+
+## ⚠️ 避免重複維護
+
+### 錯誤示範
+
+```
+# .cursor/rules/200-database-supabase.mdc
+（包含 50 行詳細的表格說明 ← 與 docs/ 重複）
+```
+
+### 正確示範
+
+```
+# .cursor/rules/200-database-supabase.mdc
+（只有 5 條核心規則 + 指向 docs/ 的連結）
+
+詳見：`@docs/DATABASE_SUPABASE.md`
+```
+
+## 🔧 自動提醒
+
+當我（AI）完成以下操作時，會主動提醒更新文檔：
+
+1. 新增 Model / Service / Controller
+2. 修改資料庫結構
+3. 新增或修改 RLS 策略
+4. 重大 UI 重構
+5. 新增功能模組

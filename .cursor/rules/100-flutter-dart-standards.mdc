@@ -1,0 +1,93 @@
+---
+description: "Flutter/Dart 編碼標準、命名規範與型別安全規則。適用於所有 Dart 檔案。"
+globs: "**/*.dart"
+alwaysApply: false
+---
+
+# Flutter/Dart 編碼標準
+
+## 🏷️ 命名規範
+
+| 類型 | 命名方式 | 範例 |
+|------|----------|------|
+| Classes / Enums | PascalCase | `WorkoutController`, `UserModel` |
+| Variables / Functions | camelCase | `fetchUserData`, `isLoading` |
+| Files / Directories | snake_case | `user_model.dart`, `auth_service.dart` |
+| Private Members | _prefix | `_userId`, `_handleError()` |
+| Constants | SCREAMING_SNAKE | `MAX_WORKOUT_DURATION` |
+
+## ✅ 型別安全（必須）
+
+<critical>
+所有資料庫操作必須透過 Model 類別，禁止直接操作 `Map<String, dynamic>`
+</critical>
+
+```dart
+// ✅ 正確：透過 Model
+final record = WorkoutRecord.fromSupabase(data);
+await workoutService.createRecord(record);
+
+// ❌ 錯誤：直接操作 Map
+await supabase.from('workout_plans').insert({'title': 'Test'});
+```
+
+## ✅ 空安全（Null Safety）
+
+```dart
+// ✅ 正確：使用 ? 和 ?? 運算符
+final displayName = user?.displayName ?? '未命名';
+
+// ❌ 錯誤：強制解包
+final displayName = user!.displayName; // 危險！
+```
+
+## 📝 註解規範
+
+```dart
+/// 建立新的訓練模板
+/// 
+/// [template] 訓練模板資料
+/// 返回建立的模板 ID
+Future<String> createTemplate(WorkoutTemplate template) async {
+  // 驗證模板資料（繁體中文註解）
+  if (template.exercises.isEmpty) {
+    throw Exception('訓練模板不能為空');
+  }
+  // ...
+}
+```
+
+## 🔧 語法規範
+
+### Constructors
+```dart
+// ✅ 使用命名參數 + required
+const CustomButton({
+  super.key,
+  required this.label,
+  required this.onPressed,
+});
+```
+
+### Const 優化
+```dart
+// ✅ 盡可能使用 const（優化 Flutter 重繪）
+const SizedBox(height: 16),
+const EdgeInsets.all(16),
+```
+
+### Async/Await
+```dart
+// ✅ 優先使用 async/await
+final data = await fetchData();
+
+// ❌ 避免 .then() 鏈式調用
+fetchData().then((data) => process(data));
+```
+
+## ⛔ 禁止事項
+
+1. ❌ 使用 `dynamic`（除非絕對必要）
+2. ❌ 使用 `print()`（改用 `debugPrint()` 或 Logger）
+3. ❌ 跨層 Relative Import（使用 `package:strengthwise/...`）
+4. ❌ 手動 JSON 序列化（使用 Model 的 `fromSupabase()` / `toMap()`）

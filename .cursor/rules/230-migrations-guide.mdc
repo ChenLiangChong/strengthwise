@@ -1,0 +1,88 @@
+---
+description: "資料庫 Migration 執行規範：版本順序、合併策略、注意事項。適用於 SQL 遷移檔案。"
+globs: "migrations/**/*.sql"
+alwaysApply: false
+---
+
+# Migration 執行規範
+
+## 📋 執行順序
+
+### 完整部署（v1.0 + v2.0 + v2.8）
+
+執行以下 **13 個檔案**（按順序）：
+
+```sql
+-- v1.0 核心（4 個）
+001_v1_core_tables.sql          # 核心表格
+002_v1_initial_data.sql         # 系統資料（794 個動作）
+003_v1_enhancements.sql         # 功能增強
+004_v1_optimization.sql         # 統計優化
+
+-- v2.0 功能（3 個）
+005_v2_phase1_coaching.sql      # 教練學員系統
+006_v2_phase2_appointments.sql  # 預約系統
+007_v2_phase3_notes.sql         # 視覺化筆記
+
+-- v2.1+ 功能（6 個）
+008_workout_time_range_no_constraint.sql  # 訓練時間範圍
+009_v2_fixes.sql                          # 合併所有修復
+010_v2_enhancements.sql                   # 合併所有增強
+013_invite_codes_system.sql               # 邀請碼系統
+016_health_assessments.sql                # 健康評估
+021_coach_assessment_notes.sql            # 教練備註
+```
+
+### 僅部署 v1.0（單機版）
+
+只需執行前 **4 個檔案**。
+
+## 🔄 合併策略
+
+| 合併檔案 | 包含內容 |
+|---------|---------|
+| `009_v2_fixes.sql` | get_available_slots 修復、觸發器布林支援、body_part 填入 |
+| `010_v2_enhancements.sql` | gender_visible、custom_exercises RLS、delete_user_account |
+
+## ⚠️ 注意事項
+
+<critical>
+1. **執行順序**：必須按照編號順序執行（001 → 021）
+2. **不可跳過**：v2.0 的表格依賴 v1.0 的 `users` 表
+3. **冪等性**：所有 SQL 使用 `IF NOT EXISTS`，可重複執行
+4. **RLS**：Supabase Auth 必須先啟用
+5. **pgroonga**：需安裝 pgroonga 擴展（全文搜尋）
+</critical>
+
+## 📊 版本對應
+
+| Migration | 功能 |
+|-----------|------|
+| 001-004 | v1.0 單機版（訓練、統計、身體數據）|
+| 005 | v2.0 Phase 1（教練學員系統）|
+| 006 | v2.0 Phase 2（預約系統 + TSTZRANGE）|
+| 007 | v2.0 Phase 3（視覺化筆記 + Storage）|
+| 008 | v2.1（訓練時間範圍）|
+| 009-010 | v2.2-v2.4（修復 + 增強）|
+| 013 | v2.3（邀請碼遠端綁定）|
+| 016 | v2.8（健康評估 PAR-Q+）|
+| 021 | v2.8.1（教練評估備註）|
+
+## 🚀 執行方式
+
+### Supabase Dashboard
+
+1. 登入 Supabase Dashboard
+2. 進入 SQL Editor
+3. 依序貼上每個檔案內容並執行
+
+### psql 命令列
+
+```bash
+cd migrations
+psql -U postgres -d strengthwise -f 001_v1_core_tables.sql
+psql -U postgres -d strengthwise -f 002_v1_initial_data.sql
+# ... 依序執行
+```
+
+詳見：`@migrations/README.md`

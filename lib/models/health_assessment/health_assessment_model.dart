@@ -4,117 +4,127 @@ import 'enums.dart';
 import 'training_goals.dart';
 
 /// 健康評估模型
-/// 
+///
 /// 記錄學員的健康評估問卷（PAR-Q+ 標準）
 class HealthAssessmentModel {
   /// ID
   final String id;
-  
+
   /// 學員 ID
   final String userId;
-  
+
   /// 評估建立者 ID（教練或學員自己）
   final String? assessedBy;
-  
+
   /// 評估日期
   final DateTime assessmentDate;
-  
+
   // =========================================
   // 基礎安全篩檢（PAR-Q+ 7題）
   // =========================================
-  
+
   /// 心臟疾病
   final bool heartDisease;
   final String? heartDiseaseNote;
-  
+
   /// 運動時胸痛
   final bool chestPainExercise;
-  
+
   /// 靜止時胸痛
   final bool chestPainRest;
-  
+
   /// 頭暈或失去意識
   final bool dizziness;
-  
+
   /// 骨骼或關節問題
   final bool boneJointProblem;
   final String? boneJointNote;
-  
+
   /// 服用藥物
   final bool medication;
   final String? medicationNote;
-  
+
   /// 其他不宜運動原因
   final bool otherReason;
   final String? otherReasonNote;
-  
+
   /// 是否通過安全篩檢（自動計算）
+  /// ⚠️ 此欄位僅供參考，不構成醫療診斷
   final bool isCleared;
-  
+
+  /// 取得風險等級標籤
+  ///
+  /// 返回：'low' (低風險) 或 'attention' (需注意)
+  String get riskLevel => isCleared ? 'low' : 'attention';
+
+  /// 取得風險等級中文標籤
+  String get riskLevelLabel => isCleared ? '低風險' : '需注意';
+
+  /// 取得風險等級描述
+  String get riskLevelDescription =>
+      isCleared ? '無特殊風險因子，可進行一般訓練' : '有風險因子需注意，建議調整訓練計畫';
+
   // =========================================
   // 進階評估（JSONB）
   // =========================================
-  
+
   /// 心血管系統細節
   final Map<String, dynamic>? cardiovascularDetails;
-  
+
   /// 傷病史
   final List<InjuryRecord> injuries;
-  
+
   /// 代謝與內分泌系統
   final Map<String, dynamic>? metabolicDetails;
-  
+
   /// 呼吸系統
   final Map<String, dynamic>? respiratoryDetails;
-  
+
   // =========================================
   // 生活型態與訓練背景
   // =========================================
-  
+
   /// 訓練經驗等級
   final TrainingLevel? trainingExperience;
-  
+
   /// 訓練年資（年）
   final double? trainingYears;
-  
+
   /// 職業活動度
   final ActivityLevel? occupationActivity;
-  
+
   /// 可用器材
   final List<String> equipmentAccess;
-  
+
   /// 每週訓練次數
   final int? weeklySessions;
-  
+
   /// 平均睡眠時數
   final double? sleepHours;
-  
+
   // =========================================
   // 訓練目標
   // =========================================
-  
+
   /// 訓練目標
   final TrainingGoals? trainingGoals;
-  
+
   // =========================================
   // 版本控制與狀態
   // =========================================
-  
+
   /// 問卷版本號
   final int version;
-  
+
   /// 是否為當前有效評估
   final bool isCurrent;
-  
+
   /// 緊急聯絡人
   final Map<String, dynamic>? emergencyContact;
-  
-  /// 教練備註
-  final String? coachNotes;
-  
+
   /// 建立時間
   final DateTime createdAt;
-  
+
   /// 更新時間
   final DateTime updatedAt;
 
@@ -149,7 +159,6 @@ class HealthAssessmentModel {
     required this.version,
     required this.isCurrent,
     this.emergencyContact,
-    this.coachNotes,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -160,8 +169,9 @@ class HealthAssessmentModel {
       id: json['id'] as String,
       userId: json['user_id'] as String,
       assessedBy: json['assessed_by'] as String?,
-      assessmentDate: DateTimeUtils.parseIsoTimestamp(json['assessment_date'] as String),
-      
+      assessmentDate:
+          DateTimeUtils.parseIsoTimestamp(json['assessment_date'] as String),
+
       // 基礎篩檢
       heartDisease: json['heart_disease'] as bool,
       heartDiseaseNote: json['heart_disease_note'] as String?,
@@ -175,13 +185,14 @@ class HealthAssessmentModel {
       otherReason: json['other_reason'] as bool,
       otherReasonNote: json['other_reason_note'] as String?,
       isCleared: json['is_cleared'] as bool,
-      
+
       // 進階評估
-      cardiovascularDetails: json['cardiovascular_details'] as Map<String, dynamic>?,
+      cardiovascularDetails:
+          json['cardiovascular_details'] as Map<String, dynamic>?,
       injuries: _parseInjuries(json['musculoskeletal_details']),
       metabolicDetails: json['metabolic_details'] as Map<String, dynamic>?,
       respiratoryDetails: json['respiratory_details'] as Map<String, dynamic>?,
-      
+
       // 生活型態
       trainingExperience: json['training_experience'] != null
           ? TrainingLevel.fromString(json['training_experience'] as String)
@@ -192,24 +203,25 @@ class HealthAssessmentModel {
       occupationActivity: json['occupation_activity'] != null
           ? ActivityLevel.fromString(json['occupation_activity'] as String)
           : null,
-      equipmentAccess: (json['equipment_access'] as List?)?.cast<String>() ?? [],
+      equipmentAccess:
+          (json['equipment_access'] as List?)?.cast<String>() ?? [],
       weeklySessions: json['weekly_sessions'] as int?,
       sleepHours: json['sleep_hours'] != null
           ? (json['sleep_hours'] as num).toDouble()
           : null,
-      
+
       // 訓練目標
       trainingGoals: json['training_goals'] != null
-          ? TrainingGoals.fromJson(json['training_goals'] as Map<String, dynamic>)
+          ? TrainingGoals.fromJson(
+              json['training_goals'] as Map<String, dynamic>)
           : null,
-      
+
       // 版本控制
-      version: json['version'] as int,
-      isCurrent: json['is_current'] as bool,
+      version: json['version'] as int? ?? 1,
+      isCurrent: json['is_current'] as bool? ?? true,
       emergencyContact: json['emergency_contact'] as Map<String, dynamic>?,
-      coachNotes: json['coach_notes'] as String?,
-      createdAt: DateTimeUtils.parseIsoTimestamp(json['created_at'] as String),
-      updatedAt: DateTimeUtils.parseIsoTimestamp(json['updated_at'] as String),
+      createdAt: DateTimeUtils.parseIsoTimestamp(json['created_at']),
+      updatedAt: DateTimeUtils.parseIsoTimestamp(json['updated_at']),
     );
   }
 
@@ -219,7 +231,7 @@ class HealthAssessmentModel {
       'user_id': userId,
       'assessed_by': assessedBy,
       'assessment_date': DateTimeUtils.formatToUtcIso(assessmentDate),
-      
+
       // 基礎篩檢
       'heart_disease': heartDisease,
       'heart_disease_note': heartDiseaseNote,
@@ -232,13 +244,13 @@ class HealthAssessmentModel {
       'medication_note': medicationNote,
       'other_reason': otherReason,
       'other_reason_note': otherReasonNote,
-      
+
       // 進階評估
       'cardiovascular_details': cardiovascularDetails,
       'musculoskeletal_details': injuries.map((e) => e.toJson()).toList(),
       'metabolic_details': metabolicDetails,
       'respiratory_details': respiratoryDetails,
-      
+
       // 生活型態
       'training_experience': trainingExperience?.value,
       'training_years': trainingYears,
@@ -246,15 +258,14 @@ class HealthAssessmentModel {
       'equipment_access': equipmentAccess,
       'weekly_sessions': weeklySessions,
       'sleep_hours': sleepHours,
-      
+
       // 訓練目標
       'training_goals': trainingGoals?.toJson(),
-      
+
       // 版本控制
       'version': version,
       'is_current': isCurrent,
-      'emergency_contact': emergencyContact,
-      'coach_notes': coachNotes,
+      if (emergencyContact != null) 'emergency_contact': emergencyContact,
       'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
     };
   }
@@ -280,7 +291,8 @@ class HealthAssessmentModel {
     }
 
     for (final injury in injuries) {
-      if (injury.status == InjuryStatus.acute || injury.status == InjuryStatus.chronic) {
+      if (injury.status == InjuryStatus.acute ||
+          injury.status == InjuryStatus.chronic) {
         final limitation = injury.limitations ?? '需注意';
         warnings.add('${injury.site}：$limitation');
       }
@@ -325,7 +337,6 @@ class HealthAssessmentModel {
     int? version,
     bool? isCurrent,
     Map<String, dynamic>? emergencyContact,
-    String? coachNotes,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -346,7 +357,8 @@ class HealthAssessmentModel {
       otherReason: otherReason ?? this.otherReason,
       otherReasonNote: otherReasonNote ?? this.otherReasonNote,
       isCleared: isCleared ?? this.isCleared,
-      cardiovascularDetails: cardiovascularDetails ?? this.cardiovascularDetails,
+      cardiovascularDetails:
+          cardiovascularDetails ?? this.cardiovascularDetails,
       injuries: injuries ?? this.injuries,
       metabolicDetails: metabolicDetails ?? this.metabolicDetails,
       respiratoryDetails: respiratoryDetails ?? this.respiratoryDetails,
@@ -360,7 +372,6 @@ class HealthAssessmentModel {
       version: version ?? this.version,
       isCurrent: isCurrent ?? this.isCurrent,
       emergencyContact: emergencyContact ?? this.emergencyContact,
-      coachNotes: coachNotes ?? this.coachNotes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -372,4 +383,3 @@ class HealthAssessmentModel {
         'injuries: ${injuries.length}, isCurrent: $isCurrent)';
   }
 }
-

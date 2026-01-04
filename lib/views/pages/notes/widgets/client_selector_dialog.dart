@@ -96,7 +96,7 @@ class _ClientSelectorDialogState extends State<ClientSelectorDialog> {
                           ),
                         ),
                         title: Text(client.displayName ?? '未知學員'),
-                        subtitle: Text(client.email ?? ''),
+                        subtitle: Text(client.email),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () {
                           Navigator.pop(context, client.uid);

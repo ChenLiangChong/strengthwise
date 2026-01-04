@@ -3,6 +3,7 @@ import 'package:strengthwise/views/pages/relationships/role_client/tabs/coach_li
 import 'package:strengthwise/views/pages/scheduling/appointments/appointments_list_page.dart';
 import 'package:strengthwise/views/pages/scheduling/availability/client_availability_page.dart';
 import 'package:strengthwise/views/pages/notes/session_notes_list_page.dart';
+import 'package:strengthwise/views/pages/relationships/role_client/my_health_assessment_page.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 
@@ -29,7 +30,7 @@ class _ClientHubPageState extends State<ClientHubPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this); // 3 → 4（新增課程筆記 Tab）
+    _tabController = TabController(length: 5, vsync: this); // 4 → 5（新增健康評估 Tab）
     _authController = serviceLocator<IAuthController>();
     _currentUserId = _authController.user?.uid;
   }
@@ -58,12 +59,13 @@ class _ClientHubPageState extends State<ClientHubPage>
         title: const Text('學員中心'),
         bottom: TabBar(
           controller: _tabController,
-          isScrollable: false, // 4 個 Tab 需要滾動
+          isScrollable: true, // 5 個 Tab 需要滾動
           tabs: const [
             Tab(icon: Icon(Icons.people), text: '我的教練'),
             Tab(icon: Icon(Icons.schedule), text: '時間偏好'),
             Tab(icon: Icon(Icons.list_alt), text: '我的預約'),
-            Tab(icon: Icon(Icons.note_alt), text: '課程筆記'), // ⭐ 新增
+            Tab(icon: Icon(Icons.note_alt), text: '課程筆記'),
+            Tab(icon: Icon(Icons.health_and_safety), text: '健康評估'), // ⭐ 新增
           ],
         ),
       ),
@@ -84,10 +86,13 @@ class _ClientHubPageState extends State<ClientHubPage>
           // Tab 3: 我的預約（Phase 2）- 查看預約記錄
           const AppointmentsListPage(isCoachMode: false),
 
-          // Tab 4: 課程筆記（Phase 4）- 查看教練分享的課程筆記 ⭐ 新增
+          // Tab 4: 課程筆記（Phase 4）- 查看教練分享的課程筆記
           const SessionNotesListPage(
             isClientMode: true, // ⭐ 學員模式（只顯示共享筆記）
           ),
+
+          // Tab 5: 健康評估（v2.8）- 學員自行查看/填寫健康評估 ⭐ 新增
+          MyHealthAssessmentPage(userId: _currentUserId!),
         ],
       ),
     );

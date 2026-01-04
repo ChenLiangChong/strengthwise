@@ -1,0 +1,117 @@
+---
+description: "UI/UX 設計規範：Kinetic 設計系統、色彩方案、Material 3。適用於 views 和 themes。"
+globs: "lib/views/**/*.dart, lib/themes/**/*.dart"
+alwaysApply: false
+---
+
+# UI/UX 設計規範
+
+## 🎨 Kinetic 設計系統
+
+### 設計哲學
+
+> 優秀的健身 App UI 不僅是讓使用者「看見」數據，更是透過互動設計引導使用者進入「心流」狀態
+
+### 適應性設計
+
+| 模式 | 適用場景 | 特點 |
+|------|---------|------|
+| ☀️ 淺色 | 光線充足的商用健身房 | 高對比、抵抗眩光 |
+| 🌙 深色 | 昏暗環境、夜間訓練 | 護眼、OLED 省電 |
+| 🔄 系統 | 自動跟隨裝置設定 | 智能切換 |
+
+## 🎨 Titanium Blue 配色
+
+### 淺色模式
+
+| Token | 顏色 | Hex | 用途 |
+|-------|------|-----|------|
+| primary | 皇家藍 | `#2563EB` | 核心按鈕 |
+| background | 冷灰白 | `#F1F5F9` | 頁面底色 |
+| surface | 純白 | `#FFFFFF` | 卡片背景 |
+| onSurface | 深藍灰 | `#0F172A` | 主要文字 |
+| outline | 淺灰 | `#E2E8F0` | 卡片邊框 |
+| success | 翡翠綠 | `#10B981` | 完成勾選 |
+
+### 深色模式
+
+| Token | 顏色 | Hex | 用途 |
+|-------|------|-----|------|
+| primary | 淺天藍 | `#60A5FA` | 降飽和處理 |
+| background | 深岩灰 | `#0F172A` | 頁面底色（非純黑）|
+| surface | 岩灰 | `#1E293B` | 卡片背景 |
+| onSurface | 灰白 | `#F8FAFC` | 主要文字 |
+| outline | 深灰 | `#334155` | 卡片邊框 |
+| success | 螢光綠 | `#34D399` | 完成勾選 |
+
+<critical>
+- 禁止使用純黑 `#000000`（會產生 OLED 拖影）
+- 禁止硬編碼顏色，必須使用 `Theme.of(context).colorScheme`
+</critical>
+
+## 🔤 字體系統
+
+### 雙字體策略
+
+| 字體 | 用途 | 場景 |
+|------|------|------|
+| **Inter** | 顯示層 | 標題、按鈕、說明 |
+| **JetBrains Mono** | 數據層 | 重量、次數、計時器 |
+
+### 字級系統
+
+| 語意角色 | 大小 | 字重 | 應用 |
+|---------|------|------|------|
+| Display Large | 32sp | Bold | 總訓練量、PR 慶祝 |
+| Headline Medium | 24sp | SemiBold | 頁面標題 |
+| Title Medium | 18sp | Medium | 卡片標題 |
+| Body Large | 16sp | Regular | 說明文字 |
+| Data Large | 20sp | Medium | 重量/次數數值 |
+
+## 📐 8 點網格系統
+
+```dart
+// 所有間距必須是 8 的倍數
+const kSpacingMicro = 4.0;    // 極小（8 的半單位）
+const kSpacingSmall = 8.0;    // Element 間距
+const kSpacingMedium = 16.0;  // Container Padding
+const kSpacingLarge = 24.0;   // Card Spacing
+const kSpacingXL = 32.0;      // Section Break
+const kTouchTarget = 48.0;    // 最小觸控目標
+```
+
+## 💪 訓練情境設計
+
+### 菲茨定律應用
+
+```dart
+// 按鈕最小高度 48dp（手部顫抖、有汗時仍可點擊）
+ElevatedButton(
+  style: ElevatedButton.styleFrom(
+    minimumSize: const Size.fromHeight(48),
+  ),
+)
+```
+
+### 掃視閱讀優先級
+
+```
+運動名稱 > 重量/次數 > 歷史紀錄 > 備註
+```
+
+## 🎴 卡片設計
+
+```dart
+Card(
+  elevation: 0,  // 平面設計
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(16),
+    side: BorderSide(
+      color: Theme.of(context).colorScheme.outline,
+    ),
+  ),
+  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+)
+```
+
+詳見：`@docs/UI_UX_GUIDELINES.md`

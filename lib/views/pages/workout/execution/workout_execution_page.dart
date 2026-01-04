@@ -26,13 +26,10 @@ class WorkoutExecutionPage extends StatefulWidget {
 }
 
 class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
-  late final IWorkoutController _workoutController;
   late final IWorkoutExecutionController _executionController;
-  late final ErrorHandlingService _errorService;
 
   // 計時器相關變數
   DateTime? _workoutStartTime;
-  DateTime? _workoutEndTime;
   String _elapsedTime = '00:00:00';
 
   // 新增運動的控制器
@@ -53,9 +50,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     super.initState();
 
     // 從服務定位器獲取依賴
-    _workoutController = serviceLocator<IWorkoutController>();
     _executionController = serviceLocator<IWorkoutExecutionController>();
-    _errorService = serviceLocator<ErrorHandlingService>();
 
     _loadWorkoutPlan();
     // 開始計時
@@ -525,12 +520,6 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
           context: context);
       setState(() {}); // 觸發重新構建
     }
-  }
-
-  // 更新一組訓練的實際數據（已由 ExerciseCard 內建處理，保留此方法以防其他地方使用）
-  void _updateSetData(int exerciseIndex, int setIndex) {
-    // 新的 UI 已經內建內聯編輯功能，此方法不再需要
-    // 如果需要，可以在這裡添加額外的邏輯
   }
 
   // 添加運動備註

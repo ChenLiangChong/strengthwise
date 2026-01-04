@@ -2,7 +2,7 @@
 
 > AI 程式碼助手開發規範與最佳實踐
 
-**最後更新**：2026年1月2日 - v2.2 完成 ✅
+**最後更新**：2026年1月5日 - v2.8.1 教練評估備註完成 ✅
 
 ---
 
@@ -27,14 +27,13 @@
 
 **核心文檔**（⭐ 必讀）：
 1. **[docs/README.md](docs/README.md)** - 📚 文檔導航（入口）
-2. **[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)** ⭐⭐⭐ **精簡版**（800+ 行）
+2. **[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)** ⭐⭐⭐ **精簡版**（1400+ 行）
    - v1.0 單機版完成 ✅
    - v2.0 Phase 1-4 全部完成 ✅
-   - v2.1 訓練時間範圍完成 ✅（2025-01-02）
-   - v2.2 時區統一化完成 ✅（2025-01-02）⭐⭐⭐
-   - Migrations 優化完成 ✅
-   - 預約系統 UI 優化完成 ✅
-   - UX 重構完成 ✅
+   - v2.1-v2.2 訓練時間範圍 + 時區統一化 ✅
+   - v2.3-v2.4 資料庫修復 + 登入驗證 ✅
+   - v2.5-v2.7 啟動頁面 + 筆記查詢 + UI 重構 ✅
+   - v2.8-v2.8.1 健康評估系統 + 教練備註 ✅ ⭐⭐⭐
    - **詳細任務清單**（性能監控、UX 優化、Bug 檢查）
    - 清晰結構：已完成摘要 + 下一步計劃 + 未來規劃
 3. **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)** - 專案架構和技術棧（精簡版）
@@ -227,10 +226,9 @@ createdAt: DateTimeUtils.parseIsoTimestamp(json['created_at'])  // 返回本地�
 
 ### 0. Migrations 管理（⭐ 2025-01-02 更新）
 
-**新的 Migrations 結構**（從 19 個優化為 8 個）：
+**新的 Migrations 結構**（從 19 個優化為 13 個）：
 - ✅ **migrations/README.md** - 完整說明文檔
-- ✅ 清晰的版本劃分（v1.0 vs v2.0 vs v2.1）
-- ✅ 舊檔案已歸檔至 `migrations/archived_original/`
+- ✅ 清晰的版本劃分（v1.0 vs v2.0 vs v2.1 vs v2.8）
 
 **執行順序**：
 ```
@@ -245,8 +243,13 @@ createdAt: DateTimeUtils.parseIsoTimestamp(json['created_at'])  // 返回本地�
 006_v2_phase2_appointments.sql  # 預約系統
 007_v2_phase3_notes.sql         # 視覺化筆記
 
-# v2.1 功能（1 個檔案）⭐ 新增
-008_workout_time_range.sql      # 訓練時間範圍（TSTZRANGE）
+# v2.1+ 功能（6 個檔案）⭐
+008_workout_time_range_no_constraint.sql  # 訓練時間範圍
+009_v2_fixes.sql                          # 合併修復
+010_v2_enhancements.sql                   # 合併增強
+013_invite_codes_system.sql               # 邀請碼系統
+016_health_assessments.sql                # 健康評估
+021_coach_assessment_notes.sql            # 教練備註
 ```
 
 詳見：**[migrations/README.md](migrations/README.md)**
@@ -330,13 +333,20 @@ factory UserModel.fromSupabase(Map<String, dynamic> json) {
 
 ## 🎯 當前開發狀態
 
-**專案版本**：v2.2（時區統一化完成）
+**專案版本**：v2.8.1（教練評估備註完成）
 
 **完成階段**：
 - ✅ v1.0 單機版（訓練計劃、統計、身體數據）
 - ✅ v2.0 教練學員系統（Phase 1-4 完整）
 - ✅ v2.1 訓練時間範圍功能
 - ✅ v2.2 時區統一化
+- ✅ v2.3 資料庫修復與整理
+- ✅ v2.4 登入驗證與個人資料
+- ✅ v2.5 專業啟動頁面
+- ✅ v2.6 已刪除帳號筆記查詢
+- ✅ v2.7 UI 層結構重構
+- ✅ v2.8 健康評估系統（PAR-Q+ 問卷）
+- ✅ v2.8.1 教練評估備註
 
 **架構狀態**：
 - ✅ Clean Architecture 100% 解耦

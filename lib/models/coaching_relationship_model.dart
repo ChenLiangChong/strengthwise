@@ -1,5 +1,4 @@
 import 'package:strengthwise/utils/datetime_utils.dart';
-import 'package:strengthwise/models/client_profile_model.dart';
 
 /// 教練-學員綁定關係模型
 ///
@@ -24,9 +23,6 @@ class CoachingRelationshipModel {
   
   /// 學員名稱快照（即使帳號刪除也保留）
   final String? clientName;
-  
-  /// 學員檔案（訓練目標、健康注意事項、訓練偏好）
-  final ClientProfile? clientProfile;
 
   CoachingRelationshipModel({
     required this.id,
@@ -39,21 +35,10 @@ class CoachingRelationshipModel {
     required this.updatedAt,
     this.coachName,
     this.clientName,
-    this.clientProfile,
   });
 
   /// 從 Supabase 數據創建模型（snake_case）
   factory CoachingRelationshipModel.fromSupabase(Map<String, dynamic> json) {
-    // 解析 client_profile JSONB
-    ClientProfile? clientProfile;
-    final profileJson = json['client_profile'];
-    if (profileJson != null && profileJson is Map<String, dynamic>) {
-      // 檢查是否為空物件
-      if (profileJson.isNotEmpty && profileJson['goals'] != null) {
-        clientProfile = ClientProfile.fromJson(profileJson);
-      }
-    }
-
     return CoachingRelationshipModel(
       id: json['id'] as String,
       coachId: json['coach_id'] as String?,   // ⭐ 允許 null
@@ -67,7 +52,6 @@ class CoachingRelationshipModel {
       updatedAt: DateTimeUtils.parseIsoTimestamp(json['updated_at'] as String),
       coachName: json['coach_name'] as String?,
       clientName: json['client_name'] as String?,
-      clientProfile: clientProfile,
     );
   }
 
@@ -84,7 +68,6 @@ class CoachingRelationshipModel {
       'updated_at': DateTimeUtils.formatToUtcIso(updatedAt),
       if (coachName != null) 'coach_name': coachName,
       if (clientName != null) 'client_name': clientName,
-      if (clientProfile != null) 'client_profile': clientProfile!.toJson(),
     };
   }
 
@@ -94,7 +77,6 @@ class CoachingRelationshipModel {
     DateTime? acceptedAt,
     String? coachName,
     String? clientName,
-    ClientProfile? clientProfile,
   }) {
     return CoachingRelationshipModel(
       id: id,
@@ -107,7 +89,6 @@ class CoachingRelationshipModel {
       updatedAt: DateTime.now(),
       coachName: coachName ?? this.coachName,
       clientName: clientName ?? this.clientName,
-      clientProfile: clientProfile ?? this.clientProfile,
     );
   }
 
@@ -122,9 +103,5 @@ class CoachingRelationshipModel {
 
   /// 判斷是否已歸檔
   bool get isArchived => status == 'archived';
-  
-  /// 判斷是否已建立學員檔案
-  bool get hasClientProfile => 
-      clientProfile != null && !clientProfile!.isEmpty;
 }
 

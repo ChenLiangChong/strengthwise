@@ -1,0 +1,110 @@
+---
+description: "部署流程規範：Android APK、iOS、Google Sign-In、Supabase 配置。"
+globs: "android/**/*, ios/**/*, pubspec.yaml"
+alwaysApply: false
+---
+
+# 部署流程規範
+
+## 📱 Android APK 建置
+
+### Debug APK
+
+```bash
+flutter build apk --debug
+# 輸出：build/app/outputs/flutter-apk/app-debug.apk
+```
+
+### Release APK
+
+```bash
+flutter build apk --release
+# 輸出：build/app/outputs/flutter-apk/app-release.apk
+```
+
+### Keystore 管理
+
+```bash
+# 生成 Keystore
+keytool -genkey -v -keystore strengthwise.jks \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -alias strengthwise
+```
+
+## 🔐 Google Sign-In 配置
+
+### 獲取 SHA-1
+
+```bash
+# Debug（開發測試）
+keytool -list -v -keystore ~/.android/debug.keystore \
+  -alias androiddebugkey -storepass android -keypass android
+
+# Release（正式發布）
+keytool -list -v -keystore path/to/strengthwise.jks \
+  -alias strengthwise
+```
+
+### Firebase Console 配置
+
+1. 前往 Firebase Console → Project Settings → Your apps
+2. 添加 Android 應用（package: `com.strengthwise.app`）
+3. 添加 SHA-1 指紋
+4. 下載 `google-services.json` 放入 `android/app/`
+
+### Google Cloud Console 配置
+
+1. 前往 Google Cloud Console → APIs & Services → Credentials
+2. 創建 OAuth 2.0 Client ID（Android）
+3. 填入 Package Name 和 SHA-1
+
+## 📧 Email Authentication Deep Link
+
+### Android 配置（`AndroidManifest.xml`）
+
+```xml
+<intent-filter android:autoVerify="true">
+    <action android:name="android.intent.action.VIEW"/>
+    <category android:name="android.intent.category.DEFAULT"/>
+    <category android:name="android.intent.category.BROWSABLE"/>
+    <data android:scheme="https"
+          android:host="your-project.supabase.co"/>
+</intent-filter>
+```
+
+### Supabase 配置
+
+1. Dashboard → Authentication → URL Configuration
+2. 設置 Redirect URLs：`https://your-project.supabase.co/auth/v1/callback`
+
+## ⚙️ 環境變數
+
+### `.env` 檔案（不要提交到 Git）
+
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+```
+
+### 載入方式
+
+```dart
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+void main() async {
+  await dotenv.load(fileName: ".env");
+  final supabaseUrl = dotenv.env['SUPABASE_URL']!;
+  // ...
+}
+```
+
+## 📋 發布檢查清單
+
+- [ ] 更新版本號（`pubspec.yaml`）
+- [ ] 確認 `.env` 使用正式環境
+- [ ] 確認 SHA-1 已添加到 Firebase
+- [ ] 測試 Google Sign-In
+- [ ] 測試 Deep Link
+- [ ] 執行 `flutter build apk --release`
+
+詳見：`@docs/DEPLOYMENT_GUIDE.md`

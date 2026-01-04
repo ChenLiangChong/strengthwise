@@ -38,8 +38,7 @@ class CoachCard extends StatelessWidget {
                 child: coach.photoURL == null
                     ? Text(
                         coach.displayName?.substring(0, 1).toUpperCase() ??
-                            coach.email?.substring(0, 1).toUpperCase() ??
-                            'C',
+                            coach.email.substring(0, 1).toUpperCase(),
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -56,21 +55,20 @@ class CoachCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      coach.displayName ?? coach.email ?? '教練',
+                      coach.displayName ?? coach.email,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    if (coach.email != null)
-                      Text(
-                        coach.email!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                    Text(
+                      coach.email,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
                       ),
+                    ),
                     const SizedBox(height: 8),
                     Row(
                       children: [

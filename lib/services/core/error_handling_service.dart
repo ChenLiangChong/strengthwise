@@ -20,8 +20,6 @@ class ErrorHandlingService {
   Environment _environment = Environment.development;
 
   // 錯誤處理配置
-  bool _showDebugErrors = true;
-  bool _collectAnalytics = true;
   Duration _notificationDuration = const Duration(seconds: 4);
   int _maxLogRetention = 100;
 
@@ -92,24 +90,18 @@ class ErrorHandlingService {
     switch (environment) {
       case Environment.development:
         // 開發環境設置
-        _showDebugErrors = true;
-        _collectAnalytics = false;
         _notificationDuration = const Duration(seconds: 5);
         _maxLogRetention = 200;
         _logDebug('錯誤處理服務配置為開發環境');
         break;
       case Environment.testing:
         // 測試環境設置
-        _showDebugErrors = true;
-        _collectAnalytics = true;
         _notificationDuration = const Duration(seconds: 3);
         _maxLogRetention = 100;
         _logDebug('錯誤處理服務配置為測試環境');
         break;
       case Environment.production:
         // 生產環境設置
-        _showDebugErrors = false;
-        _collectAnalytics = true;
         _notificationDuration = const Duration(seconds: 3);
         _maxLogRetention = 50;
         _logDebug('錯誤處理服務配置為生產環境');

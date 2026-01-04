@@ -2,7 +2,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../interfaces/i_coaching_relationship_service.dart';
 import '../../models/coaching_relationship_model.dart';
 import '../../models/user/user_model.dart';
-import '../../models/client_profile_model.dart';
 import '../../models/client_with_relationship.dart'; // ⭐ 新增
 import '../../models/coach_with_relationship.dart'; // ⭐ 新增
 import '../core/error_handling_service.dart';
@@ -528,14 +527,14 @@ class CoachingRelationshipServiceSupabase
   // ============================================================================
 
   @override
-  Future<CoachingRelationshipModel?> getRelationshipByIdWithProfile(
+  Future<CoachingRelationshipModel?> getRelationshipByIdDetailed(
     String relationshipId,
   ) async {
     try {
-      return await _query.queryByIdWithProfile(relationshipId);
+      return await _query.queryByIdDetailed(relationshipId);
     } catch (e) {
       _errorService.logError(
-        '獲取關係詳情失敗（含檔案）: $e',
+        '獲取關係詳情失敗: $e',
         type: 'CoachingRelationshipServiceError',
       );
       rethrow;
@@ -543,37 +542,15 @@ class CoachingRelationshipServiceSupabase
   }
 
   @override
-  Future<CoachingRelationshipModel?> getRelationshipByUsersWithProfile(
+  Future<CoachingRelationshipModel?> getRelationshipByUsersDetailed(
     String coachId,
     String clientId,
   ) async {
     try {
-      return await _query.queryByUsersWithProfile(coachId, clientId);
+      return await _query.queryByUsersDetailed(coachId, clientId);
     } catch (e) {
       _errorService.logError(
-        '根據用戶獲取關係詳情失敗（含檔案）: $e',
-        type: 'CoachingRelationshipServiceError',
-      );
-      rethrow;
-    }
-  }
-
-  @override
-  Future<void> updateClientProfile({
-    required String relationshipId,
-    required ClientProfile profile,
-  }) async {
-    try {
-      await _operations.updateClientProfile(
-        relationshipId: relationshipId,
-        profile: profile,
-      );
-
-      // 清除快取
-      _cache.clearAll();
-    } catch (e) {
-      _errorService.logError(
-        '更新學員檔案失敗: $e',
+        '根據用戶獲取關係詳情失敗: $e',
         type: 'CoachingRelationshipServiceError',
       );
       rethrow;

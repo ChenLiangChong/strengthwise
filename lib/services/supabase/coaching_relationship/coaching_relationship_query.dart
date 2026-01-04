@@ -23,8 +23,9 @@ class CoachingRelationshipQuery {
     updated_at
   ''';
 
-  /// 包含學員檔案的欄位（用於詳情查詢）
-  static const String _selectFieldsWithProfile = '''
+  /// 詳細欄位（與基礎欄位相同，保留以相容性）
+  /// ⚠️ 之前包含 client_profile，現已移除
+  static const String _selectFieldsDetailed = '''
     id,
     coach_id,
     client_id,
@@ -34,8 +35,7 @@ class CoachingRelationshipQuery {
     invited_at,
     accepted_at,
     created_at,
-    updated_at,
-    client_profile
+    updated_at
   ''';
 
   /// 查詢教練的學員關係
@@ -138,16 +138,16 @@ class CoachingRelationshipQuery {
     return CoachingRelationshipModel.fromSupabase(response);
   }
 
-  /// 根據 ID 查詢單筆關係（包含學員檔案）
+  /// 根據 ID 查詢詳細關係
   ///
-  /// 用於學員詳情頁，需要顯示完整學員檔案資訊
+  /// 用於學員詳情頁，提供完整關係資訊
   /// [relationshipId] 關係 ID
-  Future<CoachingRelationshipModel?> queryByIdWithProfile(
+  Future<CoachingRelationshipModel?> queryByIdDetailed(
     String relationshipId,
   ) async {
     final response = await _supabase
         .from('coaching_relationships')
-        .select(_selectFieldsWithProfile)
+        .select(_selectFieldsDetailed)
         .eq('id', relationshipId)
         .maybeSingle();
 
@@ -200,18 +200,18 @@ class CoachingRelationshipQuery {
     return CoachingRelationshipModel.fromSupabase(data);
   }
 
-  /// 根據教練和學員 ID 查詢綁定關係（包含學員檔案）
+  /// 根據教練和學員 ID 查詢詳細關係
   ///
-  /// 用於學員詳情頁，需要顯示完整學員檔案資訊
+  /// 用於學員詳情頁，提供完整關係資訊
   /// [coachId] 教練 ID
   /// [clientId] 學員 ID
-  Future<CoachingRelationshipModel?> queryByUsersWithProfile(
+  Future<CoachingRelationshipModel?> queryByUsersDetailed(
     String coachId,
     String clientId,
   ) async {
     final data = await _supabase
         .from('coaching_relationships')
-        .select(_selectFieldsWithProfile)
+        .select(_selectFieldsDetailed)
         .eq('coach_id', coachId)
         .eq('client_id', clientId)
         .maybeSingle();

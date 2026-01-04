@@ -2,7 +2,7 @@
 
 > 完整的 Supabase PostgreSQL 資料庫架構文檔
 
-**最後更新**：2026年1月1日 - v2.2 資料庫修復完成 ✅
+**最後更新**：2026年1月4日 - v2.8 健康評估系統完整驗證 ✅
 
 ---
 
@@ -69,65 +69,78 @@
 StrengthWise 已完全遷移到 **Supabase PostgreSQL**，使用以下架構：
 
 ```
-Supabase PostgreSQL
+Supabase PostgreSQL（當前：20 個表格）
 ├── v1.0 核心表格（7 個）✅ 活躍使用中
 │   ├── users              - 用戶資料
-│   ├── exercises          - 系統動作庫（794 個）⚠️ v2.0 將重構
-│   ├── custom_exercises   - 自訂動作 ⚠️ v2.0 將合併至 exercises
+│   ├── exercises          - 系統動作庫（794 個）
+│   ├── custom_exercises   - 自訂動作
 │   ├── workout_plans      - 訓練計劃（包含記錄）
 │   ├── workout_templates  - 訓練模板
 │   ├── body_data          - 身體數據（體重、體脂等）
-│   └── notes             - 筆記
+│   └── notes              - 個人筆記（簡易文字+繪圖）
 │
 ├── v1.0 元數據表格（2 個）✅ 活躍使用中
-│   ├── body_parts        - 身體部位（8 個）⚠️ v2.0 將遷移至 attributes
-│   └── exercise_types    - 訓練類型（3 個）⚠️ v2.0 將遷移至 attributes
+│   ├── body_parts         - 身體部位（8 個）
+│   └── exercise_types     - 訓練類型（3 個）
 │
-├── v2.0 新增表格（5 個）📋 規劃中
-│   ├── attribute_categories  - 屬性分類（muscle_group, equipment, movement_pattern）
-│   ├── attributes            - 屬性標籤（胸部、槓鈴、推）
-│   ├── exercise_attributes   - 動作-屬性關聯（多對多）
-│   ├── user_attribute_stats  - 身體部位統計（自動更新）
-│   └── user_exercise_stats   - 單一動作統計（自動更新）
+├── v2.0 Phase 1: 教練學員系統（1 個）✅
+│   └── coaching_relationships - 教練學員關係
 │
-├── 預約系統表格（4 個）⚠️ 已遷移但未啟用
-│   ├── bookings          - 預約
-│   ├── available_slots   - 可預約時段
-│   ├── notifications     - 通知
-│   └── booking_history   - 預約歷史
+├── v2.0 Phase 2: 預約系統（2 個）✅
+│   ├── availability_slots - 教練可用時段
+│   └── appointments       - 預約記錄
+│
+├── v2.0 Phase 3: 視覺化筆記（2 個）✅
+│   ├── session_notes      - SOAP 課程筆記（教練專業記錄）
+│   └── client_availability - 學員時間偏好
+│
+├── 優化表格（2 個）✅
+│   ├── daily_workout_summary - 每日訓練統計
+│   └── personal_records      - 個人記錄彙總
+│
+├── v2.3 邀請碼系統（1 個）✅
+│   └── invite_codes       - 一次性邀請碼（遠端綁定）
+│
+├── v2.8 健康評估系統（3 個）✅ ⭐⭐⭐
+│   ├── health_assessments        - PAR-Q+ 健康評估問卷
+│   ├── coach_assessment_notes    - 教練評估備註（私有）
+│   └── coach_display_preferences - 教練顯示偏好設定
 │
 └── 認證系統
-    └── auth.users        - Supabase Auth（UUID 主鍵）
+    └── auth.users         - Supabase Auth（UUID 主鍵）
 ```
 
-**當前狀態**（2024-12-28）：
+**當前狀態**（2026-01-04）：
 - ✅ **v1.0 核心功能**：7 個核心表格 + 2 個元數據表格（完全運作）
-- 📋 **v2.0 規劃中**：基於屬性的動態動作庫架構（Phase 2 實施）
-- ⚠️ **預約系統**：4 個表格已遷移，但在單機版中未啟用
+- ✅ **v2.0 Phase 1-3**：教練學員系統 + 預約系統 + 視覺化筆記（完全運作）
+- ✅ **v2.3 邀請碼系統**：一次性邀請碼（遠端綁定）
+- ✅ **v2.8 健康評估系統**：PAR-Q+ 問卷 + 教練備註 + 偏好設定
+- 📊 **總表格數**：20 個（+ 4 個視圖）
 
-**架構遷移計劃**（v2.0）：
-1. **動作庫重構**：`exercises` + `custom_exercises` → 統一的屬性驅動系統
-2. **統計系統升級**：新增 `user_attribute_stats`（身體部位 PR）+ `user_exercise_stats`（單一動作進步）
-3. **觸發器自動化**：訓練完成時自動更新統計數據
-4. **向後相容**：舊數據通過遷移腳本轉換為標籤格式
+**資料統計**（2026-01-04）：
+- 👥 用戶：4 人
+- 🏋️ 系統動作：794 個
+- 📝 訓練記錄：19 筆
+- 🏥 健康評估：2 份
+- 📊 總記錄數：902 筆
 
 ---
 
-## 📊 實際資料庫狀態（2025-12-26）
+## 📊 實際資料庫狀態（2026-01-04）
 
-> 以下是當前資料庫的實際數據統計（最後更新：2025-12-26 07:58）
+> 以下是當前資料庫的實際數據統計（最後更新：2026-01-04 13:21）
 
 ### 核心表格（7 個）
 
 | 表格 | 記錄數 | 說明 |
 |------|--------|------|
-| **users** | 1 筆 | 使用者資料 |
+| **users** | 4 筆 | 使用者資料 |
 | **exercises** | 794 筆 | 系統動作庫（雙語完整）<br>- 阻力訓練: 744<br>- 活動度與伸展: 30<br>- 心肺適能訓練: 20 |
-| **custom_exercises** | 1 筆 | 自訂動作 |
-| **workout_plans** | 24 筆 | 訓練計劃<br>- 已完成: 19<br>- 待完成: 5<br>- 總訓練量: 86,309 kg |
-| **workout_templates** | 5 筆 | 訓練模板 |
-| **body_data** | 4 筆 | 身體數據<br>- 體重範圍: 75-80 kg |
-| **notes** | 0 筆 | 筆記（空） |
+| **custom_exercises** | 7 筆 | 自訂動作 |
+| **workout_plans** | 19 筆 | 訓練計劃<br>- 已完成訓練記錄 |
+| **workout_templates** | 8 筆 | 訓練模板 |
+| **body_data** | 14 筆 | 身體數據 |
+| **notes** | 0 筆 | 個人筆記（空） |
 
 ### 元數據表格（2 個）
 
@@ -136,15 +149,46 @@ Supabase PostgreSQL
 | **body_parts** | 8 筆 | 身體部位（完整中英雙語）<br>全身、手、核心、肩部、胸部、背部、腿部、肩背複合 |
 | **exercise_types** | 3 筆 | 訓練類型（完整中英雙語）<br>阻力訓練、心肺適能訓練、活動度與伸展 |
 
+### v2.0 教練學員系統（5 個）
+
+| 表格 | 記錄數 | 說明 |
+|------|--------|------|
+| **coaching_relationships** | 4 筆 | 教練學員關係 |
+| **availability_slots** | 1 筆 | 教練可用時段 |
+| **appointments** | 0 筆 | 預約記錄（空） |
+| **session_notes** | 5 筆 | SOAP 課程筆記 |
+| **client_availability** | 1 筆 | 學員時間偏好 |
+
+### 優化表格（2 個）
+
+| 表格 | 記錄數 | 說明 |
+|------|--------|------|
+| **daily_workout_summary** | 17 筆 | 每日訓練統計 |
+| **personal_records** | 13 筆 | 個人記錄彙總 |
+
+### v2.3 邀請碼系統（1 個）
+
+| 表格 | 記錄數 | 說明 |
+|------|--------|------|
+| **invite_codes** | 0 筆 | 一次性邀請碼（已使用/過期後自動刪除） |
+
+### v2.8 健康評估系統（3 個）⭐
+
+| 表格 | 記錄數 | 說明 |
+|------|--------|------|
+| **health_assessments** | 2 筆 | PAR-Q+ 健康評估問卷 |
+| **coach_assessment_notes** | 1 筆 | 教練評估備註（私有） |
+| **coach_display_preferences** | 1 筆 | 教練顯示偏好設定 |
+
 ### 資料品質狀態
 
 - ✅ **雙語系統**：100% 完成（exercises, body_parts, exercise_types 都有中英對照）
-- ✅ **ID 格式**：統一使用 20 字符 Firestore 相容 ID
-- ✅ **時間戳記**：ISO 8601 格式
-- ✅ **訓練數據**：19 次完成的訓練，總訓練量 86,309 kg
-- ✅ **動作分類**：794 個系統動作，五階層專業分類
+- ✅ **ID 格式**：統一使用 UUID 或 20 字符 Firestore 相容 ID
+- ✅ **時間戳記**：ISO 8601 格式（TIMESTAMPTZ）
+- ✅ **總記錄數**：902 筆
+- ✅ **表格總數**：20 個 BASE TABLE + 4 個 VIEW
 
-**更新方式**：執行 `python scripts/download_complete_database.py` 即可更新本章節
+**更新方式**：執行 `python scripts/tools/download_complete_database.py` 即可更新本章節
 
 ---
 

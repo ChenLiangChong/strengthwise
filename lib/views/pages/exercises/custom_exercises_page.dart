@@ -64,7 +64,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
         return CustomExerciseDialog(
           onSubmit: (data) async {
             try {
-              final newExercise = await _controller.addExercise(
+              await _controller.addExercise(
                 name: data.name,
                 trainingType: data.trainingType,
                 bodyPart: data.bodyPart,

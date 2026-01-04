@@ -1,0 +1,2910 @@
+[
+  {
+    "id": "nrVKNxkpQ9XkCcGRP25y",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "胸肩三頭訓練 - Week 1",
+    "description": "Push - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-02T16:00:00+00:00",
+    "completed_date": "2025-12-03T02:45:00+00:00",
+    "training_time": "2025-12-03T01:15:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "3zsvNeYy7QC4NNbfB8Cf",
+        "exerciseName": "推／胸推／地板臥推／槓鈴，推舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "3BgDNvmcM6OUebKWSZ1W",
+        "exerciseName": "推／胸推／仰臥姿／啞鈴，上斜板式／雙手推舉，窄距"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "6hvpsp4UIyWptRYJYL2l",
+        "exerciseName": "推／肩推／直立式，彈力繩／單手"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0jefeXi8F69ggfXUc0rl",
+        "exerciseName": "推／三頭屈伸／屈體式／半固定，三頭屈伸（肘肩前，交替）"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 4,
+    "total_sets": 13,
+    "total_volume": 4695.0,
+    "note": "",
+    "created_at": "2026-01-01T18:08:33.847202+00:00",
+    "updated_at": "2026-01-01T18:08:33.847202+00:00",
+    "training_time_range": "[\"2025-12-03 01:15:00+00\",\"2025-12-03 02:45:00+00\")"
+  },
+  {
+    "id": "Q2HhXD6I1IiMrvE8tJKr",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "腿部訓練 - Week 1",
+    "description": "Legs - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-04T16:00:00+00:00",
+    "completed_date": "2025-12-05T00:30:00+00:00",
+    "training_time": "2025-12-04T23:30:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0cHIY1SKk1d4OYaQrA1t",
+        "exerciseName": "下肢／深蹲系列／單腳蹲／啞鈴，前舉，單側蹲"
+      },
+      {
+        "sets": [
+          {
+            "reps": 8,
+            "weight": 100.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 8,
+            "weight": 100.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 8,
+            "weight": 100.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2DeZfox55TfdzMzO4TX2",
+        "exerciseName": "下肢／硬舉系列／直膝挺髖／雙腳／啞鈴，前舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "APANHl6F6O2WCkQHjHGR",
+        "exerciseName": "下肢／深蹲系列／保加利亞分腿蹲／啞鈴，垂放"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2aAGvDCKJL3Js6wDElEq",
+        "exerciseName": "下肢／弓步蹲系列／側弓步蹲，啞鈴／垂放，原地蹲"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 40.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 40.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 40.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0LDuIgLkNq4FHo9CCgLE",
+        "exerciseName": "下肢／腿部屈曲／機械式／坐姿，單腳"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "5cvSIdEvxEswFArnGlWM",
+        "exerciseName": "下肢／提臀運動／俯臥式，徒手"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 6,
+    "total_sets": 19,
+    "total_volume": 11180.0,
+    "note": "",
+    "created_at": "2026-01-01T18:08:34.716026+00:00",
+    "updated_at": "2026-01-01T18:08:34.716026+00:00",
+    "training_time_range": "[\"2025-12-04 23:30:00+00\",\"2025-12-05 00:30:00+00\")"
+  },
+  {
+    "id": "FupwtCeElPrdFp1yadBe",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "背二頭訓練 - Week 1",
+    "description": "Pull - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-07T16:00:00+00:00",
+    "completed_date": "2025-12-08T10:45:00+00:00",
+    "training_time": "2025-12-08T09:00:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 8,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 8,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 8,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 8,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2DeZfox55TfdzMzO4TX2",
+        "exerciseName": "下肢／硬舉系列／直膝挺髖／雙腳／啞鈴，前舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "Eh6KPbv5fzn1kVlnmIVl",
+        "exerciseName": "TRX/引體向上"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 50.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 50.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 50.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "CrPGoUkHbnkfqn0gYC4a",
+        "exerciseName": "划船機"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "7UemmcAgteYtVPs7DevN",
+        "exerciseName": "二頭肌"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 4,
+    "total_sets": 14,
+    "total_volume": 5035.0,
+    "note": "",
+    "created_at": "2026-01-01T18:08:35.540639+00:00",
+    "updated_at": "2026-01-01T18:08:35.540639+00:00",
+    "training_time_range": "[\"2025-12-08 09:00:00+00\",\"2025-12-08 10:45:00+00\")"
+  },
+  {
+    "id": "uwzVsylqYq3RoB5qNJsC",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "胸肩三頭訓練 - Week 1",
+    "description": "Push - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-09T16:00:00+00:00",
+    "completed_date": "2025-12-10T08:00:00+00:00",
+    "training_time": "2025-12-10T06:45:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "3zsvNeYy7QC4NNbfB8Cf",
+        "exerciseName": "推／胸推／地板臥推／槓鈴，推舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "3BgDNvmcM6OUebKWSZ1W",
+        "exerciseName": "推／胸推／仰臥姿／啞鈴，上斜板式／雙手推舉，窄距"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "6hvpsp4UIyWptRYJYL2l",
+        "exerciseName": "推／肩推／直立式，彈力繩／單手"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0jefeXi8F69ggfXUc0rl",
+        "exerciseName": "推／三頭屈伸／屈體式／半固定，三頭屈伸（肘肩前，交替）"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 4,
+    "total_sets": 13,
+    "total_volume": 4695.0,
+    "note": "",
+    "created_at": "2026-01-01T18:08:36.201806+00:00",
+    "updated_at": "2026-01-01T18:08:36.201806+00:00",
+    "training_time_range": "[\"2025-12-10 06:45:00+00\",\"2025-12-10 08:00:00+00\")"
+  },
+  {
+    "id": "iSX9zahATEujnJ2dPa7f",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "腿部訓練 - Week 2",
+    "description": "Legs - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-15T16:00:00+00:00",
+    "completed_date": "2025-12-16T13:00:00+00:00",
+    "training_time": "2025-12-16T11:45:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0cHIY1SKk1d4OYaQrA1t",
+        "exerciseName": "下肢／深蹲系列／單腳蹲／啞鈴，前舉，單側蹲"
+      },
+      {
+        "sets": [
+          {
+            "reps": 8,
+            "weight": 105.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 8,
+            "weight": 105.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 8,
+            "weight": 105.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2DeZfox55TfdzMzO4TX2",
+        "exerciseName": "下肢／硬舉系列／直膝挺髖／雙腳／啞鈴，前舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 21.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 21.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 21.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "APANHl6F6O2WCkQHjHGR",
+        "exerciseName": "下肢／深蹲系列／保加利亞分腿蹲／啞鈴，垂放"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 26.25,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 26.25,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 26.25,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2aAGvDCKJL3Js6wDElEq",
+        "exerciseName": "下肢／弓步蹲系列／側弓步蹲，啞鈴／垂放，原地蹲"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 42.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 42.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 42.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0LDuIgLkNq4FHo9CCgLE",
+        "exerciseName": "下肢／腿部屈曲／機械式／坐姿，單腳"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "5cvSIdEvxEswFArnGlWM",
+        "exerciseName": "下肢／提臀運動／俯臥式，徒手"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 6,
+    "total_sets": 19,
+    "total_volume": 11739.0,
+    "note": "",
+    "created_at": "2026-01-01T18:08:36.900649+00:00",
+    "updated_at": "2026-01-01T18:08:36.900649+00:00",
+    "training_time_range": "[\"2025-12-16 11:45:00+00\",\"2025-12-16 13:00:00+00\")"
+  },
+  {
+    "id": "Y2Jo2N3MvSjFtDmWVxlV",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "背二頭訓練 - Week 2",
+    "description": "Pull - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-17T16:00:00+00:00",
+    "completed_date": "2025-12-18T13:45:00+00:00",
+    "training_time": "2025-12-18T12:30:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 8,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 8,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 8,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 8,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2DeZfox55TfdzMzO4TX2",
+        "exerciseName": "下肢／硬舉系列／直膝挺髖／雙腳／啞鈴，前舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "Eh6KPbv5fzn1kVlnmIVl",
+        "exerciseName": "TRX/引體向上"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 52.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 52.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 52.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "CrPGoUkHbnkfqn0gYC4a",
+        "exerciseName": "划船機"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "7UemmcAgteYtVPs7DevN",
+        "exerciseName": "二頭肌"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 4,
+    "total_sets": 14,
+    "total_volume": 5286.75,
+    "note": "",
+    "created_at": "2026-01-01T18:08:37.608614+00:00",
+    "updated_at": "2026-01-01T18:08:37.608614+00:00",
+    "training_time_range": "[\"2025-12-18 12:30:00+00\",\"2025-12-18 13:45:00+00\")"
+  },
+  {
+    "id": "QmeGejynXif9KIVNqrCv",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "胸肩三頭訓練 - Week 2",
+    "description": "Push - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-23T16:00:00+00:00",
+    "completed_date": "2025-12-24T12:45:00+00:00",
+    "training_time": "2025-12-24T11:00:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "3zsvNeYy7QC4NNbfB8Cf",
+        "exerciseName": "推／胸推／地板臥推／槓鈴，推舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 26.25,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 26.25,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 26.25,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "3BgDNvmcM6OUebKWSZ1W",
+        "exerciseName": "推／胸推／仰臥姿／啞鈴，上斜板式／雙手推舉，窄距"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 21.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 21.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 21.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "6hvpsp4UIyWptRYJYL2l",
+        "exerciseName": "推／肩推／直立式，彈力繩／單手"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0jefeXi8F69ggfXUc0rl",
+        "exerciseName": "推／三頭屈伸／屈體式／半固定，三頭屈伸（肘肩前，交替）"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 4,
+    "total_sets": 13,
+    "total_volume": 4929.75,
+    "note": "",
+    "created_at": "2026-01-01T18:08:38.32597+00:00",
+    "updated_at": "2026-01-01T18:08:38.32597+00:00",
+    "training_time_range": "[\"2025-12-24 11:00:00+00\",\"2025-12-24 12:45:00+00\")"
+  },
+  {
+    "id": "rr7DYxWvkdCTDrfRRksq",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "腿部訓練 - Week 3",
+    "description": "Legs - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-25T16:00:00+00:00",
+    "completed_date": "2025-12-26T13:00:00+00:00",
+    "training_time": "2025-12-26T11:00:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 88.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 88.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 88.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 88.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0cHIY1SKk1d4OYaQrA1t",
+        "exerciseName": "下肢／深蹲系列／單腳蹲／啞鈴，前舉，單側蹲"
+      },
+      {
+        "sets": [
+          {
+            "reps": 8,
+            "weight": 110.00000000000001,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 8,
+            "weight": 110.00000000000001,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 8,
+            "weight": 110.00000000000001,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2DeZfox55TfdzMzO4TX2",
+        "exerciseName": "下肢／硬舉系列／直膝挺髖／雙腳／啞鈴，前舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 22.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 22.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 22.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "APANHl6F6O2WCkQHjHGR",
+        "exerciseName": "下肢／深蹲系列／保加利亞分腿蹲／啞鈴，垂放"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 27.500000000000004,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 27.500000000000004,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 27.500000000000004,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2aAGvDCKJL3Js6wDElEq",
+        "exerciseName": "下肢／弓步蹲系列／側弓步蹲，啞鈴／垂放，原地蹲"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 44.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 44.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 44.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0LDuIgLkNq4FHo9CCgLE",
+        "exerciseName": "下肢／腿部屈曲／機械式／坐姿，單腳"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 66.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 66.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 66.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "5cvSIdEvxEswFArnGlWM",
+        "exerciseName": "下肢／提臀運動／俯臥式，徒手"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 6,
+    "total_sets": 19,
+    "total_volume": 12298.0,
+    "note": "",
+    "created_at": "2026-01-01T18:08:39.119808+00:00",
+    "updated_at": "2026-01-01T18:08:39.119808+00:00",
+    "training_time_range": "[\"2025-12-26 11:00:00+00\",\"2025-12-26 13:00:00+00\")"
+  },
+  {
+    "id": "mX1NAGOC6EG48K5c4Kii",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "背二頭訓練 - Week 3",
+    "description": "Pull - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-31T16:00:00+00:00",
+    "completed_date": "2026-01-01T10:45:00+00:00",
+    "training_time": "2026-01-01T08:45:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 8,
+            "weight": 88.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 8,
+            "weight": 88.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 8,
+            "weight": 88.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 8,
+            "weight": 88.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2DeZfox55TfdzMzO4TX2",
+        "exerciseName": "下肢／硬舉系列／直膝挺髖／雙腳／啞鈴，前舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "Eh6KPbv5fzn1kVlnmIVl",
+        "exerciseName": "TRX/引體向上"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 55.00000000000001,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 55.00000000000001,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 55.00000000000001,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "CrPGoUkHbnkfqn0gYC4a",
+        "exerciseName": "划船機"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 16.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 16.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 16.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "7UemmcAgteYtVPs7DevN",
+        "exerciseName": "二頭肌"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 4,
+    "total_sets": 14,
+    "total_volume": 5538.5,
+    "note": "",
+    "created_at": "2026-01-01T18:08:39.783224+00:00",
+    "updated_at": "2026-01-01T18:08:39.783224+00:00",
+    "training_time_range": "[\"2026-01-01 08:45:00+00\",\"2026-01-01 10:45:00+00\")"
+  },
+  {
+    "id": "JtazrXRhvPWBU7C1WNp1",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "背二頭訓練 - Week 1",
+    "description": "Pull - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-03T16:00:00+00:00",
+    "completed_date": "2025-12-04T00:00:00+00:00",
+    "training_time": "2025-12-03T22:45:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 8,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 8,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 8,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 8,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2DeZfox55TfdzMzO4TX2",
+        "exerciseName": "下肢／硬舉系列／直膝挺髖／雙腳／啞鈴，前舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "Eh6KPbv5fzn1kVlnmIVl",
+        "exerciseName": "TRX/引體向上"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 50.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 50.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 50.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "CrPGoUkHbnkfqn0gYC4a",
+        "exerciseName": "划船機"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "7UemmcAgteYtVPs7DevN",
+        "exerciseName": "二頭肌"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 4,
+    "total_sets": 14,
+    "total_volume": 5035.0,
+    "note": "",
+    "created_at": "2026-01-01T18:08:34.333634+00:00",
+    "updated_at": "2026-01-01T18:08:34.333634+00:00",
+    "training_time_range": "[\"2025-12-03 22:45:00+00\",\"2025-12-04 00:00:00+00\")"
+  },
+  {
+    "id": "nkuGGgvQUrC6Olj8pvO1",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "胸肩三頭訓練 - Week 1",
+    "description": "Push - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-05T16:00:00+00:00",
+    "completed_date": "2025-12-06T15:30:00+00:00",
+    "training_time": "2025-12-06T13:45:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "3zsvNeYy7QC4NNbfB8Cf",
+        "exerciseName": "推／胸推／地板臥推／槓鈴，推舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "3BgDNvmcM6OUebKWSZ1W",
+        "exerciseName": "推／胸推／仰臥姿／啞鈴，上斜板式／雙手推舉，窄距"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "6hvpsp4UIyWptRYJYL2l",
+        "exerciseName": "推／肩推／直立式，彈力繩／單手"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 15.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0jefeXi8F69ggfXUc0rl",
+        "exerciseName": "推／三頭屈伸／屈體式／半固定，三頭屈伸（肘肩前，交替）"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 4,
+    "total_sets": 13,
+    "total_volume": 4695.0,
+    "note": "",
+    "created_at": "2026-01-01T18:08:35.143035+00:00",
+    "updated_at": "2026-01-01T18:08:35.143035+00:00",
+    "training_time_range": "[\"2025-12-06 13:45:00+00\",\"2025-12-06 15:30:00+00\")"
+  },
+  {
+    "id": "3t82FYiPQojD9lclvgbS",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "腿部訓練 - Week 1",
+    "description": "Legs - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-08T16:00:00+00:00",
+    "completed_date": "2025-12-09T00:15:00+00:00",
+    "training_time": "2025-12-08T22:30:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 80.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0cHIY1SKk1d4OYaQrA1t",
+        "exerciseName": "下肢／深蹲系列／單腳蹲／啞鈴，前舉，單側蹲"
+      },
+      {
+        "sets": [
+          {
+            "reps": 8,
+            "weight": 100.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 8,
+            "weight": 100.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 8,
+            "weight": 100.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2DeZfox55TfdzMzO4TX2",
+        "exerciseName": "下肢／硬舉系列／直膝挺髖／雙腳／啞鈴，前舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 20.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "APANHl6F6O2WCkQHjHGR",
+        "exerciseName": "下肢／深蹲系列／保加利亞分腿蹲／啞鈴，垂放"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 25.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2aAGvDCKJL3Js6wDElEq",
+        "exerciseName": "下肢／弓步蹲系列／側弓步蹲，啞鈴／垂放，原地蹲"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 40.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 40.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 40.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0LDuIgLkNq4FHo9CCgLE",
+        "exerciseName": "下肢／腿部屈曲／機械式／坐姿，單腳"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 60.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "5cvSIdEvxEswFArnGlWM",
+        "exerciseName": "下肢／提臀運動／俯臥式，徒手"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 6,
+    "total_sets": 19,
+    "total_volume": 11180.0,
+    "note": "",
+    "created_at": "2026-01-01T18:08:35.867694+00:00",
+    "updated_at": "2026-01-01T18:08:35.867694+00:00",
+    "training_time_range": "[\"2025-12-08 22:30:00+00\",\"2025-12-09 00:15:00+00\")"
+  },
+  {
+    "id": "UTvgIbApnGZJdb80jK7O",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "背二頭訓練 - Week 2",
+    "description": "Pull - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-10T16:00:00+00:00",
+    "completed_date": "2025-12-11T09:30:00+00:00",
+    "training_time": "2025-12-11T08:15:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 8,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 8,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 8,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 8,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2DeZfox55TfdzMzO4TX2",
+        "exerciseName": "下肢／硬舉系列／直膝挺髖／雙腳／啞鈴，前舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "Eh6KPbv5fzn1kVlnmIVl",
+        "exerciseName": "TRX/引體向上"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 52.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 52.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 52.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "CrPGoUkHbnkfqn0gYC4a",
+        "exerciseName": "划船機"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "7UemmcAgteYtVPs7DevN",
+        "exerciseName": "二頭肌"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 4,
+    "total_sets": 14,
+    "total_volume": 5286.75,
+    "note": "",
+    "created_at": "2026-01-01T18:08:36.531102+00:00",
+    "updated_at": "2026-01-01T18:08:36.531102+00:00",
+    "training_time_range": "[\"2025-12-11 08:15:00+00\",\"2025-12-11 09:30:00+00\")"
+  },
+  {
+    "id": "JQNtQyEuG8eIn4mLbmrr",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "胸肩三頭訓練 - Week 2",
+    "description": "Push - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-16T16:00:00+00:00",
+    "completed_date": "2025-12-17T07:00:00+00:00",
+    "training_time": "2025-12-17T06:00:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "3zsvNeYy7QC4NNbfB8Cf",
+        "exerciseName": "推／胸推／地板臥推／槓鈴，推舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 26.25,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 26.25,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 26.25,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "3BgDNvmcM6OUebKWSZ1W",
+        "exerciseName": "推／胸推／仰臥姿／啞鈴，上斜板式／雙手推舉，窄距"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 21.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 21.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 21.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "6hvpsp4UIyWptRYJYL2l",
+        "exerciseName": "推／肩推／直立式，彈力繩／單手"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0jefeXi8F69ggfXUc0rl",
+        "exerciseName": "推／三頭屈伸／屈體式／半固定，三頭屈伸（肘肩前，交替）"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 4,
+    "total_sets": 13,
+    "total_volume": 4929.75,
+    "note": "",
+    "created_at": "2026-01-01T18:08:37.269843+00:00",
+    "updated_at": "2026-01-01T18:08:37.269843+00:00",
+    "training_time_range": "[\"2025-12-17 06:00:00+00\",\"2025-12-17 07:00:00+00\")"
+  },
+  {
+    "id": "MlWwlbm0tljWdBO4Npmo",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "腿部訓練 - Week 2",
+    "description": "Legs - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-22T16:00:00+00:00",
+    "completed_date": "2025-12-23T13:15:00+00:00",
+    "training_time": "2025-12-23T12:00:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0cHIY1SKk1d4OYaQrA1t",
+        "exerciseName": "下肢／深蹲系列／單腳蹲／啞鈴，前舉，單側蹲"
+      },
+      {
+        "sets": [
+          {
+            "reps": 8,
+            "weight": 105.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 8,
+            "weight": 105.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 8,
+            "weight": 105.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2DeZfox55TfdzMzO4TX2",
+        "exerciseName": "下肢／硬舉系列／直膝挺髖／雙腳／啞鈴，前舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 21.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 21.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 21.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "APANHl6F6O2WCkQHjHGR",
+        "exerciseName": "下肢／深蹲系列／保加利亞分腿蹲／啞鈴，垂放"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 26.25,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 26.25,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 26.25,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2aAGvDCKJL3Js6wDElEq",
+        "exerciseName": "下肢／弓步蹲系列／側弓步蹲，啞鈴／垂放，原地蹲"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 42.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 42.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 42.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0LDuIgLkNq4FHo9CCgLE",
+        "exerciseName": "下肢／腿部屈曲／機械式／坐姿，單腳"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 63.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "5cvSIdEvxEswFArnGlWM",
+        "exerciseName": "下肢／提臀運動／俯臥式，徒手"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 6,
+    "total_sets": 19,
+    "total_volume": 11739.0,
+    "note": "",
+    "created_at": "2026-01-01T18:08:37.955786+00:00",
+    "updated_at": "2026-01-01T18:08:37.955786+00:00",
+    "training_time_range": "[\"2025-12-23 12:00:00+00\",\"2025-12-23 13:15:00+00\")"
+  },
+  {
+    "id": "2YvaGghIQmvvxkWACwJr",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "背二頭訓練 - Week 2",
+    "description": "Pull - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-24T16:00:00+00:00",
+    "completed_date": "2025-12-24T23:30:00+00:00",
+    "training_time": "2025-12-24T22:15:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 8,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 8,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 8,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 8,
+            "weight": 84.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "2DeZfox55TfdzMzO4TX2",
+        "exerciseName": "下肢／硬舉系列／直膝挺髖／雙腳／啞鈴，前舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 0.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "Eh6KPbv5fzn1kVlnmIVl",
+        "exerciseName": "TRX/引體向上"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 52.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 52.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 52.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "CrPGoUkHbnkfqn0gYC4a",
+        "exerciseName": "划船機"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 15.75,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "7UemmcAgteYtVPs7DevN",
+        "exerciseName": "二頭肌"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 4,
+    "total_sets": 14,
+    "total_volume": 5286.75,
+    "note": "",
+    "created_at": "2026-01-01T18:08:38.735161+00:00",
+    "updated_at": "2026-01-01T18:08:38.735161+00:00",
+    "training_time_range": "[\"2025-12-24 22:15:00+00\",\"2025-12-24 23:30:00+00\")"
+  },
+  {
+    "id": "xB4gQtHOVfY69sctD4JZ",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "胸肩三頭訓練 - Week 3",
+    "description": "Push - 專業訓練計劃",
+    "plan_type": "personal",
+    "ui_plan_type": null,
+    "scheduled_date": "2025-12-29T16:00:00+00:00",
+    "completed_date": "2025-12-30T02:15:00+00:00",
+    "training_time": "2025-12-30T00:45:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "reps": 10,
+            "weight": 66.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 10,
+            "weight": 66.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 10,
+            "weight": 66.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          },
+          {
+            "reps": 10,
+            "weight": 66.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 4
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "3zsvNeYy7QC4NNbfB8Cf",
+        "exerciseName": "推／胸推／地板臥推／槓鈴，推舉"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 27.500000000000004,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 27.500000000000004,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 27.500000000000004,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "3BgDNvmcM6OUebKWSZ1W",
+        "exerciseName": "推／胸推／仰臥姿／啞鈴，上斜板式／雙手推舉，窄距"
+      },
+      {
+        "sets": [
+          {
+            "reps": 12,
+            "weight": 22.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 12,
+            "weight": 22.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 12,
+            "weight": 22.0,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "6hvpsp4UIyWptRYJYL2l",
+        "exerciseName": "推／肩推／直立式，彈力繩／單手"
+      },
+      {
+        "sets": [
+          {
+            "reps": 15,
+            "weight": 16.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "reps": 15,
+            "weight": 16.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 2
+          },
+          {
+            "reps": 15,
+            "weight": 16.5,
+            "restTime": 90,
+            "completed": true,
+            "setNumber": 3
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "0jefeXi8F69ggfXUc0rl",
+        "exerciseName": "推／三頭屈伸／屈體式／半固定，三頭屈伸（肘肩前，交替）"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 4,
+    "total_sets": 13,
+    "total_volume": 5164.5,
+    "note": "",
+    "created_at": "2026-01-01T18:08:39.444534+00:00",
+    "updated_at": "2026-01-01T18:08:39.444534+00:00",
+    "training_time_range": "[\"2025-12-30 00:45:00+00\",\"2025-12-30 02:15:00+00\")"
+  },
+  {
+    "id": "0iyCg5R76uA9sVyyds9a",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "全身功能性訓練2",
+    "description": null,
+    "plan_type": "self",
+    "ui_plan_type": null,
+    "scheduled_date": "2026-01-02T04:12:58.022769+00:00",
+    "completed_date": "2026-01-02T04:12:58.822151+00:00",
+    "training_time": "2026-01-02T04:12:58.022769+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "note": "",
+            "reps": 10,
+            "weight": 50.0,
+            "restTime": 60,
+            "completed": true,
+            "setNumber": 1
+          },
+          {
+            "note": "",
+            "reps": 10,
+            "weight": 50.0,
+            "restTime": 60,
+            "completed": true,
+            "setNumber": 2
+          }
+        ],
+        "notes": "",
+        "completed": true,
+        "exerciseId": "23149443-6ec2-4e78-9613-f921d0f114ef",
+        "exerciseName": "拉／下拉系列／俯臥式，半固定器材／單手下拉，窄距"
+      }
+    ],
+    "completed": true,
+    "total_exercises": 0,
+    "total_sets": 0,
+    "total_volume": 0.0,
+    "note": "",
+    "created_at": "2026-01-02T01:28:44.913711+00:00",
+    "updated_at": "2026-01-02T01:28:44.913711+00:00",
+    "training_time_range": "[\"2026-01-02 04:12:58.022769+00\",\"2026-01-02 14:30:00+00\")"
+  },
+  {
+    "id": "N56GBSxkkizh81G42fC8",
+    "user_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "creator_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "trainee_id": "d1798674-0b96-4c47-a7c7-ee20a5372a03",
+    "title": "全身功能性訓練2",
+    "description": null,
+    "plan_type": "self",
+    "ui_plan_type": null,
+    "scheduled_date": "2026-01-12T06:00:00+00:00",
+    "completed_date": null,
+    "training_time": "2026-01-12T06:00:00+00:00",
+    "exercises": [
+      {
+        "sets": [
+          {
+            "note": "",
+            "reps": 10,
+            "weight": 50.0,
+            "restTime": 60,
+            "completed": false,
+            "setNumber": 1
+          },
+          {
+            "note": "",
+            "reps": 10,
+            "weight": 50.0,
+            "restTime": 60,
+            "completed": false,
+            "setNumber": 2
+          }
+        ],
+        "notes": "",
+        "completed": false,
+        "exerciseId": "23149443-6ec2-4e78-9613-f921d0f114ef",
+        "exerciseName": "拉／下拉系列／俯臥式，半固定器材／單手下拉，窄距"
+      }
+    ],
+    "completed": false,
+    "total_exercises": 0,
+    "total_sets": 0,
+    "total_volume": 0.0,
+    "note": "",
+    "created_at": "2026-01-02T01:26:01.615689+00:00",
+    "updated_at": "2026-01-02T01:26:01.615689+00:00",
+    "training_time_range": "[\"2026-01-12 06:00:00+00\",\"2026-01-12 07:00:00+00\")"
+  }
+]

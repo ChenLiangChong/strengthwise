@@ -1,37 +1,41 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Download Complete Supabase Database (v2.0 Phase 4B)
+Download Complete Supabase Database (v2.8 完整版)
 
-此腳本會下載完整的資料庫結構（16 個表格）
-根據 2025-01-01 Supabase 實際表格驗證
+此腳本會下載完整的資料庫結構（20 個表格）
+根據 2026-01-04 Supabase 實際表格驗證
 
 更新記錄：
 - 2025-01-01: 更新為 16 個表格（包含 Phase 3 表格）
-- 驗證所有表格存在並正常運作
+- 2026-01-04: 更新為 20 個表格（新增 v2.3 邀請碼 + v2.8 健康評估系統）
 
 Usage:
-    python scripts/tools/download_complete_database_v2.py
+    python scripts/tools/download_complete_database.py
 
 Output:
     - database_export/
         |- <timestamp>/
-            |- users.json                              (4 筆)
+            |- users.json                              
             |- exercises.json                          (794 筆)
-            |- custom_exercises.json                   (6 筆)
-            |- workout_plans.json                      (28 筆)
-            |- workout_templates.json                  (8 筆)
-            |- body_data.json                          (14 筆)
-            |- notes.json                              (0 筆)
+            |- custom_exercises.json                   
+            |- workout_plans.json                      
+            |- workout_templates.json                  
+            |- body_data.json                          
+            |- notes.json                              (個人筆記)
             |- body_parts.json                         (8 筆)
             |- exercise_types.json                     (3 筆)
-            |- coaching_relationships.json             (4 筆)
-            |- availability_slots.json                 (2 筆)
-            |- appointments.json                       (6 筆)
-            |- session_notes.json                      (4 筆)
-            |- client_availability.json                (2 筆)
-            |- daily_workout_summary.json              (26 筆)
-            |- personal_records.json                   (15 筆)
+            |- coaching_relationships.json             
+            |- availability_slots.json                 
+            |- appointments.json                       
+            |- session_notes.json                      (課程筆記)
+            |- client_availability.json                
+            |- daily_workout_summary.json              
+            |- personal_records.json                   
+            |- invite_codes.json                       (邀請碼) ⭐
+            |- health_assessments.json                 (健康評估) ⭐
+            |- coach_assessment_notes.json             (教練備註) ⭐
+            |- coach_display_preferences.json          (教練偏好) ⭐
             |- database_summary.json                   (統計報告)
             |- README.md                               (說明文檔)
 """
@@ -78,7 +82,7 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 # Initialize Supabase Client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 完整表格列表（根據 2025-01-01 Supabase 驗證）
+# 完整表格列表（根據 2026-01-04 Supabase 實際驗證）
 # v1.0 核心表格（7 個）
 CORE_TABLES = [
     "users",
@@ -87,7 +91,7 @@ CORE_TABLES = [
     "workout_plans",
     "workout_templates",
     "body_data",
-    "notes"
+    "notes"  # 個人筆記（v1.0 原始功能）
 ]
 
 # v1.0 元數據表格（2 個）
@@ -109,8 +113,8 @@ PHASE2_TABLES = [
 
 # v2.0 Phase 3 表格（2 個）
 PHASE3_TABLES = [
-    "session_notes",
-    "client_availability"
+    "session_notes",       # 課程筆記（SOAP 格式）
+    "client_availability"  # 學員時間偏好
 ]
 
 # 優化表格（2 個）
@@ -119,14 +123,28 @@ OPTIMIZATION_TABLES = [
     "personal_records"
 ]
 
-# 合併所有表格（16 個）
+# v2.3 邀請碼系統（1 個）⭐
+INVITE_SYSTEM_TABLES = [
+    "invite_codes"
+]
+
+# v2.8 健康評估系統（3 個）⭐
+HEALTH_ASSESSMENT_TABLES = [
+    "health_assessments",
+    "coach_assessment_notes",
+    "coach_display_preferences"
+]
+
+# 合併所有表格（20 個）
 ALL_TABLES = (
     CORE_TABLES + 
     METADATA_TABLES + 
     PHASE1_TABLES + 
     PHASE2_TABLES + 
     PHASE3_TABLES + 
-    OPTIMIZATION_TABLES
+    OPTIMIZATION_TABLES +
+    INVITE_SYSTEM_TABLES +
+    HEALTH_ASSESSMENT_TABLES
 )
 
 def ensure_export_dir(timestamp: str) -> str:
@@ -172,7 +190,9 @@ def generate_summary(all_data: Dict[str, List], export_dir: str, timestamp: str)
         "v2.0 Phase 1": PHASE1_TABLES,
         "v2.0 Phase 2": PHASE2_TABLES,
         "v2.0 Phase 3": PHASE3_TABLES,
-        "Optimization": OPTIMIZATION_TABLES
+        "Optimization": OPTIMIZATION_TABLES,
+        "v2.3 Invite System": INVITE_SYSTEM_TABLES,
+        "v2.8 Health Assessment": HEALTH_ASSESSMENT_TABLES
     }
     
     for category, tables in categories.items():
@@ -226,7 +246,7 @@ def main():
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     
     print("=" * 80)
-    print("StrengthWise - Complete Database Download Tool (v2.0)")
+    print("StrengthWise - Complete Database Download Tool (v2.8)")
     print("=" * 80)
     print(f"⏰ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"🔗 Supabase: {SUPABASE_URL}")
@@ -244,8 +264,10 @@ def main():
         print(f"   - v1.0 Metadata: {len(METADATA_TABLES)} tables")
         print(f"   - v2.0 Phase 1: {len(PHASE1_TABLES)} table")
         print(f"   - v2.0 Phase 2: {len(PHASE2_TABLES)} tables")
-        print(f"   - v2.0 Phase 3: {len(PHASE3_TABLES)} tables ⭐")
+        print(f"   - v2.0 Phase 3: {len(PHASE3_TABLES)} tables")
         print(f"   - Optimization: {len(OPTIMIZATION_TABLES)} tables")
+        print(f"   - v2.3 Invite System: {len(INVITE_SYSTEM_TABLES)} table ⭐")
+        print(f"   - v2.8 Health Assessment: {len(HEALTH_ASSESSMENT_TABLES)} tables ⭐⭐⭐")
         print("")
         print("-" * 80)
         print("")
