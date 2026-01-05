@@ -1,3 +1,4 @@
+// [UI Refactor] 此元件已完成 Neo-brutalism v3.0 UI 重構
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:strengthwise/models/exercise_model.dart';
@@ -12,6 +13,7 @@ import 'package:strengthwise/views/pages/exercises/exercises_page.dart';
 import 'widgets/workout_info_card.dart';
 import 'widgets/empty_exercise_state.dart';
 import 'widgets/exercise_settings_dialog.dart';
+import 'package:google_fonts/google_fonts.dart'; // Neo
 
 class WorkoutExecutionPage extends StatefulWidget {
   final String workoutRecordId;
@@ -26,13 +28,10 @@ class WorkoutExecutionPage extends StatefulWidget {
 }
 
 class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
-  late final IWorkoutController _workoutController;
   late final IWorkoutExecutionController _executionController;
-  late final ErrorHandlingService _errorService;
 
   // 計時器相關變數
   DateTime? _workoutStartTime;
-  DateTime? _workoutEndTime;
   String _elapsedTime = '00:00:00';
 
   // 新增運動的控制器
@@ -53,9 +52,9 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     super.initState();
 
     // 從服務定位器獲取依賴
-    _workoutController = serviceLocator<IWorkoutController>();
+    // _workoutController = serviceLocator<IWorkoutController>();
     _executionController = serviceLocator<IWorkoutExecutionController>();
-    _errorService = serviceLocator<ErrorHandlingService>();
+    // _errorService = serviceLocator<ErrorHandlingService>();
 
     _loadWorkoutPlan();
     // 開始計時
@@ -90,7 +89,95 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     // 載入備註到控制器
     _workoutNotesController.text = _executionController.getNotes();
 
+    // ⭐ 檢查是否有已完成的組數（繼續訓練確認）
+    if (mounted) {
+      await _checkForContinueTraining();
+    }
+
     setState(() {}); // 觸發重新構建
+  }
+
+  // ⭐ 檢查是否需要顯示「繼續訓練」確認對話框
+  Future<void> _checkForContinueTraining() async {
+    final exerciseRecords = _executionController.getExerciseRecords();
+    
+    // 檢查是否有任何已完成的組數
+    bool hasCompletedSets = false;
+    bool hasIncompleteSets = false;
+    
+    for (final exercise in exerciseRecords) {
+      for (final set in exercise.sets) {
+        if (set.completed) {
+          hasCompletedSets = true;
+        } else {
+          hasIncompleteSets = true;
+        }
+      }
+    }
+    
+    // 只有當「有已完成的組數」且「還有未完成的組數」時才顯示確認對話框
+    if (hasCompletedSets && hasIncompleteSets && mounted) {
+      final shouldContinue = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppTheme.isDarkMode(context) 
+              ? const Color(0xFF1E1E1E) 
+              : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero, // Sharp corners
+            side: BorderSide(
+              color: AppTheme.isDarkMode(context) ? Colors.white : Colors.black,
+              width: 2,
+            ),
+          ),
+          title: Text(
+            '繼續訓練',
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              color: AppTheme.isDarkMode(context) ? Colors.white : Colors.black,
+            ),
+          ),
+          content: Text(
+            '您的訓練還未完成，要繼續訓練嗎？',
+            style: GoogleFonts.inter(
+              color: AppTheme.isDarkMode(context) ? Colors.white70 : Colors.black87,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.isDarkMode(context) 
+                    ? Colors.white70 
+                    : Colors.black54,
+              ),
+              child: const Text('返回'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.isDarkMode(context)
+                    ? Colors.white
+                    : Colors.black,
+                foregroundColor: AppTheme.isDarkMode(context)
+                    ? Colors.black
+                    : Colors.white,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero,
+                ),
+              ),
+              child: const Text('繼續訓練'),
+            ),
+          ],
+        ),
+      );
+      
+      // 如果用戶選擇返回，則退出頁面
+      if (shouldContinue == false && mounted) {
+        Navigator.pop(context);
+      }
+    }
   }
 
   @override
@@ -126,7 +213,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   Future<void> _saveWorkoutRecord() async {
     final success =
         await _executionController.saveWorkoutRecord(context: context);
-    if (success) {
+    if (success && mounted) {
       Navigator.pop(context, true);
     }
   }
@@ -286,6 +373,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 動作資訊卡片（備註、當前狀態等）
+          // Neo-brutalism: Sharp borders, High Contrast
           if (exercise.notes.isNotEmpty || isCurrentExercise)
             Container(
               margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
@@ -294,20 +382,13 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                 color: isCurrentExercise
                     ? Theme.of(context)
                         .colorScheme
-                        .primaryContainer
-                        .withOpacity(0.3)
-                    : Theme.of(context)
-                        .colorScheme
-                        .surfaceVariant
-                        .withOpacity(0.3),
-                borderRadius:
-                    BorderRadius.circular(AppTheme.buttonBorderRadius),
-                border: isCurrentExercise
-                    ? Border.all(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 2,
-                      )
-                    : null,
+                        .secondary
+                        .withValues(alpha: 0.1) // Accent low opacity
+                    : Colors.grey[900],
+                border: Border.all(
+                  color: Colors.white, // v3.0: Always White Border
+                  width: 2,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,18 +399,16 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                         Icon(
                           Icons.play_circle_filled,
                           size: 16,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: Theme.of(context).colorScheme.secondary,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '進行中',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelMedium
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: GoogleFonts.inter(
+                            color: Theme.of(context).colorScheme.secondary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -340,9 +419,10 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                       ),
                       child: Text(
                         '💭 ${exercise.notes}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontStyle: FontStyle.italic,
-                            ),
+                        style: GoogleFonts.inter(
+                          fontStyle: FontStyle.italic,
+                          color: Colors.white70,
+                        ),
                       ),
                     ),
                 ],
@@ -494,13 +574,21 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueGrey,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                            side: BorderSide(color: Colors.black, width: 2),
+                          ),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 8),
                           minimumSize: const Size(50, 40),
                         ),
                         child: Text(
                           '${hour.toString().padLeft(2, '0')}:00',
-                          style: const TextStyle(fontSize: 14),
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       );
                     }),
@@ -520,17 +608,14 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     );
 
     if (selectedHour != null) {
+      if (!mounted) return;
       // 使用控制器設置訓練時間
       await _executionController.setTrainingHour(selectedHour,
           context: context);
-      setState(() {}); // 觸發重新構建
+      if (mounted) {
+        setState(() {}); // 觸發重新構建
+      }
     }
-  }
-
-  // 更新一組訓練的實際數據（已由 ExerciseCard 內建處理，保留此方法以防其他地方使用）
-  void _updateSetData(int exerciseIndex, int setIndex) {
-    // 新的 UI 已經內建內聯編輯功能，此方法不再需要
-    // 如果需要，可以在這裡添加額外的邏輯
   }
 
   // 添加運動備註
@@ -595,7 +680,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
 
     return PopScope(
       canPop: false, // 攔截返回
-      onPopInvoked: (didPop) async {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
 
         // ⚡ 如果有未保存的變更且可以編輯（今天或未來），自動保存
@@ -610,8 +695,19 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
         }
       },
       child: Scaffold(
+        backgroundColor: const Color(0xFF1E1E1E), // High Energy Dark
         appBar: AppBar(
-          title: Text(_executionController.getPlanTitle()),
+          backgroundColor: const Color(0xFF1E1E1E),
+          elevation: 0,
+          shape: const Border(
+              bottom:
+                  BorderSide(color: Colors.white, width: 2)), // Sharp border
+          title: Text(
+            _executionController.getPlanTitle(),
+            style: GoogleFonts.outfit(
+                fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          iconTheme: const IconThemeData(color: Colors.white),
           actions: [
             // 設置訓練時間按鈕
             IconButton(
@@ -666,6 +762,13 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
             _executionController.canEdit() && exerciseRecords.isNotEmpty
                 ? FloatingActionButton(
                     onPressed: _addNewExercise,
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    foregroundColor: Colors.black,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                      side: BorderSide(color: Colors.white, width: 2),
+                    ), // Sharp
+                    elevation: 0,
                     child: const Icon(Icons.add),
                   )
                 : null,
