@@ -1,10 +1,10 @@
 buildscript {
     repositories {
-        // 鏡像優先，避免 GitHub Actions 403 問題
-        maven { url = uri("https://maven.aliyun.com/repository/public") }
-        maven { url = uri("https://maven.aliyun.com/repository/google") }
-        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
+        // Google 優先（Firebase plugins 只在 Google 倉庫有）
         google()
+        // 阿里雲鏡像替代 Maven Central（避免 403）
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
         mavenCentral()
     }
     dependencies {
@@ -17,11 +17,8 @@ buildscript {
 
 allprojects {
     repositories {
-        // 鏡像優先，避免 GitHub Actions 403 問題
-        maven { url = uri("https://maven.aliyun.com/repository/public") }
-        maven { url = uri("https://maven.aliyun.com/repository/google") }
-        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
         google()
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
         mavenCentral()
     }
 }
@@ -39,10 +36,9 @@ subprojects {
 subprojects {
     buildscript {
         repositories {
-            maven { url = uri("https://maven.aliyun.com/repository/public") }
-            maven { url = uri("https://maven.aliyun.com/repository/google") }
-            maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
             google()
+            maven { url = uri("https://maven.aliyun.com/repository/public") }
+            maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
             mavenCentral()
         }
     }
