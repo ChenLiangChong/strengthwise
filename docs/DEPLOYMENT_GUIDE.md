@@ -1,8 +1,8 @@
 # StrengthWise - 部署指南
 
-> Release APK 構建、Google Sign-In 配置、發布流程
+> Release APK 構建、Google Sign-In 配置、CI/CD、發布流程
 
-**最後更新**：2026-01-07
+**最後更新**：2026-01-07（新增 CI/CD 配置說明）
 
 ---
 
@@ -227,6 +227,50 @@ version: 1.0.0+1
 | 重大更新 | +1.0.0 | 1.0.0 → 2.0.0 |
 | 新功能 | +0.1.0 | 1.0.0 → 1.1.0 |
 | Bug 修復 | +0.0.1 | 1.0.0 → 1.0.1 |
+
+---
+
+## 🤖 CI/CD（GitHub Actions）
+
+### 配置的 Secrets
+
+| Secret 名稱 | 說明 |
+|-------------|------|
+| `KEYSTORE_BASE64` | Release Keystore 的 Base64 編碼 |
+| `STORE_PASSWORD` | Keystore 密碼 |
+| `KEY_PASSWORD` | Key 密碼 |
+| `KEY_ALIAS` | Key 別名 |
+| `GOOGLE_SERVICES_JSON` | Firebase 配置檔的 Base64 編碼 |
+
+### 生成 Base64 編碼
+
+**PowerShell**：
+```powershell
+# Keystore
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("android/app/strengthwise-release.keystore")) | Set-Clipboard
+
+# google-services.json
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("android/app/google-services.json")) | Set-Clipboard
+```
+
+### Gradle 鏡像配置
+
+為避免 GitHub Actions 的 Maven Central 403 問題，已配置阿里雲鏡像：
+
+- `android/settings.gradle.kts` - pluginManagement repositories
+- `android/build.gradle.kts` - buildscript + allprojects + subprojects
+
+**優先順序**：
+1. `google()` - Firebase plugins
+2. 阿里雲鏡像 - 替代 Maven Central
+3. `mavenCentral()` - 備用
+
+### CI 工作流程
+
+| Job | 說明 | 觸發條件 |
+|-----|------|----------|
+| `analyze_and_test` | flutter analyze + test | 所有 push/PR |
+| `build_android` | APK + AAB 建置 | 僅 master/main |
 
 ---
 

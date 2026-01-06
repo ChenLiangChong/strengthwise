@@ -543,4 +543,10 @@ migrations/
 > - ✅ 隱私政策 / 使用條款連結已加入 App
 > - ⏳ 等待 Google 審核完成
 >
+> 🤖 **CI/CD 配置完成**（2026-01-07）：
+> - ✅ GitHub Actions workflow（analyze + test + build）
+> - ✅ 阿里雲 Maven 鏡像（解決 403 問題）
+> - ✅ GitHub Secrets 配置（Keystore、google-services.json）
+> - ✅ APK + AAB Artifacts 自動產出
+>
 > 🧪 **v3.1-A 待測試**：33 項功能測試（預約流程、Session Mode、FCM 推播）
