@@ -40,6 +40,11 @@ jobs:
       - name: 📦 Get Dependencies
         run: flutter pub get
 
+      - name: 📝 Create .env file
+        run: |
+          touch .env
+          echo "# CI environment - placeholder values" >> .env
+
       - name: 🔍 Analyze Code
         run: flutter analyze --no-fatal-infos
         continue-on-error: false
@@ -82,6 +87,11 @@ jobs:
 
       - name: 📦 Get Dependencies
         run: flutter pub get
+
+      - name: 📝 Create .env file
+        run: |
+          touch .env
+          echo "# CI environment - placeholder values" >> .env
 
       # 解碼 Keystore（從 GitHub Secrets）
       - name: 🔑 Decode Keystore

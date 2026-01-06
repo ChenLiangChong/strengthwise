@@ -65,12 +65,16 @@ lib/firebase_options.dart
 **/api_keys.dart
 **/config/secrets.dart
 **/config/keys.dart
-**/*config*.dart
+**/secrets/*.dart
 **/*secret*.dart
-**/*key*.dart
 **/*credentials*.dart
 **/*credential*.dart
 **/*auth*.json
+
+# 需要追蹤的配置文件（白名單排除）
+!lib/services/locator/environment_config.dart
+!lib/utils/notifications/notification_config.dart
+!lib/controllers/exercise/exercise_cache_key_builder.dart
 
 # 環境變數文件
 .env
