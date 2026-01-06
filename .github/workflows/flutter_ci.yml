@@ -62,12 +62,14 @@ jobs:
 
   # ============================================
   # Job 2: 建置 Android（僅 main 分支）
+  # 暫時禁用：Maven Central 403 問題
   # ============================================
   build_android:
     name: 建置 Android
     runs-on: ubuntu-latest
     needs: analyze_and_test
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    if: false  # 暫時禁用，等 Maven Central 問題解決
+    # if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
 
     steps:
       - name: 📥 Checkout
