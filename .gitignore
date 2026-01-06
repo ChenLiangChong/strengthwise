@@ -44,6 +44,13 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Android Signing（重要！不要上傳）
+android/key.properties
+android/app/*.keystore
+android/app/*.jks
+*.keystore
+*.jks
+
 # Firebase 相關凭據
 strengthwise-91f02-firebase-adminsdk-fbsvc-f40743774e.json
 *-firebase-adminsdk-*.json

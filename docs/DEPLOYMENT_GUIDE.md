@@ -2,16 +2,17 @@
 
 > Release APK 構建、Google Sign-In 配置、發布流程
 
-**最後更新**：2026-01-05
+**最後更新**：2026-01-07
 
 ---
 
 ## 📋 目錄
 
 1. [Release APK 構建](#release-apk-構建)
-2. [Google Sign-In 配置](#google-sign-in-配置)
-3. [Email Deep Link 配置](#email-deep-link-配置)
-4. [發布檢查清單](#發布檢查清單)
+2. [Google Play 上架](#google-play-上架)
+3. [Google Sign-In 配置](#google-sign-in-配置)
+4. [Email Deep Link 配置](#email-deep-link-配置)
+5. [發布檢查清單](#發布檢查清單)
 
 ---
 
@@ -55,6 +56,71 @@ storeFile=路徑/strengthwise-release-key.jks
 ```
 
 3. **修改 `android/app/build.gradle.kts`**：配置 signingConfigs
+
+---
+
+## 📱 Google Play 上架
+
+### 前置準備
+
+1. **Google Play Console 帳號**（$25 USD 一次性費用）
+2. **Release Keystore**（已配置於 `android/app/strengthwise-release.keystore`）
+3. **隱私政策**（Google Docs 連結即可）
+
+### 建構 AAB
+
+```bash
+# 建構 Release AAB
+flutter build appbundle --release
+
+# AAB 位置
+build\app\outputs\bundle\release\app-release.aab
+```
+
+### 上傳流程
+
+1. **Google Play Console** → 建立應用程式
+   - 應用程式名稱：`StrengthWise`
+   - 預設語言：繁體中文
+   - 類型：應用程式
+   - 收費：免費
+
+2. **內部測試** → 建立新版本
+   - 上傳 `app-release.aab`
+   - 版本名稱：`1.0.0`
+   - 版本資訊：功能說明
+
+3. **測試人員** → 建立電子郵件名單
+   - 新增測試人員 Email
+   - 複製測試連結分享給測試人員
+
+4. **取得測試連結**
+   - 測試 → 內部測試 → 測試人員 → 複製連結
+   - 或直接訪問：`https://play.google.com/apps/internaltest/{測試ID}`
+   - ⚠️ 只有在名單中的 Email 帳號才能下載
+
+5. **App Signing SHA-1**
+   - 設定 → 應用程式完整性 → App signing key certificate
+   - 複製 SHA-1 到 Google Cloud Console
+
+### Release Keystore 資訊
+
+```
+檔案：android/app/strengthwise-release.keystore
+密碼：strengthwise2026
+Alias：strengthwise
+```
+
+⚠️ **重要**：備份 keystore 到安全位置！
+
+### Google Play App Signing
+
+| 鑰匙 | 管理者 | 用途 |
+|------|--------|------|
+| Upload Key（你的 keystore） | 你 | 簽署上傳的 AAB |
+| App Signing Key | Google | 簽署給用戶下載的 APK |
+
+遺失 Upload Key 可請 Google 重設，但建議備份。
 
 ---
 
@@ -104,7 +170,7 @@ keytool -list -v -keystore "%USERPROFILE%\.android\debug.keystore" \
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
     <data 
-        android:scheme="com.example.strengthwise"
+        android:scheme="com.strengthwise.fitness"
         android:host="login-callback" />
 </intent-filter>
 ```
@@ -112,15 +178,15 @@ keytool -list -v -keystore "%USERPROFILE%\.android\debug.keystore" \
 ### Supabase 配置
 
 1. **Authentication → URL Configuration**
-2. **Redirect URLs** 添加：`com.example.strengthwise://login-callback`
+2. **Redirect URLs** 添加：`com.strengthwise.fitness://login-callback`
 
 ### 測試驗證
 
 ```bash
 # 驗證 Deep Link
 adb shell am start -W -a android.intent.action.VIEW \
-  -d "com.example.strengthwise://login-callback#test=123" \
-  com.example.strengthwise
+  -d "com.strengthwise.fitness://login-callback#test=123" \
+  com.strengthwise.fitness
 ```
 
 ---

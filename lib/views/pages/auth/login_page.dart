@@ -158,7 +158,11 @@ class _LoginPageState extends State<LoginPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Logo
-                      const FlutterLogo(size: 100),
+                      Image.asset(
+                        'assets/splash/splash_logo.png',
+                        width: 120,
+                        height: 120,
+                      ),
                       SizedBox(height: context.spacing.xl),
 
                       // 標題

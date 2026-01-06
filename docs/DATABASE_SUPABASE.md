@@ -597,7 +597,25 @@ CREATE TABLE public.personal_records (
 
 ### 完整 RLS 策略清單
 
-> 最後更新：2026-01-04
+> 最後更新：2026-01-07
+
+#### daily_workout_summary（每日訓練統計）⭐ v3.1
+
+| 操作 | 策略名稱 | 條件 |
+|-----|---------|------|
+| SELECT | daily_summary_select | `user_id = auth.uid()` 或 活躍教練關係 |
+| INSERT | daily_summary_insert | `user_id = auth.uid()` 或 活躍教練關係 |
+| UPDATE | daily_summary_update | `user_id = auth.uid()` 或 活躍教練關係 |
+| DELETE | daily_summary_delete | `user_id = auth.uid()` 或 活躍教練關係 |
+
+#### personal_records（個人記錄）⭐ v3.1
+
+| 操作 | 策略名稱 | 條件 |
+|-----|---------|------|
+| SELECT | personal_records_select | `user_id = auth.uid()` 或 活躍教練關係 |
+| INSERT | personal_records_insert | `user_id = auth.uid()` 或 活躍教練關係 |
+| UPDATE | personal_records_update | `user_id = auth.uid()` 或 活躍教練關係 |
+| DELETE | personal_records_delete | `user_id = auth.uid()` 或 活躍教練關係 |
 
 #### appointments（預約）
 

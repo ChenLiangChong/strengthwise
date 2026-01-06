@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/auth/login_page.dart';
@@ -63,21 +62,16 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Flutter 預設 Logo
-            FlutterLogo(size: 100),
-            SizedBox(height: 30),
-            CircularProgressIndicator(),
-            SizedBox(height: 20),
-            Text('歡迎使用', style: TextStyle(fontSize: 20)),
-          ],
-        ),
-      ),
+    // 根據系統主題決定背景色（符合 UI/UX 規範）
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final backgroundColor = isDarkMode
+        ? const Color(0xFF0F172A) // 深色模式：Deep Slate
+        : const Color(0xFFF1F5F9); // 淺色模式：Slate 50
+
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      body: const SizedBox.shrink(), // 空白，讓原生 Splash 保持顯示
     );
   }
 }

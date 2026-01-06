@@ -66,12 +66,14 @@
 | SM-ST2 | SOAP 唯讀 + Realtime 更新 | ✅ | 即時看到教練筆記 |
 | SM-ST3 | 隱藏 FAB | ✅ | 學員無操作按鈕 |
 
-### Bug 修復（2/2 ✅）
+### Bug 修復（4/4 ✅）
 
 | # | 任務 | 狀態 | 說明 |
 |---|------|------|------|
 | SM-F1 | 繪圖保存修復 | ✅ | SOAP 覆蓋問題 |
 | SM-F2 | Session Note 可見性 | ✅ | Migration 035 |
+| SM-F3 | RLS 修復（教練操作學員資料） | ✅ | Migration 036, 037 |
+| SM-F4 | TrainingHubPage 教練模式即時更新 | ✅ | 改用 Consumer 監聯 |
 
 ### 新增檔案清單
 
@@ -88,7 +90,9 @@ lib/
     └── workout_execution_content.dart   ⭐ 新增
 
 migrations/
-└── 035_fix_session_note_visibility.sql  ⭐ 新增
+├── 035_fix_session_note_visibility.sql  ⭐ 新增
+├── 036_fix_missing_rls.sql              ⭐ 新增（RLS 啟用）
+└── 037_fix_daily_summary_rls.sql        ⭐ 新增（教練操作學員 RLS）
 ```
 
 ### 主要修改檔案
@@ -106,6 +110,7 @@ migrations/
 | `readiness_form_page.dart` | 痠痛滑桿順序修正 |
 | `service_registry.dart` | 註冊 SessionRealtimeService |
 | `i_workout_execution_controller.dart` | 新增介面方法 |
+| `training_hub_page.dart` | 改用 Consumer 監聯教練模式即時更新 |
 
 ---
 
@@ -527,6 +532,15 @@ migrations/
 > - Supabase Realtime 同步（workout_plans + session_notes）
 > - 學員模式（唯讀 + 運動時長顯示）
 > - FAB 整合（SpeedDial：照片、繪圖、新增動作）
-> - Bug 修復（繪圖保存、Session Note 可見性）
+> - Bug 修復（繪圖保存、Session Note 可見性、RLS、教練模式即時更新）
+>
+> 📱 **Google Play 上架進度**（2026-01-07）：
+> - ✅ Package Name 更新：`com.strengthwise.fitness`
+> - ✅ Release Keystore 已配置
+> - ✅ 內部測試版已發布（v1.0.0）
+> - ✅ App Signing SHA-1 已配置到 Firebase
+> - ✅ Supabase Redirect URL 已更新
+> - ✅ 隱私政策 / 使用條款連結已加入 App
+> - ⏳ 等待 Google 審核完成
 >
 > 🧪 **v3.1-A 待測試**：33 項功能測試（預約流程、Session Mode、FCM 推播）

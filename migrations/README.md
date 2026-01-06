@@ -59,6 +59,8 @@
 -- v3.1 修復
 034_fix_session_auto_create.sql     # 修復 session_notes 觸發器欄位
 035_fix_session_note_visibility.sql # 修正 session_notes 預設 visibility 為 'shared'
+036_fix_missing_rls.sql             # 啟用 daily_workout_summary, personal_records RLS
+037_fix_daily_summary_rls.sql       # 修復 RLS（允許教練操作學員資料）
 ```
 
 ### 僅部署 v1.0（單機版）
@@ -87,6 +89,7 @@
 | 028-031, 033 | v3.0 | 預約優化 + Session Mode + FCM |
 | 034 | v3.1 | 修復 session_notes 觸發器 |
 | 035 | v3.1 | 修正 session_notes 預設 visibility |
+| 036-037 | v3.1 | RLS 修復（daily_workout_summary, personal_records）|
 
 ---
 

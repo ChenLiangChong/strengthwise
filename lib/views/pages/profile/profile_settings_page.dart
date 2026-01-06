@@ -11,6 +11,7 @@ import 'package:strengthwise/views/pages/home/main_home_page.dart';
 import 'package:strengthwise/views/pages/profile/widgets/profile_form_content.dart';
 import 'package:strengthwise/views/pages/profile/widgets/profile_delete_account_button.dart';
 import 'package:strengthwise/views/pages/profile/coach_profile_form_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// 個人資料設置頁面
 ///
@@ -325,6 +326,53 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                             },
                           ),
                         ],
+
+                        // 法律資訊區塊
+                        SizedBox(height: context.spacing.xl),
+                        const Divider(),
+                        SizedBox(height: context.spacing.md),
+                        Text(
+                          '法律資訊',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        SizedBox(height: context.spacing.sm),
+                        ListTile(
+                          leading: Icon(
+                            Icons.privacy_tip_outlined,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          title: const Text('隱私政策'),
+                          subtitle: const Text('了解我們如何保護您的資料'),
+                          trailing: const Icon(Icons.open_in_new),
+                          contentPadding: EdgeInsets.zero,
+                          onTap: () async {
+                            // 隱私政策 URL
+                            const url = 'https://docs.google.com/document/d/1Ja2MFOnwQQ0pnDr89BoORFAUKZ3xPhJyxGyLLjwlres/view';
+                            if (await canLaunchUrl(Uri.parse(url))) {
+                              await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                            }
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.description_outlined,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          title: const Text('使用條款'),
+                          subtitle: const Text('服務使用條款與規範'),
+                          trailing: const Icon(Icons.open_in_new),
+                          contentPadding: EdgeInsets.zero,
+                          onTap: () async {
+                            // 使用條款 URL
+                            const url = 'https://docs.google.com/document/d/1zWVeLFMCa6QVxHixd1VpDHq3S-bTqoH9zjLdl8K4VYw/view';
+                            if (await canLaunchUrl(Uri.parse(url))) {
+                              await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                            }
+                          },
+                        ),
 
                         // 刪除帳號區塊（放在最後）
                         SizedBox(height: context.spacing.xl),

@@ -1,4 +1,4 @@
-package com.example.strengthwise
+package com.strengthwise.fitness
 
 import io.flutter.embedding.android.FlutterActivity
 

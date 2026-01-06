@@ -2,11 +2,28 @@
 
 > 資料庫遷移、修復、架構變更的歷史記錄
 
-**最後更新**：2026-01-06
+**最後更新**：2026-01-07
 
 ---
 
 ## 🔧 v3.1 修復記錄
+
+### v3.1: RLS 修復 - 教練操作學員資料（2026-01-07）
+
+**問題**：
+1. `daily_workout_summary` 和 `personal_records` 表 RLS 未啟用
+2. 啟用後教練無法在 Session Mode 為學員建立訓練計畫（觸發器寫入被 RLS 阻止）
+
+**解決方案**：
+1. `036_fix_missing_rls.sql`：啟用兩表的 RLS，基本策略（只允許用戶操作自己的資料）
+2. `037_fix_daily_summary_rls.sql`：擴展策略，允許活躍教練關係的教練操作學員資料
+
+**影響**：
+- `daily_workout_summary`：教練可查看/新增/修改/刪除學員統計
+- `personal_records`：教練可查看/新增/修改/刪除學員個人記錄
+- 修復 Session Mode 建立訓練計畫功能
+
+---
 
 ### v3.1: session_notes 觸發器修復（2026-01-06）
 
