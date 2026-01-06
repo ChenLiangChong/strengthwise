@@ -29,6 +29,19 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
+// 為所有子專案（包括 Flutter plugins）覆蓋 buildscript repositories
+// 解決 GitHub Actions 無法從 Maven Central 下載依賴的 403 問題
+subprojects {
+    buildscript {
+        repositories {
+            google()
+            maven { url = uri("https://maven.aliyun.com/repository/public") }
+            maven { url = uri("https://maven.aliyun.com/repository/google") }
+            mavenCentral()
+        }
+    }
+}
 subprojects {
     project.evaluationDependsOn(":app")
 }
