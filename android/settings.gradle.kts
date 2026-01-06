@@ -11,6 +11,8 @@ pluginManagement {
 
     repositories {
         google()
+        maven { url = uri("https://maven.aliyun.com/repository/public") }  // 阿里雲鏡像
+        maven { url = uri("https://maven.aliyun.com/repository/google") }  // Google 鏡像
         mavenCentral()
         gradlePluginPortal()
     }

@@ -1,6 +1,8 @@
 buildscript {
     repositories {
         google()
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
         mavenCentral()
     }
     dependencies {
@@ -14,6 +16,8 @@ buildscript {
 allprojects {
     repositories {
         google()
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
         mavenCentral()
     }
 }
