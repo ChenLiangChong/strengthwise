@@ -10,9 +10,11 @@ pluginManagement {
     includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
     repositories {
+        // 鏡像優先，避免 GitHub Actions 403 問題
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
         google()
-        maven { url = uri("https://maven.aliyun.com/repository/public") }  // 阿里雲鏡像
-        maven { url = uri("https://maven.aliyun.com/repository/google") }  // Google 鏡像
         mavenCentral()
         gradlePluginPortal()
     }

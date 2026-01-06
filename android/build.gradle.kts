@@ -1,8 +1,10 @@
 buildscript {
     repositories {
-        google()
+        // 鏡像優先，避免 GitHub Actions 403 問題
         maven { url = uri("https://maven.aliyun.com/repository/public") }
         maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
+        google()
         mavenCentral()
     }
     dependencies {
@@ -15,9 +17,11 @@ buildscript {
 
 allprojects {
     repositories {
-        google()
+        // 鏡像優先，避免 GitHub Actions 403 問題
         maven { url = uri("https://maven.aliyun.com/repository/public") }
         maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
+        google()
         mavenCentral()
     }
 }
@@ -35,9 +39,10 @@ subprojects {
 subprojects {
     buildscript {
         repositories {
-            google()
             maven { url = uri("https://maven.aliyun.com/repository/public") }
             maven { url = uri("https://maven.aliyun.com/repository/google") }
+            maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
+            google()
             mavenCentral()
         }
     }
