@@ -30,11 +30,12 @@ jobs:
         with:
           distribution: "temurin"
           java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'  # 快取 Gradle 依賴，避免 Maven 403
 
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: "stable"  # 使用最新穩定版
+          channel: "stable"
           cache: true
 
       - name: 📦 Get Dependencies
@@ -62,14 +63,12 @@ jobs:
 
   # ============================================
   # Job 2: 建置 Android（僅 main 分支）
-  # 暫時禁用：Maven Central 403 問題
   # ============================================
   build_android:
     name: 建置 Android
     runs-on: ubuntu-latest
     needs: analyze_and_test
-    if: false  # 暫時禁用，等 Maven Central 問題解決
-    # if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
 
     steps:
       - name: 📥 Checkout
@@ -80,11 +79,12 @@ jobs:
         with:
           distribution: "temurin"
           java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'  # 快取 Gradle 依賴，避免 Maven 403
 
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: "stable"  # 使用最新穩定版
+          channel: "stable"
           cache: true
 
       - name: 📦 Get Dependencies
@@ -159,4 +159,3 @@ jobs:
   #
   #     - name: 🏗️ Build iOS (no codesign)
   #       run: flutter build ios --release --no-codesign
-
