@@ -28,7 +28,9 @@ alwaysApply: true
 
 | 主題 | 檔案路徑 | 何時使用 |
 |---|----|----|
+| **Session Mode** | `docs/planning/SESSION_MODE_SPEC.md` | 教練上課模式、Realtime 同步 |
 | **健康評估** | `docs/HEALTH_ASSESSMENT_SYSTEM.md` | PAR-Q+ 問卷、風險評估 |
+| **訓練權限** | `docs/planning/TRAINING_PERMISSION_MATRIX.md` | 訓練權限矩陣 |
 | **SaaS 路線圖** | `docs/SAAS_PLATFORM_ROADMAP.md` | 未來計劃 |
 | **功能規劃** | `docs/planning/*.md` | 新功能詳細規格書 |
 
@@ -57,6 +59,9 @@ alwaysApply: true
 | 資料庫設計 | `DATABASE_SUPABASE.md` |
 | 時間處理方式 | `DATETIME_UTILS_GUIDE.md` |
 | UI 設計規範 | `UI_DEVELOPER_GUIDE.md` |
+| Session Mode（上課模式） | `docs/planning/SESSION_MODE_SPEC.md` |
+| Realtime 同步機制 | `docs/planning/SESSION_MODE_SPEC.md` |
+| 訓練權限邏輯 | `docs/planning/TRAINING_PERMISSION_MATRIX.md` |
 | 部署流程 | `DEPLOYMENT_GUIDE.md` |
 | 推播通知配置 | `FCM_SETUP_GUIDE.md` |
 | Python 工具 | `scripts/README.md` |
@@ -73,4 +78,3 @@ alwaysApply: true
 2. **衝突檢測**：如果代碼與文檔描述衝突，明確告知
 3. **文檔更新**：如果修改代碼導致文檔過時，建議更新
 </critical>
-

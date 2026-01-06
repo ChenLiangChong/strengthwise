@@ -11,7 +11,7 @@ alwaysApply: true
 | 項目 | 內容 |
 |------|------|
 | **專案名稱** | StrengthWise |
-| **當前版本** | v3.0（2026-01-05 開發中）|
+| **當前版本** | v3.1（2026-01-07 已完成）|
 | **專案類型** | 跨平台健身訓練追蹤應用 |
 | **目標平台** | Android / iOS / Windows |
 
@@ -30,6 +30,7 @@ Backend:
 ├── Authentication：Supabase Auth + Google Sign-In
 ├── Storage：Supabase Storage
 ├── 安全性：Row Level Security (RLS)
+├── Realtime：即時訂閱
 └── 時間類型：TIMESTAMPTZ / TSTZRANGE
 ```
 
@@ -66,22 +67,25 @@ Model Layer              → lib/models/
 - v2.8.1-v2.8.4：教練評估備註、文檔重構、PR 修復、角色修復
 - v2.9：教練公開檔案 + 訓練權限系統
 - v2.9.1：訓練 UX 優化（狀態機、休息計時器、權限阻止）
-- v3.0：預約系統優化 + Session Mode（開發中）⭐
+
+### v3.0-v3.1 Session Mode + Realtime
+- v3.0：預約系統優化 + Session Mode + 響應式 UI ✅
+- v3.1：Session Mode 完善 + Realtime 同步 ✅
 
 ## 📊 專案規模
 
 ```
-總代碼量：~66,300 行
-├── Flutter/Dart：~63,000 行
-├── SQL/Migrations：~3,500 行（13 個檔案）
+總代碼量：~68,000 行
+├── Flutter/Dart：~65,000 行
+├── SQL/Migrations：~3,500 行（35 個檔案）
 └── Python 腳本：~2,200 行
 
 核心組件：
-├── Pages：60+
-├── Controllers：20+（含 67 子模組）
-├── Services：53+
-├── Models：65+
-└── Widgets：196+
+├── Pages：65+
+├── Controllers：22+（含 70 子模組）
+├── Services：55+（含 Realtime）
+├── Models：67+
+└── Widgets：200+
 ```
 
 ## 🔗 關鍵文檔
@@ -90,4 +94,3 @@ Model Layer              → lib/models/
 - **資料庫設計**：`docs/DATABASE_SUPABASE.md`
 - **專案架構**：`docs/PROJECT_OVERVIEW.md`
 - **開發規範**：`AGENTS.md`
-
