@@ -95,6 +95,13 @@ jobs:
           touch .env
           echo "# CI environment - placeholder values" >> .env
 
+      # 解碼 google-services.json（Firebase 配置）
+      - name: 🔥 Create google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON" | base64 --decode > android/app/google-services.json
+
       # 解碼 Keystore（從 GitHub Secrets）
       - name: 🔑 Decode Keystore
         env:
