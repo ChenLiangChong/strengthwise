@@ -5,9 +5,9 @@ name: Flutter CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [master, main, develop]
   pull_request:
-    branches: [main]
+    branches: [master, main]
   workflow_dispatch: # 手動觸發
 
 env:
@@ -64,7 +64,7 @@ jobs:
     name: 建置 Android
     runs-on: ubuntu-latest
     needs: analyze_and_test
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
 
     steps:
       - name: 📥 Checkout
@@ -132,7 +132,7 @@ jobs:
   #   name: 建置 iOS
   #   runs-on: macos-latest
   #   needs: analyze_and_test
-  #   if: github.ref == 'refs/heads/main'
+  #   if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
   #
   #   steps:
   #     - name: 📥 Checkout
