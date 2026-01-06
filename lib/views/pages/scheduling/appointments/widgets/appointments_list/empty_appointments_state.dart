@@ -1,5 +1,7 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/appointment_model.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 空狀態組件
 class EmptyAppointmentsState extends StatelessWidget {
@@ -14,31 +16,31 @@ class EmptyAppointmentsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             _getIcon(),
-            size: 80,
-            color: Colors.grey[300],
+            size: 80.scaled(context), // ⭐ 響應式圖標
+            color: colorScheme.outline,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: context.spacing.lg), // ⭐ 響應式間距
           Text(
             _getTitle(),
-            style: TextStyle(
-              fontSize: 18,
+            style: context.responsive.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
-            ),
+              color: colorScheme.onSurface,
+            ), // ⭐ 響應式文字
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
           Text(
             _getSubtitle(),
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: context.responsive.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ), // ⭐ 響應式文字
             textAlign: TextAlign.center,
           ),
         ],

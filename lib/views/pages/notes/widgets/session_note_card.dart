@@ -1,7 +1,9 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/session_note/session_note_model.dart';
 import 'package:strengthwise/models/session_note/soap_note_model.dart';
 import 'package:strengthwise/utils/datetime_utils.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 課程筆記卡片組件
 /// 
@@ -28,12 +30,17 @@ class SessionNoteCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: context.spacing.md), // ⭐ 響應式間距
+      elevation: 0, // ⭐ 移除陰影
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(context.spacing.md), // ⭐ 響應式內距
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -51,61 +58,68 @@ class SessionNoteCard extends StatelessWidget {
                     ),
                   ),
                   
-                  // 共享狀態標籤
-                  if (note.isShared)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.share,
-                            size: 12,
-                            color: colorScheme.onPrimaryContainer,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '已共享',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onPrimaryContainer,
+                  SizedBox(width: context.spacing.sm),
+                  
+                  // 共享狀態標籤（使用 Flexible 防止溢出）
+                  Flexible(
+                    child: note.isShared
+                        ? Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: context.spacing.sm,
+                              vertical: context.spacing.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.share,
+                                  size: 12,
+                                  color: colorScheme.onPrimaryContainer,
+                                ),
+                                SizedBox(width: context.spacing.xs),
+                                Flexible(
+                                  child: Text(
+                                    '已共享',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: colorScheme.onPrimaryContainer,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: context.spacing.sm,
+                              vertical: context.spacing.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceVariant,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '私人',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ],
-                      ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceVariant,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '私人',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
+                  ),
                 ],
               ),
               
-              const SizedBox(height: 12),
+              SizedBox(height: context.spacing.sm),
               
               // 副標題：學員/教練名稱 + 創建日期
               Row(
                 children: [
-                  // ⭐ 頭像（首字母）
+                  // ⭐ 頭像 + 名稱（限制寬度，防止 email 溢出）
                   CircleAvatar(
                     radius: 12,
                     backgroundColor: colorScheme.surfaceVariant,
@@ -118,16 +132,21 @@ class SessionNoteCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: context.spacing.xs),
                   
-                  // 學員/教練名稱
-                  Text(
-                    _getPersonName(),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: coachName == '已刪除的教練' ? Colors.grey : colorScheme.onSurfaceVariant,
+                  // 名稱（可能是 email，需要限制寬度）
+                  Expanded(
+                    child: Text(
+                      _getPersonName(),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: coachName == '已刪除的教練' ? Colors.grey : colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  
+                  SizedBox(width: context.spacing.sm),
                   
                   // 創建日期
                   Icon(
@@ -135,7 +154,7 @@ class SessionNoteCard extends StatelessWidget {
                     size: 12,
                     color: colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: context.spacing.xs),
                   Text(
                     _formatSessionDate(note.createdAt),
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -145,70 +164,76 @@ class SessionNoteCard extends StatelessWidget {
                 ],
               ),
               
-              const SizedBox(height: 8),
+              SizedBox(height: context.spacing.sm),
               
               // SOAP 筆記預覽
               if (note.soap != null && !note.soap!.isEmpty) ...[
                 _buildSoapPreview(context, note.soap!),
-                const SizedBox(height: 8),
+                SizedBox(height: context.spacing.sm),
               ],
               
-              // 底部資訊列：視覺元素數量 + 更新時間
+              // 底部資訊列：視覺元素數量 + 更新時間（使用 Wrap 防止溢出）
               Row(
                 children: [
-                  // 繪圖數量
-                  if (note.hasDrawings)
-                    Row(
+                  // 左側資訊（可換行）
+                  Expanded(
+                    child: Wrap(
+                      spacing: context.spacing.sm,
+                      runSpacing: context.spacing.xs,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Icon(
-                          Icons.draw,
-                          size: 14,
-                          color: colorScheme.primary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${_getDrawingCount(note)} 個繪圖',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.primary,
+                        // 繪圖數量
+                        if (note.hasDrawings)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.draw,
+                                size: 14,
+                                color: colorScheme.primary,
+                              ),
+                              SizedBox(width: context.spacing.xs),
+                              Text(
+                                '${_getDrawingCount(note)} 個繪圖',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                      ],
-                    ),
-                  
-                  // 照片數量
-                  if (_getPhotoCount(note) > 0)
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.photo_library,
-                          size: 14,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
+                        
+                        // 照片數量
+                        if (_getPhotoCount(note) > 0)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.photo_library,
+                                size: 14,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              SizedBox(width: context.spacing.xs),
+                              Text(
+                                '${_getPhotoCount(note)} 張照片',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        
+                        // 更新時間
                         Text(
-                          '${_getPhotoCount(note)} 張照片',
+                          '更新於 ${_formatUpdateTime(note.updatedAt)}',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        const SizedBox(width: 12),
                       ],
-                    ),
-                  
-                  // 更新時間（使用 DateTimeUtils）
-                  Expanded(
-                    child: Text(
-                      '更新於 ${_formatUpdateTime(note.updatedAt)}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   
-                  // 刪除按鈕
+                  // 刪除按鈕（固定在右側）
                   IconButton(
                     icon: Icon(
                       Icons.delete_outline,
@@ -217,7 +242,10 @@ class SessionNoteCard extends StatelessWidget {
                     ),
                     onPressed: onDelete,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
                     tooltip: '刪除筆記',
                   ),
                 ],

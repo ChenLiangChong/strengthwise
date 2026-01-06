@@ -5,9 +5,9 @@ buildscript {
     }
     dependencies {
         classpath("com.android.tools.build:gradle:8.7.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24")
-        // Firebase 相關 classpath 已移除（已遷移到 Supabase）
-        // classpath("com.google.gms:google-services:4.3.15")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
+        // Firebase Cloud Messaging（推播通知）⭐ v3.0-C
+        classpath("com.google.gms:google-services:4.4.0")
     }
 }
 

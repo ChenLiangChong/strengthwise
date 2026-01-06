@@ -95,8 +95,16 @@ class _ClientSelectorDialogState extends State<ClientSelectorDialog> {
                             client.displayName?.substring(0, 1).toUpperCase() ?? '?',
                           ),
                         ),
-                        title: Text(client.displayName ?? '未知學員'),
-                        subtitle: Text(client.email),
+                        title: Text(
+                          client.displayName ?? '未知學員',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          client.email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () {
                           Navigator.pop(context, client.uid);

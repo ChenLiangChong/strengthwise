@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - Tab 子組件處理
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/coach_management_controller.dart';
@@ -10,9 +11,9 @@ import 'package:strengthwise/views/pages/scheduling/appointments/coach_slots_man
 /// 教練詳情頁面（學員端）
 ///
 /// 功能：
-/// 1. 基本資訊 Tab
-/// 2. 預約上課 Tab（該教練的可用時段）
-/// 3. 共享筆記 Tab（該教練對此學員的筆記）
+/// 1. 基本資料 Tab
+/// 2. 預約上課 Tab（該教練的可約時段）
+/// 3. 分享筆記 Tab（該教練對此學員的筆記記錄）
 class CoachDetailPage extends StatefulWidget {
   final String coachId;
   final UserModel coach;
@@ -38,10 +39,10 @@ class _CoachDetailPageState extends State<CoachDetailPage>
   void initState() {
     super.initState();
     _tabController = TabController(
-        length: 3, vsync: this); // 4 → 3（移除我的訓練 Tab，改去 BookingPage）
+        length: 3, vsync: this); // 4 → 3（移除預約 Tab，改到 BookingPage）
     _controller = serviceLocator<CoachManagementController>();
 
-    // 選擇教練（載入詳細資料）
+    // 選中教練（載入詳細資料）
     _controller.selectCoach(widget.coachId, widget.clientId);
   }
 
@@ -73,33 +74,33 @@ class _CoachDetailPageState extends State<CoachDetailPage>
             controller: _tabController,
             isScrollable: false, // 3 個 Tab 不需要滾動
             tabs: const [
-              Tab(icon: Icon(Icons.person), text: '基本資訊'),
+              Tab(icon: Icon(Icons.person), text: '基本資料'),
               Tab(icon: Icon(Icons.event_available), text: '預約上課'),
-              Tab(icon: Icon(Icons.note), text: '共享筆記'),
+              Tab(icon: Icon(Icons.note), text: '分享筆記'),
             ],
           ),
         ),
         body: TabBarView(
           controller: _tabController,
           children: [
-            // Tab 1: 基本資訊
+            // Tab 1: 基本資料
             CoachInfoTab(
               coach: widget.coach,
-              clientId: widget.clientId, // ⭐ 傳遞 clientId
+              clientId: widget.clientId, // 【傳入 clientId】
             ),
 
-            // Tab 2: 預約上課（該教練的可用時段）⭐ 過濾該教練
+            // Tab 2: 預約上課（該教練的可約時段）【過濾該教練】
             CoachSlotsManagementPage(
-              isViewMode: true, // 學員查看模式
-              coachId: widget.coachId, // ⭐ 傳入教練 ID 過濾
+              isViewMode: true, // 學員唯讀模式
+              coachId: widget.coachId, // 【傳入教練 ID 過濾】
             ),
 
-            // Tab 3: 共享筆記（該教練對此學員的筆記）⭐ 過濾 coachId + clientId
+            // Tab 3: 分享筆記（該教練對此學員的筆記記錄）【過濾 coachId + clientId】
             SessionNotesListPage(
               clientId: widget.clientId,
               coachId: widget.coachId,
-              isClientView: true, // 學員視角（只看已分享的）
-              coach: widget.coach, // ⭐ 傳入教練資訊，用於顯示標題
+              isClientView: true, // 學員視角（只看已分享內容）
+              coach: widget.coach, // 【傳入教練資料，用於顯示名稱】
             ),
           ],
         ),

@@ -2,14 +2,14 @@
 
 > Supabase PostgreSQL 資料庫架構與最佳實踐
 
-**最後更新**：2026-01-04（v2.9）
+**最後更新**：2026-01-07（v3.1）
 
 ---
 
 ## 📊 架構總覽
 
 ```
-Supabase PostgreSQL（21 個表格）
+Supabase PostgreSQL（24 個表格）
 ├── 核心表格（7 個）
 │   ├── users              - 用戶資料
 │   ├── exercises          - 系統動作庫（794 個）
@@ -23,13 +23,15 @@ Supabase PostgreSQL（21 個表格）
 │   ├── body_parts         - 身體部位（8 個）
 │   └── exercise_types     - 訓練類型（3 個）
 │
-├── 教練學員系統（6 個）
+├── 教練學員系統（8 個）
 │   ├── coaching_relationships - 教練學員關係
 │   ├── availability_slots     - 教練可用時段
 │   ├── appointments           - 預約記錄
 │   ├── session_notes          - SOAP 課程筆記
 │   ├── client_availability    - 學員時間偏好
-│   └── coaches                - 教練公開檔案 ⭐ v2.9
+│   ├── coaches                - 教練公開檔案
+│   ├── coach_booking_settings - 教練預約設定 ⭐ v3.0
+│   └── daily_readiness        - 課前問卷 ⭐ v3.0
 │
 ├── 邀請碼系統（1 個）
 │   └── invite_codes       - 一次性邀請碼
@@ -38,6 +40,9 @@ Supabase PostgreSQL（21 個表格）
 │   ├── health_assessments        - PAR-Q+ 問卷
 │   ├── coach_assessment_notes    - 教練備註（私有）
 │   └── coach_display_preferences - 顯示偏好
+│
+├── 推播通知（1 個）⭐ v3.0-C
+│   └── user_devices       - 用戶設備（FCM Token 管理）
 │
 └── 優化表格（2 個）
     ├── daily_workout_summary - 每日訓練統計
@@ -261,8 +266,9 @@ CREATE TABLE public.availability_slots (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   coach_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   time_range TSTZRANGE NOT NULL,    -- PostgreSQL 時間範圍
-  rrule TEXT,                       -- 週期性規則（RFC 5545）
-  is_available BOOLEAN DEFAULT TRUE,
+  recurrence_rule TEXT,             -- 週期性規則（RFC 5545）
+  is_override BOOLEAN DEFAULT FALSE, -- 是否為覆蓋時段
+  notes TEXT,                       -- 備註
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   EXCLUDE USING GIST (coach_id WITH =, time_range WITH &&)  -- 防止重疊
@@ -280,7 +286,7 @@ CREATE TABLE public.appointments (
   client_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   slot_id UUID REFERENCES availability_slots(id),
   time_range TSTZRANGE NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending',  -- pending/confirmed/completed/cancelled
+  status appointment_status NOT NULL DEFAULT 'requested',  -- requested/confirmed/rejected/completed/cancelled
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -296,18 +302,18 @@ CREATE TABLE public.session_notes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   coach_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   client_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  appointment_id UUID REFERENCES appointments(id),
-  subjective TEXT,                  -- S: 主觀
-  objective TEXT,                   -- O: 客觀
-  assessment TEXT,                  -- A: 評估
-  plan TEXT,                        -- P: 計劃
-  photos TEXT[],                    -- 照片 URL 陣列
-  drawing_data JSONB,               -- 手繪數據
-  visibility TEXT DEFAULT 'private', -- private/shared
+  appointment_id UUID REFERENCES appointments(id),  -- ⭐ v3.0 Session Mode 關聯
+  workout_log_id TEXT,              -- 訓練記錄關聯
+  title TEXT,                       -- 筆記標題
+  content JSONB DEFAULT '{}'::jsonb, -- SOAP 內容（subjective/objective/assessment/plan）
+  visibility TEXT DEFAULT 'coach_only',  -- coach_only / shared
   coach_name TEXT,                  -- 教練名稱快照
   client_name TEXT,                 -- 學員名稱快照
+  hidden_by_client BOOLEAN DEFAULT FALSE,
+  hidden_by_coach BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE INDEX idx_session_notes_appointment_unique (appointment_id) WHERE appointment_id IS NOT NULL
 );
 ```
 
@@ -372,7 +378,99 @@ CREATE TABLE public.coaches (
 
 ---
 
-### 13. health_assessments - 健康評估問卷
+### 13. coach_booking_settings - 教練預約設定 ⭐ v3.0
+
+```sql
+CREATE TABLE public.coach_booking_settings (
+  coach_id UUID PRIMARY KEY REFERENCES coaches(id) ON DELETE CASCADE,
+  
+  -- 緩衝機制（未來擴展）
+  buffer_before INTERVAL DEFAULT '00:15:00'::interval,
+  buffer_after INTERVAL DEFAULT '00:15:00'::interval,
+  
+  -- 預約限制
+  min_booking_notice INTERVAL NOT NULL DEFAULT '02:00:00'::interval,
+  max_booking_window INTERVAL DEFAULT '60 days'::interval,
+  
+  -- 顆粒度與容量（未來擴展）
+  slot_increment INTERVAL DEFAULT '00:30:00'::interval,
+  default_session_duration INTERVAL DEFAULT '01:00:00'::interval,
+  max_sessions_per_day INTEGER DEFAULT 8,
+  
+  -- 時區
+  timezone TEXT NOT NULL DEFAULT 'Asia/Taipei',
+  
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+**重要欄位**：
+- `min_booking_notice`：最短提前預約時間（目前使用）
+- 其他欄位為未來擴展預留
+
+---
+
+### 14. daily_readiness - 課前問卷 ⭐ v3.0
+
+```sql
+CREATE TABLE public.daily_readiness (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  appointment_id UUID REFERENCES appointments(id) ON DELETE SET NULL,
+  session_note_id UUID REFERENCES session_notes(id) ON DELETE SET NULL,
+  log_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  readiness_score INTEGER CHECK (readiness_score BETWEEN 0 AND 100),
+  traffic_light TEXT CHECK (traffic_light IN ('RED', 'AMBER', 'GREEN')),
+  metrics JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, appointment_id)
+);
+```
+
+**重要欄位**：
+- `metrics`：JSONB 儲存 5 個指標（睡眠品質、時長、痠痛、壓力、能量）
+- `traffic_light`：紅綠燈狀態（RED/AMBER/GREEN）
+- `readiness_score`：0-100 總分
+
+**自動創建**：預約確認時由觸發器 `trg_create_session_mode_data` 自動創建。
+
+---
+
+### 15. user_devices - 用戶設備 ⭐ v3.0-C
+
+```sql
+CREATE TABLE public.user_devices (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  fcm_token TEXT NOT NULL,
+  platform TEXT NOT NULL CHECK (platform IN ('android', 'ios', 'web')),
+  device_name TEXT,                    -- 設備名稱（可選）
+  last_active TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, fcm_token)           -- 同一用戶同一 Token 只能有一筆
+);
+
+CREATE INDEX idx_user_devices_user_id ON user_devices(user_id);
+CREATE INDEX idx_user_devices_token ON user_devices(fcm_token);
+```
+
+**重要欄位**：
+- `fcm_token`：Firebase Cloud Messaging Token
+- `platform`：android/ios/web
+- `last_active`：最後活躍時間（用於清理舊設備）
+
+**RPC 函數**：
+- `upsert_device_token()`：添加/更新設備 Token
+- `remove_device_token()`：移除設備 Token
+- `remove_invalid_tokens()`：批量清理無效 Token
+- `get_user_tokens()`：獲取用戶所有 Token
+
+---
+
+### 16. health_assessments - 健康評估問卷
 
 ```sql
 CREATE TABLE public.health_assessments (
@@ -436,7 +534,7 @@ CREATE TABLE public.coach_assessment_notes (
 
 ---
 
-### 15. coach_display_preferences - 教練顯示偏好
+### 16. coach_display_preferences - 教練顯示偏好
 
 ```sql
 CREATE TABLE public.coach_display_preferences (
@@ -461,7 +559,7 @@ CREATE TABLE public.coach_display_preferences (
 
 ---
 
-### 15-16. 優化表格
+### 17-18. 優化表格
 
 ```sql
 -- 每日訓練統計
@@ -547,6 +645,29 @@ CREATE TABLE public.personal_records (
 | 操作 | 策略名稱 | 條件 |
 |-----|---------|------|
 | ALL | Coaches can manage own | `coach_id = auth.uid()` |
+
+#### coach_booking_settings（教練預約設定）⭐ v3.0
+
+| 操作 | 策略名稱 | 條件 |
+|-----|---------|------|
+| ALL | Coaches can manage own settings | `coach_id = auth.uid()` |
+| SELECT | Students can view coach settings | 活躍教練關係 |
+
+#### daily_readiness（課前問卷）⭐ v3.0
+
+| 操作 | 策略名稱 | 條件 |
+|-----|---------|------|
+| ALL | Users can manage own readiness | `user_id = auth.uid()` |
+| SELECT | Coaches can view students readiness | 活躍教練關係 |
+| INSERT | Coaches can insert for students | 活躍教練關係 |
+
+#### user_devices（用戶設備）⭐ v3.0-C
+
+| 操作 | 策略名稱 | 條件 |
+|-----|---------|------|
+| ALL | users_manage_own_devices | `user_id = auth.uid()` |
+| SELECT | Coaches can view students readiness | 活躍教練關係 |
+| INSERT | Coaches can insert for students | 活躍教練關係 |
 
 #### coaches（教練檔案）
 
@@ -781,6 +902,9 @@ try {
 | 005-007 | v2.0 | 教練學員 + 預約 + 筆記 |
 | 008-010 | v2.x | 修復 + 增強 |
 | 016-021 | v2.8 | 健康評估系統 |
+| 025-027 | v2.9 | 教練公開檔案 + 訓練狀態 |
+| 028-031, 033 | v3.0 | 預約設定 + 課前問卷 + Session Mode + FCM |
+| 034-035 | v3.1 | Session Mode 修復（觸發器 + visibility）|
 
 ---
 

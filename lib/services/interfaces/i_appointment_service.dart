@@ -73,6 +73,16 @@ abstract class IAppointmentService {
   // 操作方法（Operations）
   // ============================================================
 
+  /// 獲取學員最近一次已完成的預約（用於一鍵續約推薦）⭐ v3.0
+  /// 
+  /// [clientId] 學員 ID
+  /// 返回最近一次已完成的預約（若沒有則返回 null）
+  Future<AppointmentModel?> getLastCompletedAppointment(String clientId);
+
+  // ============================================================
+  // 操作方法（Operations）
+  // ============================================================
+
   /// 創建預約（學員發起）
   /// 
   /// [appointment] 預約資料
@@ -173,6 +183,30 @@ abstract class IAppointmentService {
     required String clientId,
     required DateTime startDate,
     required DateTime endDate,
+  });
+
+  // ============================================================
+  // 臨時課程（Ad-Hoc Session）⭐ v3.0
+  // ============================================================
+
+  /// 教練手動建立臨時課程
+  /// 
+  /// 不經過正式預約流程，直接建立 confirmed 狀態的預約
+  /// 會自動觸發 session_notes 和 daily_readiness 的創建（DB Trigger）
+  /// 
+  /// [coachId] 教練 ID
+  /// [clientId] 學員 ID
+  /// [startTime] 開始時間
+  /// [endTime] 結束時間
+  /// [notes] 備註（可選）
+  /// 
+  /// 返回創建的預約 ID
+  Future<String> createAdHocSession({
+    required String coachId,
+    required String clientId,
+    required DateTime startTime,
+    required DateTime endTime,
+    String? notes,
   });
 }
 

@@ -1,4 +1,6 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
 import 'package:strengthwise/services/interfaces/i_health_assessment_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
@@ -12,8 +14,8 @@ import 'package:strengthwise/views/pages/relationships/role_client/widgets/empty
 /// 
 /// 功能：
 /// 1. 查看自己的健康評估報告
-/// 2. 自行填寫健康評估（如果沒有教練或想先準備）
-/// 3. 編輯已有的健康評估
+/// 2. 首次填寫健康評估（提前為教練課程做準備）
+/// 3. 編輯已有的健康資料
 class MyHealthAssessmentPage extends StatefulWidget {
   final String userId;
 
@@ -77,12 +79,12 @@ class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
           clientId: widget.userId,
           clientName: '我', // 學員自填時顯示「我」
           existingAssessment: _healthAssessment,
-          isClientSelfFilling: true, // ⭐ 標記為學員自填
+          isClientSelfFilling: true, // 【標記為學員自填】
         ),
       ),
     );
 
-    // 如果有返回值，重新載入
+    // 如果有回傳值，重新載入
     if (result != null && mounted) {
       await _loadHealthAssessment();
     }
@@ -96,38 +98,43 @@ class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
 
     return RefreshIndicator(
       onRefresh: _loadHealthAssessment,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 說明文字
-            _buildInfoBanner(context),
-            const SizedBox(height: 16),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: context.pagePadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 說明橫幅
+                _buildInfoBanner(context),
+                const SizedBox(height: 16),
 
-            // 健康評估內容
-            if (_healthAssessment != null)
-              HealthAssessmentSummaryCard(
-                assessment: _healthAssessment!,
-                onViewFull: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HealthAssessmentDetailPage(
-                        assessment: _healthAssessment!,
-                      ),
-                    ),
-                  );
-                },
-                onEdit: _showHealthAssessmentEditor,
-                isClientView: true, // ⭐ 學員視角（隱藏教練備註、設定按鈕）
-              )
-            else
-              EmptyMyHealthAssessmentCard(
-                onCreateAssessment: _showHealthAssessmentEditor,
-              ),
-          ],
+                // 健康評估內容
+                if (_healthAssessment != null)
+                  HealthAssessmentSummaryCard(
+                    assessment: _healthAssessment!,
+                    onViewFull: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => HealthAssessmentDetailPage(
+                            assessment: _healthAssessment!,
+                          ),
+                        ),
+                      );
+                    },
+                    onEdit: _showHealthAssessmentEditor,
+                    isClientView: true, // 【學員視角（隱藏教練備註、設定按鈕）】
+                  )
+                else
+                  EmptyMyHealthAssessmentCard(
+                    onCreateAssessment: _showHealthAssessmentEditor,
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -168,7 +175,7 @@ class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '您的健康評估會與所有教練同步。您可以自行填寫，教練也可以協助您填寫或更新內容。',
+                  '完成健康評估有助與教練同步。您可以自行填寫，教練也可以協助您填寫或更新內容。',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onPrimaryContainer,
                     height: 1.4,
@@ -182,4 +189,3 @@ class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
     );
   }
 }
-

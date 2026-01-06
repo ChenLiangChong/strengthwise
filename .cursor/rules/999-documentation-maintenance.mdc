@@ -33,6 +33,7 @@ Glob 觸發條件               歷史背景、決策原因
 | 版本歸檔 | → `940-docs-development.mdc` 規範 |
 | 新增禁止/必須規定 | `.cursor/rules/*.mdc` |
 | 功能說明/範例擴充 | `docs/*.md` |
+| **新功能規劃** | → `990-docs-planning.mdc` 規範 |
 
 ## 📚 各領域文檔規則索引
 
@@ -43,8 +44,10 @@ Glob 觸發條件               歷史背景、決策原因
 | 開發狀態 | `940-docs-development.mdc` | DEVELOPMENT_STATUS.md, VERSION_HISTORY.md |
 | SaaS 路線圖 | `950-docs-saas.mdc` | SAAS_PLATFORM_ROADMAP.md, SAAS_HISTORY.md |
 | 健康評估 | `960-docs-health-assessment.mdc` | HEALTH_ASSESSMENT_SYSTEM.md |
+| **FCM 推播** | `965-docs-fcm-setup.mdc` | FCM_SETUP_GUIDE.md, supabase/functions/ |
 | 文檔索引 | `970-docs-readme.mdc` | docs/README.md |
 | 專案總覽 | `980-docs-project-overview.mdc` | PROJECT_OVERVIEW.md |
+| **規劃文檔** | `990-docs-planning.mdc` | docs/planning/*.md |
 
 ---
 
@@ -80,3 +83,4 @@ Glob 觸發條件               歷史背景、決策原因
 | UI 組件變更 | UI_DEVELOPER_GUIDE.md |
 | 版本號變更 | PROJECT_OVERVIEW.md、AGENTS.md |
 | 功能測試完成 | VERSION_HISTORY.md（歸檔）|
+| Edge Function 變更 | FCM_SETUP_GUIDE.md |

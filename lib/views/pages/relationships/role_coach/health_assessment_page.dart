@@ -1,6 +1,8 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/health_assessment_models.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/services/interfaces/i_health_assessment_service.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
@@ -426,7 +428,10 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
   /// 步驟指示器
   Widget _buildStepIndicator(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+      padding: EdgeInsets.symmetric(
+        vertical: context.spacing.md, // ⭐ 響應式間距
+        horizontal: context.spacing.lg,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         border: Border(
@@ -452,7 +457,7 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
                     ),
                   ),
                 ),
-                if (index < _totalSteps - 1) const SizedBox(width: 4),
+                if (index < _totalSteps - 1) SizedBox(width: context.spacing.xs),
               ],
             ),
           ),
@@ -464,22 +469,22 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
   /// 步驟 1：基礎安全篩檢
   Widget _buildStep1SafetyScreening(ThemeData theme) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: context.pagePadding, // ⭐ 響應式邊距
       children: [
         Text(
           '步驟 1/5：基礎安全篩檢',
-          style: theme.textTheme.titleLarge?.copyWith(
+          style: context.responsive.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-          ),
+          ), // ⭐ 響應式文字
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
         Text(
           '請誠實回答以下問題，以確保訓練安全',
-          style: theme.textTheme.bodyMedium?.copyWith(
+          style: context.responsive.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-          ),
+          ), // ⭐ 響應式文字
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: context.spacing.lg), // ⭐ 響應式間距
 
         // PAR-Q+ 7 題
         _buildQuestionCard(
@@ -570,22 +575,22 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
   /// 步驟 2：傷病史記錄（完整版）
   Widget _buildStep2InjuryHistory(ThemeData theme) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: context.pagePadding, // ⭐ 響應式邊距
       children: [
         Text(
           '步驟 2/5：傷病史記錄',
-          style: theme.textTheme.titleLarge?.copyWith(
+          style: context.responsive.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-          ),
+          ), // ⭐ 響應式文字
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
         Text(
           '記錄學員的傷病史，幫助規劃安全的訓練計劃',
-          style: theme.textTheme.bodyMedium?.copyWith(
+          style: context.responsive.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-          ),
+          ), // ⭐ 響應式文字
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: context.spacing.lg), // ⭐ 響應式間距
 
         // 新增傷病按鈕
         FilledButton.icon(
@@ -909,22 +914,22 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
   /// 步驟 3：生活型態（完整版）
   Widget _buildStep3Lifestyle(ThemeData theme) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: context.pagePadding, // ⭐ 響應式邊距
       children: [
         Text(
           '步驟 3/5：生活型態與訓練背景',
-          style: theme.textTheme.titleLarge?.copyWith(
+          style: context.responsive.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-          ),
+          ), // ⭐ 響應式文字
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
         Text(
           '幫助我們了解學員的訓練背景與生活型態',
-          style: theme.textTheme.bodyMedium?.copyWith(
+          style: context.responsive.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-          ),
+          ), // ⭐ 響應式文字
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: context.spacing.lg), // ⭐ 響應式間距
 
         // 訓練經驗
         Text('訓練經驗 *', style: theme.textTheme.titleMedium),
@@ -1067,22 +1072,22 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
   /// 步驟 4：訓練目標（完整版）
   Widget _buildStep4TrainingGoals(ThemeData theme) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: context.pagePadding, // ⭐ 響應式邊距
       children: [
         Text(
           '步驟 4/5：訓練目標',
-          style: theme.textTheme.titleLarge?.copyWith(
+          style: context.responsive.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-          ),
+          ), // ⭐ 響應式文字
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
         Text(
           '設定明確的訓練目標與期望時程',
-          style: theme.textTheme.bodyMedium?.copyWith(
+          style: context.responsive.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-          ),
+          ), // ⭐ 響應式文字
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: context.spacing.lg), // ⭐ 響應式間距
 
         Text('主要目標 *', style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
@@ -1197,22 +1202,22 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
   /// 步驟 5：緊急聯絡人（完整版）
   Widget _buildStep5EmergencyContact(ThemeData theme) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: context.pagePadding, // ⭐ 響應式邊距
       children: [
         Text(
           '步驟 5/5：緊急聯絡人',
-          style: theme.textTheme.titleLarge?.copyWith(
+          style: context.responsive.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-          ),
+          ), // ⭐ 響應式文字
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
         Text(
           '建議填寫以確保訓練安全（選填）',
-          style: theme.textTheme.bodyMedium?.copyWith(
+          style: context.responsive.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
-          ),
+          ), // ⭐ 響應式文字
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: context.spacing.lg), // ⭐ 響應式間距
 
         TextFormField(
           controller: _emergencyNameController,
@@ -1407,7 +1412,7 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
   /// 導航按鈕
   Widget _buildNavigationButtons(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: context.pagePadding, // ⭐ 響應式邊距
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(

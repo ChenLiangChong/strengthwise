@@ -47,10 +47,11 @@ class WorkoutRecordOperations {
           '從 workout_plans 獲取用戶已完成的訓練記錄（Cursor 分頁）, cursor: $cursor, limit: $limit');
 
       // ⚡ 優化：使用 Cursor-based 分頁（基於 completed_date 欄位）
+      // ⭐ v3.1: 新增 appointment_id 欄位（上課類型）
       var queryBuilder = _supabase
           .from('workout_plans')
           .select(
-              'id, title, scheduled_date, completed_date, completed, total_volume, total_exercises, total_sets, plan_type, trainee_id, creator_id, user_id, exercises, note, created_at, updated_at')
+              'id, title, scheduled_date, completed_date, completed, total_volume, total_exercises, total_sets, plan_type, trainee_id, creator_id, user_id, exercises, note, created_at, updated_at, appointment_id')
           .eq('trainee_id', userId)
           .eq('completed', true);
 
@@ -163,10 +164,11 @@ class WorkoutRecordOperations {
       _logDebug('  - cursor: $cursor, limit: $limit');
 
       // ⚡ 優化：使用 Cursor-based 分頁（基於 scheduled_date 欄位）
+      // ⭐ v3.1: 新增 appointment_id 欄位（上課類型）
       var queryBuilder = _supabase
           .from('workout_plans')
           .select(
-              'id, title, scheduled_date, completed, completed_date, total_volume, total_exercises, total_sets, plan_type, trainee_id, creator_id, user_id, note, training_time, updated_at, created_at, exercises')
+              'id, title, scheduled_date, completed, completed_date, total_volume, total_exercises, total_sets, plan_type, trainee_id, creator_id, user_id, note, training_time, updated_at, created_at, exercises, appointment_id')
           .eq('trainee_id', userId);
 
       // 篩選完成狀態
@@ -240,12 +242,13 @@ class WorkoutRecordOperations {
 
       // ⚡ 優化：明確指定所有需要的欄位（避免 SELECT *）
       // ⭐ v2.9.1: 新增 actual_start_time, actual_end_time, elapsed_seconds, training_status
+      // ⭐ v3.1: 新增 appointment_id（上課類型）
       final response = await _supabase
           .from('workout_plans')
           .select(
               'id, user_id, trainee_id, creator_id, title, scheduled_date, completed_date, completed, '
               'total_volume, total_exercises, total_sets, plan_type, exercises, note, training_time, '
-              'actual_start_time, actual_end_time, elapsed_seconds, training_status, '
+              'actual_start_time, actual_end_time, elapsed_seconds, training_status, appointment_id, '
               'created_at, updated_at')
           .eq('id', recordId)
           .single();
@@ -260,6 +263,35 @@ class WorkoutRecordOperations {
       return record;
     } catch (e) {
       _logError('獲取訓練記錄詳情失敗: $e');
+      return null;
+    }
+  }
+
+  /// 獲取指定預約的訓練記錄 ⭐ v3.1 Session Mode
+  Future<WorkoutRecord?> getRecordByAppointmentId(String appointmentId) async {
+    try {
+      _logDebug('從 workout_plans 獲取預約關聯記錄: $appointmentId');
+
+      final response = await _supabase
+          .from('workout_plans')
+          .select(
+              'id, user_id, trainee_id, creator_id, title, scheduled_date, completed_date, completed, '
+              'total_volume, total_exercises, total_sets, plan_type, exercises, note, training_time, '
+              'actual_start_time, actual_end_time, elapsed_seconds, training_status, appointment_id, '
+              'created_at, updated_at')
+          .eq('appointment_id', appointmentId)
+          .maybeSingle();
+
+      if (response == null) {
+        _logDebug('未找到預約關聯的訓練計畫: $appointmentId');
+        return null;
+      }
+
+      final record = WorkoutRecord.fromSupabase(response);
+      _logDebug('找到預約關聯的訓練計畫: ${record.id}');
+      return record;
+    } catch (e) {
+      _logError('獲取預約關聯訓練記錄失敗: $e');
       return null;
     }
   }
@@ -330,6 +362,12 @@ class WorkoutRecordOperations {
       }
       recordData['elapsed_seconds'] = record.elapsedSeconds;
       recordData['training_status'] = record.trainingStatus;
+
+      // ⭐ v3.1: Session Mode 關聯預約 ID
+      if (record.appointmentId != null) {
+        recordData['appointment_id'] = record.appointmentId;
+        _logDebug('關聯預約 ID: ${record.appointmentId}');
+      }
 
       final response = await _supabase
           .from('workout_plans')
@@ -479,10 +517,11 @@ class WorkoutRecordOperations {
   /// ⚡ 預載入全部訓練計劃（異步，不阻塞當前查詢）
   Future<void> preloadAllPlans(String userId) async {
     try {
+      // ⭐ v3.1: 新增 appointment_id 欄位（上課類型）
       final response = await _supabase
           .from('workout_plans')
           .select(
-              'id, title, scheduled_date, completed, completed_date, total_volume, total_exercises, total_sets, plan_type, trainee_id, creator_id, user_id, note, training_time, updated_at, created_at, exercises')
+              'id, title, scheduled_date, completed, completed_date, total_volume, total_exercises, total_sets, plan_type, trainee_id, creator_id, user_id, note, training_time, updated_at, created_at, exercises, appointment_id')
           .eq('trainee_id', userId)
           .order('scheduled_date', ascending: false)
           .limit(100); // 預載入最近 100 筆

@@ -3,6 +3,8 @@ import 'dart:io';
 import '../models/user/user_model.dart';
 import '../services/interfaces/i_user_service.dart';
 import '../services/interfaces/i_auth_service.dart';
+import '../services/service_locator.dart' show serviceLocator;
+import 'interfaces/i_auth_controller.dart';
 
 /// Profile 控制器
 /// 
@@ -147,9 +149,13 @@ class ProfileController extends ChangeNotifier {
   }
 
   /// 登出
+  /// 
+  /// 委託給 AuthController 處理（統一登出邏輯，包括 FCM Token 刪除）
   Future<void> signOut() async {
     try {
-      await _authService.signOut();
+      // ⭐ v3.0-C: 統一使用 AuthController 登出（包含 FCM Token 刪除）
+      final authController = serviceLocator<IAuthController>();
+      await authController.signOut();
     } catch (e) {
       _errorMessage = '登出失敗: $e';
       debugPrint('[PROFILE_CONTROLLER] ❌ $_errorMessage');

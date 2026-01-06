@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/session_note_controller.dart';
@@ -9,6 +10,7 @@ import 'package:strengthwise/models/coach_with_relationship.dart'; // ⭐ 新增
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/services/interfaces/i_coaching_relationship_service.dart';
 import 'package:strengthwise/services/interfaces/i_user_service.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/notes/widgets/session_note_card.dart';
 import 'package:strengthwise/views/pages/notes/widgets/empty_notes_state.dart';
 import 'package:strengthwise/views/pages/notes/widgets/notes_search_empty_state.dart';
@@ -408,9 +410,11 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
     return ChangeNotifierProvider.value(
       value: _controller,
       child: Scaffold(
+        // ⭐ 移除標題（外層 TabBar 已有標籤），只保留 actions
         appBar: AppBar(
-          automaticallyImplyLeading: false, // ⭐ 移除返回按鈕（TabBar 子頁面不需要）
-          title: Text(widget.isClientMode ? '我的筆記' : '課程筆記'),
+          automaticallyImplyLeading: false,
+          title: null,
+          toolbarHeight: 48, // 縮小高度
           elevation: 0,
           actions: [
             // 新增筆記按鈕（僅教練模式）
@@ -511,7 +515,7 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
                     child: filteredNotes.isEmpty
                         ? _buildEmptyState() // ⭐ 自訂空狀態（顯示搜尋提示）
                         : ListView.builder(
-                            padding: const EdgeInsets.all(16),
+                            padding: context.pagePadding, // ⭐ 響應式邊距
                             itemCount: filteredNotes.length,
                             itemBuilder: (context, index) {
                               final note = filteredNotes[index];
@@ -593,7 +597,10 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
   /// 篩選器列
   Widget _buildFilterBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: context.spacing.md, // ⭐ 響應式邊距
+        vertical: context.spacing.sm,
+      ),
       child: Row(
         children: [
           NotesFilterChip(
@@ -601,13 +608,13 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
             isSelected: _currentFilter == 'all',
             onSelected: () => setState(() => _currentFilter = 'all'),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: context.spacing.sm), // ⭐ 響應式間距
           NotesFilterChip(
             label: '私人',
             isSelected: _currentFilter == 'private',
             onSelected: () => setState(() => _currentFilter = 'private'),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: context.spacing.sm), // ⭐ 響應式間距
           NotesFilterChip(
             label: '共享',
             isSelected: _currentFilter == 'shared',
@@ -621,7 +628,7 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
   /// UX 重構：搜尋欄
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: context.pagePadding, // ⭐ 響應式邊距
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
@@ -648,13 +655,16 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
   /// UX 重構：學員篩選下拉選單
   Widget _buildClientFilterBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: context.spacing.md, // ⭐ 響應式邊距
+        vertical: context.spacing.sm,
+      ),
       child: Row(
         children: [
-          const Icon(Icons.filter_list, size: 20),
-          const SizedBox(width: 8),
-          const Text('學員：'),
-          const SizedBox(width: 8),
+          Icon(Icons.filter_list, size: 20.scaled(context)), // ⭐ 響應式圖標
+          SizedBox(width: context.spacing.sm), // ⭐ 響應式間距
+          Text('學員：', style: context.responsive.bodyMedium),
+          SizedBox(width: context.spacing.sm), // ⭐ 響應式間距
           Expanded(
             child: _isLoadingClients
                 ? const Center(
@@ -721,13 +731,16 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
   /// UX 重構：教練篩選下拉選單（學員模式）⭐ 簡化
   Widget _buildCoachFilterBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: context.spacing.md, // ⭐ 響應式邊距
+        vertical: context.spacing.sm,
+      ),
       child: Row(
         children: [
-          const Icon(Icons.filter_list, size: 20),
-          const SizedBox(width: 8),
-          const Text('教練：'),
-          const SizedBox(width: 8),
+          Icon(Icons.filter_list, size: 20.scaled(context)), // ⭐ 響應式圖標
+          SizedBox(width: context.spacing.sm), // ⭐ 響應式間距
+          Text('教練：', style: context.responsive.bodyMedium),
+          SizedBox(width: context.spacing.sm), // ⭐ 響應式間距
           Expanded(
             child: _isLoadingCoaches
                 ? const Center(

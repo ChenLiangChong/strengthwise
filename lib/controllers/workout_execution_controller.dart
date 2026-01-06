@@ -30,6 +30,10 @@ class WorkoutExecutionController extends ChangeNotifier
   bool _isDataChanged = false;
   String? _errorMessage;
 
+  // 權限覆蓋（Session Mode 用）⭐ v3.1
+  bool? _overrideCanEdit;
+  bool? _overrideCanMarkSet;
+
   // 子模組
   late final WorkoutExecutionDataManager _dataManager;
   late final WorkoutExecutionAutoSave _autoSave;
@@ -122,6 +126,8 @@ class WorkoutExecutionController extends ChangeNotifier
       // ⭐ v2.0 Phase 4C: 保存教練學員信息
       _dataManager.traineeId = record.traineeId;
       _dataManager.creatorId = record.creatorId;
+      // ⭐ v3.1: 保存預約關聯（上課類型）
+      _dataManager.appointmentId = record.appointmentId;
 
       // 設置計劃標題和類型
       _dataManager.planTitle = '訓練記錄';
@@ -137,38 +143,57 @@ class WorkoutExecutionController extends ChangeNotifier
       // 設置運動記錄
       _dataManager.exerciseRecords = record.exerciseRecords;
 
-      // ⭐ v2.9.1: 根據實際勾選狀態決定訓練狀態
-      // 這是唯一的真相來源，不依賴資料庫的舊 training_status
+      // ⭐ v3.1: 根據資料庫狀態和勾選狀態決定訓練狀態
+      // 區分「首次載入」和「Realtime 重載」
+      final isFirstLoad = !_dataManager.isInitialized;
+      final currentStatus = _dataManager.trainingStatus;
+
       String effectiveStatus;
       final actuallyCompleted = allExercisesCompleted(); // 實際是否全部完成
+      final hasAnyCompleted =
+          record.exerciseRecords.any((e) => e.sets.any((s) => s.completed));
 
       if (actuallyCompleted) {
         // 全部勾選 → completed
         effectiveStatus = 'completed';
-      } else if (record.trainingStatus == 'pending' &&
-          record.exerciseRecords
-              .every((e) => e.sets.every((s) => !s.completed))) {
-        // 完全沒有任何勾選 → pending
+      } else if (!isFirstLoad && currentStatus == 'in_progress') {
+        // ⭐ v3.1: Realtime 重載時，保持 in_progress 狀態（不中斷計時）
+        effectiveStatus = 'in_progress';
+      } else if (isFirstLoad && record.trainingStatus == 'in_progress') {
+        // ⭐ v3.1: 首次載入時，如果資料庫是 in_progress，轉為 paused
+        // 讓用戶確認後再繼續（因為可能離開了一段時間）
+        effectiveStatus = 'paused';
+      } else if (record.trainingStatus == 'pending' && !hasAnyCompleted) {
+        // 完全沒有任何勾選且狀態是 pending → 保持 pending
         effectiveStatus = 'pending';
       } else {
-        // 有部分勾選但沒全部完成 → paused（讓用戶確認繼續）
+        // 有部分勾選但沒全部完成，或從其他狀態載入 → paused
         effectiveStatus = 'paused';
       }
 
       print(
           '[WorkoutExecutionController] 實際完成狀態: $actuallyCompleted, 決定狀態: $effectiveStatus');
 
+      // ⭐ v3.1: 如果是 Realtime 重載且正在計時，保留當前的時間資料
+      final shouldPreserveTime = !isFirstLoad && currentStatus == 'in_progress';
+      final effectiveElapsedSeconds = shouldPreserveTime
+          ? _dataManager.elapsedSeconds
+          : record.elapsedSeconds;
+      final effectiveStartTime = shouldPreserveTime
+          ? _dataManager.actualStartTime
+          : record.actualStartTime;
+
       _dataManager.initFromRecord(
         trainingStatus: effectiveStatus,
-        elapsedSeconds: record.elapsedSeconds,
-        actualStartTime: record.actualStartTime,
+        elapsedSeconds: effectiveElapsedSeconds,
+        actualStartTime: effectiveStartTime,
         actualEndTime: record.actualEndTime,
       );
 
       print(
           '[WorkoutExecutionController] 訓練計畫載入完成，動作數量: ${_dataManager.exerciseRecords.length}');
       print(
-          '[WorkoutExecutionController] 訓練狀態: $effectiveStatus, 累計秒數: ${record.elapsedSeconds}');
+          '[WorkoutExecutionController] 訓練狀態: $effectiveStatus, 累計秒數: $effectiveElapsedSeconds (保留: $shouldPreserveTime)');
 
       _setLoading(false);
     } catch (e) {
@@ -176,6 +201,47 @@ class WorkoutExecutionController extends ChangeNotifier
       _handleError('加載訓練計劃失敗', e);
     }
   }
+
+  /// ⭐ v3.1: Realtime 重載（靜默更新，不閃爍）
+  /// 更新動作記錄和時間，但保持自己的訓練狀態（如果正在計時）
+  @override
+  Future<void> reloadForRealtime(String workoutRecordId) async {
+    try {
+      final record = await _workoutService.getRecordById(workoutRecordId);
+      if (record == null) return;
+
+      // 更新動作記錄
+      _dataManager.exerciseRecords = record.exerciseRecords;
+
+      // ⭐ v3.1: 如果自己不是在計時中，同步遠端的時間和狀態
+      // （學員端需要看到教練的計時進度）
+      if (!_dataManager.isInProgress) {
+        _dataManager.syncTimeFromRemote(
+          elapsedSeconds: record.elapsedSeconds,
+          trainingStatus: record.trainingStatus,
+        );
+      }
+
+      // 如果外部更新導致全部完成，更新狀態
+      if (allExercisesCompleted() && !_dataManager.isCompleted) {
+        _dataManager.completeTraining();
+      }
+
+      print(
+          '[WorkoutExecutionController] Realtime 靜默更新完成, 時間: ${record.elapsedSeconds}s');
+      notifyListeners();
+    } catch (e) {
+      print('[WorkoutExecutionController] Realtime 更新失敗: $e');
+    }
+  }
+
+  /// ⭐ v3.1: 獲取訓練者 ID（用於判斷是否需要 Realtime）
+  @override
+  String? getTraineeId() => _dataManager.traineeId;
+
+  /// ⭐ v3.1: 是否為上課類型訓練（有 appointmentId）
+  @override
+  bool isSessionPlan() => _dataManager.isSessionPlan;
 
   /// 獲取訓練計劃標題
   @override
@@ -212,25 +278,51 @@ class WorkoutExecutionController extends ChangeNotifier
     notifyListeners();
   }
 
-  /// 檢查是否可以修改訓練
+  /// ⭐ v3.1: 設置權限覆蓋（Session Mode 用）
+  ///
+  /// 當 Session Mode 內嵌使用此 Controller 時，可以覆蓋預設的權限判斷
+  void setPermissionOverride({
+    bool? canEdit,
+    bool? canMarkSet,
+  }) {
+    _overrideCanEdit = canEdit;
+    _overrideCanMarkSet = canMarkSet;
+  }
+
+  /// 檢查是否可以修改訓練（打勾用）
   @override
   bool canModify() {
+    // ⭐ v3.1: 支援 Session Mode 覆蓋
+    if (_overrideCanMarkSet != null) return _overrideCanMarkSet!;
     final checker = _getPermissionChecker();
     return checker.canModify();
   }
 
-  /// 檢查是否可以編輯（修改重量/次數/新增動作/新增組數）
+  /// 檢查是否可以編輯（修改重量/次數）
   @override
   bool canEdit() {
+    // ⭐ v3.1: 支援 Session Mode 覆蓋
+    if (_overrideCanEdit != null) return _overrideCanEdit!;
     final checker = _getPermissionChecker();
     return checker.canEdit();
   }
 
-  /// ⭐ v2.9: 檢查是否可以刪除（刪除動作/刪除計畫）
+  /// ⭐ v3.1: 檢查是否可以新增（新增動作/新增組數）
+  @override
+  bool canAdd() {
+    // ⭐ v3.1: 支援 Session Mode 覆蓋
+    if (_overrideCanEdit != null) return _overrideCanEdit!;
+    final checker = _getPermissionChecker();
+    return checker.canAdd();
+  }
+
+  /// ⭐ v2.9: 檢查是否可以刪除（刪除動作/刪除計畫/減少組數）
   ///
   /// 只有創建者可以刪除，學員不能刪除教練創建的
   @override
   bool canDelete() {
+    // ⭐ v3.1: 支援 Session Mode 覆蓋
+    if (_overrideCanEdit != null) return _overrideCanEdit!;
     final checker = _getPermissionChecker();
     return checker.canDelete();
   }
@@ -243,6 +335,9 @@ class WorkoutExecutionController extends ChangeNotifier
   /// - 今天的訓練（traineeId 是自己）：需在 in_progress 狀態
   @override
   bool canToggleCompletion() {
+    // ⭐ v3.1: 支援 Session Mode 覆蓋
+    if (_overrideCanMarkSet != null) return _overrideCanMarkSet!;
+
     // ⭐ 教練永遠不能幫學員打勾
     if (isCoachViewingTrainee()) {
       return false;
@@ -266,6 +361,13 @@ class WorkoutExecutionController extends ChangeNotifier
     }
 
     return true;
+  }
+
+  /// ⭐ v3.1: 檢查是否可以開始訓練（計時）
+  @override
+  bool canStartTraining() {
+    final checker = _getPermissionChecker();
+    return checker.canStartTraining();
   }
 
   /// 檢查是否為過去的訓練
@@ -303,13 +405,26 @@ class WorkoutExecutionController extends ChangeNotifier
 
   /// ⭐ v2.9.1: 是否應該顯示計時器 UI
   ///
-  /// 只有「今天」且「不是教練查看學員」的情況才顯示計時功能
+  /// 計時功能顯示條件：
+  /// - 「自主」類型：今天 + 非教練查看 → 可以計時
+  /// - 「教練安排」類型：今天 + 非教練查看 → 可以計時
+  /// - 「上課」類型：
+  ///   - 教練查看（Session Mode）→ 可以計時
+  ///   - 學員查看 → 不能計時（只能在 Session Mode 由教練執行）
   @override
   bool shouldShowTimerUI() {
     // 只有今天的訓練才顯示計時功能
     if (!isToday()) return false;
 
-    // 教練查看學員訓練時不顯示
+    // ⭐ v3.1: 上課類型的特殊處理
+    if (_dataManager.isSessionPlan) {
+      // 教練在 Session Mode 中可以計時
+      if (isCoachViewingTrainee()) return true;
+      // 學員不能計時（只能在 Session Mode 由教練執行）
+      return false;
+    }
+
+    // 教練查看學員訓練時不顯示（非上課類型）
     if (isCoachViewingTrainee()) return false;
 
     return true;
@@ -333,6 +448,7 @@ class WorkoutExecutionController extends ChangeNotifier
       isFutureDate: _dataManager.isFutureDate,
       isCoachViewingTrainee: isCoachViewingTrainee,
       isViewingOthersCreatedPlan: isViewingOthersCreatedPlan,
+      isSessionPlan: _dataManager.isSessionPlan, // ⭐ v3.1: 上課類型
     );
   }
 
@@ -438,7 +554,8 @@ class WorkoutExecutionController extends ChangeNotifier
     _isDataChanged = true;
     notifyListeners();
 
-    // 🐛 修復：移除「已更新數據組」通知（避免干擾用戶）
+    // ⭐ v3.1: 即時保存修改
+    await _autoSaveCheckboxState();
   }
 
   /// 添加運動備註
@@ -465,9 +582,8 @@ class WorkoutExecutionController extends ChangeNotifier
     _isDataChanged = true;
     notifyListeners();
 
-    if (context != null) {
-      NotificationUtils.showInfo(context, '已更新運動備註，完成訓練後將保存所有更改');
-    }
+    // ⭐ v3.1: 即時保存備註
+    await _autoSaveCheckboxState();
   }
 
   /// 添加新訓練動作
@@ -503,13 +619,11 @@ class WorkoutExecutionController extends ChangeNotifier
 
       notifyListeners();
 
+      // ⭐ v3.1: 即時保存新增動作
+      await _autoSaveCheckboxState();
+
       if (context != null) {
-        NotificationUtils.showSuccess(
-          context,
-          '已添加新運動：${exercise.name}',
-          onAction: () => saveWorkoutRecord(context: context),
-          actionLabel: '保存',
-        );
+        NotificationUtils.showSuccess(context, '已添加新運動：${exercise.name}');
       }
     } catch (e) {
       _handleError('添加運動失敗', e);
@@ -626,8 +740,11 @@ class WorkoutExecutionController extends ChangeNotifier
     _isDataChanged = true;
     notifyListeners();
 
+    // ⭐ v3.1: 即時保存刪除操作
+    await _autoSaveCheckboxState();
+
     if (context != null) {
-      NotificationUtils.showInfo(context, '已刪除運動：$exerciseName，完成訓練後將保存所有更改');
+      NotificationUtils.showInfo(context, '已刪除運動：$exerciseName');
     }
   }
 

@@ -2,7 +2,7 @@
 
 > 資料庫架構變更腳本
 
-**最後更新**：2026-01-04
+**最後更新**：2026-01-07
 
 ---
 
@@ -48,6 +48,17 @@
 
 -- v2.9.1 訓練 UX 優化
 027_add_training_status_fields.sql  # 訓練狀態追蹤欄位（暫停/繼續功能）
+
+-- v3.0 預約系統優化 + Session Mode
+028_coach_booking_settings.sql      # 教練預約設定表
+029_add_rejected_status.sql         # 新增預約 rejected 狀態
+030_daily_readiness.sql             # 每日準備度問卷表
+031_session_auto_create.sql         # 預約確認自動創建資料
+033_user_devices.sql                # 用戶設備表（FCM Token 管理）
+
+-- v3.1 修復
+034_fix_session_auto_create.sql     # 修復 session_notes 觸發器欄位
+035_fix_session_note_visibility.sql # 修正 session_notes 預設 visibility 為 'shared'
 ```
 
 ### 僅部署 v1.0（單機版）
@@ -73,6 +84,9 @@
 | 022-024 | v2.8.3-v2.8.4 | PR 觸發器修復、用戶角色修復、綁定 RPC |
 | 025-026 | v2.9 | 教練公開檔案、訓練刪除 RLS |
 | 027 | v2.9.1 | 訓練狀態追蹤（暫停/繼續）|
+| 028-031, 033 | v3.0 | 預約優化 + Session Mode + FCM |
+| 034 | v3.1 | 修復 session_notes 觸發器 |
+| 035 | v3.1 | 修正 session_notes 預設 visibility |
 
 ---
 
@@ -97,7 +111,7 @@ psql -U postgres -d strengthwise -f 001_v1_core_tables.sql
 
 | 規則 | 說明 |
 |------|------|
-| 順序執行 | 必須按編號順序（001 → 025）|
+| 順序執行 | 必須按編號順序（001 → 033）|
 | 不可跳過 | v2.0 依賴 v1.0 的 `users` 表 |
 | 冪等性 | 所有 SQL 使用 `IF NOT EXISTS` |
 | Auth | 需先啟用 Supabase Auth |

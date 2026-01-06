@@ -1,18 +1,20 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/coach_profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/profile/widgets/coach/specialty_tag_selector.dart';
 import 'package:strengthwise/views/pages/profile/widgets/coach/certification_form.dart';
 
 /// 教練公開檔案表單頁面
-/// 
+///
 /// 2 步驟表單：
 /// 1. 基本資料：顯示名稱、專業介紹、專業頭銜
 /// 2. 專業背景：專長選擇、證照、年資、語言
 class CoachProfileFormPage extends StatefulWidget {
-  /// 是否為首次填寫（強制模式，無法返回）
+  /// 是否首次填寫（強制模式，無法返回）
   final bool isFirstTime;
 
   const CoachProfileFormPage({
@@ -47,10 +49,15 @@ class _CoachProfileFormPageState extends State<CoachProfileFormPage> {
   }
 
   void _initFormControllers() {
-    _displayNameController.text = _controller.displayName;
-    _headlineController.text = _controller.headline;
-    _bioController.text = _controller.bio;
-    _yearsController.text = _controller.yearsExperience.toString();
+    final profile = _controller.profile;
+    if (profile != null && mounted) {
+      setState(() {
+        _displayNameController.text = profile.displayName ?? '';
+        _headlineController.text = profile.headline ?? '';
+        _bioController.text = profile.bio ?? '';
+        _yearsController.text = profile.yearsExperience.toString();
+      });
+    }
   }
 
   @override
@@ -63,19 +70,8 @@ class _CoachProfileFormPageState extends State<CoachProfileFormPage> {
     super.dispose();
   }
 
+  /// 下一步
   void _nextStep() {
-    // 驗證當前步驟
-    if (_currentStep == 0) {
-      if (_displayNameController.text.trim().isEmpty) {
-        NotificationUtils.showError(context, '請填寫顯示名稱');
-        return;
-      }
-      if (_bioController.text.trim().isEmpty) {
-        NotificationUtils.showError(context, '請填寫專業介紹');
-        return;
-      }
-    }
-
     if (_currentStep < _totalSteps - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -85,6 +81,7 @@ class _CoachProfileFormPageState extends State<CoachProfileFormPage> {
     }
   }
 
+  /// 上一步
   void _previousStep() {
     if (_currentStep > 0) {
       _pageController.previousPage(
@@ -95,29 +92,34 @@ class _CoachProfileFormPageState extends State<CoachProfileFormPage> {
     }
   }
 
-  Future<void> _saveProfile() async {
-    // 同步表單到 controller
-    _controller.setDisplayName(_displayNameController.text.trim());
-    _controller.setHeadline(_headlineController.text.trim());
-    _controller.setBio(_bioController.text.trim());
-    
-    final years = int.tryParse(_yearsController.text.trim()) ?? 0;
-    _controller.setYearsExperience(years);
-
-    // 驗證專長
-    if (_controller.specialties.isEmpty) {
-      NotificationUtils.showError(context, '請至少選擇一個專長');
+  /// 保存
+  Future<void> _save() async {
+    // 驗證必填欄位
+    if (_displayNameController.text.isEmpty) {
+      NotificationUtils.showWarning(context, '請填寫顯示名稱');
+      return;
+    }
+    if (_bioController.text.isEmpty) {
+      NotificationUtils.showWarning(context, '請填寫專業介紹');
       return;
     }
 
+    // 更新 Controller 狀態
+    _controller.setDisplayName(_displayNameController.text);
+    _controller.setHeadline(_headlineController.text);
+    _controller.setBio(_bioController.text);
+    _controller.setYearsExperience(int.tryParse(_yearsController.text) ?? 0);
+
     // 儲存
     final success = await _controller.saveProfile();
-    
-    if (success && mounted) {
-      NotificationUtils.showSuccess(context, '教練檔案已儲存');
-      Navigator.of(context).pop(true);
-    } else if (_controller.errorMessage != null && mounted) {
-      NotificationUtils.showError(context, _controller.errorMessage!);
+
+    if (!mounted) return;
+
+    if (success) {
+      NotificationUtils.showSuccess(context, '教練檔案已保存');
+      Navigator.pop(context, true);
+    } else {
+      NotificationUtils.showError(context, _controller.errorMessage ?? '保存失敗');
     }
   }
 
@@ -125,111 +127,74 @@ class _CoachProfileFormPageState extends State<CoachProfileFormPage> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: _controller,
-      child: Consumer<CoachProfileController>(
-        builder: (context, controller, child) {
-          return Scaffold(
-            appBar: AppBar(
-              title: Text(widget.isFirstTime ? '建立教練檔案' : '編輯教練檔案'),
-              leading: widget.isFirstTime
-                  ? null  // 首次填寫不能返回
-                  : IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-              automaticallyImplyLeading: !widget.isFirstTime,
-            ),
-            body: controller.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : Column(
-                    children: [
-                      // 步驟指示器
-                      _StepIndicator(
-                        currentStep: _currentStep,
-                        totalSteps: _totalSteps,
-                      ),
-
-                      // 表單內容
-                      Expanded(
-                        child: Form(
-                          key: _formKey,
-                          child: PageView(
-                            controller: _pageController,
-                            physics: const NeverScrollableScrollPhysics(),
-                            onPageChanged: (index) {
-                              setState(() => _currentStep = index);
-                            },
-                            children: [
-                              _Step1BasicInfo(
-                                displayNameController: _displayNameController,
-                                headlineController: _headlineController,
-                                bioController: _bioController,
-                              ),
-                              _Step2ProfessionalBackground(
-                                controller: controller,
-                                yearsController: _yearsController,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // 底部按鈕
-                      _BottomButtons(
-                        currentStep: _currentStep,
-                        totalSteps: _totalSteps,
-                        isFirstTime: widget.isFirstTime,
-                        isSaving: controller.isSaving,
-                        onPrevious: _previousStep,
-                        onNext: _nextStep,
-                        onSave: _saveProfile,
-                      ),
-                    ],
-                  ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// 步驟指示器
-class _StepIndicator extends StatelessWidget {
-  final int currentStep;
-  final int totalSteps;
-
-  const _StepIndicator({
-    required this.currentStep,
-    required this.totalSteps,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: List.generate(totalSteps, (index) {
-          final isActive = index <= currentStep;
-          final isCurrent = index == currentStep;
-
-          return Expanded(
-            child: Container(
-              margin: EdgeInsets.only(right: index < totalSteps - 1 ? 8 : 0),
-              height: 4,
-              decoration: BoxDecoration(
-                color: isActive 
-                    ? colorScheme.primary 
-                    : colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('編輯教練檔案'),
+          automaticallyImplyLeading: !widget.isFirstTime,
+          actions: [
+            // 步驟指示器
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Text(
+                  '${_currentStep + 1} / $_totalSteps',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
               ),
-              child: isCurrent
-                  ? null
-                  : null,
             ),
-          );
-        }),
+          ],
+        ),
+        body: Consumer<CoachProfileController>(
+          builder: (context, controller, child) {
+            if (controller.isLoading && controller.profile == null) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            return Column(
+              children: [
+                // 進度條
+                LinearProgressIndicator(
+                  value: (_currentStep + 1) / _totalSteps,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
+
+                // 表單內容
+                Expanded(
+                  child: Form(
+                    key: _formKey,
+                    child: PageView(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        _Step1BasicInfo(
+                          displayNameController: _displayNameController,
+                          headlineController: _headlineController,
+                          bioController: _bioController,
+                        ),
+                        _Step2ProfessionalBackground(
+                          controller: controller,
+                          yearsController: _yearsController,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 底部按鈕
+                _BottomButtons(
+                  currentStep: _currentStep,
+                  totalSteps: _totalSteps,
+                  isFirstTime: widget.isFirstTime,
+                  isSaving: controller.isLoading,
+                  onPrevious: _previousStep,
+                  onNext: _nextStep,
+                  onSave: _save,
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -251,65 +216,70 @@ class _Step1BasicInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '基本資料',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '這些資訊將顯示在您的教練檔案中',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.outline,
-            ),
-          ),
-          const SizedBox(height: 24),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: SingleChildScrollView(
+          padding: context.pagePadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '基本資料',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '這些資料將顯示在您的教練檔案上',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+              const SizedBox(height: 24),
 
-          // 顯示名稱
-          TextFormField(
-            controller: displayNameController,
-            decoration: const InputDecoration(
-              labelText: '顯示名稱 *',
-              hintText: '您的品牌名稱或暱稱',
-              helperText: '學員會看到這個名稱',
-            ),
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 24),
+              // 顯示名稱
+              TextFormField(
+                controller: displayNameController,
+                decoration: const InputDecoration(
+                  labelText: '顯示名稱 *',
+                  hintText: '您的真實姓名或暱稱',
+                  helperText: '學員會看到這個名稱',
+                ),
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 24),
 
-          // 專業介紹
-          TextFormField(
-            controller: bioController,
-            decoration: const InputDecoration(
-              labelText: '專業介紹 *',
-              hintText: '介紹您的專業背景、教學理念...',
-              helperText: '詳細描述您的經驗和專長',
-              alignLabelWithHint: true,
-            ),
-            maxLines: 5,
-            minLines: 3,
-            textInputAction: TextInputAction.newline,
-          ),
-          const SizedBox(height: 24),
+              // 專業介紹
+              TextFormField(
+                controller: bioController,
+                decoration: const InputDecoration(
+                  labelText: '專業介紹 *',
+                  hintText: '介紹您的專業背景和教學風格...',
+                  helperText: '詳細描述您的經歷和專長',
+                  alignLabelWithHint: true,
+                ),
+                maxLines: 5,
+                minLines: 3,
+                textInputAction: TextInputAction.newline,
+              ),
+              const SizedBox(height: 24),
 
-          // 專業頭銜
-          TextFormField(
-            controller: headlineController,
-            decoration: const InputDecoration(
-              labelText: '專業頭銜（選填）',
-              hintText: '例如：專業健身教練 | 體態雕塑專家',
-              helperText: '一句話描述您的定位（最多 160 字）',
-            ),
-            maxLength: 160,
-            textInputAction: TextInputAction.done,
+              // 專業頭銜
+              TextFormField(
+                controller: headlineController,
+                decoration: const InputDecoration(
+                  labelText: '專業頭銜（選填）',
+                  hintText: '例如：專業健身教練 | 體態雕塑專家',
+                  helperText: '一句話描述您的定位（最多 160 字）',
+                ),
+                maxLength: 160,
+                textInputAction: TextInputAction.done,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -328,74 +298,75 @@ class _Step2ProfessionalBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final screenWidth = MediaQuery.of(context).size.width;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: SizedBox(
-        width: screenWidth - 32, // 減去 padding
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '專業背景',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: SingleChildScrollView(
+          padding: context.pagePadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '專業背景',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '選擇您的專長領域和證照',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.outline,
+              const SizedBox(height: 8),
+              Text(
+                '選擇您的專長和證照',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // 專長標籤選擇器
-            SpecialtyTagSelector(
-              selectedTags: controller.specialties,
-              onChanged: (tags) {
-                // 清空後重新加入
-                while (controller.specialties.isNotEmpty) {
-                  controller.removeSpecialty(controller.specialties.first);
-                }
-                for (final tag in tags) {
-                  controller.addSpecialty(tag);
-                }
-              },
-            ),
-            const SizedBox(height: 32),
-
-            // 證照
-            CertificationForm(
-              certifications: controller.certifications,
-              onAdd: (cert) => controller.addCertification(cert),
-              onRemove: (index) => controller.removeCertification(index),
-            ),
-            const SizedBox(height: 32),
-
-            // 年資
-            TextFormField(
-              controller: yearsController,
-              decoration: const InputDecoration(
-                labelText: '從業年資（選填）',
-                hintText: '例如：5',
-                suffixText: '年',
+              // 專長標籤選擇器
+              SpecialtyTagSelector(
+                selectedTags: controller.specialties,
+                onChanged: (tags) {
+                  // 清空後重新添加
+                  while (controller.specialties.isNotEmpty) {
+                    controller.removeSpecialty(controller.specialties.first);
+                  }
+                  for (final tag in tags) {
+                    controller.addSpecialty(tag);
+                  }
+                },
               ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 32),
+              const SizedBox(height: 32),
 
-            // 語言能力
-            _LanguageSelector(
-              languages: controller.languages,
-              onAdd: controller.addLanguage,
-              onRemove: controller.removeLanguage,
-            ),
-            
-            const SizedBox(height: 48),
-          ],
+              // 證照
+              CertificationForm(
+                certifications: controller.certifications,
+                onAdd: (cert) => controller.addCertification(cert),
+                onRemove: (index) => controller.removeCertification(index),
+              ),
+              const SizedBox(height: 32),
+
+              // 年資
+              TextFormField(
+                controller: yearsController,
+                decoration: const InputDecoration(
+                  labelText: '從業年資（選填）',
+                  hintText: '例如：5',
+                  suffixText: '年',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 32),
+
+              // 語言選擇
+              _LanguageSelector(
+                languages: controller.languages,
+                onAdd: controller.addLanguage,
+                onRemove: controller.removeLanguage,
+              ),
+
+              const SizedBox(height: 48),
+            ],
+          ),
         ),
       ),
     );
@@ -441,7 +412,7 @@ class _LanguageSelector extends StatelessWidget {
           runSpacing: 8,
           children: _availableLanguages.entries.map((entry) {
             final isSelected = languages.contains(entry.key);
-            
+
             return FilterChip(
               label: Text(entry.value),
               selected: isSelected,
@@ -486,40 +457,48 @@ class _BottomButtons extends StatelessWidget {
     final isFirstStep = currentStep == 0;
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // 上一步
-            if (!isFirstStep)
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: isSaving ? null : onPrevious,
-                  child: const Text('上一步'),
-                ),
-              ),
-            
-            if (!isFirstStep) const SizedBox(width: 16),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // 上一步
+                if (!isFirstStep)
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: isSaving ? null : onPrevious,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      child: const Text('上一步'),
+                    ),
+                  ),
 
-            // 下一步/儲存
-            Expanded(
-              child: FilledButton(
-                onPressed: isSaving
-                    ? null
-                    : (isLastStep ? onSave : onNext),
-                child: isSaving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(isLastStep ? '儲存' : '下一步'),
-              ),
+                if (!isFirstStep) const SizedBox(width: 16),
+
+                // 下一步或保存
+                Expanded(
+                  child: FilledButton(
+                    onPressed: isSaving ? null : (isLastStep ? onSave : onNext),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    child: isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(isLastStep ? '保存' : '下一步'),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
-

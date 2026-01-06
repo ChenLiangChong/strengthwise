@@ -1,0 +1,51 @@
+{
+  "export_time": "20260105_043337",
+  "export_datetime": "2026-01-05T04:33:48.541306",
+  "total_tables": 23,
+  "total_records": 923,
+  "tables": {
+    "v1.0 Core": {
+      "users": 4,
+      "exercises": 794,
+      "custom_exercises": 8,
+      "workout_plans": 25,
+      "workout_templates": 8,
+      "body_data": 14,
+      "notes": 0
+    },
+    "v1.0 Metadata": {
+      "body_parts": 8,
+      "exercise_types": 3
+    },
+    "v2.0 Phase 1": {
+      "coaching_relationships": 8
+    },
+    "v2.0 Phase 2": {
+      "availability_slots": 1,
+      "appointments": 0
+    },
+    "v2.0 Phase 3": {
+      "session_notes": 5,
+      "client_availability": 5
+    },
+    "Optimization": {
+      "daily_workout_summary": 19,
+      "personal_records": 15
+    },
+    "v2.3 Invite System": {
+      "invite_codes": 0
+    },
+    "v2.8 Health Assessment": {
+      "health_assessments": 2,
+      "coach_assessment_notes": 1,
+      "coach_display_preferences": 1
+    },
+    "v2.9 Coach Profile": {
+      "coaches": 2
+    },
+    "v3.0 Booking Optimization": {
+      "coach_booking_settings": 0,
+      "daily_readiness": 0
+    }
+  }
+}

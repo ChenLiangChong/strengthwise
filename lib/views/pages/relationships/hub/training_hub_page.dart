@@ -1,15 +1,17 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/coach_hub_page.dart';
 import 'package:strengthwise/views/pages/relationships/role_client/client_hub_page.dart';
 import 'package:strengthwise/services/interfaces/i_user_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/user_model.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 訓練中心 Hub 頁面
 ///
-/// 統一入口，包含：
-/// 1. 教練中心（僅教練可見）
-/// 2. 學員中心（所有人可見）
+/// 統一入口，導向：
+/// 1. 教練中心（有教練身份）
+/// 2. 學員中心（所有人都有）
 class TrainingHubPage extends StatefulWidget {
   const TrainingHubPage({super.key});
 
@@ -53,14 +55,17 @@ class _TrainingHubPageState extends State<TrainingHubPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('訓練中心'),
-        automaticallyImplyLeading: false, // 不顯示返回按鈕
+        automaticallyImplyLeading: false, // 不顯示返回箭頭
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Padding(
+              padding: context.pagePadding,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
               // 標題說明
               Text(
                 '選擇功能',
@@ -70,14 +75,14 @@ class _TrainingHubPageState extends State<TrainingHubPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                '根據您的角色選擇對應功能',
+                '根據您的角色進入對應功能',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: colorScheme.onSurface.withOpacity(0.6),
                     ),
               ),
               const SizedBox(height: 48),
 
-              // 教練中心卡片（僅教練可見）
+              // 教練中心入口（有教練身份）
               if (isCoach) ...[
                 _buildHubCard(
                   context: context,
@@ -97,7 +102,7 @@ class _TrainingHubPageState extends State<TrainingHubPage> {
                 const SizedBox(height: 24),
               ],
 
-              // 學員中心卡片（所有人可見）
+              // 學員中心入口（所有人都有）
               _buildHubCard(
                 context: context,
                 title: '學員中心',
@@ -116,7 +121,7 @@ class _TrainingHubPageState extends State<TrainingHubPage> {
 
               const SizedBox(height: 48),
 
-              // 提示文字
+              // 提示訊息
               if (!isCoach)
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -134,7 +139,7 @@ class _TrainingHubPageState extends State<TrainingHubPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          '想要開啟教練功能？\n請到「我的」頁面開啟教練模式',
+                          '想要啟用教練功能？\n請到「設定」中開啟教練模式',
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
@@ -146,7 +151,9 @@ class _TrainingHubPageState extends State<TrainingHubPage> {
                     ],
                   ),
                 ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),

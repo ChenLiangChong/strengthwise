@@ -16,6 +16,9 @@ class WorkoutExecutionDataManager {
   String? _traineeId;  // 受訓者 ID
   String? _creatorId;  // 創建者 ID
   
+  // ⭐ v3.1: Session Mode 關聯
+  String? _appointmentId;  // 上課類型（有此值表示是課程訓練）
+  
   // 日期相關
   DateTime? _planDate;
   bool _isToday = false;
@@ -36,6 +39,9 @@ class WorkoutExecutionDataManager {
   DateTime? _actualEndTime;
   DateTime? _lastTickTime; // 用於計算經過時間
   
+  // ⭐ v3.1: 是否已初始化（用於區分首次載入和 Realtime 重載）
+  bool _isInitialized = false;
+  
   // Getters
   String get workoutRecordId => _workoutRecordId;
   String get planTitle => _planTitle;
@@ -44,6 +50,8 @@ class WorkoutExecutionDataManager {
   TextEditingController get notesController => _notesController;
   String? get traineeId => _traineeId;  // ⭐ 新增
   String? get creatorId => _creatorId;  // ⭐ 新增
+  String? get appointmentId => _appointmentId;  // ⭐ v3.1: Session Mode
+  bool get isSessionPlan => _appointmentId != null && _appointmentId!.isNotEmpty;  // ⭐ v3.1
   DateTime? get planDate => _planDate;
   bool get isToday => _isToday;
   bool get isPastDate => _isPastDate;
@@ -62,6 +70,7 @@ class WorkoutExecutionDataManager {
   bool get isInProgress => _trainingStatus == 'in_progress';
   bool get isPaused => _trainingStatus == 'paused';
   bool get isCompleted => _trainingStatus == 'completed';
+  bool get isInitialized => _isInitialized;  // ⭐ v3.1
   
   // Setters
   set workoutRecordId(String value) => _workoutRecordId = value;
@@ -70,6 +79,7 @@ class WorkoutExecutionDataManager {
   set exerciseRecords(List<ExerciseRecord> value) => _exerciseRecords = value;
   set traineeId(String? value) => _traineeId = value;  // ⭐ 新增
   set creatorId(String? value) => _creatorId = value;  // ⭐ 新增
+  set appointmentId(String? value) => _appointmentId = value;  // ⭐ v3.1
   
   // ⭐ v2.9.1: 訓練狀態追蹤 Setters
   set trainingStatus(String value) => _trainingStatus = value;
@@ -154,7 +164,7 @@ class WorkoutExecutionDataManager {
   }
   
   /// 從資料庫加載的資料初始化狀態
-  /// ⭐ v2.9.1: 如果是 in_progress，轉為 paused 讓用戶確認後再繼續
+  /// ⭐ v3.1: 區分首次載入和 Realtime 重載
   void initFromRecord({
     required String trainingStatus,
     required int elapsedSeconds,
@@ -164,14 +174,33 @@ class WorkoutExecutionDataManager {
     _elapsedSeconds = elapsedSeconds;
     _actualStartTime = actualStartTime;
     _actualEndTime = actualEndTime;
+    _trainingStatus = trainingStatus;
     
-    // ⭐ v2.9.1: 如果是 in_progress，自動轉為 paused
-    // 這樣用戶重新進入時會看到「繼續訓練」按鈕，而不是直接開始計時
+    // ⭐ v3.1: 如果是 in_progress，設置計時起點
     if (trainingStatus == 'in_progress') {
-      _trainingStatus = 'paused';
-      _lastTickTime = null; // 暫停時不計時
+      _lastTickTime = DateTime.now();
     } else {
-      _trainingStatus = trainingStatus;
+      _lastTickTime = null;
+    }
+    
+    // ⭐ v3.1: 標記已初始化
+    _isInitialized = true;
+  }
+  
+  /// ⭐ v3.1: 從遠端同步時間（Realtime 更新時使用）
+  /// 只更新時間和狀態，不影響其他資料
+  void syncTimeFromRemote({
+    required int elapsedSeconds,
+    required String trainingStatus,
+  }) {
+    _elapsedSeconds = elapsedSeconds;
+    _trainingStatus = trainingStatus;
+    
+    // 如果遠端是 in_progress，設置計時起點（讓顯示正確）
+    if (trainingStatus == 'in_progress') {
+      _lastTickTime = DateTime.now();
+    } else {
+      _lastTickTime = null;
     }
   }
   

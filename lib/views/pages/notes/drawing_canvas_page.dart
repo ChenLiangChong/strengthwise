@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - 全螢幕繪圖頁
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/drawing_controller.dart';
@@ -40,7 +41,7 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
   Future<void> _initializeDrawing() async {
     debugPrint('[DRAWING_CANVAS] 🎨 初始化繪圖');
     debugPrint('[DRAWING_CANVAS] 🆔 筆記 ID: ${widget.sessionNoteId}');
-    debugPrint('[DRAWING_CANVAS] 📋 模板類型: ${widget.templateType}');
+    debugPrint('[DRAWING_CANVAS] 📋 要求的模板類型: ${widget.templateType}');
 
     // 先嘗試載入現有繪圖（指定模板類型）
     await _controller.loadDrawing(widget.sessionNoteId,
@@ -48,13 +49,15 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
 
     // 如果沒有現有繪圖，創建新的
     if (_controller.currentDrawing == null) {
-      debugPrint('[DRAWING_CANVAS] ℹ️ 找不到現有繪圖，創建新的');
+      debugPrint('[DRAWING_CANVAS] ℹ️ 找不到現有繪圖（模板: ${widget.templateType}），創建新的');
       await _controller.createDrawing(
         sessionNoteId: widget.sessionNoteId,
         templateType: widget.templateType,
       );
+      debugPrint('[DRAWING_CANVAS] ✅ 創建完成：${_controller.currentDrawing?.id}');
     } else {
       debugPrint('[DRAWING_CANVAS] ✅ 載入現有繪圖：${_controller.currentDrawing!.id}');
+      debugPrint('[DRAWING_CANVAS] 📋 繪圖的模板類型: ${_controller.currentDrawing!.templateType}');
     }
   }
 
@@ -89,7 +92,15 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: () async {
+              debugPrint('[DRAWING_CANVAS] 💾 開始保存...');
+              debugPrint('[DRAWING_CANVAS] 📋 sessionNoteId: ${widget.sessionNoteId}');
+              debugPrint('[DRAWING_CANVAS] 📋 templateType: ${widget.templateType}');
+              debugPrint('[DRAWING_CANVAS] 📋 currentDrawing: ${_controller.currentDrawing?.id}');
+              
               await _controller.saveDrawing();
+              
+              debugPrint('[DRAWING_CANVAS] ✅ 保存完成');
+              
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('已保存')),

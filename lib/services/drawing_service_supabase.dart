@@ -152,11 +152,31 @@ class DrawingServiceSupabase implements IDrawingService {
     debugPrint('[DRAWING_SERVICE] 📦 更新後視覺元素數量: ${visualElements.length}');
 
     // 更新 session_notes.content
-    await _supabase.from('session_notes').update({
-      'content': content,
-    }).eq('id', drawing.sessionNoteId);
-    
-    debugPrint('[DRAWING_SERVICE] ✅ 繪圖保存成功');
+    debugPrint('[DRAWING_SERVICE] 📤 正在更新到 Supabase...');
+    try {
+      await _supabase.from('session_notes').update({
+        'content': content,
+      }).eq('id', drawing.sessionNoteId);
+      
+      // 驗證更新是否成功
+      final verify = await _supabase
+          .from('session_notes')
+          .select('content')
+          .eq('id', drawing.sessionNoteId)
+          .maybeSingle();
+      
+      final savedElements = (verify?['content']?['visual_elements'] as List?)?.length ?? 0;
+      debugPrint('[DRAWING_SERVICE] 🔍 驗證：資料庫中視覺元素數量: $savedElements');
+      
+      if (savedElements == visualElements.length) {
+        debugPrint('[DRAWING_SERVICE] ✅ 繪圖保存成功');
+      } else {
+        debugPrint('[DRAWING_SERVICE] ⚠️ 保存可能失敗：預期 ${visualElements.length}，實際 $savedElements');
+      }
+    } catch (e) {
+      debugPrint('[DRAWING_SERVICE] ❌ 保存失敗: $e');
+      rethrow;
+    }
   }
 
   @override

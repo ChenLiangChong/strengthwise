@@ -14,9 +14,13 @@ import 'package:strengthwise/views/pages/relationships/binding/binding_page.dart
 class CoachListTab extends StatefulWidget {
   final String clientId;
 
+  /// ⭐ P3：選中教練回調（用於 True Dual-Pane 佈局）
+  final void Function(UserModel? coach)? onCoachSelected;
+
   const CoachListTab({
     super.key,
     required this.clientId,
+    this.onCoachSelected,
   });
 
   @override
@@ -60,6 +64,13 @@ class _CoachListTabState extends State<CoachListTab>
 
   /// 查看教練詳情
   Future<void> _viewCoachDetail(UserModel coach) async {
+    // ⭐ P3: 如果有回調，通知父層
+    if (widget.onCoachSelected != null) {
+      widget.onCoachSelected!(coach);
+      return;
+    }
+
+    // 否則使用傳統 Push 導航
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -170,18 +181,8 @@ class _CoachListTabState extends State<CoachListTab>
       value: _controller,
       child: Consumer<CoachManagementController>(
         builder: (context, controller, child) {
+          // ⭐ 移除 AppBar，因為此頁面在 TabBarView 中使用
           return Scaffold(
-            appBar: AppBar(
-              automaticallyImplyLeading: false,
-              title: const Text('我的教練'),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  tooltip: '刷新列表',
-                  onPressed: controller.isLoading ? null : _refresh,
-                ),
-              ],
-            ),
             body: Column(
               children: [
                 // 搜尋欄
@@ -219,6 +220,7 @@ class _CoachListTabState extends State<CoachListTab>
               ],
             ),
             floatingActionButton: FloatingActionButton.extended(
+              heroTag: 'coach_list_fab', // ⭐ 防止 Hero tag 衝突
               onPressed: _showAddCoachOptions,
               icon: const Icon(Icons.person_add),
               label: const Text('新增教練'),

@@ -1,4 +1,6 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 健康評估空狀態卡片
 /// 
@@ -18,8 +20,13 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.zero,
+      elevation: 0, // ⭐ 移除陰影
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(context.spacing.md), // ⭐ 響應式內距
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -29,23 +36,23 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
                 Icon(
                   Icons.assignment_outlined,
                   color: colorScheme.primary,
-                  size: 24,
+                  size: 24.scaled(context), // ⭐ 響應式圖標
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: context.spacing.md), // ⭐ 響應式間距
                 Text(
                   '健康評估',
-                  style: theme.textTheme.titleLarge?.copyWith(
+                  style: context.responsive.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                  ),
+                  ), // ⭐ 響應式文字
                 ),
               ],
             ),
             
-            const SizedBox(height: 16),
+            SizedBox(height: context.spacing.md), // ⭐ 響應式間距
             
             // 提示內容
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(context.spacing.md), // ⭐ 響應式內距
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
@@ -58,38 +65,38 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
                       Icon(
                         Icons.info_outline,
                         color: colorScheme.primary,
-                        size: 20,
+                        size: 20.scaled(context), // ⭐ 響應式圖標
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: context.spacing.sm), // ⭐ 響應式間距
                       Text(
                         '尚未建立健康評估',
-                        style: theme.textTheme.titleMedium?.copyWith(
+                        style: context.responsive.titleMedium?.copyWith(
                           color: colorScheme.primary,
                           fontWeight: FontWeight.bold,
-                        ),
+                        ), // ⭐ 響應式文字
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: context.spacing.md), // ⭐ 響應式間距
                   Text(
                     '建議在首次上課前完成評估，以確保訓練安全與效果',
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style: context.responsive.bodyMedium?.copyWith(
                       color: colorScheme.onSurface.withOpacity(0.7),
-                    ),
+                    ), // ⭐ 響應式文字
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: context.spacing.md), // ⭐ 響應式間距
                   _buildInfoItem(
                     context,
                     icon: Icons.shield_outlined,
                     text: '安全篩檢：排除訓練風險',
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: context.spacing.xs), // ⭐ 響應式間距
                   _buildInfoItem(
                     context,
                     icon: Icons.healing_outlined,
                     text: '傷病史：避免動作禁忌',
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: context.spacing.xs), // ⭐ 響應式間距
                   _buildInfoItem(
                     context,
                     icon: Icons.flag_outlined,
@@ -99,17 +106,17 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
               ),
             ),
             
-            const SizedBox(height: 16),
+            SizedBox(height: context.spacing.md), // ⭐ 響應式間距
             
             // 建立按鈕
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: onCreateTap,
-                icon: const Icon(Icons.add),
-                label: const Text('立即建立評估'),
+                icon: Icon(Icons.add, size: 20.scaled(context)), // ⭐ 響應式圖標
+                label: Text('立即建立評估', style: context.responsive.labelLarge),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: EdgeInsets.symmetric(vertical: context.spacing.md), // ⭐ 響應式內距
                 ),
               ),
             ),
@@ -131,16 +138,16 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
       children: [
         Icon(
           icon,
-          size: 16,
+          size: 16.scaled(context), // ⭐ 響應式圖標
           color: colorScheme.primary,
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: context.spacing.sm), // ⭐ 響應式間距
         Expanded(
           child: Text(
             text,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            style: context.responsive.bodySmall?.copyWith(
               color: colorScheme.onSurface.withOpacity(0.7),
-            ),
+            ), // ⭐ 響應式文字
           ),
         ),
       ],

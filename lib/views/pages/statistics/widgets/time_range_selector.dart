@@ -1,9 +1,14 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import '../../../../models/statistics_model.dart';
 
 /// 時間範圍選擇器組件
 ///
 /// 用於統計頁面的時間範圍切換（週、月、三個月、年）
+///
+/// 響應式設計：
+/// - 響應式間距
 class TimeRangeSelector extends StatelessWidget {
   /// 當前選中的時間範圍
   final TimeRange currentRange;
@@ -19,10 +24,11 @@ class TimeRangeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
+    return Padding(
+      padding: EdgeInsets.all(context.spacing.sm),
       child: Wrap(
-        spacing: 8,
+        spacing: context.spacing.sm,
+        runSpacing: context.spacing.xs,
         children: TimeRange.values.map((range) {
           final isSelected = currentRange == range;
           return ChoiceChip(

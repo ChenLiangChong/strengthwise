@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - CoachProfileContent 組件處理
 import 'package:flutter/material.dart';
 import 'package:strengthwise/services/interfaces/i_auth_service.dart';
 import 'package:strengthwise/services/service_locator.dart';

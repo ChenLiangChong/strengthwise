@@ -8,7 +8,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Latest-3ECF8E?logo=supabase)](https://supabase.com/)
 [![Dart](https://img.shields.io/badge/Dart-3.1+-0175C2?logo=dart)](https://dart.dev/)
 
-**最新版本**：v2.2（2026-01-02）✅  
+**最新版本**：v3.1（2026-01-07）✅  
 **專案狀態**：🚀 生產就緒 (Production Ready)
 
 ---
@@ -65,6 +65,32 @@
 - ✅ 教練多學員統計視圖（複用 16 個統計模組）
 - ✅ 教練學員中心整合（4 個 Tab 統一導航）
 - ✅ 統一行事曆系統（訓練計劃 + 時間偏好雙層疊加）
+
+---
+
+### 🎓 教練上課模式（v3.0-3.1）⭐⭐⭐
+
+**Session Mode - 教練專屬上課介面**
+- ✅ 課前問卷（5 維度表情滑桿 + 紅綠燈狀態）
+- ✅ 訓練動作卡（含 PREV 歷史數據 + 動作歷史彈窗）
+- ✅ SOAP 筆記即時編輯（Debounced 自動保存）
+- ✅ 照片拍攝 + 手繪模板（SpeedDial FAB）
+- ✅ 學員健康評估查看
+
+**Realtime 即時同步（v3.1）**
+- ✅ Supabase Realtime 訂閱（workout_plans + session_notes）
+- ✅ 教練學員畫面同步（教練打勾學員即時看到）
+- ✅ 智慧防抖（避免自己觸發的更新閃爍）
+
+**權限控制**
+- ✅ 教練：課程時間內可編輯、打勾
+- ✅ 學員：唯讀模式（可看訓練 + 運動時長）
+- ✅ 時間窗口控制（課程開始至結束後 4 小時）
+
+**推播通知（FCM）**
+- ✅ 課前 1 小時提醒（雙方）
+- ✅ 學員填問卷通知教練（含紅綠燈）
+- ✅ 預約狀態變更通知
 
 ---
 
@@ -181,25 +207,26 @@ strengthwise/
 │   └── utils/              # 工具類（DateTimeUtils 等）
 ├── scripts/                # Python 工具腳本（8 個核心工具）
 │   └── tools/              # 資料庫下載、假資料生成等
-├── migrations/             # 資料庫 Migrations（11 個檔案）
+├── migrations/             # 資料庫 Migrations（35 個檔案）
 ├── docs/                   # 專案文檔（完整技術文檔）
 ├── assets/                 # 靜態資源
 └── test/                   # 測試檔案
 ```
 
-### 代碼統計（v2.2）
+### 代碼統計（v3.1）
 
 | 項目 | 數量 |
 |------|------|
-| 總行數 | 50,000+ |
-| Model 類別 | 30+ |
-| Service 類別 | 20+ |
-| Controller 類別 | 25+ |
-| 獨立 Widget 元件 | 60+ |
+| 總行數 | 68,000+ |
+| Model 類別 | 67+ |
+| Service 類別 | 55+ |
+| Controller 類別 | 22+ |
+| 獨立 Widget 元件 | 200+ |
+| 頁面 | 65+ |
 | 統計模組 | 16 |
-| 資料庫表格 | 16 |
+| 資料庫表格 | 24 |
 | RLS 策略 | 50+ |
-| Migrations | 11 |
+| Migrations | 35 |
 | Python 工具 | 8 |
 
 ---
@@ -270,7 +297,7 @@ strengthwise/
 | `daily_workout_summary` | 每日訓練彙總表 | 99%+ |
 | `personal_records` | 個人最佳記錄彙總表 | 95%+ |
 
-### 教練學員系統（v2.0）
+### 教練學員系統（v2.0-3.1）
 
 | 表格 | 說明 |
 |------|------|
@@ -278,8 +305,12 @@ strengthwise/
 | `availability_slots` | 教練可用時段（RRULE 週期性） |
 | `appointments` | 預約記錄 |
 | `session_notes` | SOAP 格式課程筆記 |
-| `client_availability_preferences` | 學員時間偏好 |
-| `drawing_notes` | 手繪板向量繪圖 |
+| `client_availability` | 學員時間偏好 |
+| `coaches` | 教練公開檔案 |
+| `coach_booking_settings` | 教練預約設定 ⭐ v3.0 |
+| `daily_readiness` | 課前問卷 ⭐ v3.0 |
+| `health_assessments` | PAR-Q+ 健康評估 |
+| `user_devices` | FCM 推播 Token ⭐ v3.0 |
 
 ### 資料庫特色
 
@@ -331,11 +362,45 @@ strengthwise/
 | 文檔 | 說明 |
 |------|------|
 | **[scripts/README.md](scripts/README.md)** | Python 工具腳本使用指南（8 個核心工具） |
-| **[migrations/README.md](migrations/README.md)** | 資料庫 Migrations 執行指南（11 個檔案） |
+| **[migrations/README.md](migrations/README.md)** | 資料庫 Migrations 執行指南（35 個檔案） |
 
 ---
 
 ## 🗺️ 版本歷程
+
+### 🎉 v3.1 - Session Mode 完善 + Realtime（2026-01-07）✅
+
+**Session Mode 完善**
+- ✅ 訓練執行內嵌（WorkoutExecutionContent 可復用 Widget）
+- ✅ 即時保存機制（所有修改即時保存 + SOAP Debounced）
+- ✅ Supabase Realtime 同步（workout_plans + session_notes）
+- ✅ 學員模式（唯讀 + 運動時長顯示）
+- ✅ SpeedDial FAB（照片、繪圖、新增動作）
+- ✅ 可復用組件（UploadedPhotoGrid、QuickTagsSection）
+
+### 🎉 v3.0 - 預約系統優化 + Session Mode + 響應式 UI（2026-01-06）✅
+
+**Session Mode - 教練上課模式**
+- ✅ 課前問卷系統（5 維度 + 紅綠燈）
+- ✅ 訓練動作卡（PREV 歷史數據）
+- ✅ 健康評估 Tab
+- ✅ 手繪 FAB
+
+**FCM 推播通知**
+- ✅ HTTP v1 API（OAuth 2.0）
+- ✅ 課前提醒、問卷通知、預約狀態變更
+
+**響應式 UI**
+- ✅ 7 級斷點系統
+- ✅ 自適應導航（BottomNav → NavigationRail）
+- ✅ Master-Detail 分欄佈局
+
+### 🎉 v2.8-2.9 - 健康評估 + 教練公開檔案（2026-01-03~04）✅
+
+- ✅ PAR-Q+ 健康評估問卷
+- ✅ 教練評估備註
+- ✅ 教練公開檔案
+- ✅ 訓練權限系統
 
 ### 🎉 v2.2 - 時區統一化與專案整理（2026-01-02）✅
 
@@ -411,21 +476,21 @@ strengthwise/
 ## 🔮 未來規劃
 
 ### 短期（1-2 個月）
-- [ ] 深度測試與優化
-- [ ] UX 改進與導航優化
+- [ ] v3.1 功能測試（33 項）
+- [ ] Android 首頁 Widget（下堂課倒數）
+- [ ] iOS APNs 推播整合
 - [ ] 準備 Beta 測試
-- [ ] 用戶文檔撰寫
 
 ### 中期（3-6 個月）
+- [ ] Onboarding 流程
 - [ ] 語音筆記與 AI 功能
   - 語音轉文字（Whisper API）
   - 智能筆記建議（GPT-4）
-  - 訓練計劃推薦
 - [ ] 數據匯出（CSV/PDF）
-- [ ] 訓練提醒通知
+- [ ] 訓練計劃模板市場
 
 ### 長期（6 個月以上）
-- [ ] 社交功能
+- [ ] 社交功能（動態分享、排行榜）
 - [ ] 多語言支援
 - [ ] Web 版本
 - [ ] Apple Watch / Wear OS 支援

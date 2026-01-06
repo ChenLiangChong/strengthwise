@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - 統計詳情頁
 import 'package:flutter/material.dart';
 import '../../../models/statistics_model.dart';
 import '../../../services/interfaces/i_statistics_service.dart';
@@ -10,7 +11,7 @@ import 'widgets/pr_records_card.dart';
 import 'widgets/training_history_card.dart';
 
 /// 動作力量進步詳情頁面
-/// 
+///
 /// 顯示單個動作的完整力量進步曲線、PR 記錄、歷史訓練
 class ExerciseStrengthDetailPage extends StatefulWidget {
   final String userId;
@@ -27,13 +28,17 @@ class ExerciseStrengthDetailPage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<ExerciseStrengthDetailPage> createState() => _ExerciseStrengthDetailPageState();
+  State<ExerciseStrengthDetailPage> createState() =>
+      _ExerciseStrengthDetailPageState();
 }
 
-class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage> {
-  final IStatisticsService _statisticsService = serviceLocator<IStatisticsService>();
-  final IFavoritesService _favoritesService = serviceLocator<IFavoritesService>();
-  
+class _ExerciseStrengthDetailPageState
+    extends State<ExerciseStrengthDetailPage> {
+  final IStatisticsService _statisticsService =
+      serviceLocator<IStatisticsService>();
+  final IFavoritesService _favoritesService =
+      serviceLocator<IFavoritesService>();
+
   ExerciseStrengthProgress? _progress;
   bool _isLoading = true;
   bool _isFavorite = false;
@@ -58,7 +63,7 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
       final progressList = await _statisticsService.getStrengthProgress(
         widget.userId,
         widget.timeRange,
-        limit: 1000,  // ← 增加 limit 以包含所有動作
+        limit: 1000, // ← 增加 limit 以包含所有動作
       );
 
       // 找到目標動作
@@ -92,7 +97,8 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
 
     try {
       if (_isFavorite) {
-        await _favoritesService.removeFavorite(widget.userId, widget.exerciseId);
+        await _favoritesService.removeFavorite(
+            widget.userId, widget.exerciseId);
         if (mounted) {
           NotificationUtils.showSuccess(context, '已移除收藏');
         }
@@ -157,7 +163,8 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
               Text(
                 _error,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
@@ -200,6 +207,4 @@ class _ExerciseStrengthDetailPageState extends State<ExerciseStrengthDetailPage>
       ),
     );
   }
-
 }
-

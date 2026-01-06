@@ -1,5 +1,7 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/controllers/appointment_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
@@ -8,13 +10,15 @@ import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appoint
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appointment_details/details_info_section.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appointment_details/notes_section.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appointment_details/actions_section.dart';
+import 'package:strengthwise/views/pages/scheduling/appointments/session_record_page.dart';
+import 'package:strengthwise/views/pages/session/session_mode_page.dart';
 
 /// 預約詳情頁面 - Phase 2
 ///
 /// 功能：
 /// 1. 顯示預約完整資訊
 /// 2. 狀態管理（確認/拒絕/取消/完成）
-/// 3. 備註編輯（教練/學員分別）
+/// 3. 備註編輯（區分學員別）
 /// 4. 關聯訓練計劃（教練端）
 class AppointmentDetailsPage extends StatefulWidget {
   final String appointmentId;
@@ -102,7 +106,7 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
   Future<void> _rejectAppointment() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+      barrierDismissible: false, // 修復：禁止點擊旁邊關閉
       builder: (context) => AlertDialog(
         title: const Text('拒絕預約'),
         content: const Text('確定要拒絕這個預約嗎？'),
@@ -146,7 +150,7 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
   Future<void> _cancelAppointment() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+      barrierDismissible: false, // 修復：禁止點擊旁邊關閉
       builder: (context) => AlertDialog(
         title: const Text('取消預約'),
         content: const Text('確定要取消這個預約嗎？'),
@@ -181,7 +185,7 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
           NotificationUtils.showSuccess(context, '預約已取消');
           Navigator.pop(context);
         } else {
-          NotificationUtils.showError(context, '取消失敗');
+          NotificationUtils.showError(context, '操作失敗');
         }
       }
     }
@@ -234,50 +238,92 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
       ),
       body: _isLoading || appointment == null
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 標題區域（狀態 + 日期時間）
-                  DetailsHeader(appointment: appointment),
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: SingleChildScrollView(
+                  padding: context.pagePadding,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // 標題區塊（狀態 + 時間範圍）
+                      DetailsHeader(appointment: appointment),
 
-                  const Divider(height: 1),
+                      const Divider(height: 1),
 
-                  // 詳細資訊區域
-                  DetailsInfoSection(
-                    appointment: appointment,
-                    isCoachMode: widget.isCoachMode,
+                      // 詳細資訊區塊
+                      DetailsInfoSection(
+                        appointment: appointment,
+                        isCoachMode: widget.isCoachMode,
+                      ),
+
+                      const Divider(height: 1),
+
+                      // 備註區塊
+                      NotesSection(
+                        controller: _notesController,
+                        isEditing: _isEditing,
+                        isCoachMode: widget.isCoachMode,
+                        onEditToggle: () {
+                          setState(() => _isEditing = !_isEditing);
+                        },
+                        onSave: _saveNotes,
+                      ),
+
+                      const Divider(height: 1),
+
+                      // 操作按鈕區塊
+                      ActionsSection(
+                        appointment: appointment,
+                        isCoachMode: widget.isCoachMode,
+                        onConfirm: _confirmAppointment,
+                        onReject: _rejectAppointment,
+                        onCancel: _cancelAppointment,
+                        onComplete: _completeAppointment,
+                        // ⭐ v3.0: 學員查看課程紀錄
+                        onViewRecord: !widget.isCoachMode
+                            ? () => _navigateToSessionRecord(appointment)
+                            : null,
+                        // ⭐ v3.1: 學員查看課程詳情（進入 Session Mode）
+                        onViewSession: !widget.isCoachMode
+                            ? () => _navigateToSessionMode(appointment)
+                            : null,
+                      ),
+
+                      const SizedBox(height: 32),
+                    ],
                   ),
-
-                  const Divider(height: 1),
-
-                  // 備註區域
-                  NotesSection(
-                    controller: _notesController,
-                    isEditing: _isEditing,
-                    isCoachMode: widget.isCoachMode,
-                    onEditToggle: () {
-                      setState(() => _isEditing = !_isEditing);
-                    },
-                    onSave: _saveNotes,
-                  ),
-
-                  const Divider(height: 1),
-
-                  // 操作按鈕區域
-                  ActionsSection(
-                    appointment: appointment,
-                    isCoachMode: widget.isCoachMode,
-                    onConfirm: _confirmAppointment,
-                    onReject: _rejectAppointment,
-                    onCancel: _cancelAppointment,
-                    onComplete: _completeAppointment,
-                  ),
-
-                  const SizedBox(height: 32),
-                ],
+                ),
               ),
             ),
+    );
+  }
+
+  /// 導航到課程紀錄頁 ⭐ v3.0
+  void _navigateToSessionRecord(dynamic appointment) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SessionRecordPage(appointment: appointment),
+      ),
+    );
+  }
+
+  /// 導航到 Session Mode（學員模式）⭐ v3.1
+  void _navigateToSessionMode(dynamic appointment) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SessionModePage(
+          appointmentId: appointment.id,
+          clientId: appointment.clientId,
+          clientName: '教練', // 學員視角：標題顯示「教練」
+          sessionStartTime: appointment.startTime,
+          sessionEndTime: appointment.endTime,
+          workoutPlanId: appointment.workoutPlanId,
+          isCoachMode: false, // ⭐ 學員模式：只能查看和填問卷
+        ),
+      ),
     );
   }
 

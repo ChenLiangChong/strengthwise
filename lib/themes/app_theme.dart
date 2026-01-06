@@ -15,16 +15,18 @@ class AppTheme {
   // Neutral / Slate Scale
   static const Color slate50 = Color(0xFFF8FAFC); // 極致乾淨、透氣的白
   static const Color slate100 = Color(0xFFF1F5F9); // Surface Variant
-  static const Color slate200 = Color(0xFFE2E8F0); // [修正] Dark Mode 次要文字 - 更亮更易讀
+  static const Color slate200 =
+      Color(0xFFE2E8F0); // [修正] Dark Mode 次要文字 - 更亮更易讀
   static const Color slate300 = Color(0xFFCBD5E1); // [決策] Outline - 清晰銳利
   static const Color slate400 = Color(0xFF94A3B8); // Hint Text
   static const Color slate500 = Color(0xFF64748B); // (棄用，太淡)
-  static const Color slate700 = Color(0xFF334155); // [修正] Light Mode 次要文字 - 加深更易讀
+  static const Color slate700 =
+      Color(0xFF334155); // [修正] Light Mode 次要文字 - 加深更易讀
   static const Color slate800 = Color(0xFF1E293B); // Dark Surface - 深岩灰
   static const Color slate900 = Color(0xFF0F172A); // Dark Background - 深海藍
 
   // Brand Colors (Light Mode)
-  static const Color blue600 = Color(0xFF2563EB); // Primary - 皇家藍
+  static const Color blue600 = Color(0xFF0EA5E9); // Primary - Sky 500 電光藍
   static const Color blue100 = Color(0xFFDBEAFE); // Primary Container
   static const Color teal600 = Color(0xFF0D9488); // [決策] Secondary - 孔雀藍綠
 

@@ -1,14 +1,18 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/foundation.dart';
 import 'views/pages/startup/splash_screen.dart';
 import 'services/service_locator.dart';
 import 'services/core/supabase_service.dart';
 import 'services/core/deep_link_service.dart';
 import 'services/core/theme_service.dart';
+import 'services/interfaces/i_auth_service.dart';
+import 'services/interfaces/i_notification_service.dart';
 import 'controllers/theme_controller.dart';
 import 'themes/app_theme.dart';
 
@@ -98,10 +102,89 @@ void _backgroundInitialization() {
       // 背景載入認證、預約、運動服務
       await setupServiceLocator(lazyInit: false);
       print('[MAIN] ✅ 背景服務初始化完成');
+
+      // ⚡ FCM 推播初始化（v3.0-C）
+      await _initializeFCM();
     } catch (e) {
       print('[MAIN] ⚠️ 背景服務初始化失敗: $e');
     }
   });
+}
+
+/// ⚡ 初始化 FCM 推播通知（v3.0-C）
+///
+/// 1. 初始化 NotificationService
+/// 2. 如果用戶已登入，自動保存 FCM Token
+/// 3. 設置 Token 變化監聽
+Future<void> _initializeFCM() async {
+  try {
+    // 只在 Android/iOS 上初始化
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      if (kDebugMode) {
+        print('[MAIN] ⏭️ FCM 跳過（非 Android/iOS 平台）');
+      }
+      return;
+    }
+
+    final notificationService = serviceLocator<INotificationService>();
+    await notificationService.initialize();
+
+    // 如果用戶已登入，保存 Token
+    final authService = serviceLocator<IAuthService>();
+    final isLoggedIn = authService.isUserLoggedIn();
+
+    if (kDebugMode) {
+      print('[MAIN] 🔍 FCM 檢查：isLoggedIn=$isLoggedIn');
+    }
+
+    if (isLoggedIn) {
+      final user = authService.getCurrentUser();
+      // 注意：getCurrentUser() 返回的是 'uid' 而不是 'id'
+      final userId = user?['uid'] as String?;
+
+      if (kDebugMode) {
+        print('[MAIN] 🔍 FCM 用戶：userId=$userId');
+      }
+
+      if (userId != null) {
+        final token = await notificationService.getToken();
+
+        if (kDebugMode) {
+          print('[MAIN] 🔍 FCM Token：${token?.substring(0, 20)}...');
+        }
+
+        if (token != null) {
+          final platform = Platform.isAndroid ? 'android' : 'ios';
+          await notificationService.saveTokenToDatabase(
+            userId,
+            token,
+            platform: platform,
+          );
+          notificationService.listenForTokenChanges(userId);
+
+          if (kDebugMode) {
+            print('[MAIN] ✅ FCM Token 已保存 (user: $userId)');
+          }
+        } else {
+          if (kDebugMode) {
+            print('[MAIN] ⚠️ FCM Token 為 null');
+          }
+        }
+      } else {
+        if (kDebugMode) {
+          print('[MAIN] ⚠️ userId 為 null');
+        }
+      }
+    } else {
+      if (kDebugMode) {
+        print('[MAIN] ⏭️ FCM Token 跳過（用戶未登入）');
+      }
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('[MAIN] ⚠️ FCM 初始化失敗: $e');
+    }
+  }
 }
 
 /// 應用主類
@@ -131,6 +214,23 @@ class MyApp extends StatelessWidget {
             themeMode: themeController.isInitialized
                 ? themeController.themeMode
                 : ThemeMode.light, // 默認使用淺色主題
+
+            // ========================================
+            // 無障礙字體縮放限制
+            // ========================================
+            // 限制系統字體縮放範圍（0.85x - 1.35x）
+            // 既尊重無障礙需求，又防止極端縮放破壞佈局
+            builder: (context, child) {
+              final mediaQuery = MediaQuery.of(context);
+              final clampedTextScaler = mediaQuery.textScaler.clamp(
+                minScaleFactor: 0.85,
+                maxScaleFactor: 1.35,
+              );
+              return MediaQuery(
+                data: mediaQuery.copyWith(textScaler: clampedTextScaler),
+                child: child!,
+              );
+            },
 
             // ========================================
             // 首頁

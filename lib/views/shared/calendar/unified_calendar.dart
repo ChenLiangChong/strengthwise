@@ -1,5 +1,7 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'calendar_layer.dart';
 import 'layers/marker_layer.dart';
 
@@ -90,112 +92,127 @@ class UnifiedCalendar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Column(
-      children: [
-        // 直接使用 TableCalendar（不用 CalendarCore）
-        TableCalendar(
-          firstDay: DateTime.utc(2020, 1, 1),
-          lastDay: DateTime.utc(2030, 12, 31),
-          focusedDay: focusedDay,
-          selectedDayPredicate: (day) => isSameDay(selectedDay, day),
-          calendarFormat: format,
-          startingDayOfWeek: startingDayOfWeek,
-          onDaySelected: onDaySelected,
-          onFormatChanged: onFormatChanged,
-          onPageChanged: onPageChanged,
+    // ⭐ 使用 NestedScrollView 讓行事曆可以隨頁面滾動
+    // 當用戶往上滑時，行事曆會被滑上去，底部內容可以繼續滾動
+    return NestedScrollView(
+      headerSliverBuilder: (context, innerBoxIsScrolled) {
+        return [
+          // 行事曆（可隨頁面滾動消失）
+          SliverToBoxAdapter(
+            child: TableCalendar(
+              firstDay: DateTime.utc(2020, 1, 1),
+              lastDay: DateTime.utc(2030, 12, 31),
+              focusedDay: focusedDay,
+              selectedDayPredicate: (day) => isSameDay(selectedDay, day),
+              calendarFormat: format,
+              startingDayOfWeek: startingDayOfWeek,
+              onDaySelected: onDaySelected,
+              onFormatChanged: onFormatChanged,
+              onPageChanged: onPageChanged,
 
-          // ⭐ 自訂日期渲染（支援 BackgroundLayer）
-          calendarBuilders: CalendarBuilders(
-            defaultBuilder: (context, day, focusedDay) {
-              final isToday = isSameDay(day, DateTime.now());
-              return _buildDayCell(context, day, isToday, false);
-            },
-            todayBuilder: (context, day, focusedDay) {
-              return _buildDayCell(context, day, true, false);
-            },
-            selectedBuilder: (context, day, focusedDay) {
-              final isToday = isSameDay(day, DateTime.now());
-              return _buildDayCell(context, day, isToday, true);
-            },
-            outsideBuilder: (context, day, focusedDay) {
-              final isToday = isSameDay(day, DateTime.now());
-              return _buildDayCell(context, day, isToday, false,
-                  isOutside: true);
-            },
-          ),
+              // ⭐ 響應式星期標籤高度（防止大字體被截斷）
+              daysOfWeekHeight: 24.0.scaled(context).clamp(24.0, 36.0),
 
-          // 使用預設樣式 + 標記（邊框式選中，不遮蓋標記點）
-          calendarStyle: calendarStyle ??
-              CalendarStyle(
-                // 標記點配置
-                markersMaxCount: 4,
-                markerDecoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  shape: BoxShape.circle,
+              // ⭐ 響應式日期格子高度
+              rowHeight: 48.0.scaled(context).clamp(48.0, 64.0),
+
+              // ⭐ 星期標籤樣式（限制最大字體）
+              daysOfWeekStyle: DaysOfWeekStyle(
+                weekdayStyle: context.responsive.labelSmall.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
-                markerSize: 7,
-                markersAnchor: 1.4,
-
-                // 今天：淡背景（不干擾標記點）
-                todayDecoration: BoxDecoration(
-                  color: colorScheme.primaryContainer.withOpacity(0.3),
-                  shape: BoxShape.circle,
+                weekendStyle: context.responsive.labelSmall.copyWith(
+                  color: colorScheme.error.withOpacity(0.8),
                 ),
-                todayTextStyle: TextStyle(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
+              ),
 
-                // ⭐ 選中日期：邊框式（標記點完全清晰可見）
-                selectedDecoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: colorScheme.primary,
-                    width: 2,
+              // ⭐ 自訂日期渲染（支援 BackgroundLayer）
+              calendarBuilders: CalendarBuilders(
+                defaultBuilder: (context, day, focusedDay) {
+                  final isToday = isSameDay(day, DateTime.now());
+                  return _buildDayCell(context, day, isToday, false);
+                },
+                todayBuilder: (context, day, focusedDay) {
+                  return _buildDayCell(context, day, true, false);
+                },
+                selectedBuilder: (context, day, focusedDay) {
+                  final isToday = isSameDay(day, DateTime.now());
+                  return _buildDayCell(context, day, isToday, true);
+                },
+                outsideBuilder: (context, day, focusedDay) {
+                  final isToday = isSameDay(day, DateTime.now());
+                  return _buildDayCell(context, day, isToday, false,
+                      isOutside: true);
+                },
+              ),
+
+              // 使用預設樣式 + 標記（邊框式選中，不遮蓋標記點）
+              calendarStyle: calendarStyle ??
+                  CalendarStyle(
+                    // 標記點配置
+                    markersMaxCount: 4,
+                    markerDecoration: BoxDecoration(
+                      color: colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    markerSize: 7,
+                    markersAnchor: 1.4,
+
+                    // 今天：淡背景（不干擾標記點）
+                    todayDecoration: BoxDecoration(
+                      color: colorScheme.primaryContainer.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    todayTextStyle: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+
+                    // ⭐ 選中日期：邊框式（標記點完全清晰可見）
+                    selectedDecoration: BoxDecoration(
+                      color: colorScheme.primary.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
+                    selectedTextStyle: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                selectedTextStyle: TextStyle(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
 
-          headerStyle: headerStyle ??
-              const HeaderStyle(
-                formatButtonVisible: true,
-                titleCentered: true,
-                formatButtonShowsNext: false,
-              ),
+              headerStyle: headerStyle ??
+                  const HeaderStyle(
+                    formatButtonVisible: true,
+                    titleCentered: true,
+                    formatButtonShowsNext: false,
+                  ),
 
-          // 事件加載器（標記）
-          eventLoader: (day) {
-            final markers = <dynamic>[];
-            for (final layer in layers) {
-              if (layer is MarkerLayer) {
-                final layerMarkers = layer.markerProvider(day);
-                markers.addAll(layerMarkers);
-              }
-            }
-            return markers;
-          },
-        ),
-
-        // 分隔線
-        if (bottomSheet != null) const Divider(height: 1),
-
-        // 底部事件列表（包裹 SingleChildScrollView 確保可滾動）⭐
-        if (bottomSheet != null)
-          Expanded(
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),  // ⭐ 始終可滾動
-              child: SizedBox(
-                height: 400,  // ⭐ 最小高度，確保有滾動空間
-                child: bottomSheet!,
-              ),
+              // 事件加載器（標記）
+              eventLoader: (day) {
+                final markers = <dynamic>[];
+                for (final layer in layers) {
+                  if (layer is MarkerLayer) {
+                    final layerMarkers = layer.markerProvider(day);
+                    markers.addAll(layerMarkers);
+                  }
+                }
+                return markers;
+              },
             ),
           ),
-      ],
+
+          // 分隔線
+          if (bottomSheet != null)
+            const SliverToBoxAdapter(
+              child: Divider(height: 1),
+            ),
+        ];
+      },
+      // ⭐ 底部內容（與行事曆協同滾動）
+      body: bottomSheet ?? const SizedBox.shrink(),
     );
   }
 

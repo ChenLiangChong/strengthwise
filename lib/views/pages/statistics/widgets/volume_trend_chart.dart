@@ -1,5 +1,7 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import '../../../../models/statistics_model.dart';
 
 /// 訓練量趨勢圖卡片組件
@@ -28,7 +30,7 @@ class VolumeTrendChart extends StatelessWidget {
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: context.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

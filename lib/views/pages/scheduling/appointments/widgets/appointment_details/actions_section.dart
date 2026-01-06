@@ -10,6 +10,12 @@ class ActionsSection extends StatelessWidget {
   final VoidCallback onCancel;
   final VoidCallback onComplete;
 
+  /// 查看課程紀錄回調（學員專用）⭐ v3.0
+  final VoidCallback? onViewRecord;
+
+  /// 查看課程詳情回調（學員進入 Session Mode）⭐ v3.1
+  final VoidCallback? onViewSession;
+
   const ActionsSection({
     super.key,
     required this.appointment,
@@ -18,6 +24,8 @@ class ActionsSection extends StatelessWidget {
     required this.onReject,
     required this.onCancel,
     required this.onComplete,
+    this.onViewRecord,
+    this.onViewSession,
   });
 
   @override
@@ -95,9 +103,22 @@ class ActionsSection extends StatelessWidget {
       }
     } else {
       // 學員端操作
-      if (appointment.status == AppointmentStatus.requested ||
-          appointment.status == AppointmentStatus.confirmed) {
-        // 待確認或已確認：顯示取消按鈕
+      if (appointment.status == AppointmentStatus.confirmed) {
+        // ⭐ v3.1: 已確認：顯示查看課程詳情按鈕（進入 Session Mode）
+        if (onViewSession != null) {
+          buttons.add(
+            FilledButton.icon(
+              onPressed: onViewSession,
+              icon: const Icon(Icons.fitness_center),
+              label: const Text('查看課程詳情'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          );
+          buttons.add(const SizedBox(height: 12));
+        }
+        // 取消按鈕
         buttons.add(
           OutlinedButton.icon(
             onPressed: onCancel,
@@ -109,6 +130,33 @@ class ActionsSection extends StatelessWidget {
             ),
           ),
         );
+      } else if (appointment.status == AppointmentStatus.requested) {
+        // 待確認：僅顯示取消按鈕
+        buttons.add(
+          OutlinedButton.icon(
+            onPressed: onCancel,
+            icon: const Icon(Icons.cancel_outlined),
+            label: const Text('取消預約'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+        );
+      } else if (appointment.status == AppointmentStatus.completed) {
+        // ⭐ v3.0: 已完成：顯示查看課程紀錄按鈕
+        if (onViewRecord != null) {
+          buttons.add(
+            FilledButton.icon(
+              onPressed: onViewRecord,
+              icon: const Icon(Icons.description_outlined),
+              label: const Text('查看課程紀錄'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          );
+        }
       }
     }
 

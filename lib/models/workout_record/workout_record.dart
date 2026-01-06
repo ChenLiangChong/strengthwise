@@ -26,6 +26,9 @@ class WorkoutRecord {
   final int elapsedSeconds; // 累計訓練秒數（不含暫停）
   final String trainingStatus; // pending | in_progress | paused | completed
 
+  // ⭐ v3.1: Session Mode 關聯預約 ID
+  final String? appointmentId; // 關聯的預約 ID（上課訓練計畫）
+
   /// 創建一個訓練記錄實例
   WorkoutRecord({
     required this.id,
@@ -46,6 +49,8 @@ class WorkoutRecord {
     this.actualEndTime,
     this.elapsedSeconds = 0,
     this.trainingStatus = 'pending',
+    // ⭐ v3.1: Session Mode
+    this.appointmentId,
   });
 
   /// 轉換為 JSON 數據格式
@@ -92,6 +97,8 @@ class WorkoutRecord {
     DateTime? actualEndTime,
     int? elapsedSeconds,
     String? trainingStatus,
+    // ⭐ v3.1: Session Mode
+    String? appointmentId,
   }) {
     return WorkoutRecord(
       id: id ?? this.id,
@@ -111,6 +118,7 @@ class WorkoutRecord {
       actualEndTime: actualEndTime ?? this.actualEndTime,
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
       trainingStatus: trainingStatus ?? this.trainingStatus,
+      appointmentId: appointmentId ?? this.appointmentId,
     );
   }
 

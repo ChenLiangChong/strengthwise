@@ -1,6 +1,12 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 個人資料菜單項目
+///
+/// 響應式設計：
+/// - 使用 Theme 文字樣式
+/// - 響應式間距
 class ProfileMenuItem extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
@@ -19,33 +25,44 @@ class ProfileMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final effectiveColor = iconColor ?? colorScheme.primary;
+
     return Card(
       elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+      ),
       child: ListTile(
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: context.spacing.md,
+          vertical: context.spacing.xs,
+        ),
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(context.spacing.sm),
           decoration: BoxDecoration(
-            color: (iconColor ?? Theme.of(context).colorScheme.primary)
-                .withOpacity(0.1),
+            color: effectiveColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             icon,
-            color: iconColor ?? Theme.of(context).colorScheme.primary,
+            color: effectiveColor,
             size: 24,
           ),
         ),
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.w500),
+          style: textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
         ),
         subtitle: subtitle != null
             ? Text(
                 subtitle!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
               )
             : null,

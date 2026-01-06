@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Download Complete Supabase Database (v2.8 完整版)
+Download Complete Supabase Database (v3.0 完整版)
 
-此腳本會下載完整的資料庫結構（20 個表格）
-根據 2026-01-04 Supabase 實際表格驗證
+此腳本會下載完整的資料庫結構（23 個表格）
+根據 2026-01-05 Supabase 實際表格驗證
 
 更新記錄：
 - 2025-01-01: 更新為 16 個表格（包含 Phase 3 表格）
 - 2026-01-04: 更新為 20 個表格（新增 v2.3 邀請碼 + v2.8 健康評估系統）
+- 2026-01-05: 更新為 23 個表格（新增 v2.9 教練檔案 + v3.0 預約優化）
 
 Usage:
     python scripts/tools/download_complete_database.py
@@ -32,10 +33,13 @@ Output:
             |- client_availability.json                
             |- daily_workout_summary.json              
             |- personal_records.json                   
-            |- invite_codes.json                       (邀請碼) ⭐
-            |- health_assessments.json                 (健康評估) ⭐
-            |- coach_assessment_notes.json             (教練備註) ⭐
-            |- coach_display_preferences.json          (教練偏好) ⭐
+            |- invite_codes.json                       (邀請碼)
+            |- health_assessments.json                 (健康評估)
+            |- coach_assessment_notes.json             (教練備註)
+            |- coach_display_preferences.json          (教練偏好)
+            |- coaches.json                            (教練公開檔案) ⭐
+            |- coach_booking_settings.json             (預約設定) ⭐
+            |- daily_readiness.json                    (課前問卷) ⭐
             |- database_summary.json                   (統計報告)
             |- README.md                               (說明文檔)
 """
@@ -82,7 +86,7 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 # Initialize Supabase Client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 完整表格列表（根據 2026-01-04 Supabase 實際驗證）
+# 完整表格列表（根據 2026-01-05 Supabase 實際驗證）
 # v1.0 核心表格（7 個）
 CORE_TABLES = [
     "users",
@@ -123,19 +127,30 @@ OPTIMIZATION_TABLES = [
     "personal_records"
 ]
 
-# v2.3 邀請碼系統（1 個）⭐
+# v2.3 邀請碼系統（1 個）
 INVITE_SYSTEM_TABLES = [
     "invite_codes"
 ]
 
-# v2.8 健康評估系統（3 個）⭐
+# v2.8 健康評估系統（3 個）
 HEALTH_ASSESSMENT_TABLES = [
     "health_assessments",
     "coach_assessment_notes",
     "coach_display_preferences"
 ]
 
-# 合併所有表格（20 個）
+# v2.9 教練公開檔案（1 個）⭐
+COACH_PROFILE_TABLES = [
+    "coaches"
+]
+
+# v3.0 預約系統優化（2 個）⭐
+BOOKING_OPTIMIZATION_TABLES = [
+    "coach_booking_settings",  # 教練預約設定
+    "daily_readiness"          # 課前問卷
+]
+
+# 合併所有表格（23 個）
 ALL_TABLES = (
     CORE_TABLES + 
     METADATA_TABLES + 
@@ -144,7 +159,9 @@ ALL_TABLES = (
     PHASE3_TABLES + 
     OPTIMIZATION_TABLES +
     INVITE_SYSTEM_TABLES +
-    HEALTH_ASSESSMENT_TABLES
+    HEALTH_ASSESSMENT_TABLES +
+    COACH_PROFILE_TABLES +
+    BOOKING_OPTIMIZATION_TABLES
 )
 
 def ensure_export_dir(timestamp: str) -> str:
@@ -192,7 +209,9 @@ def generate_summary(all_data: Dict[str, List], export_dir: str, timestamp: str)
         "v2.0 Phase 3": PHASE3_TABLES,
         "Optimization": OPTIMIZATION_TABLES,
         "v2.3 Invite System": INVITE_SYSTEM_TABLES,
-        "v2.8 Health Assessment": HEALTH_ASSESSMENT_TABLES
+        "v2.8 Health Assessment": HEALTH_ASSESSMENT_TABLES,
+        "v2.9 Coach Profile": COACH_PROFILE_TABLES,
+        "v3.0 Booking Optimization": BOOKING_OPTIMIZATION_TABLES
     }
     
     for category, tables in categories.items():
@@ -246,7 +265,7 @@ def main():
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     
     print("=" * 80)
-    print("StrengthWise - Complete Database Download Tool (v2.8)")
+    print("StrengthWise - Complete Database Download Tool (v3.0)")
     print("=" * 80)
     print(f"⏰ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"🔗 Supabase: {SUPABASE_URL}")
@@ -266,8 +285,10 @@ def main():
         print(f"   - v2.0 Phase 2: {len(PHASE2_TABLES)} tables")
         print(f"   - v2.0 Phase 3: {len(PHASE3_TABLES)} tables")
         print(f"   - Optimization: {len(OPTIMIZATION_TABLES)} tables")
-        print(f"   - v2.3 Invite System: {len(INVITE_SYSTEM_TABLES)} table ⭐")
-        print(f"   - v2.8 Health Assessment: {len(HEALTH_ASSESSMENT_TABLES)} tables ⭐⭐⭐")
+        print(f"   - v2.3 Invite System: {len(INVITE_SYSTEM_TABLES)} table")
+        print(f"   - v2.8 Health Assessment: {len(HEALTH_ASSESSMENT_TABLES)} tables")
+        print(f"   - v2.9 Coach Profile: {len(COACH_PROFILE_TABLES)} table ⭐")
+        print(f"   - v3.0 Booking Optimization: {len(BOOKING_OPTIMIZATION_TABLES)} tables ⭐⭐⭐")
         print("")
         print("-" * 80)
         print("")

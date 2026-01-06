@@ -1,5 +1,7 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/models/health_assessment/injury_record.dart';
 
 /// 健康評估完整詳情頁面
@@ -22,56 +24,61 @@ class HealthAssessmentDetailPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(userName != null ? '$userName 的健康評估' : '健康評估詳情'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 評估日期與風險狀態
-            _buildHeaderSection(context),
-            const SizedBox(height: 24),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            padding: context.pagePadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 評估日期與風險狀態
+                _buildHeaderSection(context),
+                const SizedBox(height: 24),
 
-            // PAR-Q+ 安全篩檢
-            _buildSectionTitle(context, Icons.health_and_safety, 'PAR-Q+ 安全篩檢'),
-            const SizedBox(height: 12),
-            _buildParQSection(context),
-            const SizedBox(height: 24),
+                // PAR-Q+ 安全篩檢
+                _buildSectionTitle(context, Icons.health_and_safety, 'PAR-Q+ 安全篩檢'),
+                const SizedBox(height: 12),
+                _buildParQSection(context),
+                const SizedBox(height: 24),
 
-            // 傷病史
-            if (assessment.injuries.isNotEmpty) ...[
-              _buildSectionTitle(context, Icons.healing, '傷病史'),
-              const SizedBox(height: 12),
-              _buildInjuriesSection(context),
-              const SizedBox(height: 24),
-            ],
+                // 傷病史
+                if (assessment.injuries.isNotEmpty) ...[
+                  _buildSectionTitle(context, Icons.healing, '傷病史'),
+                  const SizedBox(height: 12),
+                  _buildInjuriesSection(context),
+                  const SizedBox(height: 24),
+                ],
 
-            // 生活型態
-            _buildSectionTitle(context, Icons.self_improvement, '生活型態'),
-            const SizedBox(height: 12),
-            _buildLifestyleSection(context),
-            const SizedBox(height: 24),
+                // 生活型態
+                _buildSectionTitle(context, Icons.self_improvement, '生活型態'),
+                const SizedBox(height: 12),
+                _buildLifestyleSection(context),
+                const SizedBox(height: 24),
 
-            // 訓練目標
-            if (assessment.trainingGoals != null) ...[
-              _buildSectionTitle(context, Icons.flag, '訓練目標'),
-              const SizedBox(height: 12),
-              _buildGoalsSection(context),
-              const SizedBox(height: 24),
-            ],
+                // 訓練目標
+                if (assessment.trainingGoals != null) ...[
+                  _buildSectionTitle(context, Icons.flag, '訓練目標'),
+                  const SizedBox(height: 12),
+                  _buildGoalsSection(context),
+                  const SizedBox(height: 24),
+                ],
 
-            // 緊急聯絡人
-            if (assessment.emergencyContact != null &&
-                assessment.emergencyContact!.isNotEmpty) ...[
-              _buildSectionTitle(context, Icons.contact_phone, '緊急聯絡人'),
-              const SizedBox(height: 12),
-              _buildEmergencyContactSection(context),
-              const SizedBox(height: 24),
-            ],
+                // 緊急聯絡人
+                if (assessment.emergencyContact != null &&
+                    assessment.emergencyContact!.isNotEmpty) ...[
+                  _buildSectionTitle(context, Icons.contact_phone, '緊急聯絡人'),
+                  const SizedBox(height: 12),
+                  _buildEmergencyContactSection(context),
+                  const SizedBox(height: 24),
+                ],
 
-            // 免責聲明
-            _buildDisclaimerSection(context),
-            const SizedBox(height: 32),
-          ],
+                // 免責聲明
+                _buildDisclaimerSection(context),
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
         ),
       ),
     );

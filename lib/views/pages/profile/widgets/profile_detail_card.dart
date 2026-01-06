@@ -1,7 +1,13 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import '../../../../models/user_model.dart';
 
 /// 個人資料詳細資訊卡片
+///
+/// 響應式設計：
+/// - 使用 Theme 文字樣式
+/// - 響應式間距
 class ProfileDetailCard extends StatelessWidget {
   final UserModel userProfile;
 
@@ -13,56 +19,61 @@ class ProfileDetailCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     final isMetric = userProfile.unitSystem != 'imperial';
 
     // 計算 BMI 和相關資訊
     final bmiData = _calculateBMIData(isMetric);
 
     return Card(
-      elevation: 1,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: context.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Icon(Icons.info_outline, size: 20, color: colorScheme.primary),
-                const SizedBox(width: 8),
-                const Text(
+                SizedBox(width: context.spacing.sm),
+                Text(
                   '詳細資訊',
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: context.spacing.md),
 
             // 基本資料區塊
             if (bmiData['heightText'] != null ||
                 bmiData['weightText'] != null ||
                 bmiData['bmi'] != null) ...[
               _buildSectionHeader(context, '👤 基本資料', colorScheme),
-              const SizedBox(height: 12),
+              SizedBox(height: context.spacing.sm),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(context.spacing.sm),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceVariant.withOpacity(0.3),
+                  color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   children: [
                     if (bmiData['heightText'] != null)
-                      _buildInfoRow('身高', bmiData['heightText'] as String),
+                      _buildInfoRow(context, '身高', bmiData['heightText'] as String),
                     if (bmiData['weightText'] != null) ...[
                       if (bmiData['heightText'] != null) const Divider(height: 16),
-                      _buildInfoRow('體重', bmiData['weightText'] as String),
+                      _buildInfoRow(context, '體重', bmiData['weightText'] as String),
                     ],
                     if (bmiData['bmi'] != null) ...[
                       const Divider(height: 16),
                       _buildInfoRow(
+                        context,
                         'BMI',
                         '${(bmiData['bmi'] as double).toStringAsFixed(1)} (${bmiData['bmiCategory']})',
                         valueColor: _getBMIColor(
@@ -72,26 +83,28 @@ class ProfileDetailCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: context.spacing.md),
             ],
 
             // 偏好設定區塊
             _buildSectionHeader(context, '⚙️ 偏好設定', colorScheme),
-            const SizedBox(height: 12),
+            SizedBox(height: context.spacing.sm),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(context.spacing.sm),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceVariant.withOpacity(0.3),
+                color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
                   _buildInfoRow(
+                    context,
                     '單位系統',
                     isMetric ? '公制 (cm, kg)' : '英制 (ft, lb)',
                   ),
                   const Divider(height: 16),
                   _buildInfoRow(
+                    context,
                     '角色',
                     [
                       if (userProfile.isCoach) '教練',
@@ -170,17 +183,18 @@ class ProfileDetailCard extends StatelessWidget {
 
   Widget _buildSectionHeader(
       BuildContext context, String title, ColorScheme colorScheme) {
+    final textTheme = Theme.of(context).textTheme;
     return Text(
       title,
-      style: TextStyle(
-        fontSize: 14,
+      style: textTheme.bodyMedium?.copyWith(
         fontWeight: FontWeight.w600,
         color: colorScheme.onSurfaceVariant,
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
+  Widget _buildInfoRow(BuildContext context, String label, String value, {Color? valueColor}) {
+    final textTheme = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -188,14 +202,11 @@ class ProfileDetailCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 14,
-            ),
+            style: textTheme.bodyMedium,
           ),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 14,
+            style: textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
               color: valueColor,
             ),

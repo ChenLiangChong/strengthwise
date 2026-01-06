@@ -1,5 +1,7 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/appointment_model.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 預約卡片組件
 class AppointmentCard extends StatelessWidget {
@@ -8,23 +10,37 @@ class AppointmentCard extends StatelessWidget {
   final VoidCallback onTap;
   final Function(String) onQuickAction;
 
+  /// 開始課程回調（Session Mode 入口 - 教練）⭐ v3.0
+  final VoidCallback? onStartSession;
+
+  /// 查看課程回調（Session Mode 入口 - 學員）⭐ v3.1
+  final VoidCallback? onViewSession;
+
   const AppointmentCard({
     super.key,
     required this.appointment,
     required this.isCoachMode,
     required this.onTap,
     required this.onQuickAction,
+    this.onStartSession,
+    this.onViewSession,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Card(
-      elevation: 2,
+      elevation: 0, // ⭐ 移除陰影
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(context.spacing.md), // ⭐ 響應式內距
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -33,47 +49,51 @@ class AppointmentCard extends StatelessWidget {
                 children: [
                   Icon(
                     Icons.event,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.primary,
+                    size: 20.scaled(context), // ⭐ 響應式圖標
+                    color: colorScheme.primary,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: context.spacing.sm), // ⭐ 響應式間距
                   Expanded(
                     child: Text(
                       _formatDate(appointment.startTime),
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: context.responsive.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                      ),
+                      ), // ⭐ 響應式文字
                     ),
                   ),
                   _buildStatusChip(context),
                 ],
               ),
 
-              const SizedBox(height: 12),
+              SizedBox(height: context.spacing.md), // ⭐ 響應式間距
 
-              // 時間範圍
-              Row(
+              // 時間範圍（使用 Wrap 防止大字體溢出）
+              Wrap(
+                spacing: context.spacing.sm,
+                runSpacing: context.spacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 18,
-                    color: Colors.grey[600],
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 18.scaled(context),
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      SizedBox(width: context.spacing.xs),
+                      Text(
+                        _formatTimeRange(),
+                        style: context.responsive.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _formatTimeRange(),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Text(
                     '${appointment.durationMinutes} 分鐘',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
+                    style: context.responsive.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -81,23 +101,22 @@ class AppointmentCard extends StatelessWidget {
 
               // 備註（如果有）
               if (appointment.notes != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
                       Icons.note_outlined,
-                      size: 18,
-                      color: Colors.grey[600],
+                      size: 18.scaled(context), // ⭐ 響應式圖標
+                      color: colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: context.spacing.sm), // ⭐ 響應式間距
                     Expanded(
                       child: Text(
                         appointment.notes!,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                        ),
+                        style: context.responsive.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ), // ⭐ 響應式文字
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -108,9 +127,9 @@ class AppointmentCard extends StatelessWidget {
 
               // 快速操作按鈕
               if (_shouldShowQuickActions()) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: context.spacing.md), // ⭐ 響應式間距
                 const Divider(height: 1),
-                const SizedBox(height: 8),
+                SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
                 _buildQuickActions(context),
               ],
             ],
@@ -124,18 +143,20 @@ class AppointmentCard extends StatelessWidget {
     final color = _getStatusColor();
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: context.spacing.md, // ⭐ 響應式內距
+        vertical: context.spacing.xs,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         appointment.status.displayName,
-        style: TextStyle(
-          fontSize: 12,
+        style: context.responsive.labelSmall?.copyWith(
           fontWeight: FontWeight.w600,
           color: color,
-        ),
+        ), // ⭐ 響應式文字
       ),
     );
   }
@@ -155,64 +176,84 @@ class AppointmentCard extends StatelessWidget {
   Widget _buildQuickActions(BuildContext context) {
     if (isCoachMode && appointment.status == AppointmentStatus.requested) {
       // 教練：待確認時 - 確認/拒絕
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+      return Wrap(
+        alignment: WrapAlignment.end,
+        spacing: context.spacing.sm,
+        runSpacing: context.spacing.xs,
         children: [
-          Flexible(
-            child: TextButton.icon(
-              onPressed: () => onQuickAction('reject'),
-              icon: const Icon(Icons.close, size: 18),
-              label: const Text('拒絕'),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
+          TextButton.icon(
+            onPressed: () => onQuickAction('reject'),
+            icon: const Icon(Icons.close, size: 18),
+            label: const Text('拒絕'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
             ),
           ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: FilledButton.icon(
-              onPressed: () => onQuickAction('confirm'),
-              icon: const Icon(Icons.check, size: 18),
-              label: const Text('確認'),
-            ),
+          FilledButton.icon(
+            onPressed: () => onQuickAction('confirm'),
+            icon: const Icon(Icons.check, size: 18),
+            label: const Text('確認'),
           ),
         ],
       );
     } else if (isCoachMode && appointment.status == AppointmentStatus.confirmed) {
-      // 教練：已確認時 - 取消
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+      // 教練：已確認時 - 開始課程 / 查看課程 / 取消
+      final canStart = _canStartSession();
+      return Wrap(
+        alignment: WrapAlignment.end,
+        spacing: context.spacing.sm,
+        runSpacing: context.spacing.xs,
         children: [
-          Flexible(
-            child: TextButton.icon(
-              onPressed: () => onQuickAction('cancel'),
-              icon: const Icon(Icons.cancel_outlined, size: 18),
-              label: const Text('取消預約'),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
+          TextButton.icon(
+            onPressed: () => onQuickAction('cancel'),
+            icon: const Icon(Icons.cancel_outlined, size: 18),
+            label: const Text('取消'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
             ),
           ),
+          // ⭐ v3.1: 教練隨時可進入 Session Mode
+          if (onStartSession != null)
+            FilledButton.icon(
+              onPressed: onStartSession,
+              icon: Icon(canStart ? Icons.play_arrow : Icons.visibility, size: 18),
+              label: Text(canStart ? '開始課程' : '查看課程'),
+            ),
         ],
       );
     } else {
-      // 學員：取消
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+      // 學員：取消 / 查看課程
+      return Wrap(
+        alignment: WrapAlignment.end,
+        spacing: context.spacing.sm,
+        runSpacing: context.spacing.xs,
         children: [
-          Flexible(
-            child: TextButton.icon(
-              onPressed: () => onQuickAction('cancel'),
-              icon: const Icon(Icons.cancel_outlined, size: 18),
-              label: const Text('取消預約'),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
+          TextButton.icon(
+            onPressed: () => onQuickAction('cancel'),
+            icon: const Icon(Icons.cancel_outlined, size: 18),
+            label: const Text('取消預約'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
             ),
           ),
+          // ⭐ v3.1: 學員已確認時顯示「查看課程」按鈕
+          if (appointment.status == AppointmentStatus.confirmed && onViewSession != null)
+            FilledButton.icon(
+              onPressed: onViewSession,
+              icon: const Icon(Icons.fitness_center, size: 18),
+              label: const Text('查看課程'),
+            ),
         ],
       );
     }
+  }
+
+  /// 判斷是否可以開始課程（課程開始前 15 分鐘到結束後 4 小時）⭐ v3.0
+  bool _canStartSession() {
+    final now = DateTime.now();
+    final startBuffer = appointment.startTime.subtract(const Duration(minutes: 15));
+    final endBuffer = appointment.endTime.add(const Duration(hours: 4));
+    return now.isAfter(startBuffer) && now.isBefore(endBuffer);
   }
 
   Color _getStatusColor() {

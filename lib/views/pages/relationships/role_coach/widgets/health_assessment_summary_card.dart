@@ -1,7 +1,9 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/health_assessment_models.dart';
 import 'package:strengthwise/models/coach_display_preferences_model.dart';
 import 'package:strengthwise/models/coach_assessment_note_model.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 健康評估摘要卡片
 /// 
@@ -15,9 +17,9 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
   final CoachDisplayPreferencesModel? preferences;
   final CoachAssessmentNoteModel? coachNote;
   final VoidCallback onViewFull;
-  final VoidCallback onEdit;
+  final VoidCallback? onEdit; // ⭐ v3.1: 可選，學員模式不需要
   final VoidCallback? onConfigurePreferences;
-  final ValueChanged<String>? onCoachNoteChanged; // ⭐ 新增：備註變更回調
+  final ValueChanged<String>? onCoachNoteChanged;
   final bool isClientView;
 
   const HealthAssessmentSummaryCard({
@@ -26,9 +28,9 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
     this.preferences,
     this.coachNote,
     required this.onViewFull,
-    required this.onEdit,
+    this.onEdit, // ⭐ v3.1: 改為可選
     this.onConfigurePreferences,
-    this.onCoachNoteChanged, // ⭐ 新增
+    this.onCoachNoteChanged,
     this.isClientView = false,
   });
 
@@ -39,8 +41,13 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.zero,
+      elevation: 0, // ⭐ 移除陰影
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(context.spacing.md), // ⭐ 響應式內距
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -79,11 +86,13 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
                     onPressed: onConfigurePreferences,
                     tooltip: '設定顯示偏好',
                   ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: onEdit,
-                  tooltip: '編輯',
-                ),
+                // ⭐ v3.1: 只有有編輯權限時才顯示編輯按鈕
+                if (onEdit != null)
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: onEdit,
+                    tooltip: '編輯',
+                  ),
               ],
             ),
             

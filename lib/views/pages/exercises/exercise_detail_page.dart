@@ -1,10 +1,11 @@
+// ✅ 已響應式改造 (Phase 0) - 動作詳情頁
 import 'package:flutter/material.dart';
 import '../../../models/exercise_model.dart';
 import '../../../utils/notification_utils.dart';
 
 class ExerciseDetailPage extends StatelessWidget {
   final Exercise exercise;
-  
+
   const ExerciseDetailPage({
     super.key,
     required this.exercise,
@@ -14,7 +15,7 @@ class ExerciseDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // 使用完整的 name 欄位
     final displayName = exercise.name;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(displayName),
@@ -37,9 +38,9 @@ class ExerciseDetailPage extends StatelessWidget {
           children: [
             // 圖片部分
             _buildExerciseImage(context),
-            
+
             const SizedBox(height: 16),
-            
+
             // 英文名稱部分
             if (exercise.nameEn.isNotEmpty) ...[
               Text(
@@ -49,7 +50,7 @@ class ExerciseDetailPage extends StatelessWidget {
               Text(exercise.nameEn),
               const SizedBox(height: 16),
             ],
-            
+
             // 分類信息部分
             Text(
               '分類資訊',
@@ -63,7 +64,8 @@ class ExerciseDetailPage extends StatelessWidget {
                   if (exercise.type.isNotEmpty)
                     _buildInfoRow('訓練類型', exercise.type, context),
                   if (exercise.bodyParts.isNotEmpty)
-                    _buildInfoRow('訓練部位', exercise.bodyParts.join(', '), context),
+                    _buildInfoRow(
+                        '訓練部位', exercise.bodyParts.join(', '), context),
                   if (exercise.equipment.isNotEmpty)
                     _buildInfoRow('所需器材', exercise.equipment, context),
                   if (exercise.level1.isNotEmpty)
@@ -79,9 +81,9 @@ class ExerciseDetailPage extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // 描述部分
             if (exercise.description.isNotEmpty) ...[
               Text(
@@ -94,7 +96,7 @@ class ExerciseDetailPage extends StatelessWidget {
               ),
               const SizedBox(height: 16),
             ],
-            
+
             // 視頻部分
             if (exercise.videoUrl.isNotEmpty) ...[
               Text(
@@ -110,7 +112,7 @@ class ExerciseDetailPage extends StatelessWidget {
                 },
               ),
             ],
-            
+
             // 添加到訓練計畫按鈕
             const SizedBox(height: 32),
             Center(
@@ -119,7 +121,8 @@ class ExerciseDetailPage extends StatelessWidget {
                 label: const Text('添加到訓練計畫'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.secondary,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 onPressed: () {
                   // 返回所選的動作
@@ -132,7 +135,7 @@ class ExerciseDetailPage extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildExerciseImage(BuildContext context) {
     try {
       if (exercise.imageUrl.isNotEmpty) {
@@ -153,7 +156,7 @@ class ExerciseDetailPage extends StatelessWidget {
                   child: Center(
                     child: CircularProgressIndicator(
                       value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded / 
+                          ? loadingProgress.cumulativeBytesLoaded /
                               loadingProgress.expectedTotalBytes!
                           : null,
                     ),
@@ -195,13 +198,13 @@ class ExerciseDetailPage extends StatelessWidget {
         width: double.infinity,
         color: Colors.red[100],
         child: Center(
-          child: Text('圖片處理錯誤: ${e.toString().substring(0, 
-              e.toString().length > 100 ? 100 : e.toString().length)}...'),
+          child: Text(
+              '圖片處理錯誤: ${e.toString().substring(0, e.toString().length > 100 ? 100 : e.toString().length)}...'),
         ),
       );
     }
   }
-  
+
   Widget _buildInfoRow(String label, String value, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -225,4 +228,4 @@ class ExerciseDetailPage extends StatelessWidget {
       ),
     );
   }
-} 
+}

@@ -194,6 +194,30 @@ class AppointmentServiceSupabase implements IAppointmentService {
   }
 
   @override
+  Future<AppointmentModel?> getLastCompletedAppointment(String clientId) async {
+    try {
+      final response = await _supabase
+          .from('appointments')
+          .select(
+              'id, coach_id, client_id, time_range, status, workout_plan_id, '
+              'notes, client_notes, coach_notes, cancellation_reason, '
+              'cancelled_by, cancelled_at, created_at, updated_at')
+          .eq('client_id', clientId)
+          .eq('status', 'completed')
+          .order('time_range', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (response == null) return null;
+      return AppointmentModel.fromSupabase(response);
+    } catch (e) {
+      _errorService.logError('查詢最近已完成預約失敗: $e',
+          type: 'AppointmentServiceError');
+      return null;
+    }
+  }
+
+  @override
   Future<bool> checkConflict({
     required String coachId,
     required DateTime startTime,
@@ -517,6 +541,50 @@ class AppointmentServiceSupabase implements IAppointmentService {
       _errorService.logError('計算出席率失敗: $e',
           type: 'AppointmentServiceError');
       return 0.0;
+    }
+  }
+
+  // ============================================================
+  // 臨時課程（Ad-Hoc Session）⭐ v3.0
+  // ============================================================
+
+  @override
+  Future<String> createAdHocSession({
+    required String coachId,
+    required String clientId,
+    required DateTime startTime,
+    required DateTime endTime,
+    String? notes,
+  }) async {
+    try {
+      final now = DateTime.now();
+      
+      // 直接建立 confirmed 狀態的預約
+      final appointmentData = {
+        'coach_id': coachId,
+        'client_id': clientId,
+        'time_range': DateTimeUtils.formatToTstzRange(startTime, endTime),
+        'status': 'confirmed',  // ⭐ 跳過 requested，直接確認
+        'notes': notes ?? '臨時課程',
+        'created_at': DateTimeUtils.formatToUtcIso(now),
+        'updated_at': DateTimeUtils.formatToUtcIso(now),
+      };
+
+      final response = await _supabase
+          .from('appointments')
+          .insert(appointmentData)
+          .select('id')
+          .single();
+
+      // 注意：DB Trigger `trg_create_session_mode_data` 會自動創建：
+      // - session_notes（SOAP 筆記）
+      // - daily_readiness（課前問卷）
+
+      return response['id'] as String;
+    } catch (e) {
+      _errorService.logError('創建臨時課程失敗: $e',
+          type: 'AppointmentServiceError');
+      rethrow;
     }
   }
 }

@@ -1,4 +1,6 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import '../../../models/exercise_model.dart';
 import 'exercise_detail_page.dart';
 import '../../../services/interfaces/i_exercise_service.dart';
@@ -11,6 +13,8 @@ import 'widgets/exercise_list_header.dart';
 import 'widgets/empty_exercise_state.dart';
 
 /// 動作瀏覽頁面 - 使用專業 5 層分類結構
+///
+/// 響應式設計：子組件已適配多尺寸螢幕
 /// 1. 訓練類型 (trainingType) -> 2. 身體部位 (bodyPart) -> 3. 特定肌群 (specificMuscle)
 /// -> 4. 器材類別 (equipmentCategory) -> 5. 器材子類別 (equipmentSubcategory)
 class ExercisesPage extends StatefulWidget {
@@ -626,6 +630,9 @@ class _ExercisesPageState extends State<ExercisesPage> {
   }
 
   Widget _buildExerciseList() {
+    final columns = context.listColumns;
+    final padding = context.pagePadding;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -639,36 +646,53 @@ class _ExercisesPageState extends State<ExercisesPage> {
         Expanded(
           child: _exercises.isEmpty
               ? const EmptyExerciseState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16.0),
-                  itemCount: _exercises.length,
-                  itemBuilder: (context, index) {
-                    final exercise = _exercises[index];
-                    return ExerciseListItem(
-                      exercise: exercise,
-                      selectedBodyPart: _selectedBodyPart,
-                      selectedSpecificMuscle: _selectedSpecificMuscle,
-                      selectedEquipmentCategory: _selectedEquipmentCategory,
-                      selectedEquipmentSubcategory: _selectedEquipmentSubcategory,
-                      onTap: () async {
-                        final selectedExercise = await Navigator.push<Exercise>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ExerciseDetailPage(exercise: exercise),
-                          ),
-                        );
-                        if (selectedExercise != null && context.mounted) {
-                          Navigator.pop(context, selectedExercise);
-                        }
-                      },
-                      onSelect: () {
-                        Navigator.pop(context, exercise);
-                      },
-                    );
-                  },
-                ),
+              : columns > 1
+                  // 大螢幕使用網格佈局
+                  ? GridView.builder(
+                      padding: padding.copyWith(bottom: 96),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        crossAxisSpacing: context.spacing.md,
+                        mainAxisSpacing: context.spacing.sm,
+                        childAspectRatio: 2.5,
+                      ),
+                      itemCount: _exercises.length,
+                      itemBuilder: (context, index) =>
+                          _buildExerciseItem(_exercises[index]),
+                    )
+                  // 小螢幕使用列表佈局
+                  : ListView.builder(
+                      padding: padding.copyWith(bottom: 96),
+                      itemCount: _exercises.length,
+                      itemBuilder: (context, index) =>
+                          _buildExerciseItem(_exercises[index]),
+                    ),
         ),
       ],
+    );
+  }
+
+  Widget _buildExerciseItem(Exercise exercise) {
+    return ExerciseListItem(
+      exercise: exercise,
+      selectedBodyPart: _selectedBodyPart,
+      selectedSpecificMuscle: _selectedSpecificMuscle,
+      selectedEquipmentCategory: _selectedEquipmentCategory,
+      selectedEquipmentSubcategory: _selectedEquipmentSubcategory,
+      onTap: () async {
+        final selectedExercise = await Navigator.push<Exercise>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ExerciseDetailPage(exercise: exercise),
+          ),
+        );
+        if (selectedExercise != null && context.mounted) {
+          Navigator.pop(context, selectedExercise);
+        }
+      },
+      onSelect: () {
+        Navigator.pop(context, exercise);
+      },
     );
   }
 }

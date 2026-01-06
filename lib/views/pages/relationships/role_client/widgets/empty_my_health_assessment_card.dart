@@ -1,4 +1,6 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 空狀態健康評估卡片（學員端）
 /// 
@@ -26,7 +28,7 @@ class EmptyMyHealthAssessmentCard extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: context.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

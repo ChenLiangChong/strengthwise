@@ -64,6 +64,8 @@ class WorkoutExecutionRecordSaver {
           elapsedSeconds: elapsedSeconds,
           actualStartTime: actualStartTime,
           actualEndTime: actualEndTime,
+          // ⭐ v3.1: 保留 Session Mode 關聯（上課類型）
+          appointmentId: existingRecord.appointmentId,
         );
         
         final success = await _workoutService.updateRecord(updatedRecord);

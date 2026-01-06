@@ -1,6 +1,8 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/coaching_relationship_model.dart';
 import 'package:strengthwise/models/user_model.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/widgets/client_list_item.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/widgets/empty_clients_state.dart';
 
@@ -48,7 +50,7 @@ class ClientListCard extends StatelessWidget {
         onRefresh();
       },
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: context.pagePadding, // ⭐ 響應式邊距
         itemCount: relationships.length,
         itemBuilder: (context, index) {
           final relationship = relationships[index];

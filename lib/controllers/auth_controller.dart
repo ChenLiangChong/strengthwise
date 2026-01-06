@@ -1,7 +1,10 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'dart:async';
 import '../models/user_model.dart';
 import '../services/interfaces/i_auth_service.dart';
+import '../services/interfaces/i_notification_service.dart';
 import '../services/core/error_handling_service.dart';
 import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_auth_controller.dart';
@@ -236,6 +239,9 @@ class AuthController extends ChangeNotifier implements IAuthController {
       _isLoading = true;
       notifyListeners();
       
+      // ⭐ v3.0-C: 登出前刪除 FCM Token（避免收到其他用戶的通知）
+      await _removeFcmToken();
+      
       await _authService.signOut();
       _user = null;
       
@@ -243,6 +249,47 @@ class AuthController extends ChangeNotifier implements IAuthController {
       notifyListeners();
     } catch (e) {
       _handleError("登出錯誤", originalError: e);
+    }
+  }
+
+  /// 刪除 FCM Token（登出時呼叫）⭐ v3.0-C
+  Future<void> _removeFcmToken() async {
+    if (kDebugMode) {
+      debugPrint('[AUTH_CONTROLLER] 🔍 開始移除 FCM Token...');
+    }
+
+    // 只在 Android/iOS 上執行
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      if (kDebugMode) {
+        debugPrint('[AUTH_CONTROLLER] ⏭️ 跳過（非 Android/iOS）');
+      }
+      return;
+    }
+
+    try {
+      final userId = _user?.uid;
+      if (kDebugMode) {
+        debugPrint('[AUTH_CONTROLLER] 🔍 userId=$userId');
+      }
+
+      if (userId == null) {
+        if (kDebugMode) {
+          debugPrint('[AUTH_CONTROLLER] ⚠️ userId 為 null，跳過');
+        }
+        return;
+      }
+
+      final notificationService = serviceLocator<INotificationService>();
+      await notificationService.removeTokenFromDatabase(userId);
+
+      if (kDebugMode) {
+        debugPrint('[AUTH_CONTROLLER] ✅ FCM Token 已移除');
+      }
+    } catch (e) {
+      // Token 刪除失敗不應該阻止登出
+      if (kDebugMode) {
+        debugPrint('[AUTH_CONTROLLER] ⚠️ FCM Token 移除失敗: $e');
+      }
     }
   }
   

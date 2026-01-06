@@ -2,7 +2,7 @@
 
 > 資料庫管理與測試資料生成工具
 
-**最後更新**：2026-01-04
+**最後更新**：2026-01-05（v3.0）
 
 ---
 
@@ -11,7 +11,7 @@
 ```
 scripts/
 ├── tools/
-│   ├── download_complete_database.py   # 下載完整資料庫（20 表格）
+│   ├── download_complete_database.py   # 下載完整資料庫（23 表格）
 │   ├── delete_all_workouts.py          # 刪除訓練記錄
 │   ├── clear_summary_tables.py         # 清空統計表
 │   ├── reset_statistics.py             # 重置統計（清空+重算）
@@ -45,7 +45,14 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 python scripts/tools/download_complete_database.py
 ```
 
-輸出：`database_export/YYYYMMDD_HHMMSS/`（20 個表格 JSON）
+輸出：`database_export/YYYYMMDD_HHMMSS/`（23 個表格 JSON）
+
+**表格分類**：
+- v1.0 Core: 7 表格（users, exercises, workout_plans 等）
+- v2.0 Phase 1-3: 5 表格（coaching, appointments, session_notes 等）
+- v2.8 Health Assessment: 3 表格
+- v2.9 Coach Profile: 1 表格（coaches）
+- v3.0 Booking Optimization: 2 表格（coach_booking_settings, daily_readiness）
 
 ---
 

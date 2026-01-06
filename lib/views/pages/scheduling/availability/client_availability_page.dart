@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - AvailabilityCalendarView 組件處理
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/client_availability_controller.dart';
@@ -244,6 +245,7 @@ class _ClientAvailabilityPageState extends State<ClientAvailabilityPage>
         floatingActionButton: widget.isViewMode
             ? null
             : FloatingActionButton(
+                heroTag: 'client_availability_fab', // ⭐ 防止 Hero tag 衝突
                 onPressed: _addSlot,
                 tooltip: '新增時段',
                 child: const Icon(Icons.add),

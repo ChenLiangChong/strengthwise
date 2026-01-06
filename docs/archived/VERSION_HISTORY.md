@@ -6,15 +6,16 @@
 
 ---
 
-## v2.9.1: 訓練 UX 優化（2026-01-05 進行中）
+## v2.9.1: 訓練 UX 優化（2026-01-05 完成）
 
-**功能**（TRN-1 ~ TRN-6 完成）：
+**功能**（TRN-1 ~ TRN-7 完成）：
 - 訓練狀態機：pending → in_progress → paused → completed
 - 訓練時長正確記錄：實際開始/結束時間、累計秒數（不含暫停）
 - 休息倒數計時器：打勾 set 後自動彈出選擇休息時長
 - 權限阻止：學員無法刪除教練計畫/動作/減少組數（App 層面提前阻止）
 - 訓練卡片來源標識：行事曆顯示「自主訓練」或「教練計畫」
 - 移除無意義的時鐘按鈕
+- 預約標籤用途釐清：納入 v3.0 Session Mode 設計
 
 **技術決策**：
 - 新增 `workout_plans` 欄位：`actual_start_time`, `actual_end_time`, `elapsed_seconds`, `training_status`

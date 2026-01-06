@@ -71,7 +71,7 @@ class SessionNoteModel {
     this.visualElements = const [],
     this.quickTags = const [],
     this.followUpDate,
-    this.visibility = 'private',
+    this.visibility = 'shared', // ⭐ v3.1: 預設共用，讓學員能看到
     this.hiddenByClient = false, // ⭐ 新增
     this.hiddenByCoach = false, // ⭐ 新增
     required this.createdAt,
@@ -117,7 +117,7 @@ class SessionNoteModel {
       visualElements: visualElements,
       quickTags: quickTags,
       followUpDate: followUpDate,
-      visibility: json['visibility'] as String? ?? 'private',
+      visibility: json['visibility'] as String? ?? 'shared', // ⭐ v3.1: 預設共用
       hiddenByClient: json['hidden_by_client'] as bool? ?? false, // ⭐ 新增
       hiddenByCoach: json['hidden_by_coach'] as bool? ?? false, // ⭐ 新增
       createdAt: DateTimeUtils.parseIsoTimestamp(json['created_at'] as String),  // ⭐ 統一工具類

@@ -4,12 +4,12 @@ import 'package:strengthwise/views/shared/calendar/calendar_widgets.dart';
 import 'booking_filter_chips.dart';
 import 'booking_day_list.dart';
 
-/// 預約行事曆視圖元件
+/// 訓練行事曆視圖元件
 ///
-/// 包含：
-/// - 行事曆（TableCalendar）
-/// - 過濾器（BookingFilterChips）
-/// - 選定日期的活動列表（BookingDayList）
+/// ⭐ v3.1: 三種訓練類型過濾
+/// - 🏃 自主訓練
+/// - 📋 教練安排
+/// - 📍 上課（Session Mode）
 class BookingCalendarView extends StatelessWidget {
   /// 聚焦的日期
   final DateTime focusedDay;
@@ -41,7 +41,7 @@ class BookingCalendarView extends StatelessWidget {
   /// 過濾器狀態
   final bool showSelfPlans;
   final bool showTrainerPlans;
-  final bool showBookings;
+  final bool showSessionPlans; // ⭐ v3.1: 上課
 
   /// 日期選擇回調
   final void Function(DateTime selectedDay, DateTime focusedDay) onDaySelected;
@@ -86,7 +86,7 @@ class BookingCalendarView extends StatelessWidget {
     required this.isCoachMode,
     required this.showSelfPlans,
     required this.showTrainerPlans,
-    required this.showBookings,
+    required this.showSessionPlans,
     required this.onDaySelected,
     required this.onFormatChanged,
     required this.onPageChanged,
@@ -113,31 +113,46 @@ class BookingCalendarView extends StatelessWidget {
             final normalizedDay = DateTime(day.year, day.month, day.day);
             final markers = <CalendarMarker>[];
 
-            // 訓練標記
-            if (showSelfPlans || showTrainerPlans) {
-              final plans = trainings[normalizedDay] ?? [];
-              for (var plan in plans) {
-                final planType = plan['planType'] as String? ?? '';
-                if ((planType == 'self' && showSelfPlans) ||
-                    (planType == 'trainer' && showTrainerPlans)) {
-                  markers.add(CalendarMarker(
-                    color: planType == 'self' ? Colors.blue : Colors.purple,
-                    tooltip: plan['title'] as String? ?? '',
-                    data: plan,
-                  ));
-                }
+            // 訓練標記（三種類型）
+            final plans = trainings[normalizedDay] ?? [];
+            for (var plan in plans) {
+              final planType = plan['planType'] as String? ?? '';
+              
+              // ⭐ v3.1: 根據過濾器和類型決定是否顯示
+              bool shouldShow = false;
+              Color markerColor = Colors.blue;
+              
+              switch (planType) {
+                case 'self':
+                  shouldShow = showSelfPlans;
+                  markerColor = Theme.of(context).colorScheme.primary;
+                  break;
+                case 'trainer':
+                  shouldShow = showTrainerPlans;
+                  markerColor = Theme.of(context).colorScheme.tertiary;
+                  break;
+                case 'session':
+                  shouldShow = showSessionPlans;
+                  markerColor = Theme.of(context).colorScheme.error;
+                  break;
+              }
+              
+              if (shouldShow) {
+                markers.add(CalendarMarker(
+                  color: markerColor,
+                  tooltip: plan['title'] as String? ?? '',
+                  data: plan,
+                ));
               }
             }
 
-            // 預約標記
-            if (showBookings) {
-              final dayBookings = bookings[normalizedDay] ?? [];
-              markers.addAll(dayBookings.map((b) => CalendarMarker(
-                    color: Colors.green,
-                    tooltip: b['coachName'] as String? ?? '',
-                    data: b,
-                  )));
-            }
+            // 預約標記（總是顯示）
+            final dayBookings = bookings[normalizedDay] ?? [];
+            markers.addAll(dayBookings.map((b) => CalendarMarker(
+                  color: Colors.green,
+                  tooltip: b['coachName'] as String? ?? '',
+                  data: b,
+                )));
 
             return markers;
           },
@@ -157,7 +172,7 @@ class BookingCalendarView extends StatelessWidget {
           BookingFilterChips(
             showSelfPlans: showSelfPlans,
             showTrainerPlans: showTrainerPlans,
-            showBookings: showBookings,
+            showSessionPlans: showSessionPlans,
             onToggle: onToggleFilter,
           ),
 

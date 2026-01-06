@@ -93,6 +93,8 @@ class WorkoutRecordFactory {
       actualEndTime: actualEndTime,
       elapsedSeconds: json['elapsed_seconds'] as int? ?? 0,
       trainingStatus: json['training_status'] as String? ?? 'pending',
+      // ⭐ v3.1: Session Mode 關聯預約 ID
+      appointmentId: json['appointment_id'] as String?,
     );
   }
 

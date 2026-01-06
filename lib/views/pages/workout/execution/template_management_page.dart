@@ -1,8 +1,7 @@
+// ✅ 已響應式改造 (Phase 0) - 列表頁，子組件處理
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/workout_template_model.dart';
 import 'package:strengthwise/models/workout_record_model.dart';
-import 'package:strengthwise/models/workout_record/exercise_record.dart';
-import 'package:strengthwise/models/workout_record/set_record.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/interfaces/i_workout_service.dart';
@@ -54,7 +53,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
     });
 
     try {
-      // 使用控制器加載模板
+      // 使用控制器載模板
       final templates = forceRefresh
           ? await _workoutController.reloadTemplates() // 強制重新載入
           : await _workoutController.loadUserTemplates(); // 可能使用緩存
@@ -78,7 +77,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
     try {
       final newTitle = await showDialog<String>(
         context: context,
-        barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+        barrierDismissible: false, // 修復：防止點擊外部關閉
         builder: (context) => TemplateDuplicateDialog(
           defaultName: '${template.title} - 副本',
         ),
@@ -131,7 +130,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
     }
   }
 
-  // 直接從模板創建訓練計畫
+  // 直接從模板創建訓練記錄
   /// 編輯模板
   Future<void> _editTemplate(WorkoutTemplate template) async {
     final result = await Navigator.push(
@@ -154,7 +153,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
   Future<void> _createWorkoutRecordFromTemplate(
       WorkoutTemplate template) async {
     try {
-      // 顯示日期和時間選擇對話框
+      // 顯示日期時間選擇對話框
       final result = await showDialog<Map<String, DateTime>>(
         context: context,
         barrierDismissible: false,
@@ -177,7 +176,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
       print(
           '[TemplateManagement] 從模板創建訓練: ${template.title}，時間: $trainingStart - $trainingEnd');
 
-      // 從模板創建動作列表
+      // 從模板創建動作記錄
       final exerciseRecords = template.exercises
           .map((exercise) => ExerciseRecord(
                 exerciseId: exercise.id,
@@ -194,7 +193,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
               ))
           .toList();
 
-      // 直接創建完整的記錄（包含正確的時間）
+      // 直接創建完整訓練記錄（包含時間範圍）
       final record = WorkoutRecord(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         workoutPlanId: template.id,
@@ -212,7 +211,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
       if (mounted) {
         NotificationUtils.showSuccess(
           context,
-          '${trainingStart.month}月${trainingStart.day}日的訓練已安排',
+          '${trainingStart.month}月${trainingStart.day}日的訓練已創建',
         );
       }
     } catch (e) {
@@ -248,7 +247,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
                 }
               }
             },
-            tooltip: '新建模板',
+            tooltip: '創建模板',
           ),
         ],
       ),

@@ -85,3 +85,11 @@ export 'session_note/session_note_model.dart';
 export 'session_note/soap_note_model.dart';
 export 'session_note/visual_element_model.dart';
 
+// ========== v3.0: 課前問卷系統 ==========
+
+/// 每日準備度問卷
+export 'readiness/daily_readiness_model.dart';
+
+/// 動作歷史記錄（Session Mode PREV）
+export 'exercise_history_record.dart';
+

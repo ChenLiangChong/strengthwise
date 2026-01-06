@@ -2,7 +2,7 @@
 
 > 專案架構、技術棧、目錄結構
 
-**最後更新**：2026-01-05
+**最後更新**：2026-01-07
 
 ---
 
@@ -12,24 +12,25 @@
 
 | 項目 | 內容 |
 |------|------|
-| 當前版本 | v2.9.0 |
+| 當前版本 | v3.1（測試中）|
+| 上一版本 | v3.0 |
 | 主要功能 | 個人健身記錄 + 教練學員管理平台 |
 | 目標平台 | Android / iOS / Windows |
 
 ### 專案規模
 
 ```
-總代碼量：~66,300 行
-├── Flutter/Dart：~63,000 行
-├── SQL/Migrations：~3,500 行（13 個檔案）
+總代碼量：~68,000 行
+├── Flutter/Dart：~64,000 行
+├── SQL/Migrations：~4,000 行（35 個檔案）
 └── Python 腳本：~2,200 行
 
 核心組件：
-├── Pages：60+
-├── Controllers：20+（含 67 子模組）
-├── Services：53+
-├── Models：65+
-└── Widgets：196+
+├── Pages：65+
+├── Controllers：22+（含 70 子模組）
+├── Services：55+（含 Realtime）
+├── Models：67+
+└── Widgets：200+
 ```
 
 ---
@@ -123,13 +124,16 @@ lib/
 ├── models/                      # 資料模型
 │   ├── user_model.dart
 │   ├── workout_record_model.dart
-│   └── health_assessment/       # 健康評估模型
+│   ├── health_assessment/       # 健康評估模型
+│   └── session_note/            # 課程筆記模型
 ├── services/                    # 服務層
 │   ├── interfaces/              # 服務介面（必須）
-│   ├── service_locator.dart     # 依賴注入容器
+│   ├── locator/                 # 依賴注入容器
+│   ├── realtime/                # Supabase Realtime ⭐ v3.1
 │   └── supabase/                # Supabase 實作
 ├── controllers/                 # 控制器層
-│   └── interfaces/              # 控制器介面
+│   ├── interfaces/              # 控制器介面
+│   └── workout_execution/       # 訓練執行子模組
 ├── views/                       # UI 層
 │   ├── pages/                   # 頁面（按功能分類）
 │   │   ├── auth/                # 認證
@@ -137,8 +141,10 @@ lib/
 │   │   ├── home/                # 首頁
 │   │   ├── notes/               # 視覺化筆記
 │   │   ├── profile/             # 個人資料
+│   │   ├── readiness/           # 課前問卷 ⭐ v3.0
 │   │   ├── relationships/       # 教練學員系統
 │   │   ├── scheduling/          # 預約系統
+│   │   ├── session/             # Session Mode ⭐ v3.0
 │   │   ├── statistics/          # 統計分析
 │   │   └── workout/             # 訓練系統
 │   ├── painters/                # Canvas Painter
@@ -146,7 +152,7 @@ lib/
 ├── themes/                      # 主題系統
 └── utils/                       # 工具類
 
-migrations/                      # SQL Migration
+migrations/                      # SQL Migration（35 個）
 docs/                            # 文檔
 scripts/                         # Python 工具
 ```

@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - 子組件處理
 import 'package:flutter/material.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/controllers/appointment_controller.dart';
@@ -66,7 +67,7 @@ class _ClientBookingPageState extends State<ClientBookingPage> {
       // 載入學員的教練列表
       await _relationshipController.loadClientCoaches(userId);
 
-      // 如果只有一個教練，自動選擇
+      // 如果只有一個教練，自動選中
       final coaches = _relationshipController.coaches;
       if (coaches.length == 1) {
         _selectedCoachId = coaches.first.coachId;
@@ -143,7 +144,7 @@ class _ClientBookingPageState extends State<ClientBookingPage> {
     // 顯示確認對話框
     final confirmed = await showDialog<bool>(
       context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+      barrierDismissible: false, // 修復：禁止點擊旁邊關閉
       builder: (context) => BookingConfirmationDialog(
         slot: slot,
         coachName: _selectedCoach?.displayName ?? '教練',
@@ -205,7 +206,7 @@ class _ClientBookingPageState extends State<ClientBookingPage> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // 教練選擇區域
+                // 教練選擇區塊
                 CoachSelectorSection(
                   coaches: _relationshipController.coaches,
                   selectedCoachId: _selectedCoachId,
@@ -214,7 +215,7 @@ class _ClientBookingPageState extends State<ClientBookingPage> {
 
                 const Divider(height: 1),
 
-                // 可用時段顯示區域
+                // 可用時段顯示區塊
                 Expanded(
                   child: _selectedCoachId == null
                       ? _buildEmptyState()
@@ -237,7 +238,7 @@ class _ClientBookingPageState extends State<ClientBookingPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            '請選擇教練以查看可預約時段',
+            '請選擇教練以查看可約時段',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -276,7 +277,7 @@ class _ClientBookingPageState extends State<ClientBookingPage> {
 
   @override
   void dispose() {
-    // 清除狀態（避免記憶體洩漏）
+    // 清除狀態避免記憶體洩漏
     _slotController.clearAll();
     super.dispose();
   }

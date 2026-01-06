@@ -20,9 +20,26 @@ abstract class IWorkoutExecutionController {
   
   /// 清除錯誤消息
   void clearError();
+
+  /// ⭐ v3.1: 設置權限覆蓋（Session Mode 用）
+  ///
+  /// 當 Session Mode 內嵌使用此 Controller 時，可以覆蓋預設的權限判斷
+  void setPermissionOverride({
+    bool? canEdit,
+    bool? canMarkSet,
+  });
   
   /// 加載訓練計劃
   Future<void> loadWorkoutPlan(String workoutRecordId);
+  
+  /// ⭐ v3.1: Realtime 重載（靜默更新，不閃爍）
+  Future<void> reloadForRealtime(String workoutRecordId);
+  
+  /// ⭐ v3.1: 獲取訓練者 ID（用於判斷是否需要 Realtime）
+  String? getTraineeId();
+  
+  /// ⭐ v3.1: 是否為上課類型訓練（有 appointmentId）
+  bool isSessionPlan();
   
   /// 獲取訓練計劃標題
   String getPlanTitle();
@@ -48,16 +65,20 @@ abstract class IWorkoutExecutionController {
   /// 檢查是否可以修改訓練
   bool canModify();
   
-  /// 檢查是否可以編輯（修改重量/次數/新增動作/新增組數）
-  /// 過去的訓練不能編輯，今天和未來的可以編輯
+  /// 檢查是否可以編輯（修改重量/次數）
   bool canEdit();
   
-  /// ⭐ v2.9: 檢查是否可以刪除（刪除動作/刪除計畫）
-  /// 只有創建者可以刪除，學員不能刪除教練創建的
+  /// ⭐ v3.1: 檢查是否可以新增（新增動作/新增組數）
+  bool canAdd();
+  
+  /// ⭐ v2.9: 檢查是否可以刪除（刪除動作/刪除計畫/減少組數）
   bool canDelete();
   
   /// 檢查是否可以勾選完成（只有今天的訓練可以勾選完成）
   bool canToggleCompletion();
+  
+  /// ⭐ v3.1: 檢查是否可以開始訓練（計時）
+  bool canStartTraining();
   
   /// 檢查是否為過去的訓練
   bool isPastDate();

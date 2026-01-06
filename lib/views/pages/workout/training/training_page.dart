@@ -1,8 +1,7 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/workout_template_model.dart';
 import 'package:strengthwise/models/workout_record_model.dart';
-import 'package:strengthwise/models/workout_record/exercise_record.dart';
-import 'package:strengthwise/models/workout_record/set_record.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/interfaces/i_workout_service.dart';
@@ -17,6 +16,8 @@ import 'widgets/template_list.dart';
 import 'widgets/template_menu_sheet.dart';
 
 /// 訓練模板管理中心
+///
+/// 響應式設計：子組件已適配多尺寸螢幕
 ///
 /// 功能：
 /// - 顯示所有已保存的訓練模板
@@ -347,6 +348,7 @@ class _TrainingPageState extends State<TrainingPage> {
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'training_page_fab', // ⭐ 防止 Hero tag 衝突
         onPressed: _createNewTemplate,
         tooltip: '新模板',
         backgroundColor: Theme.of(context).colorScheme.secondaryContainer,

@@ -1,5 +1,7 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/user/user_model.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 教練卡片組件
 class CoachCard extends StatelessWidget {
@@ -17,7 +19,7 @@ class CoachCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: context.spacing.sm),
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -26,7 +28,7 @@ class CoachCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: context.cardPadding,
           child: Row(
             children: [
               // 頭像

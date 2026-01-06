@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - 開發測試頁，無需特殊處理
 import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/notifications/adaptive_notification_service.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
@@ -5,9 +6,9 @@ import 'package:strengthwise/common_widgets/common/rest_timer_overlay.dart';
 
 /// 通知系統測試頁面
 ///
-/// 用於驗證所有通知場景的視覺效果與互動
+/// 用於驗證各種通知場景的視覺效果與互動
 ///
-/// 使用方式：在 main.dart 的路由表中添加此頁面，或直接 Navigator.push()
+/// 使用方式：在 main.dart 路由表中添加此頁面，或直接 Navigator.push()
 class NotificationTestPage extends StatefulWidget {
   const NotificationTestPage({super.key});
 
@@ -30,7 +31,7 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('通知系統測試（2025 版）'),
+        title: const Text('通知系統測試（2025 更新）'),
         elevation: 0,
       ),
       body: ListView(
@@ -45,7 +46,7 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
           ),
           const SizedBox(height: 16),
 
-          // 基礎成功通知
+          // 測試成功通知
           _buildTestButton(
             context,
             '✅ 成功通知（基礎版）',
@@ -55,7 +56,7 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
             },
           ),
 
-          // 基礎錯誤通知
+          // 測試錯誤通知
           _buildTestButton(
             context,
             '❌ 錯誤通知（基礎版）',
@@ -65,17 +66,17 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
             },
           ),
 
-          // 基礎資訊通知
+          // 測試資訊通知
           _buildTestButton(
             context,
             'ℹ️ 資訊通知（基礎版）',
-            '數據已同步',
+            '資料已同步',
             () {
-              NotificationUtils.showInfo(context, '數據已同步到雲端');
+              NotificationUtils.showInfo(context, '資料已同步到雲端');
             },
           ),
 
-          // 基礎警告通知
+          // 測試警告通知
           _buildTestButton(
             context,
             '⚠️ 警告通知（基礎版）',
@@ -98,15 +99,15 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
           ),
           const SizedBox(height: 16),
 
-          // 進階成功通知（自適應）
+          // 測試成功通知（自適應）
           _buildTestButton(
             context,
-            '✨ 成功通知（自適應）',
+            '✅ 成功通知（自適應）',
             'iOS 會顯示頂部，Android 顯示底部',
             () {
               AdaptiveNotificationService.showSuccess(
                 context,
-                '訓練記錄已保存',
+                '訓練記錄已儲存',
               );
             },
           ),
@@ -114,7 +115,7 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
           // 可撤銷操作
           _buildTestButton(
             context,
-            '🔄 可撤銷操作',
+            '🔙 可撤銷操作',
             '刪除後 7 秒內可撤銷',
             () {
               AdaptiveNotificationService.showUndoableAction(
@@ -136,8 +137,8 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
             () {
               AdaptiveNotificationService.showAchievement(
                 context,
-                '🎉 恭喜！',
-                '臥推重量打破個人紀錄：120kg',
+                '🎉 突破紀錄',
+                '你的推舉重量突破個人紀錄！120kg',
                 icon: Icons.emoji_events_rounded,
               );
             },
@@ -164,9 +165,9 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
           const Divider(),
           const SizedBox(height: 16),
 
-          // 休息計時器標題
+          // 休息計時器區塊
           Text(
-            '休息計時器（動態島風格）',
+            '休息計時器（靈動島風格）',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -177,7 +178,7 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
           _buildTestButton(
             context,
             '⏱️ 30 秒休息計時',
-            '頂部動態島，可點擊展開',
+            '頂部靈動島式倒數動畫',
             () {
               RestTimerOverlay.show(
                 context,
@@ -205,8 +206,8 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
                 onComplete: () {
                   AdaptiveNotificationService.showAchievement(
                     context,
-                    '休息結束！',
-                    '是時候展現真正的力量了 💪',
+                    '休息結束',
+                    '準備好開始下一組了嗎？💪',
                     icon: Icons.fitness_center,
                   );
                 },
@@ -218,14 +219,14 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
           // 停止計時器
           _buildTestButton(
             context,
-            '🛑 停止計時器',
-            '手動關閉當前計時器',
+            '⏹️ 停止計時器',
+            '立即停止當前計時',
             () {
               if (RestTimerOverlay.isRunning) {
                 RestTimerOverlay.hide();
                 NotificationUtils.showInfo(context, '已停止計時器');
               } else {
-                NotificationUtils.showWarning(context, '目前沒有運行中的計時器');
+                NotificationUtils.showWarning(context, '目前沒有執行中的計時器');
               }
             },
             color: Colors.grey[700],
@@ -244,7 +245,7 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
           ),
           const SizedBox(height: 8),
           const Text(
-            '點擊下方輸入框後，再點擊「測試」按鈕\n通知會自動切換到頂部（避開鍵盤）',
+            '點擊下方輸入框後，再點擊「測試」按鈕\n通知會自動移動到頂部（避開鍵盤）',
             style: TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 16),
@@ -254,7 +255,7 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
             controller: _textController,
             decoration: const InputDecoration(
               labelText: '輸入任意內容（測試鍵盤）',
-              hintText: '點擊此處打開鍵盤...',
+              hintText: '點擊此處喚出鍵盤...',
             ),
             onTap: () {
               setState(() {
@@ -272,12 +273,12 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
                   MediaQuery.of(context).viewInsets.bottom > 0) {
                 AdaptiveNotificationService.showError(
                   context,
-                  '格式錯誤：此處應為數字',
+                  '驗證錯誤：此欄位為必填',
                 );
               } else {
                 NotificationUtils.showWarning(
                   context,
-                  '請先點擊上方輸入框打開鍵盤',
+                  '請先點擊上方輸入框喚出鍵盤',
                 );
               }
             },
@@ -292,7 +293,7 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
           const Divider(),
           const SizedBox(height: 16),
 
-          // 說明文字
+          // 說明卡片
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -307,11 +308,11 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '1. 觀察深淺色模式切換時的色彩變化\n'
-                    '2. 注意觸覺回饋（震動）的強度差異\n'
+                    '1. 觀察深淺色模式下的色彩變化\n'
+                    '2. 注意觸覺回饋（不同類型強度差異）\n'
                     '3. iOS 設備會優先顯示頂部通知\n'
                     '4. 底部通知不會遮擋底部導航欄\n'
-                    '5. 膠囊形狀為圓角 24px',
+                    '5. 圓角形狀符合 24px',
                     style: TextStyle(height: 1.5),
                   ),
                 ],
@@ -319,7 +320,7 @@ class _NotificationTestPageState extends State<NotificationTestPage> {
             ),
           ),
 
-          const SizedBox(height: 80), // 避開底部
+          const SizedBox(height: 80), // 預留底部
         ],
       ),
     );

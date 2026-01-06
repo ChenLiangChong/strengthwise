@@ -22,6 +22,8 @@ import '../interfaces/i_health_assessment_service.dart';
 import '../interfaces/i_coach_display_preferences_service.dart';
 import '../interfaces/i_coach_assessment_note_service.dart';
 import '../interfaces/i_coach_profile_service.dart';
+import '../interfaces/i_readiness_service.dart';
+import '../interfaces/i_notification_service.dart';
 
 import '../supabase/auth_service_supabase.dart';
 import '../supabase/booking_service_supabase.dart';
@@ -37,6 +39,7 @@ import '../supabase/health_assessment_service_supabase.dart';
 import '../supabase/coach_display_preferences_service_supabase.dart';
 import '../supabase/coach_assessment_note_service_supabase.dart';
 import '../supabase/coach_profile_service_supabase.dart';
+import '../supabase/readiness_service_supabase.dart';
 import '../appointment_service_supabase.dart';
 import '../availability_slot_service_supabase.dart';
 import '../session_note_service_supabase.dart';
@@ -46,6 +49,8 @@ import '../supabase/invite_code_service_supabase.dart';
 
 import '../cache/favorites_service.dart';
 import '../core/error_handling_service.dart';
+import '../notification/notification_service.dart';
+import '../realtime/session_realtime_service.dart';
 
 /// 服務註冊器
 /// 
@@ -71,6 +76,9 @@ class ServiceRegistry {
     _registerDrawingService(serviceLocator);
     _registerInviteCodeService(serviceLocator);
     _registerHealthAssessmentService(serviceLocator);
+    _registerReadinessService(serviceLocator);
+    _registerNotificationService(serviceLocator);
+    _registerSessionRealtimeService(serviceLocator);
   }
 
   /// 註冊身份驗證服務（使用 Supabase 版本）
@@ -311,6 +319,40 @@ class ServiceRegistry {
         () => CoachProfileServiceSupabase(
           supabase: Supabase.instance.client,
           errorService: serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊課前問卷服務（v3.0）
+  static void _registerReadinessService(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<IReadinessService>()) {
+      serviceLocator.registerLazySingleton<IReadinessService>(
+        () => ReadinessServiceSupabase(
+          Supabase.instance.client,
+          serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊推播通知服務（v3.0-C）⭐
+  static void _registerNotificationService(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<INotificationService>()) {
+      serviceLocator.registerLazySingleton<INotificationService>(
+        () => NotificationService(
+          errorService: serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+  }
+
+  /// 註冊 Session Realtime 服務（即時同步）⭐ v3.1
+  static void _registerSessionRealtimeService(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<SessionRealtimeService>()) {
+      serviceLocator.registerLazySingleton<SessionRealtimeService>(
+        () => SessionRealtimeService(
+          supabase: Supabase.instance.client,
         ),
       );
     }

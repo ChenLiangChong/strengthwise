@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - Tab 子組件處理
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/client_management_controller.dart';
@@ -12,8 +13,8 @@ import 'package:strengthwise/views/pages/statistics/statistics_page_v2.dart';
 /// 學員詳情頁面（教練端）
 ///
 /// 功能：
-/// 1. 基本資訊 Tab
-/// 2. 訓練行事曆 Tab（核心功能，整合時間偏好背景色）
+/// 1. 基本資料 Tab
+/// 2. 訓練行事曆 Tab（核心重構：完整的偏好背景提示）
 /// 3. 課程筆記 Tab
 /// 4. 統計分析 Tab（查看學員統計）
 class ClientDetailPage extends StatefulWidget {
@@ -38,10 +39,10 @@ class _ClientDetailPageState extends State<ClientDetailPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this); // 5 → 4（移除時間偏好 Tab）
+    _tabController = TabController(length: 4, vsync: this); // 5 → 4（移除預約 Tab）
     _controller = serviceLocator<ClientManagementController>();
 
-    // 選擇學員（載入詳細資料）
+    // 選中學員（載入詳細資料）
     _controller.selectClient(widget.clientId);
   }
 
@@ -53,16 +54,16 @@ class _ClientDetailPageState extends State<ClientDetailPage>
     super.dispose();
   }
 
-  /// 刷新當前 Tab 的數據 ⭐
+  /// 刷新當前 Tab 的數據
   Future<void> _refreshCurrentTab() async {
     final currentIndex = _tabController.index;
 
     switch (currentIndex) {
-      case 0: // 基本資訊
+      case 0: // 基本資料
         _controller.selectClient(widget.clientId);
         break;
       case 1: // 訓練行事曆
-        // ⭐ 清除學員的快取，強制重新查詢資料庫
+        // 【清除學員的快取】強制重新查詢資料庫
         final workoutService = serviceLocator<IWorkoutService>();
         workoutService.clearUserCache(userId: widget.clientId);
 
@@ -104,7 +105,7 @@ class _ClientDetailPageState extends State<ClientDetailPage>
             ],
           ),
           actions: [
-            // ⭐ 刷新按鈕
+            // 【刷新按鈕】
             IconButton(
               icon: const Icon(Icons.refresh),
               tooltip: '重新載入',
@@ -115,7 +116,7 @@ class _ClientDetailPageState extends State<ClientDetailPage>
             controller: _tabController,
             isScrollable: true,
             tabs: const [
-              Tab(icon: Icon(Icons.person), text: '基本資訊'),
+              Tab(icon: Icon(Icons.person), text: '基本資料'),
               Tab(icon: Icon(Icons.calendar_today), text: '訓練行事曆'),
               Tab(icon: Icon(Icons.note), text: '課程筆記'),
               Tab(icon: Icon(Icons.bar_chart), text: '統計分析'),
@@ -125,25 +126,25 @@ class _ClientDetailPageState extends State<ClientDetailPage>
         body: TabBarView(
           controller: _tabController,
           children: [
-            // Tab 1: 基本資訊
+            // Tab 1: 基本資料
             ClientInfoTab(client: widget.client),
 
-            // Tab 2: 訓練行事曆（核心功能，已整合時間偏好背景色）
+            // Tab 2: 訓練行事曆（完整功能，已包含偏好背景提示）
             ClientWorkoutCalendarTab(
               clientId: widget.clientId,
               client: widget.client,
             ),
 
-            // Tab 3: 課程筆記（過濾該學員）⭐ 傳入學員資訊
+            // Tab 3: 課程筆記（過濾該學員）【傳入學員資料】
             SessionNotesListPage(
               clientId: widget.clientId,
-              client: widget.client, // ⭐ 傳入學員資訊，用於顯示標題
+              client: widget.client, // 【傳入學員資料，用於顯示名稱】
             ),
 
             // Tab 4: 統計分析（查看學員統計）
             StatisticsPageV2(
               userId: widget.clientId,
-              showAppBar: false, // ⭐ 不顯示 AppBar（已有外層 AppBar）
+              showAppBar: false, // 【不顯示 AppBar（已有頁面 AppBar）】
             ),
           ],
         ),

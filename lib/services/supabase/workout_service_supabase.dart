@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import '../../models/workout_template_model.dart';
 import '../../models/workout_record_model.dart';
+import '../../models/exercise_history_record.dart';
 import '../../utils/datetime_utils.dart';  // ⭐ 使用時間工具
 import '../interfaces/i_workout_service.dart';
 import '../core/error_handling_service.dart';
@@ -269,6 +270,12 @@ class WorkoutServiceSupabase implements IWorkoutService {
   }
 
   @override
+  Future<WorkoutRecord?> getRecordByAppointmentId(String appointmentId) async {
+    _ensureInitialized();
+    return await _recordOps.getRecordByAppointmentId(appointmentId);
+  }
+
+  @override
   Future<WorkoutRecord> createRecord(WorkoutRecord record) async {
     _ensureInitialized();
 
@@ -446,6 +453,92 @@ class WorkoutServiceSupabase implements IWorkoutService {
       return overlappingRecords;
     } catch (e) {
       _logError('檢查時間重疊失敗: $e');
+      return [];
+    }
+  }
+
+  @override
+  Future<List<ExerciseHistoryRecord>> getExerciseHistory({
+    required String userId,
+    required String exerciseId,
+    int limit = 10,
+  }) async {
+    _ensureInitialized();
+    
+    try {
+      _logDebug('查詢動作歷史: userId=$userId, exerciseId=$exerciseId');
+
+      // 查詢已完成的訓練計畫，包含該動作
+      // 使用 JSONB 查詢，找出 exercises 陣列中包含該 exerciseId 的記錄
+      final response = await _supabase
+          .from('workout_plans')
+          .select('id, title, scheduled_date, exercises')
+          .eq('trainee_id', userId)
+          .eq('completed', true)
+          .order('scheduled_date', ascending: false)
+          .limit(limit * 2);  // 多取一些，因為不是每個都包含該動作
+
+      final records = <ExerciseHistoryRecord>[];
+      
+      for (final data in response as List) {
+        final exercises = data['exercises'] as List? ?? [];
+        
+        // 找到該動作的記錄
+        for (final exercise in exercises) {
+          if (exercise['exercise_id'] == exerciseId || 
+              exercise['id'] == exerciseId) {
+            // 解析每組數據
+            final setTargets = exercise['set_targets'] as List? ?? [];
+            final sets = <SetRecord>[];
+            
+            for (var i = 0; i < setTargets.length; i++) {
+              final target = setTargets[i] as Map<String, dynamic>;
+              sets.add(SetRecord(
+                setNumber: i + 1,
+                reps: (target['reps'] as num?)?.toInt() ?? 0,
+                weight: (target['weight'] as num?)?.toDouble() ?? 0,
+                restTime: (target['rest_time'] as num?)?.toInt() ?? 90,
+                completed: target['completed'] as bool? ?? true,
+              ));
+            }
+            
+            // 如果沒有 set_targets，使用預設值
+            if (sets.isEmpty) {
+              final defaultSets = (exercise['sets'] as num?)?.toInt() ?? 3;
+              final defaultReps = (exercise['reps'] as num?)?.toInt() ?? 10;
+              final defaultWeight = (exercise['weight'] as num?)?.toDouble() ?? 0;
+              
+              for (var i = 0; i < defaultSets; i++) {
+                sets.add(SetRecord(
+                  setNumber: i + 1,
+                  reps: defaultReps,
+                  weight: defaultWeight,
+                  restTime: 90,
+                  completed: true,
+                ));
+              }
+            }
+            
+            records.add(ExerciseHistoryRecord(
+              workoutRecordId: data['id'] as String,
+              exerciseId: exerciseId,
+              exerciseName: exercise['name'] as String? ?? '未知動作',
+              trainingDate: DateTimeUtils.parseIsoTimestamp(data['scheduled_date']),
+              sets: sets,
+            ));
+            
+            break;  // 每個訓練計畫只取一個該動作
+          }
+        }
+        
+        // 達到限制數量就停止
+        if (records.length >= limit) break;
+      }
+      
+      _logDebug('找到 ${records.length} 筆動作歷史記錄');
+      return records;
+    } catch (e) {
+      _logError('查詢動作歷史失敗: $e');
       return [];
     }
   }

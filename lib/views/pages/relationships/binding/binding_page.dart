@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - Tab 子組件處理
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
@@ -58,11 +59,11 @@ class _BindingPageState extends State<BindingPage>
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(isCoach ? '邀請學員' : '新增教練'),
+              Text(isCoach ? '邀請學員' : '綁定教練'),
               Text(
                 isCoach
-                    ? '掃描學員 QR Code 或分享我的 QR Code'
-                    : '掃描教練 QR Code 或分享我的 QR Code',
+                    ? '掃描學員 QR Code 或分享您的 QR Code'
+                    : '掃描教練 QR Code 或分享您的 QR Code',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),

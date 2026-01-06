@@ -1,23 +1,28 @@
+// ✅ 已響應式改造 (Phase 0) - SlotCalendarView 組件處理
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/controllers/availability_slot_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
+import 'package:strengthwise/controllers/appointment_controller.dart';
 import 'package:strengthwise/models/availability_slot_model.dart';
+import 'package:strengthwise/models/appointment_model.dart';
+import 'package:strengthwise/services/interfaces/i_availability_slot_service.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/slot_calendar_view.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/slot_editor_dialog.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/slot_filter_bar.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/error_state_view.dart';
+import 'package:strengthwise/views/pages/scheduling/appointments/widgets/client_booking/booking_confirmation_dialog.dart';
 import 'package:strengthwise/views/pages/scheduling/availability/copy_week_slots_mixin.dart';
 
 /// 教練時段管理頁面（Phase 2）
 ///
 /// 功能：
-/// - 查看和管理教練的可用時段（日曆視圖）
+/// - 視覺化管理教練的可用時段（日曆視圖）
 /// - 創建單次時段或週期性時段
-/// - 批量操作（複製週時段）
+/// - 快捷操作（複製週時段）
 ///
-/// 架構：完全解耦（透過 serviceLocator + Controller + 小組件）
+/// 架構：完全解耦，使用 serviceLocator + Controller + 小組件
 class CoachSlotsManagementPage extends StatefulWidget {
   /// Phase 4C: 可選的教練 ID（學員查看特定教練的時段）
   final String? coachId;
@@ -40,6 +45,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
     with CopyWeekSlotsMixin {
   late final AvailabilitySlotController _slotController;
   late final IAuthController _authController;
+  late final AppointmentController _appointmentController;
 
   String? _currentUserId;
   DateTime _selectedDate = DateTime.now();
@@ -50,6 +56,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
     super.initState();
     _slotController = serviceLocator<AvailabilitySlotController>();
     _authController = serviceLocator<IAuthController>();
+    _appointmentController = serviceLocator<AppointmentController>();
     _initializeAndLoad();
   }
 
@@ -60,10 +67,10 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
   }
 
   // ==========================================================================
-  // 數據載入與操作
+  // 資料載入邏輯
   // ==========================================================================
 
-  /// 初始化並載入數據
+  /// 初始化並載入資料
   Future<void> _initializeAndLoad() async {
     _currentUserId = _authController.user?.uid;
 
@@ -73,7 +80,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
     if (targetCoachId != null) {
       await _loadSlots();
     } else {
-      _showError('無法獲取教練 ID');
+      _showError('找不到教練 ID');
     }
   }
 
@@ -84,19 +91,19 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
     if (targetCoachId == null) return;
 
     if (_selectedFilter == 'all') {
-      // 載入當月所有時段
+      // 載入所有時段
       final now = DateTime.now();
       final startDate = DateTime(now.year, now.month, 1);
       final endDate = DateTime(now.year, now.month + 1, 0);
 
       await _slotController.loadCoachSlots(
-        targetCoachId, // ⭐ 使用目標教練 ID
+        targetCoachId, // 使用目標教練 ID
         startDate: startDate,
         endDate: endDate,
       );
     } else {
       // 載入週期性或單次時段
-      await _slotController.loadSlotsByType(targetCoachId); // ⭐ 使用目標教練 ID
+      await _slotController.loadSlotsByType(targetCoachId); // 使用目標教練 ID
     }
   }
 
@@ -107,7 +114,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
 
     final result = await showDialog<bool>(
       context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+      barrierDismissible: false, // 修復：禁止點擊旁邊關閉
       builder: (context) => SlotEditorDialog(
         coachId: _currentUserId!,
         slot: slot,
@@ -118,6 +125,66 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
     if (result == true && mounted) {
       _showSuccess(slot == null ? '時段創建成功' : '時段更新成功');
       await _loadSlots();
+    }
+  }
+
+  /// ⭐ 學員預約對話框（T-04 修復）
+  Future<void> _showBookingDialog(AvailabilitySlotModel slot) async {
+    if (_currentUserId == null || widget.coachId == null) return;
+
+    // 將 AvailabilitySlotModel 轉換為 AvailabilitySlotWithBooking
+    final slotWithBooking = AvailabilitySlotWithBooking(
+      slot: slot,
+      isBooked: false, // 學員點擊的都是可預約的時段
+    );
+
+    // 顯示預約確認對話框
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => BookingConfirmationDialog(
+        slot: slotWithBooking,
+        coachName: '教練', // TODO: 可從 widget 傳入教練名稱
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _createBooking(slot);
+    }
+  }
+
+  /// ⭐ 創建預約（T-04 修復）
+  Future<void> _createBooking(AvailabilitySlotModel slot) async {
+    try {
+      if (_currentUserId == null || widget.coachId == null) {
+        throw Exception('未登入或未選擇教練');
+      }
+
+      final success = await _appointmentController.createAppointment(
+        AppointmentModel(
+          id: '', // 由後端生成
+          coachId: widget.coachId!,
+          clientId: _currentUserId!,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          status: AppointmentStatus.requested,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      if (mounted) {
+        if (success) {
+          _showSuccess('預約成功！等待教練確認');
+          await _loadSlots();
+        } else {
+          _showError('預約失敗，請稍後再試');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showError('創建預約失敗：$e');
+      }
     }
   }
 
@@ -140,7 +207,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
     }
   }
 
-  /// 複製本週時段到下一週
+  /// 複製本週時段到下週
   /// 複製週時段（使用 Mixin）
   Future<void> _copyWeekSlots() async {
     if (_currentUserId == null) return;
@@ -187,7 +254,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
   }) {
     return showDialog<bool>(
       context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+      barrierDismissible: false, // 修復：禁止點擊旁邊關閉
       builder: (context) => AlertDialog(
         title: Text(title),
         content: Text(content),
@@ -246,21 +313,23 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
         floatingActionButton: widget.isViewMode
             ? null
             : FloatingActionButton.extended(
+                heroTag: 'coach_slots_fab', // ⭐ 防止 Hero tag 衝突
                 onPressed: () => _showSlotEditor(),
                 icon: const Icon(Icons.add),
                 label: const Text('新增時段'),
               ),
-        // ⭐ 修復：為 FAB 預留底部空間
+        // 修復：為 FAB 預留底部空間
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
 
-  /// 建立 AppBar
+  /// 建構 AppBar（已移除標題，因為 TabBar 已有標籤）
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      automaticallyImplyLeading: false, // ⭐ 移除返回按鈕（TabBar 子頁面不需要）
-      title: const Text('時段管理'),
+      automaticallyImplyLeading: false,
+      title: null,
+      toolbarHeight: 48, // 縮小高度
       actions: [
         // 複製週時段按鈕
         if (!widget.isViewMode)
@@ -293,7 +362,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
     );
   }
 
-  /// 建立 Body
+  /// 建構 Body
   Widget _buildBody() {
     return Consumer<AvailabilitySlotController>(
       builder: (context, controller, child) {
@@ -313,7 +382,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
         // 顯示內容（無論是否有時段，都顯示日曆/列表視圖）
         return Column(
           children: [
-            // 篩選器（只在有時段時顯示）
+            // 篩選欄（只在有時段時顯示）
             if (controller.slots.isNotEmpty) ...[
               SlotFilterBar(
                 selectedFilter: _selectedFilter,
@@ -326,10 +395,10 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
               ),
               const Divider(height: 1),
             ],
-            // 內容區域
+            // 內容區塊
             Expanded(
               child: Padding(
-                // ⭐ 修復：為日曆視圖添加底部 padding，避免被 FAB 遮擋
+                // 修復：為日曆視圖添加底部 padding，避免被 FAB 遮擋
                 padding: const EdgeInsets.only(bottom: 80),
                 child: SlotCalendarView(
                   slots: _getFilteredSlots(controller),
@@ -339,7 +408,10 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
                       _selectedDate = date;
                     });
                   },
-                  onSlotTap: (slot) => _showSlotEditor(slot: slot),
+                  // ⭐ T-04 修復：學員點擊時段顯示預約對話框，教練點擊顯示編輯對話框
+                  onSlotTap: (slot) => widget.isViewMode
+                      ? _showBookingDialog(slot)
+                      : _showSlotEditor(slot: slot),
                   onSlotDelete: widget.isViewMode ? null : _deleteSlot,
                 ),
               ),

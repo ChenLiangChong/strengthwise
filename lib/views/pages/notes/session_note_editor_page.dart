@@ -1,8 +1,8 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:strengthwise/controllers/session_note_controller.dart';
 import 'package:strengthwise/controllers/drawing_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
@@ -11,18 +11,23 @@ import 'package:strengthwise/models/session_note/soap_note_model.dart';
 import 'package:strengthwise/models/session_note/visual_element_model.dart';
 import 'package:strengthwise/models/drawing_note_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/notes/widgets/soap_field_card.dart';
 import 'package:strengthwise/views/pages/notes/widgets/photo_picker_sheet.dart';
 import 'package:strengthwise/views/pages/notes/widgets/photo_upload_card.dart';
+import 'package:strengthwise/views/pages/notes/widgets/uploaded_photo_grid.dart';
+import 'package:strengthwise/views/pages/notes/widgets/quick_tags_section.dart';
 import 'package:strengthwise/views/pages/notes/drawing_canvas_page.dart';
 import 'dart:io';
 
-/// 課程筆記編輯器頁面
-/// 
+/// 課程筆記編輯頁面
+///
+/// 響應式設計：表單區域限制最大寬度 600dp
+///
 /// 功能：
-/// - 創建或編輯 SOAP 格式筆記
+/// - 創建或編輯 SOAP 課程筆記
 /// - S.O.A.P 四欄位輸入
-/// - 隱私控制（私人/共享）
+/// - 隱私控制（私人/分享）
 /// - 快速標籤
 class SessionNoteEditorPage extends StatefulWidget {
   /// 筆記 ID（編輯模式）
@@ -67,9 +72,9 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
     '首次評估',
     '進步顯著',
     '需要調整',
-    '動作改善',
-    '疼痛追蹤',
-    '目標達成',
+    '狀態良好',
+    '需要追蹤',
+    '特殊狀況',
   ];
   
   // 載入狀態
@@ -82,10 +87,10 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
   bool _isUploadingPhotos = false;
   double _uploadProgress = 0.0;
   
-  // ⭐ 暫存繪圖的臨時 Session ID 列表（新建模式，支援多次繪圖）
+  // 【手繪板】臨時 Session ID 列表（新建模式下支援多次繪圖）
   final List<String> _tempSessionNoteIds = [];
   
-  // ⭐ 每個模板對應的臨時 ID（避免重複創建）
+  // 【每個模板對應臨時 ID（避免重複創建）】
   final Map<String, String> _tempIdsByTemplate = {};
 
   @override
@@ -138,24 +143,24 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
           _selectedTags.clear();
           _selectedTags.addAll(note.quickTags);
           
-          // ⭐ 載入照片 URL
-          debugPrint('[NOTE_EDITOR] 🔍 開始載入照片');
-          debugPrint('[NOTE_EDITOR] 📦 視覺元素總數: ${note.visualElements.length}');
+          // 【載入照片 URL】
+          debugPrint('[NOTE_EDITOR] 📷 開始載入照片');
+          debugPrint('[NOTE_EDITOR] 📊 視覺元素總數: ${note.visualElements.length}');
           
           _uploadedPhotoUrls.clear();
           for (int i = 0; i < note.visualElements.length; i++) {
             final element = note.visualElements[i];
-            debugPrint('[NOTE_EDITOR] 📦 元素 $i: 類型=${element.runtimeType}');
+            debugPrint('[NOTE_EDITOR] 📊 元素 $i: 類型=${element.runtimeType}');
             
             if (element is PhotoElementModel) {
-              debugPrint('[NOTE_EDITOR] ✅ 是照片元素，路徑: ${element.storagePath}');
+              debugPrint('[NOTE_EDITOR] 🖼️ 照片元素，路徑: ${element.storagePath}');
               _uploadedPhotoUrls.add(element.storagePath);
-              debugPrint('[NOTE_EDITOR] 📷 已加入照片列表');
+              debugPrint('[NOTE_EDITOR] ✅ 已添加照片路徑');
             } else {
               debugPrint('[NOTE_EDITOR] ⏭️ 跳過非照片元素');
             }
           }
-          debugPrint('[NOTE_EDITOR] ✅ 載入 ${_uploadedPhotoUrls.length} 張照片');
+          debugPrint('[NOTE_EDITOR] 📷 載入 ${_uploadedPhotoUrls.length} 張照片');
           debugPrint('[NOTE_EDITOR] 🔄 UI 重新渲染，應該會顯示照片');
         });
       }
@@ -170,9 +175,9 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
     }
   }
 
-  /// 新增照片
+  /// 添加照片
   Future<void> _addPhoto() async {
-    debugPrint('[NOTE_EDITOR] 🔵 開始新增照片流程');
+    debugPrint('[NOTE_EDITOR] 📷 開始添加照片流程');
     
     // 顯示選擇器並獲取返回的 ImageSource
     final source = await showModalBottomSheet<ImageSource>(
@@ -180,16 +185,16 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       builder: (context) => const PhotoPickerSheet(),
     );
     
-    debugPrint('[NOTE_EDITOR] 🔵 用戶選擇結果: $source');
+    debugPrint('[NOTE_EDITOR] 📷 用戶選擇結果: $source');
     
     // 如果用戶選擇了來源，開始選擇照片
     if (source != null) {
-      debugPrint('[NOTE_EDITOR] 🔵 開始調用 _pickImage，mounted=$mounted');
+      debugPrint('[NOTE_EDITOR] 📷 準備調用 _pickImage，mounted=$mounted');
       if (mounted) {
         await _pickImage(source);
       }
     } else {
-      debugPrint('[NOTE_EDITOR] ℹ️ 用戶取消選擇或關閉彈窗');
+      debugPrint('[NOTE_EDITOR] ⏭️ 用戶取消了照片選擇器');
     }
   }
   
@@ -220,7 +225,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       ).timeout(
         const Duration(seconds: 60),
         onTimeout: () {
-          debugPrint('[NOTE_EDITOR] ⏰ 照片選擇超時（60秒）');
+          debugPrint('[NOTE_EDITOR] ⏰ 選擇照片超時（60秒）');
           return null;
         },
       );
@@ -229,8 +234,8 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
 
       if (pickedFile != null) {
         final file = File(pickedFile.path);
-        debugPrint('[NOTE_EDITOR] ✅ 照片選擇成功: ${file.path}');
-        debugPrint('[NOTE_EDITOR] 📦 檔案大小: ${await file.length()} bytes');
+        debugPrint('[NOTE_EDITOR] ✅ 選擇了照片: ${file.path}');
+        debugPrint('[NOTE_EDITOR] 📊 檔案大小: ${await file.length()} bytes');
         
         if (mounted) {
           setState(() {
@@ -239,7 +244,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
           debugPrint('[NOTE_EDITOR] ✅ 照片已添加到列表，總數: ${_photos.length}');
         }
       } else {
-        debugPrint('[NOTE_EDITOR] ℹ️ 用戶取消選擇或選擇失敗');
+        debugPrint('[NOTE_EDITOR] ⏭️ 用戶取消了或選擇失敗');
       }
     } catch (e, stackTrace) {
       debugPrint('[NOTE_EDITOR] ❌ 選擇照片異常: $e');
@@ -265,14 +270,14 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
         allowMultiple: false,
       );
 
-      debugPrint('[NOTE_EDITOR] 🪟 file_picker 完成，結果: ${result != null ? "有檔案" : "null"}');
+      debugPrint('[NOTE_EDITOR] 🪟 file_picker 完成，結果: ${result != null ? "有結果" : "null"}');
 
       if (result != null && result.files.isNotEmpty) {
         final path = result.files.first.path;
         if (path != null) {
           final file = File(path);
-          debugPrint('[NOTE_EDITOR] ✅ 照片選擇成功: $path');
-          debugPrint('[NOTE_EDITOR] 📦 檔案大小: ${await file.length()} bytes');
+          debugPrint('[NOTE_EDITOR] ✅ 選擇了照片: $path');
+          debugPrint('[NOTE_EDITOR] 📊 檔案大小: ${await file.length()} bytes');
           
           if (mounted) {
             setState(() {
@@ -281,10 +286,10 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
             debugPrint('[NOTE_EDITOR] ✅ 照片已添加到列表，總數: ${_photos.length}');
           }
         } else {
-          debugPrint('[NOTE_EDITOR] ⚠️ 檔案路徑為 null');
+          debugPrint('[NOTE_EDITOR] ⏭️ 檔案路徑為 null');
         }
       } else {
-        debugPrint('[NOTE_EDITOR] ℹ️ 用戶取消選擇');
+        debugPrint('[NOTE_EDITOR] ⏭️ 用戶取消選擇');
       }
     } catch (e, stackTrace) {
       debugPrint('[NOTE_EDITOR] ❌ file_picker 異常: $e');
@@ -322,15 +327,15 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       String? clientId = widget.clientId;
       if (clientId == null && _controller.selectedNote != null) {
         clientId = _controller.selectedNote!.clientId;
-        debugPrint('[NOTE_EDITOR] 📋 從現有筆記取得學員 ID: $clientId');
+        debugPrint('[NOTE_EDITOR] 📋 從現有筆記獲得學員 ID: $clientId');
       }
       
       if (clientId == null) {
         throw Exception('clientId is required for uploading photos');
       }
       
-      // ⭐ 不清空原有照片 URL，只添加新的
-      debugPrint('[NOTE_EDITOR] 📋 原有照片數量: ${_uploadedPhotoUrls.length}');
+      // 【不清空已有照片 URL，只添加新的】
+      debugPrint('[NOTE_EDITOR] 📷 現有照片數量: ${_uploadedPhotoUrls.length}');
       
       for (int i = 0; i < _photos.length; i++) {
         final photo = _photos[i];
@@ -353,9 +358,9 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
         });
       }
       
-      debugPrint('[NOTE_EDITOR] 📋 上傳後照片總數: ${_uploadedPhotoUrls.length}');
+      debugPrint('[NOTE_EDITOR] 📷 上傳後照片總數: ${_uploadedPhotoUrls.length}');
       
-      // ⭐ 清空待上傳列表（照片已經上傳完成）
+      // 【清空待上傳列表，因為已經上傳完成】
       _photos.clear();
       debugPrint('[NOTE_EDITOR] 🗑️ 已清空待上傳照片列表');
     } catch (e) {
@@ -374,7 +379,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
 
   /// 儲存筆記
   Future<void> _saveNote() async {
-    debugPrint('[NOTE_EDITOR] 🔵 開始保存筆記');
+    debugPrint('[NOTE_EDITOR] 📝 開始保存筆記');
     
     final currentUser = _authController.user;
     if (currentUser == null) {
@@ -386,8 +391,8 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
     }
     
     debugPrint('[NOTE_EDITOR] 👤 當前用戶: ${currentUser.uid}');
-    debugPrint('[NOTE_EDITOR] 📝 模式: ${widget.noteId != null ? "編輯" : "創建"}');
-    debugPrint('[NOTE_EDITOR] 👨‍🎓 學員 ID: ${widget.clientId}');
+    debugPrint('[NOTE_EDITOR] 📋 模式: ${widget.noteId != null ? "編輯" : "創建"}');
+    debugPrint('[NOTE_EDITOR] 👥 學員 ID: ${widget.clientId}');
     
     // 驗證：標題必填
     if (_titleController.text.trim().isEmpty) {
@@ -403,7 +408,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
     
     // 驗證：至少填寫一個欄位（排除預設提示文字）
     final hasSubjective = _subjectiveController.text.trim().isNotEmpty && 
-        !_subjectiveController.text.contains('（手繪標註筆記，請補充主觀描述）');
+        !_subjectiveController.text.contains('（手繪板註記筆記請填在主觀描述）');
     final hasObjective = _objectiveController.text.trim().isNotEmpty;
     final hasAssessment = _assessmentController.text.trim().isNotEmpty;
     final hasPlan = _planController.text.trim().isNotEmpty;
@@ -412,14 +417,14 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       debugPrint('[NOTE_EDITOR] ⚠️ 沒有填寫任何欄位');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('請至少填寫一個 SOAP 欄位（主觀/客觀/評估/計劃）'),
+          content: Text('請至少填寫一個 SOAP 欄位（主觀/客觀/評估/計畫）'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
     
-    // 驗證：創建模式需要 clientId
+    // 驗證：創建模式必須有 clientId
     if (widget.noteId == null && widget.clientId == null) {
       debugPrint('[NOTE_EDITOR] ❌ 創建模式缺少學員 ID');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -437,12 +442,12 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
         await _uploadPhotos();
         debugPrint('[NOTE_EDITOR] ✅ 照片上傳完成，URL 數量: ${_uploadedPhotoUrls.length}');
       } else {
-        debugPrint('[NOTE_EDITOR] ℹ️ 沒有照片需要上傳');
+        debugPrint('[NOTE_EDITOR] ⏭️ 沒有照片需要上傳');
       }
-      // 建立 SOAP 筆記（排除預設提示文字）
+      // 建立 SOAP 筆記（過濾預設提示文字）
       final soap = SoapNoteModel(
         subjective: _subjectiveController.text.trim().isNotEmpty && 
-            !_subjectiveController.text.contains('（手繪標註筆記，請補充主觀描述）')
+            !_subjectiveController.text.contains('（手繪板註記筆記請填在主觀描述）')
             ? _subjectiveController.text.trim()
             : null,
         objective: _objectiveController.text.trim().isNotEmpty
@@ -456,24 +461,24 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
             : null,
       );
       
-      // 將上傳的照片 URL 轉換為 PhotoElementModel
+      // 將已上傳照片 URL 轉換為 PhotoElementModel
       final photoElements = _uploadedPhotoUrls.map((url) {
-        debugPrint('[NOTE_EDITOR] 📸 照片 URL: $url');
+        debugPrint('[NOTE_EDITOR] 📷 照片 URL: $url');
         return PhotoElementModel(storagePath: url);
       }).toList();
       
-      debugPrint('[NOTE_EDITOR] 🖼️ 視覺元素數量: ${photoElements.length}');
+      debugPrint('[NOTE_EDITOR] 📊 視覺元素數量: ${photoElements.length}');
       
-      // ⭐ _uploadedPhotoUrls 已經反映用戶的刪除操作（UI 層刪除照片時已從列表移除）
+      // 【_uploadedPhotoUrls 已經反映用戶的刪除操作（UI 層刪除照片時已從列表移除）】
       // 所以這裡直接使用 _uploadedPhotoUrls 構建照片元素
       final currentPhotoElements = _uploadedPhotoUrls.map((storagePath) {
-        debugPrint('[NOTE_EDITOR] 📸 照片: $storagePath');
+        debugPrint('[NOTE_EDITOR] 📷 照片: $storagePath');
         return PhotoElementModel(storagePath: storagePath);
       }).toList();
       
-      debugPrint('[NOTE_EDITOR] 📷 照片數量: ${currentPhotoElements.length}');
+      debugPrint('[NOTE_EDITOR] 📊 照片元素: ${currentPhotoElements.length}');
       
-      // ⭐ 從暫存中提取繪圖（新建和編輯模式統一邏輯）
+      // 【從暫存中取出繪圖（新建和編輯模式統一邏輯）】
       final allVisualElements = <VisualElementModel>[...currentPhotoElements];
       
       if (_tempSessionNoteIds.isNotEmpty) {
@@ -482,8 +487,8 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
         for (final tempId in _tempSessionNoteIds) {
           final tempDrawing = DrawingController.getTemporaryDrawing(tempId);
           if (tempDrawing != null) {
-            debugPrint('[NOTE_EDITOR] ✅ 找到暫存繪圖：${tempDrawing.id}');
-            debugPrint('[NOTE_EDITOR] 📐 圖層數量: ${tempDrawing.layers.length}');
+            debugPrint('[NOTE_EDITOR] ✅ 找到暫存繪圖: ${tempDrawing.id}');
+            debugPrint('[NOTE_EDITOR] 📊 圖層數量: ${tempDrawing.layers.length}');
             debugPrint('[NOTE_EDITOR] 📋 模板類型: ${tempDrawing.templateType}');
             
             // 將繪圖轉換為 DrawingElementModel
@@ -494,20 +499,20 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
               ),
             );
           } else {
-            debugPrint('[NOTE_EDITOR] ⚠️ 找不到暫存繪圖: $tempId');
+            debugPrint('[NOTE_EDITOR] ⏭️ 未找到暫存繪圖: $tempId');
           }
         }
         
         debugPrint('[NOTE_EDITOR] 🎨 總共加入 ${_tempSessionNoteIds.length} 個繪圖');
       } else {
-        debugPrint('[NOTE_EDITOR] ℹ️ 無暫存繪圖');
+        debugPrint('[NOTE_EDITOR] ⏭️ 無暫存繪圖');
       }
       
-      debugPrint('[NOTE_EDITOR] 🖼️ 總視覺元素數量: ${allVisualElements.length}（照片: ${currentPhotoElements.length}, 繪圖: ${_tempSessionNoteIds.length}）');
+      debugPrint('[NOTE_EDITOR] 📊 總視覺元素數量: ${allVisualElements.length}（照片: ${currentPhotoElements.length}, 繪圖: ${_tempSessionNoteIds.length}）');
       
       if (widget.noteId != null) {
         // 編輯模式：更新現有筆記
-        debugPrint('[NOTE_EDITOR] 🔄 編輯模式：更新現有筆記');
+        debugPrint('[NOTE_EDITOR] 📝 編輯模式：更新現有筆記');
         
         final existingNote = _controller.selectedNote;
         if (existingNote != null) {
@@ -521,7 +526,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
           await _controller.updateNote(updatedNote);
           debugPrint('[NOTE_EDITOR] ✅ 筆記更新成功');
           
-          // ⭐ 清除所有暫存繪圖
+          // 【清除所有暫存繪圖】
           for (final tempId in _tempSessionNoteIds) {
             DrawingController.clearTemporaryDrawing(tempId);
           }
@@ -545,11 +550,11 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
           updatedAt: DateTime.now(),
         );
         
-        debugPrint('[NOTE_EDITOR] 📦 筆記資料: ${newNote.toString()}');
+        debugPrint('[NOTE_EDITOR] 📋 筆記資料: ${newNote.toString()}');
         await _controller.createNote(newNote);
         debugPrint('[NOTE_EDITOR] ✅ 筆記創建成功');
         
-        // ⭐ 清除所有暫存繪圖
+        // 【清除所有暫存繪圖】
         for (final tempId in _tempSessionNoteIds) {
           DrawingController.clearTemporaryDrawing(tempId);
         }
@@ -557,7 +562,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       }
       
       if (mounted) {
-        debugPrint('[NOTE_EDITOR] 🎉 保存完成，返回上一頁');
+        debugPrint('[NOTE_EDITOR] ✅ 保存完成，返回上一頁');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('筆記已儲存')),
         );
@@ -573,7 +578,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       }
     } finally {
       setState(() => _isSaving = false);
-      debugPrint('[NOTE_EDITOR] 🔵 保存流程結束');
+      debugPrint('[NOTE_EDITOR] 📝 保存流程結束');
     }
   }
 
@@ -608,16 +613,20 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 標題輸入
-                    TextField(
+                padding: context.pagePadding,
+                child: Center(
+                  // ✅ 表單區域限制最大寬度 600dp
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 標題輸入
+                        TextField(
                       controller: _titleController,
                       decoration: InputDecoration(
                         labelText: '筆記標題 *',
-                        hintText: '例如：深蹲姿勢調整、右膝不適評估',
+                        hintText: '例如：深蹲姿勢調整、右肩活動度',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -627,106 +636,104 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
                       maxLength: 50,
                     ),
                     
-                    const SizedBox(height: 16),
-                    
-                    // SOAP 說明卡片
-                    _buildSoapInfoCard(),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // S - Subjective（主觀描述）
-                    SoapFieldCard(
-                      title: 'S - 主觀描述 (Subjective)',
-                      hint: '學員的主觀感受與陳述\n例如：感覺腰部緊繃、今天精神狀態良好',
-                      controller: _subjectiveController,
-                      icon: Icons.person_outline,
-                      color: Colors.blue,
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // O - Objective（客觀觀察）
-                    SoapFieldCard(
-                      title: 'O - 客觀觀察 (Objective)',
-                      hint: '教練的客觀觀察\n例如：深蹲姿勢改善、核心穩定度提升',
-                      controller: _objectiveController,
-                      icon: Icons.visibility_outlined,
-                      color: Colors.green,
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // A - Assessment（評估）
-                    SoapFieldCard(
-                      title: 'A - 評估 (Assessment)',
-                      hint: '專業評估與分析\n例如：整體進步良好，需加強髖關節活動度',
-                      controller: _assessmentController,
-                      icon: Icons.assessment_outlined,
-                      color: Colors.orange,
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // P - Plan（計劃）
-                    SoapFieldCard(
-                      title: 'P - 計劃 (Plan)',
-                      hint: '下一步訓練計劃\n例如：增加髖關節伸展動作、維持當前重量訓練',
-                      controller: _planController,
-                      icon: Icons.calendar_today_outlined,
-                      color: Colors.purple,
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // 快速標籤
-                    _buildQuickTags(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // 照片上傳
-                    _buildPhotoSection(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // 手繪板功能（Phase 4A）⭐
-                    _buildDrawingSection(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // 隱私控制
-                    _buildPrivacyControl(),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // 底部保存按鈕（更明顯）
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        onPressed: _isSaving ? null : _saveNote,
-                        icon: _isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.check),
-                        label: Text(
-                          _isSaving ? '儲存中...' : '儲存筆記',
-                          style: const TextStyle(fontSize: 16),
+                        SizedBox(height: context.spacing.md),
+
+                        // SOAP 說明卡片
+                        _buildSoapInfoCard(),
+
+                        SizedBox(height: context.spacing.md),
+
+                        // S - Subjective（主觀描述）
+                        SoapFieldCard(
+                          title: 'S - 主觀描述 (Subjective)',
+                          hint: '學員的主觀感受與陳述\n例如：感覺腰部緊繃、昨天精神不太良好',
+                          controller: _subjectiveController,
+                          icon: Icons.person_outline,
+                          color: Colors.blue,
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
+
+                        SizedBox(height: context.spacing.md),
+
+                        // O - Objective（客觀觀察）
+                        SoapFieldCard(
+                          title: 'O - 客觀觀察 (Objective)',
+                          hint: '教練的客觀觀察\n例如：深蹲姿勢改善、核心穩定度提升',
+                          controller: _objectiveController,
+                          icon: Icons.visibility_outlined,
+                          color: Colors.green,
                         ),
-                      ),
+
+                        SizedBox(height: context.spacing.md),
+
+                        // A - Assessment（評估）
+                        SoapFieldCard(
+                          title: 'A - 評估 (Assessment)',
+                          hint: '專業評估與分析\n例如：整體進步良好，需加強髖關節活動度',
+                          controller: _assessmentController,
+                          icon: Icons.assessment_outlined,
+                          color: Colors.orange,
+                        ),
+
+                        SizedBox(height: context.spacing.md),
+
+                        // P - Plan（計畫）
+                        SoapFieldCard(
+                          title: 'P - 計畫 (Plan)',
+                          hint: '下一步訓練計畫\n例如：增加伸展動作，維持當前訓練強度',
+                          controller: _planController,
+                          icon: Icons.calendar_today_outlined,
+                          color: Colors.purple,
+                        ),
+
+                        SizedBox(height: context.spacing.lg),
+
+                        // 快速標籤
+                        _buildQuickTags(),
+
+                        SizedBox(height: context.spacing.lg),
+
+                        // 照片上傳
+                        _buildPhotoSection(),
+
+                        SizedBox(height: context.spacing.lg),
+
+                        // 手繪板區域（Phase 4A）
+                        _buildDrawingSection(),
+
+                        SizedBox(height: context.spacing.lg),
+
+                        // 隱私控制
+                        _buildPrivacyControl(),
+
+                        SizedBox(height: context.spacing.xl),
+
+                        // 底部保存按鈕（最小觸控目標 48dp）
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: FilledButton.icon(
+                            onPressed: _isSaving ? null : _saveNote,
+                            icon: _isSaving
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.check),
+                            label: Text(
+                              _isSaving ? '儲存中...' : '儲存筆記',
+                              style: Theme.of(context).textTheme.labelLarge,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: context.spacing.xl),
+                      ],
                     ),
-                    
-                    const SizedBox(height: 32),
-                  ],
+                  ),
                 ),
               ),
       ),
@@ -749,7 +756,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'SOAP 格式是醫療與教練領域的標準記錄方式，不需要填滿所有欄位',
+                'SOAP 是醫療與訓練界標準的筆記方式，不需要填滿所有欄位',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
@@ -761,41 +768,17 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
     );
   }
 
-  /// 快速標籤選擇器
+  /// 快速標籤選擇器（復用公用元件）
   Widget _buildQuickTags() {
-    final theme = Theme.of(context);
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '快速標籤',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _availableTags.map((tag) {
-            final isSelected = _selectedTags.contains(tag);
-            return FilterChip(
-              label: Text(tag),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _selectedTags.add(tag);
-                  } else {
-                    _selectedTags.remove(tag);
-                  }
-                });
-              },
-            );
-          }).toList(),
-        ),
-      ],
+    return QuickTagsSection(
+      availableTags: _availableTags,
+      selectedTags: _selectedTags,
+      onTagsChanged: (newTags) {
+        setState(() {
+          _selectedTags.clear();
+          _selectedTags.addAll(newTags);
+        });
+      },
     );
   }
 
@@ -818,7 +801,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
             children: [
               RadioListTile<String>(
                 title: const Text('私人'),
-                subtitle: const Text('只有教練自己可以查看'),
+                subtitle: const Text('僅教練自己可以查看'),
                 value: 'private',
                 groupValue: _visibility,
                 onChanged: (value) {
@@ -826,7 +809,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
                 },
               ),
               RadioListTile<String>(
-                title: const Text('共享'),
+                title: const Text('分享'),
                 subtitle: const Text('學員也可以查看此筆記'),
                 value: 'shared',
                 groupValue: _visibility,
@@ -867,7 +850,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '在身體圖上標註姿勢問題、疼痛點、訓練重點',
+                    '在身體圖上標註姿勢問題、疼痛點或訓練重點',
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
@@ -877,7 +860,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
         ),
         const SizedBox(height: 12),
         
-        // 模板選擇按鈕（4 個）
+        // 模板按鈕列表（4 個選項）
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -893,17 +876,17 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
             ),
             _buildTemplateButton(
               icon: Icons.person,
-              label: '前視圖',
+              label: '正面',
               templateType: TemplateType.note2,
             ),
             _buildTemplateButton(
               icon: Icons.accessibility_new,
-              label: '側視圖',
+              label: '背面',
               templateType: TemplateType.note3,
             ),
             _buildTemplateButton(
               icon: Icons.person_outline,
-              label: '背視圖',
+              label: '側面',
               templateType: TemplateType.note4,
             ),
           ],
@@ -922,27 +905,34 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => _openDrawingCanvas(templateType),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 32, color: Colors.blue),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 28, color: Colors.blue),
+              const SizedBox(height: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  style: const TextStyle(fontSize: 11),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  /// 打開手繪板（⭐ 重構：暫存模式，不自動創建筆記）
+  /// 開啟手繪畫布【新版：暫存模式，不自動創建筆記】
   Future<void> _openDrawingCanvas(TemplateType templateType) async {
     debugPrint('[NOTE_EDITOR] 🎨 開啟繪圖模式');
     debugPrint('[NOTE_EDITOR] 📋 模板類型: ${templateType.name}');
-    debugPrint('[NOTE_EDITOR] 📝 模式: ${widget.noteId != null ? "編輯" : "新建（暫存）"}');
+    debugPrint('[NOTE_EDITOR] 📋 模式: ${widget.noteId != null ? "編輯" : "創建（暫存）"}');
     
     // 驗證必要資料（新建模式）
     if (widget.noteId == null) {
@@ -956,54 +946,54 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       
       if (widget.clientId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('缺少學員資訊')),
+          const SnackBar(content: Text('缺少學員資料')),
         );
         return;
       }
     }
     
-    // ⭐ 核心改變：使用臨時 ID，不創建資料庫筆記
+    // 【新版邏輯：使用臨時 ID，不創建資料庫筆記】
     String sessionNoteId;
-    final String templateKey = templateType.name; // 枚舉轉字串
+    final String templateKey = templateType.name; // 安全轉換
     
-    // ⭐ 新建和編輯模式都使用臨時 ID（避免自動保存到資料庫）
+    // 【創建和編輯模式都使用臨時 ID（避免自動保存到資料庫）】
     if (_tempIdsByTemplate.containsKey(templateKey)) {
-      // 重複使用現有的臨時 ID
+      // 重複使用已有的臨時 ID
       sessionNoteId = _tempIdsByTemplate[templateKey]!;
-      debugPrint('[NOTE_EDITOR] ♻️ 重複使用臨時 ID（模板: ${templateType.name}）');
+      debugPrint('[NOTE_EDITOR] ♻️ 重複使用已有 ID（模板: ${templateType.name}）');
     } else {
       // 創建新的臨時 ID
       sessionNoteId = 'temp-${DateTime.now().millisecondsSinceEpoch}';
       _tempIdsByTemplate[templateKey] = sessionNoteId;
       _tempSessionNoteIds.add(sessionNoteId);
       debugPrint('[NOTE_EDITOR] 🆕 創建新臨時 ID（模板: ${templateType.name}）');
-      debugPrint('[NOTE_EDITOR] 📝 記錄臨時 ID，目前總共: ${_tempSessionNoteIds.length} 個');
+      debugPrint('[NOTE_EDITOR] 📋 記錄臨時 ID，目前總數: ${_tempSessionNoteIds.length} 個');
       
-      // ⭐ 編輯模式：如果資料庫中有現有繪圖，載入並存到暫存
+      // 【編輯模式：嘗試從資料庫中載入現有繪圖，複製並存到暫存】
       if (widget.noteId != null) {
-        debugPrint('[NOTE_EDITOR] 🔄 編輯模式：嘗試載入現有繪圖到暫存');
+        debugPrint('[NOTE_EDITOR] 📂 編輯模式：嘗試載入現有繪圖到暫存');
         final existingNote = _controller.selectedNote;
         if (existingNote != null) {
-          // 從 visualElements 中找出該模板的繪圖
+          // 從 visualElements 中找到該模板的繪圖
           final existingDrawing = existingNote.visualElements
               .whereType<DrawingElementModel>()
               .where((element) => element.templateType == templateType.name)
               .firstOrNull;
           
           if (existingDrawing != null && existingDrawing.drawingData != null) {
-            debugPrint('[NOTE_EDITOR] ✅ 找到現有繪圖，將其載入到暫存（模板: ${templateType.name}）');
+            debugPrint('[NOTE_EDITOR] ✅ 找到現有繪圖，複製到暫存（模板: ${templateType.name}）');
             // 將繪圖資料轉換為 DrawingNoteModel 並保存到暫存
             try {
               final drawingModel = DrawingNoteModel.fromJson(existingDrawing.drawingData!);
               // 修改 sessionNoteId 為臨時 ID
               final tempDrawingModel = drawingModel.copyWith(sessionNoteId: sessionNoteId);
               DrawingController.setTemporaryDrawing(sessionNoteId, tempDrawingModel);
-              debugPrint('[NOTE_EDITOR] ✅ 現有繪圖已載入到暫存（Session ID: $sessionNoteId）');
+              debugPrint('[NOTE_EDITOR] ✅ 現有繪圖已複製到暫存（Session ID: $sessionNoteId）');
             } catch (e) {
               debugPrint('[NOTE_EDITOR] ⚠️ 載入現有繪圖失敗: $e');
             }
           } else {
-            debugPrint('[NOTE_EDITOR] ℹ️ 該模板無現有繪圖');
+            debugPrint('[NOTE_EDITOR] ⏭️ 該模板無現有繪圖');
           }
         }
       }
@@ -1011,18 +1001,18 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
     
     debugPrint('[NOTE_EDITOR] 🆔 使用臨時 Session ID: $sessionNoteId');
     
-    // ⭐ 提示用戶這是暫存操作（新建和編輯模式都適用）
+    // 【提示用戶這是暫存（新建和編輯模式都適用）】
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('💡 提示：繪圖將暫存在本地，點擊「保存筆記」統一上傳'),
+          content: Text('💡 提示：繪圖暫存本地，點擊「儲存筆記」統一上傳'),
           backgroundColor: Colors.blue,
           duration: Duration(seconds: 2),
         ),
       );
     }
     
-    // 進入手繪板頁面
+    // 進入手繪畫布
     if (!mounted) return;
     
     await Navigator.push(
@@ -1038,35 +1028,12 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       ),
     );
     
-    // ⭐ 返回後處理（新建和編輯模式都是暫存）
+    // 【返回後：新建和編輯模式都用暫存】
     if (!mounted) return;
     
-    debugPrint('[NOTE_EDITOR] ℹ️ 繪圖已暫存（Session ID: $sessionNoteId）');
-    debugPrint('[NOTE_EDITOR] ℹ️ 用戶需點擊「保存筆記」統一上傳');
+    debugPrint('[NOTE_EDITOR] 🔙 繪圖已暫存（Session ID: $sessionNoteId）');
+    debugPrint('[NOTE_EDITOR] 💡 用戶需點擊「儲存筆記」統一上傳');
   }
-
-  /// 獲取照片 URL（Supabase Storage Signed URL）
-  Future<String> _getPhotoUrl(String storagePath) async {
-    debugPrint('[NOTE_EDITOR] 🔗 開始獲取照片 URL');
-    debugPrint('[NOTE_EDITOR] 📂 Storage 路徑: $storagePath');
-    
-    try {
-      final supabase = Supabase.instance.client;
-      // 生成 24 小時有效的 signed URL
-      final signedUrl = await supabase.storage
-          .from('session_photos')
-          .createSignedUrl(storagePath, 86400); // 24 小時
-      
-      debugPrint('[NOTE_EDITOR] ✅ Signed URL 生成成功');
-      debugPrint('[NOTE_EDITOR] 🔗 URL: ${signedUrl.substring(0, 100)}...');
-      
-      return signedUrl;
-    } catch (e) {
-      debugPrint('[NOTE_EDITOR] ❌ 獲取照片 URL 失敗: $e');
-      rethrow;
-    }
-  }
-
   /// 照片上傳區域
   Widget _buildPhotoSection() {
     final theme = Theme.of(context);
@@ -1092,7 +1059,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
             if (_uploadedPhotoUrls.isNotEmpty || _photos.isNotEmpty) ...[
               const SizedBox(width: 4),
               Text(
-                '已上傳: ${_uploadedPhotoUrls.length}, 待上傳: ${_photos.length}',
+                '已傳: ${_uploadedPhotoUrls.length}, 待傳: ${_photos.length}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.4),
                 ),
@@ -1102,95 +1069,20 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
         ),
         const SizedBox(height: 8),
         
-        // ⭐ 已上傳的照片（編輯模式）
+        // 【已上傳照片列表（編輯模式）- 復用公用元件】
         if (_uploadedPhotoUrls.isNotEmpty) ...[
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-            ),
-            itemCount: _uploadedPhotoUrls.length,
-            itemBuilder: (context, index) {
-              final storagePath = _uploadedPhotoUrls[index];
-              return FutureBuilder<String>(
-                future: _getPhotoUrl(storagePath),
-                builder: (context, snapshot) {
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // 照片顯示
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: snapshot.connectionState == ConnectionState.waiting
-                            ? Container(
-                                color: theme.colorScheme.surfaceVariant,
-                                child: const Center(
-                                  child: SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  ),
-                                ),
-                              )
-                            : snapshot.hasError
-                                ? Container(
-                                    color: theme.colorScheme.errorContainer,
-                                    child: const Center(
-                                      child: Icon(Icons.broken_image, color: Colors.grey),
-                                    ),
-                                  )
-                                : Image.network(
-                                    snapshot.data!,
-                                    fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Container(
-                                        color: theme.colorScheme.surfaceVariant,
-                                        child: const Center(child: CircularProgressIndicator()),
-                                      );
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      debugPrint('[NOTE_EDITOR] ❌ 圖片載入錯誤: $error');
-                                      return Container(
-                                        color: theme.colorScheme.errorContainer,
-                                        child: const Center(
-                                          child: Icon(Icons.broken_image, color: Colors.grey),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                      ),
-                      // 刪除按鈕
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: CircleAvatar(
-                          backgroundColor: Colors.black54,
-                          radius: 16,
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            icon: const Icon(Icons.close, size: 16, color: Colors.white),
-                            onPressed: () {
-                              setState(() {
-                                _uploadedPhotoUrls.removeAt(index);
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              );
+          UploadedPhotoGrid(
+            storagePaths: _uploadedPhotoUrls,
+            onRemove: (index) {
+              setState(() {
+                _uploadedPhotoUrls.removeAt(index);
+              });
             },
           ),
           const SizedBox(height: 8),
         ],
         
-        // 待上傳的照片（新增模式）
+        // 待上傳照片列表（新增模式）
         if (_photos.isNotEmpty) ...[
           GridView.builder(
             shrinkWrap: true,
@@ -1213,11 +1105,11 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
           const SizedBox(height: 8),
         ],
         
-        // 新增照片按鈕
+        // 添加照片按鈕
         OutlinedButton.icon(
           onPressed: _isUploadingPhotos ? null : _addPhoto,
           icon: const Icon(Icons.add_photo_alternate),
-          label: const Text('新增照片'),
+          label: const Text('添加照片'),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(double.infinity, 48),
           ),
@@ -1226,5 +1118,3 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
     );
   }
 }
-
-

@@ -2,7 +2,7 @@
 
 > AI 程式碼助手開發規範索引
 
-**最後更新**：2026年1月5日 - v2.9.1（訓練 UX 優化中）
+**最後更新**：2026年1月7日 - v3.1（Session Mode 完善 + 功能測試）
 
 ---
 
@@ -87,6 +87,7 @@
 | `940-docs-development.mdc` | DEVELOPMENT_STATUS.md 維護 |
 | `950-docs-saas.mdc` | SAAS_PLATFORM_ROADMAP.md 維護 |
 | `960-docs-health-assessment.mdc` | HEALTH_ASSESSMENT_SYSTEM.md 維護 |
+| `965-docs-fcm-setup.mdc` | FCM_SETUP_GUIDE.md 維護 |
 | `970-docs-readme.mdc` | docs/README.md 維護 |
 | `980-docs-project-overview.mdc` | PROJECT_OVERVIEW.md 維護 |
 
@@ -138,7 +139,7 @@
 
 ## 🎯 當前開發狀態
 
-**版本**：v2.9.0（教練公開檔案 + 訓練權限系統）
+**版本**：v3.1（功能測試 + Widget）🔄 待測試
 
 詳細進度請查看：**[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)**
 

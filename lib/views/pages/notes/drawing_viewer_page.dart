@@ -1,9 +1,10 @@
+// ✅ 已響應式改造 (Phase 0) - 全螢幕查看頁
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/drawing_note_model.dart';
 import 'package:strengthwise/views/painters/drawing_canvas_painter.dart';
 
 /// 繪圖查看器頁面（只讀模式）
-/// 
+///
 /// 功能：
 /// - 顯示底圖 + 繪圖內容
 /// - 只能查看，不能編輯
@@ -11,7 +12,7 @@ import 'package:strengthwise/views/painters/drawing_canvas_painter.dart';
 class DrawingViewerPage extends StatefulWidget {
   /// 繪圖數據
   final Map<String, dynamic> drawingData;
-  
+
   /// 底圖類型
   final String templateType;
 
@@ -27,7 +28,7 @@ class DrawingViewerPage extends StatefulWidget {
 
 class _DrawingViewerPageState extends State<DrawingViewerPage> {
   late DrawingNoteModel _drawing;
-  final TransformationController _transformationController = 
+  final TransformationController _transformationController =
       TransformationController();
 
   @override
@@ -86,7 +87,7 @@ class _DrawingViewerPageState extends State<DrawingViewerPage> {
               ],
             ),
           ),
-          
+
           // 繪圖畫布（只讀）
           Expanded(
             child: InteractiveViewer(
@@ -121,7 +122,7 @@ class _DrawingViewerPageState extends State<DrawingViewerPage> {
               ),
             ),
           ),
-          
+
           // 底部資訊欄
           Container(
             width: double.infinity,
@@ -204,4 +205,3 @@ class _DrawingViewerPageState extends State<DrawingViewerPage> {
     return count;
   }
 }
-

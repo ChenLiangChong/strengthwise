@@ -1,4 +1,6 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/models/coach_display_preferences_model.dart';
 import 'package:strengthwise/services/interfaces/i_coach_display_preferences_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
@@ -6,22 +8,24 @@ import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 教練顯示偏好設定頁面
-/// 
-/// 允許教練自訂學員詳情頁中要顯示的健康評估欄位
+///
+/// 允許教練選擇學員詳情中要顯示的健康評估欄位
 class CoachDisplayPreferencesPage extends StatefulWidget {
   const CoachDisplayPreferencesPage({super.key});
 
   @override
-  State<CoachDisplayPreferencesPage> createState() => _CoachDisplayPreferencesPageState();
+  State<CoachDisplayPreferencesPage> createState() =>
+      _CoachDisplayPreferencesPageState();
 }
 
-class _CoachDisplayPreferencesPageState extends State<CoachDisplayPreferencesPage> {
+class _CoachDisplayPreferencesPageState
+    extends State<CoachDisplayPreferencesPage> {
   late final ICoachDisplayPreferencesService _preferencesService;
-  
+
   CoachDisplayPreferencesModel? _preferences;
   bool _isLoading = true;
   bool _isSaving = false;
-  
+
   final Set<String> _selectedFields = {};
 
   @override
@@ -38,11 +42,12 @@ class _CoachDisplayPreferencesPageState extends State<CoachDisplayPreferencesPag
     try {
       final currentUserId = Supabase.instance.client.auth.currentUser?.id;
       if (currentUserId == null) {
-        throw Exception('無法取得使用者 ID');
+        throw Exception('無法獲取使用者 ID');
       }
 
-      final preferences = await _preferencesService.getPreferences(currentUserId);
-      
+      final preferences =
+          await _preferencesService.getPreferences(currentUserId);
+
       if (mounted) {
         setState(() {
           _preferences = preferences;
@@ -68,7 +73,7 @@ class _CoachDisplayPreferencesPageState extends State<CoachDisplayPreferencesPag
     try {
       final currentUserId = Supabase.instance.client.auth.currentUser?.id;
       if (currentUserId == null) {
-        throw Exception('無法取得使用者 ID');
+        throw Exception('無法獲取使用者 ID');
       }
 
       final updatedPreferences = _preferences!.copyWith(
@@ -120,7 +125,7 @@ class _CoachDisplayPreferencesPageState extends State<CoachDisplayPreferencesPag
     try {
       final currentUserId = Supabase.instance.client.auth.currentUser?.id;
       if (currentUserId == null) {
-        throw Exception('無法取得使用者 ID');
+        throw Exception('無法獲取使用者 ID');
       }
 
       await _preferencesService.resetToDefault(currentUserId);
@@ -148,66 +153,72 @@ class _CoachDisplayPreferencesPageState extends State<CoachDisplayPreferencesPag
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _resetToDefault,
-            tooltip: '重置為預設',
+            tooltip: '重置預設',
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '選擇要在學員詳情頁顯示的健康評估欄位',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '勾選的欄位將會顯示在學員的健康評估摘要卡片中',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: SingleChildScrollView(
+                  padding: context.pagePadding,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '選擇要在學員詳情中顯示的健康評估欄位',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '勾選的欄位會顯示在學員的健康評估摘要卡片中',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                   const SizedBox(height: 24),
-                  
+
                   // 欄位列表
                   ...CoachDisplayPreferencesModel.availableFields.entries.map(
                     (entry) => _buildFieldTile(theme, entry.key, entry.value),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
-                  // 選中計數
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 20,
-                          color: theme.colorScheme.primary,
+
+                      // 選中計數
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color:
+                              theme.colorScheme.primaryContainer.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '已選擇 ${_selectedFields.length} / ${CoachDisplayPreferencesModel.availableFields.length} 個欄位',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onPrimaryContainer,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 20,
+                              color: theme.colorScheme.primary,
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '已選擇 ${_selectedFields.length} / ${CoachDisplayPreferencesModel.availableFields.length} 個欄位',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
       bottomNavigationBar: SafeArea(
@@ -232,7 +243,7 @@ class _CoachDisplayPreferencesPageState extends State<CoachDisplayPreferencesPag
     );
   }
 
-  /// 欄位選擇瓦片
+  /// 欄位選擇項目
   Widget _buildFieldTile(ThemeData theme, String fieldKey, String fieldName) {
     final isSelected = _selectedFields.contains(fieldKey);
 
@@ -257,7 +268,7 @@ class _CoachDisplayPreferencesPageState extends State<CoachDisplayPreferencesPag
     );
   }
 
-  /// 取得欄位圖標
+  /// 取得欄位圖示
   IconData _getFieldIcon(String fieldKey) {
     switch (fieldKey) {
       case 'safety_screening':
@@ -287,4 +298,3 @@ class _CoachDisplayPreferencesPageState extends State<CoachDisplayPreferencesPag
     }
   }
 }
-

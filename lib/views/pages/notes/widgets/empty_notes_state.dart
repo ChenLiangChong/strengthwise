@@ -1,4 +1,6 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 空筆記狀態組件
 /// 
@@ -15,56 +17,55 @@ class EmptyNotesState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(context.spacing.xl), // ⭐ 響應式邊距
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // 圖示
             Icon(
               _getIcon(),
-              size: 80,
+              size: 80.scaled(context), // ⭐ 響應式圖標
               color: colorScheme.primary.withOpacity(0.3),
             ),
             
-            const SizedBox(height: 24),
+            SizedBox(height: context.spacing.lg), // ⭐ 響應式間距
             
             // 標題
             Text(
               _getTitle(),
-              style: theme.textTheme.headlineSmall?.copyWith(
+              style: context.responsive.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-              ),
+              ), // ⭐ 響應式文字
               textAlign: TextAlign.center,
             ),
             
-            const SizedBox(height: 8),
+            SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
             
             // 說明文字
             Text(
               _getDescription(),
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: context.responsive.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
-              ),
+              ), // ⭐ 響應式文字
               textAlign: TextAlign.center,
             ),
             
-            const SizedBox(height: 32),
+            SizedBox(height: context.spacing.xl), // ⭐ 響應式間距
             
             // 新增筆記按鈕（僅在 'all' 篩選時顯示）
             if (filter == 'all')
               ElevatedButton.icon(
                 onPressed: onCreateNote,
-                icon: const Icon(Icons.add),
-                label: const Text('新增筆記'),
+                icon: Icon(Icons.add, size: 20.scaled(context)), // ⭐ 響應式圖標
+                label: Text('新增筆記', style: context.responsive.labelLarge),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: context.spacing.xl, // ⭐ 響應式內距
+                    vertical: context.spacing.md,
                   ),
                 ),
               ),

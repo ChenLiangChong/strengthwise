@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - 表單頁，複雜操作不約束
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/workout_template_model.dart';
 import 'package:strengthwise/models/workout_exercise_model.dart'
@@ -13,7 +14,7 @@ import 'package:strengthwise/views/pages/exercises/exercises_page.dart';
 ///
 /// 用於創建新模板或編輯現有模板（簡化版，只需要基本設定）
 class TemplateEditorPage extends StatefulWidget {
-  final WorkoutTemplate? template; // 如果為 null 則創建新模板
+  final WorkoutTemplate? template; // 如果是 null 則創建新模板
 
   const TemplateEditorPage({
     super.key,
@@ -35,18 +36,18 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
   late final IWorkoutService _workoutService;
   late final IAuthService _authService;
 
-  // 可用的訓練類型（與 PlanType 枚舉一致 - 專業健身分類）
+  // 共用訓練類型列舉（PlanType 列舉一致 - 專業健身分類）
   final List<String> _planTypes = [
-    '力量訓練', // 💪 1-5RM，提升最大力量
-    '增肌訓練', // 🏋️ 6-12RM，增加肌肉量
-    '減脂訓練', // 🔥 高強度循環，燃脂塑形
-    '有氧訓練', // 🏃 有氧運動，提升心肺
-    '全身訓練', // 🎯 全身性訓練，適合新手
-    '上半身訓練', // ⬆️ 上半身專項訓練
-    '下半身訓練', // ⬇️ 下半身專項訓練
-    '核心訓練', // 🎪 核心穩定性訓練
-    '伸展恢復', // 🧘 伸展放鬆，促進恢復
-    '自定義', // ⚙️ 自訂訓練計劃
+    '力量訓練', // 🏋️ 1-5RM，提升最大力量
+    '增肌訓練', // 💪 6-12RM，提升肌肉量
+    '減脂訓練', // 🔥 高強度循環訓練，塑形
+    '有氧訓練', // ❤️ 有氧運動，提升心肺
+    '全身訓練', // 🌟 全身協調練習，多關節
+    '上半身', // ⬆️ 上半身專項訓練
+    '下半身', // ⬇️ 下半身專項訓練
+    '核心訓練', // 🎯 核心穩定性訓練
+    '伸展恢復', // 🧘 伸展運動，促進恢復
+    '自訂', // 📝 自訂訓練計劃
   ];
 
   @override
@@ -66,13 +67,13 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
     super.dispose();
   }
 
-  /// 載入模板數據
+  /// 載入模板資料
   void _loadTemplateData() {
     final template = widget.template!;
     _titleController.text = template.title;
     _descriptionController.text = template.description;
 
-    // ⚡ 防護：確保 planType 在列表中，否則使用預設值
+    // 防護：確保 planType 在列表中，否則使用預設值
     if (_planTypes.contains(template.planType)) {
       _selectedPlanType = template.planType;
     } else {
@@ -119,7 +120,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
         );
 
         await _workoutService.updateTemplate(updatedTemplate);
-        print('[模板編輯] 更新成功');
+        print('[模板編輯] 更新完成');
       } else {
         // 創建新模板
         print('[模板編輯] 創建新模板');
@@ -135,11 +136,11 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
         );
 
         final savedTemplate = await _workoutService.createTemplate(newTemplate);
-        print('[模板編輯] 創建成功，ID: ${savedTemplate.id}');
+        print('[模板編輯] 創建完成，ID: ${savedTemplate.id}');
       }
 
       if (mounted) {
-        Navigator.pop(context, true); // 傳回 true 表示保存成功
+        Navigator.pop(context, true); // 返回 true 表示保存成功
       }
     } catch (e, stackTrace) {
       print('[模板編輯] 保存失敗: $e');
@@ -176,7 +177,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
     }
   }
 
-  /// 編輯訓練動作設置（簡單設定）
+  /// 編輯訓練動作設置（簡化設定）
   void _editExerciseSettings(int index) {
     final exercise = _exercises[index];
 
@@ -192,7 +193,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
 
     showDialog(
       context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+      barrierDismissible: false, // 修復：防止點擊外部關閉
       builder: (context) => AlertDialog(
         title: Text('編輯 ${exercise.name}'), // 使用完整 name
         content: SingleChildScrollView(
@@ -274,7 +275,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                   weight: weight,
                   restTime: restTime,
                   notes: notesController.text,
-                  setTargets: null, // 模板不保存詳細的每組設定
+                  setTargets: null, // 模板不儲存詳細的每組設定
                 );
               });
 
@@ -310,7 +311,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.template != null ? '編輯模板' : '新建模板'),
+        title: Text(widget.template != null ? '編輯模板' : '創建模板'),
         actions: [
           if (!_isLoading)
             IconButton(
@@ -340,7 +341,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                     controller: _titleController,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      hintText: '例如：推日 A',
+                      hintText: '例如：推拉 A',
                       contentPadding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
@@ -387,7 +388,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                     controller: _descriptionController,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      hintText: '時間不夠時的快速全身訓練方案',
+                      hintText: '適合不需要器材的快速全身訓練方案',
                       contentPadding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),

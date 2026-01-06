@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - 表單頁，複雜操作不約束
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/workout_exercise_model.dart'
     as exercise_models;
@@ -17,11 +18,13 @@ import 'widgets/set_edit_dialog.dart';
 
 class PlanEditorPage extends StatefulWidget {
   final DateTime selectedDate;
-  final String? planId; // 如果是編輯現有計畫，則提供planId
+  final String? planId; // 如果是編輯現有記錄則提供 planId
   final String? planType; // 計劃類型: "self" 或 "trainer"
-  final String? traineeId; // Phase 4C: 教練為學員創建訓練時指定學員 ID
-  final DateTime? initialStartTime; // ⭐ 預填開始時間（從學員偏好時段）
-  final DateTime? initialEndTime; // ⭐ 預填結束時間（從學員偏好時段）
+  final String? traineeId; // Phase 4C: 教練為學員創建訓練時的學員 ID
+  final DateTime? initialStartTime; // 預填開始時間（從學員偏好時段）
+  final DateTime? initialEndTime; // 預填結束時間（從學員偏好時段）
+  final String? appointmentId; // ⭐ v3.1: Session Mode 關聯的預約 ID
+  final WorkoutTemplate? initialTemplate; // ⭐ v3.1: 預填模板資料
 
   const PlanEditorPage({
     super.key,
@@ -31,6 +34,8 @@ class PlanEditorPage extends StatefulWidget {
     this.traineeId,
     this.initialStartTime,
     this.initialEndTime,
+    this.appointmentId,
+    this.initialTemplate,
   });
 
   @override
@@ -48,24 +53,24 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   bool _isLoading = false;
   String? _selectedPlanType;
 
-  // ⭐ v2.1: 訓練時間（初始化為 null，在 initState 中設定）
+  // ⭐ v2.1: 訓練時間（開始時為 null，在 initState 中設定）
   late DateTime _trainingTime;
 
   // ⭐ v2.1: 訓練結束時間
   late DateTime _trainingEndTime;
 
-  // 訓練計畫類型（使用 PlanType 枚舉 - 專業健身分類）
+  // 訓練計畫類型（使用 PlanType 列舉 - 專業健身分類）
   final List<String> _planTypes = [
-    '力量訓練', // 💪 1-5RM，提升最大力量
-    '增肌訓練', // 🏋️ 6-12RM，增加肌肉量
-    '減脂訓練', // 🔥 高強度循環，燃脂塑形
-    '有氧訓練', // 🏃 有氧運動，提升心肺
-    '全身訓練', // 🎯 全身性訓練，適合新手
-    '上半身訓練', // ⬆️ 上半身專項訓練
-    '下半身訓練', // ⬇️ 下半身專項訓練
-    '核心訓練', // 🎪 核心穩定性訓練
-    '伸展恢復', // 🧘 伸展放鬆，促進恢復
-    '自定義', // ⚙️ 自訂訓練計劃
+    '力量訓練', // 🏋️ 1-5RM，提升最大力量
+    '增肌訓練', // 💪 6-12RM，提升肌肉量
+    '減脂訓練', // 🔥 高強度循環訓練，塑形
+    '有氧訓練', // ❤️ 有氧運動，提升心肺
+    '全身訓練', // 🌟 全身協調練習，多關節
+    '上半身', // ⬆️ 上半身專項訓練
+    '下半身', // ⬇️ 下半身專項訓練
+    '核心訓練', // 🎯 核心穩定性訓練
+    '伸展恢復', // 🧘 伸展運動，促進恢復
+    '自訂', // 📝 自訂訓練計劃
   ];
 
   @override
@@ -76,9 +81,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     _workoutService = serviceLocator<IWorkoutService>();
     _authController = serviceLocator<IAuthController>();
 
-    // ⭐ v2.1: 初始化訓練時間
-    // 1. 如果調用方提供 initialStartTime（偏好時段） → 使用該時間
-    // 2. 否則使用合理的預設值 → 當前時間，讓用戶感知到需要修改
+    // ⭐ v2.1: 設定訓練時間
+    // 1. 如果調用方提供 initialStartTime（偏好時段）→ 使用該時間
+    // 2. 否則使用當前時間設為預設，讓用戶自知需要修改
     if (widget.initialStartTime != null) {
       _trainingTime = widget.initialStartTime!;
     } else {
@@ -92,21 +97,21 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       );
     }
 
-    // ⭐ v2.1: 初始化訓練結束時間
+    // ⭐ v2.1: 設定訓練結束時間
     if (widget.initialEndTime != null) {
       _trainingEndTime = widget.initialEndTime!;
     } else {
       _trainingEndTime = _trainingTime.add(const Duration(hours: 1));
     }
 
-    // 如果提供了計劃類型，設置默認值
+    // 如果傳入了計劃類型則設置默認值
     if (widget.planType != null) {
       // 注意: 這裡的 planType 是用於資料庫存儲的值 ("self" 或 "trainer")
-      // 而 _selectedPlanType 是界面顯示的訓練類型 (力量訓練, 有氧訓練等)
-      // 我們在保存時會保存兩種值
+      // 而 _selectedPlanType 是用於顯示的訓練類型 (力量訓練, 有氧訓練等)
+      // 我們在保存時保留兩種值
     }
 
-    // 檢查是否是過去的日期
+    // 檢查是否為過去日期
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final selectedDate = DateTime(widget.selectedDate.year,
@@ -115,7 +120,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     if (selectedDate.isBefore(today)) {
       // 使用 Future.microtask 確保在 initState 之後顯示錯誤提示並返回
       Future.microtask(() {
-        NotificationUtils.showError(context, '無法為過去的日期創建訓練計畫');
+        NotificationUtils.showError(context, '無法在過去的日期創建訓練計畫');
         Navigator.of(context).pop();
       });
       return;
@@ -123,7 +128,25 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
     if (widget.planId != null) {
       _loadExistingPlan();
+    } else if (widget.initialTemplate != null) {
+      // ⭐ v3.1: 從模板預填資料
+      _initializeFromTemplate(widget.initialTemplate!);
     }
+  }
+
+  /// 從模板初始化表單 ⭐ v3.1
+  void _initializeFromTemplate(WorkoutTemplate template) {
+    _titleController.text = template.title;
+    _descriptionController.text = template.description;
+
+    // 驗證模板的 planType 是否在列表中
+    if (_planTypes.contains(template.planType)) {
+      _selectedPlanType = template.planType;
+    } else {
+      _selectedPlanType = '全身訓練';
+    }
+
+    _exercises = List.from(template.exercises);
   }
 
   // 載入現有訓練計畫
@@ -140,14 +163,14 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       if (record != null) {
         _titleController.text = record.title;
         _descriptionController.text = record.notes;
-        _selectedPlanType = '全身訓練'; // 預設值（適合大多數人）
+        _selectedPlanType = '全身訓練'; // 預設值，適合大多數人
 
-        // 加載訓練時間
+        // 設定訓練時間
         if (record.trainingTime != null) {
           _trainingTime = record.trainingTime!;
         }
 
-        // 載入訓練動作（從 ExerciseRecord 轉換回 WorkoutExercise）
+        // 載入訓練動作（從 ExerciseRecord 轉換為 WorkoutExercise）
         _exercises = record.exerciseRecords.map((exerciseRecord) {
           return exercise_models.WorkoutExercise(
             id: exerciseRecord.exerciseId,
@@ -168,7 +191,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           );
         }).toList();
 
-        print('[PlanEditor] 載入成功，動作數量: ${_exercises.length}');
+        print('[PlanEditor] 載入完成，動作數量: ${_exercises.length}');
       }
     } catch (e) {
       print('[PlanEditor] 載入失敗: $e');
@@ -199,10 +222,10 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
       print('[PlanEditor] 準備保存訓練計畫，動作數量: ${_exercises.length}');
 
-      // 將 WorkoutExercise 轉換為 ExerciseRecord
+      // 從 WorkoutExercise 轉換為 ExerciseRecord
       final exerciseRecords = _exercises.map((exercise) {
         return ExerciseRecord(
-          exerciseId: exercise.exerciseId, // ← 修復：使用 exerciseId 而不是 id
+          exerciseId: exercise.exerciseId, // 修復：使用 exerciseId 而非 id
           exerciseName: exercise.name,
           sets: List.generate(
             exercise.sets,
@@ -230,8 +253,8 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
             id: widget.planId!,
             workoutPlanId: existingRecord.workoutPlanId,
             userId: userId,
-            traineeId: existingRecord.traineeId, // ⭐ 保留原有的 traineeId
-            creatorId: existingRecord.creatorId, // ⭐ 保留原有的 creatorId
+            traineeId: existingRecord.traineeId, // 保留原有的 traineeId
+            creatorId: existingRecord.creatorId, // 保留原有的 creatorId
             title: _titleController.text.isNotEmpty
                 ? _titleController.text
                 : '訓練記錄',
@@ -244,22 +267,23 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           );
 
           await _workoutService.updateRecord(updatedRecord);
-          print('[PlanEditor] 更新成功');
+          print('[PlanEditor] 更新完成');
         }
       } else {
         // 創建新記錄
-        print('[PlanEditor] 創建新計畫');
+        print('[PlanEditor] 創建新記錄');
+        print('[PlanEditor] appointmentId: ${widget.appointmentId}'); // ⭐ v3.1 調試
 
         // ⭐ Phase 4C: 正確設置 traineeId 和 creatorId
-        final traineeId = widget.traineeId ?? userId; // 如果有指定學員，用學員 ID；否則用當前用戶
+        final traineeId = widget.traineeId ?? userId; // 如果指定學員則用學員 ID；否則用當前用戶
         final creatorId = userId; // 創建者永遠是當前用戶
 
         final newRecord = WorkoutRecord(
-          id: '', // 會在 createRecord 中生成
+          id: '', // 將在 createRecord 中生成
           workoutPlanId: '',
           userId: userId,
-          traineeId: traineeId, // ⭐ 受訓者 ID
-          creatorId: creatorId, // ⭐ 創建者 ID
+          traineeId: traineeId, // 受訓者 ID
+          creatorId: creatorId, // 創建者 ID
           title:
               _titleController.text.isNotEmpty ? _titleController.text : '訓練記錄',
           date: _trainingTime, // ⭐ v2.1: date = 訓練開始時間
@@ -268,10 +292,11 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           completed: false,
           createdAt: DateTime.now(),
           trainingEndTime: _trainingEndTime, // ⭐ v2.1: 訓練結束時間
+          appointmentId: widget.appointmentId, // ⭐ v3.1: Session Mode 關聯預約 ID
         );
 
         await _workoutService.createRecord(newRecord);
-        print('[PlanEditor] 創建成功');
+        print('[PlanEditor] 創建完成');
       }
 
       // 顯示成功通知
@@ -285,15 +310,15 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
       // 返回行事曆頁面
       if (mounted) {
-        Navigator.pop(context, true); // 傳回true表示保存成功
+        Navigator.pop(context, true); // 返回 true 表示保存成功
       }
     } catch (e) {
       print('[PlanEditor] 保存失敗: $e');
 
-      // ⭐ v2.1: 特別處理時間重疊錯誤
-      if (e.toString().contains('訓練時間重疊')) {
+      // ⭐ v2.1: 識別時間衝突錯誤
+      if (e.toString().contains('訓練時間衝突')) {
         if (mounted) {
-          NotificationUtils.showError(context, '訓練時間重疊：該學員在此時段已有訓練計畫，請選擇其他時間');
+          NotificationUtils.showError(context, '訓練時間衝突：該學員在此時段已有訓練計畫，請選擇其他時間');
           // 返回錯誤訊息給調用方
           Navigator.pop(context, e.toString());
         }
@@ -329,7 +354,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           TextEditingController(text: _titleController.text);
       final templateName = await showDialog<String>(
         context: context,
-        barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+        barrierDismissible: false, // 修復：防止點擊外部關閉
         builder: (context) => AlertDialog(
           title: const Text('保存為模板'),
           content: TextField(
@@ -370,18 +395,18 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
       // 創建模板對象
       final template = WorkoutTemplate(
-        id: '', // 會在 createTemplate 中生成
+        id: '', // 將在 createTemplate 中生成
         userId: userId,
         title: templateName,
         description: _descriptionController.text,
-        planType: _selectedPlanType ?? '力量訓練',
+        planType: _selectedPlanType ?? '自訂訓練',
         exercises: _exercises,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
       await _workoutService.createTemplate(template);
-      print('[PlanEditor] 模板已保存: $templateName');
+      print('[PlanEditor] 模板已儲存: $templateName');
 
       setState(() {
         _isLoading = false;
@@ -429,7 +454,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           if (_planTypes.contains(template.planType)) {
             _selectedPlanType = template.planType;
           } else {
-            // 如果不在列表中，設置為預設值
+            // 如果不在列表中則設置為預設值
             _selectedPlanType = '全身訓練';
             print(
                 '[PlanEditor] ⚠️ 模板的 planType "${template.planType}" 不在列表中，已設為預設值');
@@ -438,11 +463,11 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           _exercises = List.from(template.exercises);
         });
 
-        NotificationUtils.showSuccess(context, '已加載模板: ${template.title}');
+        NotificationUtils.showSuccess(context, '已載入模板: ${template.title}');
       }
     } catch (e) {
       print('從模板加載錯誤: $e');
-      NotificationUtils.showError(context, '加載模板失敗: $e');
+      NotificationUtils.showError(context, '載入模板失敗: $e');
     }
   }
 
@@ -462,11 +487,11 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     }
   }
 
-  // 編輯單組數據
+  // 編輯單組設定
   Future<void> _editSet(int exerciseIndex, int setIndex) async {
     final exercise = _exercises[exerciseIndex];
 
-    // 獲取當前組的數據
+    // 獲取當前組的目標值
     int currentReps;
     double currentWeight;
 
@@ -481,7 +506,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+      barrierDismissible: false, // 修復：防止點擊外部關閉
       builder: (context) => SetEditDialog(
         setNumber: setIndex + 1,
         initialReps: currentReps,
@@ -504,7 +529,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
               exercise.copyWith(setTargets: newSetTargets);
         }
 
-        // 更新指定組的數據
+        // 更新單組目標值
         final updatedSetTargets = List<Map<String, dynamic>>.from(
             _exercises[exerciseIndex].setTargets!);
         updatedSetTargets[setIndex] = {'reps': reps, 'weight': weight};
@@ -562,7 +587,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+      barrierDismissible: false, // 修復：防止點擊外部關閉
       builder: (context) => BatchSetEditDialog(
         initialReps: exercise.reps,
         initialWeight: exercise.weight,
@@ -596,7 +621,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     });
   }
 
-  // ⭐ v2.1: 統一的時間範圍變更回調
+  // ⭐ v2.1: 統一處理時間範圍變更
   void _onTimeRangeChanged(TimeOfDay start, TimeOfDay end) {
     setState(() {
       _trainingTime = DateTime(
@@ -649,7 +674,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                   PlanDateHeader(
                     selectedDate: widget.selectedDate,
                     trainingTime: _trainingTime,
-                    trainingEndTime: _trainingEndTime, // ⭐ v2.1: 傳遞結束時間
+                    trainingEndTime: _trainingEndTime, // ⭐ v2.1: 傳入結束時間
                     onTimeRangeChanged: _onTimeRangeChanged, // ⭐ v2.1: 統一回調
                   ),
                   const SizedBox(height: 16),

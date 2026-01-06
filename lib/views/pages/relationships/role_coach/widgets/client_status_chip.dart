@@ -1,4 +1,6 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 學員狀態標籤組件
 class ClientStatusChip extends StatelessWidget {
@@ -52,7 +54,10 @@ class ClientStatusChip extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: context.spacing.md, // ⭐ 響應式內距
+        vertical: context.spacing.xs,
+      ),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
@@ -62,16 +67,16 @@ class ClientStatusChip extends StatelessWidget {
         children: [
           Icon(
             icon,
-            size: 16,
+            size: 16.scaled(context), // ⭐ 響應式圖標
             color: textColor,
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: context.spacing.xs), // ⭐ 響應式間距
           Text(
             displayText,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            style: context.responsive.labelSmall?.copyWith(
                   color: textColor,
                   fontWeight: FontWeight.w600,
-                ),
+                ), // ⭐ 響應式文字
           ),
         ],
       ),

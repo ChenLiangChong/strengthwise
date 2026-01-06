@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import '../../../models/note_model.dart';
 import '../../../controllers/interfaces/i_note_controller.dart';
@@ -10,6 +11,8 @@ import 'package:strengthwise/views/pages/notes/widgets/empty_records_state.dart'
 import 'package:strengthwise/views/pages/notes/widgets/notes_list.dart';
 
 /// 訓練記錄頁面
+///
+/// 響應式設計：子組件已適配多尺寸螢幕
 class RecordsPage extends StatefulWidget {
   const RecordsPage({super.key});
 
@@ -115,6 +118,7 @@ class _RecordsPageState extends State<RecordsPage> {
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'records_page_fab', // ⭐ 防止 Hero tag 衝突
         onPressed: () => _navigateToNoteEditor(null),
         tooltip: '新建筆記',
         child: const Icon(Icons.add),

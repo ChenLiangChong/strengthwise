@@ -1,15 +1,21 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_statistics_controller.dart';
 import 'package:strengthwise/services/interfaces/i_workout_service.dart';
 import 'package:strengthwise/services/interfaces/i_user_service.dart';
+import 'package:strengthwise/services/interfaces/i_appointment_service.dart';
 import 'package:strengthwise/models/user_model.dart';
+import 'package:strengthwise/models/appointment_model.dart';
 import 'package:intl/intl.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/workout/execution/workout_execution_page.dart';
 import 'package:strengthwise/views/pages/statistics/statistics_page_v2.dart';
 import 'package:strengthwise/views/pages/dev/notification_test_page.dart'; // 通知測試頁面
+import 'package:strengthwise/common_widgets/cards/quick_rebook_card.dart';
+import 'package:strengthwise/views/pages/scheduling/appointments/client_booking_page.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart'; // ⭐ 響應式框架
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,6 +28,7 @@ class _HomePageState extends State<HomePage> {
   late final IAuthController _authController;
   late final IWorkoutService _workoutService;
   late final IUserService _userService;
+  late final IAppointmentService _appointmentService;
 
   List<Map<String, dynamic>> _recentWorkouts = [];
   List<Map<String, dynamic>> _todayPlans = [];
@@ -29,12 +36,18 @@ class _HomePageState extends State<HomePage> {
   bool _isLoadingPlans = true;
   UserModel? _userProfile; // ⭐ 完整的用戶資料
 
+  // ⭐ v3.0 一鍵續約相關
+  AppointmentModel? _lastAppointment;
+  UserModel? _lastCoach;
+  bool _isLoadingRebook = true;
+
   @override
   void initState() {
     super.initState();
     _authController = serviceLocator<IAuthController>();
     _workoutService = serviceLocator<IWorkoutService>();
     _userService = serviceLocator<IUserService>();
+    _appointmentService = serviceLocator<IAppointmentService>();
 
     // ⚡ 優先載入首頁關鍵數據，完成後才預載入其他
     _initializeHomePage();
@@ -56,13 +69,14 @@ class _HomePageState extends State<HomePage> {
 
   /// ⚡ 並行載入關鍵數據
   ///
-  /// 只載入首頁必需的數據（最近訓練 + 今日計劃 + 用戶資料）
+  /// 只載入首頁必需的數據（最近訓練 + 今日計劃 + 用戶資料 + 一鍵續約）
   Future<void> _loadCriticalDataInParallel() async {
     // 並行執行並等待完成
     await Future.wait([
-      _loadUserProfile(), // ⭐ 新增：載入用戶資料
+      _loadUserProfile(), // ⭐ 載入用戶資料
       _loadRecentWorkouts(),
       _loadTodayPlans(),
+      _loadQuickRebookData(), // ⭐ v3.0 一鍵續約資料
     ], eagerError: false);
 
     if (kDebugMode) {
@@ -124,6 +138,61 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       if (!mounted) return;
       print('[HomePage] 載入用戶資料失敗: $e');
+    }
+  }
+
+  /// ⭐ v3.0 載入一鍵續約資料
+  ///
+  /// 檢查學員是否有最近的已完成預約，用於顯示一鍵續約卡片
+  Future<void> _loadQuickRebookData() async {
+    if (!mounted) return;
+
+    setState(() => _isLoadingRebook = true);
+
+    try {
+      final userId = _authController.user?.uid;
+      if (userId == null) {
+        setState(() => _isLoadingRebook = false);
+        return;
+      }
+
+      // 1. 檢查用戶是否為學員
+      final profile = await _userService.getUserProfile(userId);
+      if (profile == null || !profile.isStudent) {
+        setState(() => _isLoadingRebook = false);
+        return;
+      }
+
+      // 2. 查詢最近一次已完成的預約
+      final lastAppointment =
+          await _appointmentService.getLastCompletedAppointment(userId);
+
+      if (lastAppointment == null) {
+        setState(() => _isLoadingRebook = false);
+        return;
+      }
+
+      // 3. 查詢教練資訊
+      final coachProfile =
+          await _userService.getUserProfile(lastAppointment.coachId);
+
+      if (!mounted) return;
+
+      setState(() {
+        _lastAppointment = lastAppointment;
+        _lastCoach = coachProfile;
+        _isLoadingRebook = false;
+      });
+
+      if (kDebugMode) {
+        print('[HomePage] ✅ 一鍵續約資料載入完成：教練=${coachProfile?.displayName}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingRebook = false);
+      if (kDebugMode) {
+        print('[HomePage] ⚠️ 載入一鍵續約資料失敗: $e');
+      }
     }
   }
 
@@ -316,13 +385,15 @@ class _HomePageState extends State<HomePage> {
                   ? colorScheme.primary // 淺色模式：藍色
                   : null, // 深色模式：使用預設深色背景
               flexibleSpace: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+                titlePadding: EdgeInsets.only(
+                  left: context.spacing.md,
+                  bottom: context.spacing.md,
+                ),
                 title: Text(
                   'Strength Wise',
-                  style: const TextStyle(
+                  style: context.responsive.titleLarge.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 20,
                   ),
                 ),
                 background: Container(
@@ -341,30 +412,48 @@ class _HomePageState extends State<HomePage> {
                             ],
                     ),
                   ),
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 56),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text(
-                            '$greeting，${user?.displayName ?? user?.nickname ?? '健身愛好者'}',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                  // ⭐ 限制文字縮放上限，防止系統超大字體導致溢出
+                  child: MediaQuery(
+                    data: MediaQuery.of(context).copyWith(
+                      textScaler: TextScaler.linear(
+                        MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.3),
+                      ),
+                    ),
+                    child: SafeArea(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          context.spacing.md,
+                          0,
+                          context.spacing.md,
+                          64, // 底部間距，避免被標題遮擋
+                        ),
+                        child: Align(
+                          alignment: Alignment.bottomLeft,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  '$greeting，${user?.displayName ?? user?.nickname ?? '健身愛好者'}',
+                                  style: context.responsive.greeting,
+                                  maxLines: 1,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  DateFormat('yyyy年MM月dd日 EEEE', 'zh_TW').format(now),
+                                  style: context.responsive.date,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            DateFormat('yyyy年MM月dd日 EEEE', 'zh_TW').format(now),
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withOpacity(0.9),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -400,6 +489,11 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
+            // ⭐ v3.0 一鍵續約卡片（學員專用）
+            if (_shouldShowQuickRebook())
+              SliverToBoxAdapter(
+                child: _buildQuickRebookCard(),
+              ),
             // 今日訓練計畫
             SliverToBoxAdapter(
               child: _buildTodayPlans(),
@@ -421,7 +515,7 @@ class _HomePageState extends State<HomePage> {
   // 今日訓練計畫
   Widget _buildTodayPlans() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: context.cardPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -429,12 +523,9 @@ class _HomePageState extends State<HomePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 '今日訓練',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: context.responsive.sectionTitle,
               ),
               // ⭐ 刷新按鈕
               IconButton(
@@ -450,7 +541,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: context.spacing.md),
           _isLoadingPlans
               ? _buildLoadingSkeleton() // ⚡ 使用骨架屏替代 Loading
               : _todayPlans.isEmpty
@@ -470,11 +561,11 @@ class _HomePageState extends State<HomePage> {
     return Column(
       children: List.generate(2, (index) {
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
+          margin: EdgeInsets.only(bottom: context.spacing.sm + 4), // 12dp
+          padding: context.cardPadding,
           decoration: BoxDecoration(
             color:
-                Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -492,7 +583,7 @@ class _HomePageState extends State<HomePage> {
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: context.spacing.sm + 4), // 12dp
               // 內容骨架
               Container(
                 width: double.infinity,
@@ -505,7 +596,7 @@ class _HomePageState extends State<HomePage> {
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: context.spacing.sm),
               Container(
                 width: 200,
                 height: 12,
@@ -524,9 +615,77 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// ⭐ v3.0 是否應該顯示一鍵續約卡片
+  bool _shouldShowQuickRebook() {
+    // 載入中不顯示
+    if (_isLoadingRebook) return false;
+    // 沒有最近預約不顯示
+    if (_lastAppointment == null) return false;
+    // 沒有教練資訊不顯示
+    if (_lastCoach == null) return false;
+    // 用戶必須是學員
+    if (_userProfile == null) return false;
+    if (!_userProfile!.isStudent) return false;
+    return true;
+  }
+
+  /// ⭐ v3.0 構建一鍵續約卡片
+  Widget _buildQuickRebookCard() {
+    if (_lastAppointment == null || _lastCoach == null) {
+      return const SizedBox.shrink();
+    }
+
+    // 從最近預約中提取偏好時段
+    final startTime = _lastAppointment!.startTime;
+    final preferredTime = TimeOfDay.fromDateTime(startTime);
+    final dayOfWeek = startTime.weekday;
+
+    final lastBooking = LastBookingInfo(
+      coachId: _lastAppointment!.coachId,
+      coachName: _lastCoach!.displayName ?? _lastCoach!.email,
+      coachPhotoUrl: _lastCoach!.photoURL,
+      preferredTime: preferredTime,
+      durationMinutes: _lastAppointment!.endTime
+          .difference(_lastAppointment!.startTime)
+          .inMinutes,
+      dayOfWeek: dayOfWeek,
+    );
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        context.spacing.md,
+        context.spacing.md,
+        context.spacing.md,
+        0,
+      ),
+      child: QuickRebookCard(
+        lastBooking: lastBooking,
+        onRebook: (suggestedDate, time) {
+          // 跳轉到預約頁面
+          // TODO: 未來可擴展 ClientBookingPage 支援預選教練和時段
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ClientBookingPage(),
+            ),
+          );
+        },
+        onViewMore: () {
+          // 跳轉到預約頁面
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ClientBookingPage(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildNoPlansToday() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding: EdgeInsets.symmetric(vertical: context.spacing.lg),
       alignment: Alignment.center,
       child: Column(
         children: [
@@ -535,13 +694,12 @@ class _HomePageState extends State<HomePage> {
             size: 48,
             color: Theme.of(context).colorScheme.outline,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: context.spacing.md),
           Text(
             '今天還沒有安排訓練',
-            style: TextStyle(
-              fontSize: 16,
+            style: context.responsive.bodyLarge.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500, // 加粗以提升可讀性
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -563,12 +721,12 @@ class _HomePageState extends State<HomePage> {
     String timeInfo = '全天';
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: context.spacing.sm + 4), // 12dp
       elevation: completed ? 1 : 3,
       child: InkWell(
         onTap: () => _navigateToPlan(plan['id']),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: context.cardPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -579,20 +737,19 @@ class _HomePageState extends State<HomePage> {
                     size: 16,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: context.spacing.xs),
                   Text(
                     timeInfo,
-                    style: TextStyle(
+                    style: context.responsive.bodyMedium.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: context.spacing.sm,
+                      vertical: context.spacing.xs,
                     ),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.primaryContainer,
@@ -600,46 +757,42 @@ class _HomePageState extends State<HomePage> {
                     ),
                     child: Text(
                       completed ? '已完成' : '待完成',
-                      style: TextStyle(
+                      style: context.responsive.labelSmall.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: context.spacing.sm),
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: context.responsive.cardTitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: context.spacing.sm),
               Text(
                 '$exerciseCount 個動作',
-                style: TextStyle(
+                style: context.responsive.bodyMedium.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               if (exerciseCount > 0) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: context.spacing.sm),
                 LinearProgressIndicator(
                   value: progress,
-                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     Theme.of(context).colorScheme.primary,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: context.spacing.xs),
                 Text(
                   '完成度: ${(progress * 100).toInt()}%',
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: context.responsive.labelSmall.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
@@ -654,18 +807,15 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildRecentWorkouts() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: context.cardPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '最近訓練',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: context.responsive.sectionTitle,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: context.spacing.md),
           _isLoading
               ? _buildLoadingSkeleton() // ⚡ 使用骨架屏替代 Loading
               : _recentWorkouts.isEmpty
@@ -682,7 +832,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildEmptyWorkouts() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 32),
+      padding: EdgeInsets.symmetric(vertical: context.spacing.xl),
       alignment: Alignment.center,
       child: Column(
         children: [
@@ -691,20 +841,18 @@ class _HomePageState extends State<HomePage> {
             size: 48,
             color: Theme.of(context).colorScheme.outline,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: context.spacing.md),
           Text(
             '還沒有訓練記錄',
-            style: TextStyle(
-              fontSize: 16,
+            style: context.responsive.bodyLarge.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: context.spacing.sm),
           Text(
             '完成訓練後就能看到記錄了！',
-            style: TextStyle(
-              fontSize: 14,
+            style: context.responsive.bodyMedium.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
@@ -734,14 +882,14 @@ class _HomePageState extends State<HomePage> {
     final progress = exerciseCount > 0 ? completedCount / exerciseCount : 1.0;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: context.spacing.sm + 4), // 12dp
       child: InkWell(
         onTap: () {
           // 導航到訓練記錄詳情頁面
           _navigateToPlan(workout['id']);
         },
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: context.cardPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -749,17 +897,16 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text(
                     formattedDate,
-                    style: TextStyle(
+                    style: context.responsive.bodyMedium.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: context.spacing.sm),
                   Expanded(
                     child: Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: context.responsive.titleMedium.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -773,27 +920,26 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: context.spacing.sm),
               Text(
                 '$exerciseCount 個動作',
-                style: TextStyle(
+                style: context.responsive.bodyMedium.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: context.spacing.sm),
               LinearProgressIndicator(
                 value: progress,
-                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                 valueColor: AlwaysStoppedAnimation<Color>(
                   Theme.of(context).colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: context.spacing.xs),
               Text(
                 '完成度: ${(progress * 100).toInt()}%',
-                style: TextStyle(
-                  fontSize: 12,
+                style: context.responsive.labelSmall.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),

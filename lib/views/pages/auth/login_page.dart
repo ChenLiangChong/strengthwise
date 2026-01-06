@@ -1,12 +1,17 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/interfaces/i_user_service.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/home/main_home_page.dart';
 import 'package:strengthwise/views/pages/profile/profile_settings_page.dart';
 
+/// 登入頁面
+///
+/// 響應式設計：居中顯示，最大寬度 400dp
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -62,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
         // ✅ 檢查用戶是否完成個人資料設置
         final userService = serviceLocator<IUserService>();
         final isProfileCompleted = await userService.isProfileCompleted();
-        
+
         if (!isProfileCompleted) {
           // 首次登入，跳轉到個人資料設定頁面
           Navigator.of(context).pushReplacement(
@@ -134,123 +139,137 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Logo
-                const FlutterLogo(size: 100),
-                const SizedBox(height: 32),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: context.pagePadding,
+            child: Center(
+              // ✅ 登入表單限制最大寬度 400dp
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Logo
+                      const FlutterLogo(size: 100),
+                      SizedBox(height: context.spacing.xl),
 
-                // 標題
-                Text(
-                  _isSignUp ? '註冊新帳號' : '歡迎回來',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                      // 標題
+                      Text(
+                        _isSignUp ? '註冊新帳號' : '歡迎回來',
+                        style: textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: context.spacing.lg),
+
+                      // 電子郵件輸入
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                          labelText: '電子郵件',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.email),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return '請輸入電子郵件';
+                          }
+                          // ⚡ 改進的電子郵件驗證：支援更多格式
+                          // 允許數字開頭、連續點號、加號等常見格式
+                          final emailRegex = RegExp(
+                              r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
+                          if (!emailRegex.hasMatch(value.trim())) {
+                            return '請輸入有效的電子郵件格式';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: context.spacing.md),
+
+                      // 密碼輸入
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration: const InputDecoration(
+                          labelText: '密碼',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.lock),
+                        ),
+                        obscureText: true,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return '請輸入密碼';
+                          }
+                          if (_isSignUp && value.length < 6) {
+                            return '密碼長度至少需要6個字符';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: context.spacing.lg),
+
+                      // 提交按鈕（最小觸控目標 48dp）
+                      SizedBox(
+                        height: 48,
+                        child: FilledButton(
+                          onPressed: _isLoading ? null : _handleSubmit,
+                          child: _isLoading
+                              ? SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      colorScheme.onPrimary,
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  _isSignUp ? '註冊' : '登入',
+                                  style: textTheme.labelLarge,
+                                ),
+                        ),
+                      ),
+                      SizedBox(height: context.spacing.md),
+
+                      // 切換註冊/登入模式
+                      TextButton(
+                        onPressed: _toggleMode,
+                        child: Text(_isSignUp ? '已有帳號？點此登入' : '沒有帳號？點此註冊'),
+                      ),
+                      SizedBox(height: context.spacing.lg),
+
+                      Text(
+                        '或者使用以下方式登入',
+                        textAlign: TextAlign.center,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      SizedBox(height: context.spacing.md),
+
+                      // Google 登入按鈕
+                      SizedBox(
+                        height: 48,
+                        child: OutlinedButton.icon(
+                          onPressed: _handleGoogleSignIn,
+                          icon: const Icon(Icons.g_mobiledata, size: 24),
+                          label: const Text('使用 Google 帳號登入'),
+                        ),
+                      ),
+                    ],
                   ),
-                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
-
-                // 電子郵件輸入
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: '電子郵件',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '請輸入電子郵件';
-                    }
-                    // ⚡ 改進的電子郵件驗證：支援更多格式
-                    // 允許數字開頭、連續點號、加號等常見格式
-                    final emailRegex = RegExp(
-                      r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
-                    );
-                    if (!emailRegex.hasMatch(value.trim())) {
-                      return '請輸入有效的電子郵件格式';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // 密碼輸入
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: '密碼',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
-                  ),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '請輸入密碼';
-                    }
-                    if (_isSignUp && value.length < 6) {
-                      return '密碼長度至少需要6個字符';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-
-                // 提交按鈕
-                SizedBox(
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleSubmit,
-                    child: _isLoading
-                        ? const CircularProgressIndicator(
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          )
-                        : Text(
-                            _isSignUp ? '註冊' : '登入',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // 切換註冊/登入模式
-                TextButton(
-                  onPressed: _toggleMode,
-                  child: Text(_isSignUp ? '已有帳號？點此登入' : '沒有帳號？點此註冊'),
-                ),
-                const SizedBox(height: 24),
-
-                const Text(
-                  '或者使用以下方式登入',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-
-                // Google登入按鈕
-                ElevatedButton.icon(
-                  onPressed: _handleGoogleSignIn,
-                  icon: const Icon(Icons.g_mobiledata, size: 24),
-                  label: const Text('使用 Google 帳號登入'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black87,
-                    elevation: 1,
-                    side: const BorderSide(color: Colors.grey),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

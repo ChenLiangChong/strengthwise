@@ -1,4 +1,6 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 訓練執行頁面的資訊卡片
 class WorkoutInfoCard extends StatelessWidget {
@@ -33,9 +35,9 @@ class WorkoutInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.all(16.0),
+      margin: context.cardPadding,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: context.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

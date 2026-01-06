@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - 通過 BookingCalendarView 組件處理
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:strengthwise/utils/datetime_utils.dart';
@@ -13,7 +14,7 @@ import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/scheduling/booking/widgets/booking_calendar_view.dart';
 
 class BookingPage extends StatefulWidget {
-  // 允許外部注入控制器，實現依賴注入
+  // 允許外部注入控制器以實現依賴注入
   final IBookingController? controller;
 
   const BookingPage({
@@ -35,23 +36,23 @@ class _BookingPageState extends State<BookingPage> {
   bool _isLoading = true;
   bool _isInitialized = false;
 
-  // 行事曆相關變數
+  // 行事曆相關狀態
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
   CalendarFormat _calendarFormat = CalendarFormat.month;
 
-  // 訓練計劃相關變數
+  // 訓練計劃狀態變數
   Map<DateTime, List<Map<String, dynamic>>> _trainings = {};
   List<Map<String, dynamic>> _selectedDayTrainings = [];
 
-  // 預約相關變數
+  // 預約狀態變數
   Map<DateTime, List<Map<String, dynamic>>> _bookings = {};
   List<Map<String, dynamic>> _selectedDayBookings = [];
 
   // 訓練計劃過濾
   bool _showSelfPlans = true; // 顯示自主訓練計劃
   bool _showTrainerPlans = true; // 顯示教練創建的計劃
-  bool _showBookings = true; // 顯示預約
+  bool _showSessionPlans = true; // ⭐ v3.1: 顯示上課（有 appointmentId）
 
   @override
   void initState() {
@@ -62,7 +63,7 @@ class _BookingPageState extends State<BookingPage> {
     _workoutService = serviceLocator<IWorkoutService>();
     _authController = serviceLocator<IAuthController>();
 
-    // 確保控制器已初始化後再載入數據
+    // 確保控制器已初始化後載入數據
     _safeInitialize();
 
     // 載入訓練計劃數據
@@ -75,7 +76,7 @@ class _BookingPageState extends State<BookingPage> {
     });
 
     try {
-      // 添加更堅固的超時保護
+      // 添加初始化超時保護
       bool initializationComplete = false;
 
       // 等待控制器初始化，但設置絕對超時
@@ -93,46 +94,46 @@ class _BookingPageState extends State<BookingPage> {
           ]);
         } catch (e) {
           print('[BOOKING PAGE] 等待控制器初始化時發生錯誤: $e');
-          // 繼續執行，不要中斷界面顯示
+          // 繼續執行，不要中斷頁面顯示
         }
       }
 
-      // 無論控制器是否完全初始化，都標記為已初始化並嘗試加載數據
+      // 無論控制器是否完全初始化，都標記為已初始化並嘗試載入數據
       if (mounted) {
         setState(() {
           _isInitialized = true;
           _isLoading = false;
         });
 
-        // 嘗試載入預約數據，但使用 try-catch 確保即使載入失敗也不會阻止界面顯示
+        // 嘗試載入預約數據，但使用 try-catch 確保即使載入失敗也不會阻止頁面顯示
         try {
           _loadBookings();
         } catch (e) {
-          print('[BOOKING PAGE] 初始加載預約失敗: $e');
-          // 顯示空列表
+          print('[BOOKING PAGE] 預約數據載入失敗: $e');
+          // 顯示空狀態
           setState(() {
             _bookings = {};
           });
         }
       }
     } catch (e) {
-      // 確保界面總是顯示，即使初始化完全失敗
+      // 確保頁面總是顯示，即使初始化完全失敗
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _isInitialized = true; // 即使失敗也設為已初始化，避免卡住界面
+          _isInitialized = true; // 即使失敗也設為已初始化以顯示頁面
           _bookings = {};
         });
 
-        // 嘗試顯示錯誤，但不讓它阻止界面顯示
+        // 嘗試顯示錯誤，但不讓它阻止頁面顯示
         try {
           _errorService.handleError(
             context,
-            '預約系統無法正常啟動: ${e.toString()}',
-            customMessage: '初始化失敗',
+            '預約系統初始化失敗: ${e.toString()}',
+            customMessage: '預約載入失敗',
           );
         } catch (_) {
-          // 即使錯誤處理失敗也繼續顯示界面
+          // 即使錯誤處理失敗也繼續顯示頁面
           NotificationUtils.showError(context, '預約系統初始化失敗');
         }
       }
@@ -152,7 +153,7 @@ class _BookingPageState extends State<BookingPage> {
     });
 
     try {
-      // 統一載入使用者的所有預約
+      // 統一載入使用者所有預約
       final bookings = await _controller.loadUserBookings();
 
       if (!mounted) return;
@@ -162,9 +163,9 @@ class _BookingPageState extends State<BookingPage> {
 
       for (var booking in bookings) {
         final dateTime = booking['dateTime'];
-        // 暂时跳过 Firestore Timestamp（预约系统尚未迁移到 Supabase）
+        // 同时跳過 Firestore Timestamp（預约系统已經移到 Supabase）
         if (dateTime != null && dateTime is String) {
-          final date = DateTimeUtils.parseIsoTimestamp(dateTime); // ⭐ 統一工具類
+          final date = DateTimeUtils.parseIsoTimestamp(dateTime); // 用統一工具類
           final day = DateTime(date.year, date.month, date.day);
 
           if (bookingsByDate[day] == null) {
@@ -191,19 +192,19 @@ class _BookingPageState extends State<BookingPage> {
     }
   }
 
-  // 載入訓練計劃數據，根據新的集合結構
-  /// 重新載入數據（清除快取）⭐
+  // 載入訓練計劃數據，根據新的資料結構
+  /// 重新載入數據（清除快取）
   Future<void> _refreshData() async {
     print('[BOOKING PAGE] 🔄 重新載入數據（清除快取）');
 
     try {
-      // ⭐ 清除當前用戶的訓練計劃快取
+      // 先清除當前用戶的訓練計劃快取
       final userId = _authController.user?.uid;
       if (userId != null) {
         _workoutService.clearUserPlansCache(userId);
       }
 
-      // 重新載入訓練計劃和預約
+      // 重新載入訓練計劃數據
       await _loadTrainingPlans();
       await _loadBookings();
 
@@ -213,7 +214,7 @@ class _BookingPageState extends State<BookingPage> {
     } catch (e) {
       print('[BOOKING PAGE] ❌ 重新載入失敗: $e');
       if (mounted) {
-        NotificationUtils.showError(context, '更新失敗');
+        NotificationUtils.showError(context, '重新失敗');
       }
     }
   }
@@ -221,7 +222,7 @@ class _BookingPageState extends State<BookingPage> {
   Future<void> _loadTrainingPlans() async {
     if (!mounted) return;
 
-    // ⚡ 優化：如果已有資料，不顯示載入動畫（避免閃爍）
+    // ⚡ 優化：只有已初始化時不顯示載入指示器（避免閃爍）
     if (_trainings.isEmpty) {
       setState(() {
         _isLoading = true;
@@ -240,23 +241,23 @@ class _BookingPageState extends State<BookingPage> {
 
       print('[BOOKING PAGE] 從 WorkoutService 載入訓練計劃，userId: $userId');
 
-      // ⚡ 優化：使用 WorkoutService 的快取（limit 設定為較大值以獲取更多資料）
-      // WorkoutService 內部有 3 小時快取機制，不會頻繁查詢資料庫
-      // ⭐ 明確傳遞 userId，確保查詢的是當前用戶的訓練計劃
+      // ⚡ 優化：使用 WorkoutService 的快取和 limit 設定（較大值以獲取全部資料）
+      // WorkoutService 內部有 3 小時快取機制，避免頻繁查詢資料庫
+      // 必須確保傳入 userId，確保查詢的是當前用戶的訓練計劃
       final plans = await _workoutService.getUserPlans(
-        userId: userId, // ⭐ 明確指定用戶 ID
+        userId: userId, // 必須確保用戶 ID
         limit: 100,
       );
 
-      print('[BOOKING PAGE] ✅ 查詢到 ${plans.length} 個訓練計劃（利用快取）');
+      print('[BOOKING PAGE] ✅ 查詢到 ${plans.length} 筆訓練計劃（使用快取）');
 
       final trainings = <DateTime, List<Map<String, dynamic>>>{};
 
-      // 處理所有訓練計劃（包括未完成和已完成的）
+      // 處理所有訓練計劃（包括已完成和已排定）
       for (var plan in plans) {
-        // ⭐ 重要：使用 UTC 日期分組，避免時區邊界問題
-        // 例如：UTC 2026-01-01 23:00 → 本地 2026-01-02 07:00
-        // 如果用本地日期分組，會顯示在錯誤的日期
+        // ⚠️ 重要：使用 UTC 日期作為鍵，避免時區轉換問題
+        // 例如：UTC 2026-01-01 23:00 是本地 2026-01-02 07:00
+        // 如果用本地日期作組合，會顯示在錯誤的日期
         final date = plan.date; // UTC 時間
         final day = DateTime(date.year, date.month, date.day); // UTC 日期
 
@@ -269,26 +270,27 @@ class _BookingPageState extends State<BookingPage> {
           'title': plan.title.isEmpty ? '訓練計畫' : plan.title,
           'description': plan.notes,
           'scheduled_date':
-              DateTimeUtils.formatToUtcIso(plan.date), // ⭐ 本地時間轉 UTC
+              DateTimeUtils.formatToUtcIso(plan.date), // 將本地時間轉為 UTC
           'trainingEndTime': plan.trainingEndTime != null
               ? DateTimeUtils.formatToUtcIso(plan.trainingEndTime!)
-              : null, // ⭐ 本地時間轉 UTC
+              : null, // 將本地時間轉為 UTC
           'exercises': plan.exerciseRecords
               .map((e) => {
                     'exerciseName': e.exerciseName,
                     'sets': e.sets.length,
-                    'completed': e.completed, // 使用 completed 而不是 isCompleted
+                    'completed': e.completed, // 使用 completed 而非 isCompleted
                   })
               .toList(),
           'completed': plan.completed,
-          // ⭐ v2.9.1 TRN-3: 根據 creatorId 判斷是自主訓練還是教練計畫
-          'planType': (plan.creatorId != null &&
-                  plan.traineeId != null &&
-                  plan.creatorId != plan.traineeId)
-              ? 'trainer'
-              : 'self',
+          // ⭐ v3.1: 判斷訓練類型（優先級：session > trainer > self）
+          'planType': _getPlanType(
+            appointmentId: plan.appointmentId,
+            creatorId: plan.creatorId,
+            traineeId: plan.traineeId,
+          ),
           'trainee_id': plan.traineeId ?? plan.userId,
           'creator_id': plan.creatorId ?? plan.userId,
+          'appointment_id': plan.appointmentId, // ⭐ v3.1: Session Mode 關聯
           'dataType': 'plan',
         });
       }
@@ -301,7 +303,7 @@ class _BookingPageState extends State<BookingPage> {
         _isLoading = false;
       });
 
-      print('[BOOKING PAGE] ⚡ 訓練計劃載入完成，共 ${trainings.length} 天有訓練（使用快取優化）');
+      print('[BOOKING PAGE] ✅ 訓練計劃載入完成，共 ${trainings.length} 天有訓練（使用快取優化）');
     } catch (e) {
       if (!mounted) return;
 
@@ -313,15 +315,15 @@ class _BookingPageState extends State<BookingPage> {
     }
   }
 
-  // 更新選定日期的數據
+  // 更新選定日數據
   void _updateSelectedDayData() {
     final selectedDay =
         DateTime(_selectedDay.year, _selectedDay.month, _selectedDay.day);
 
-    // 獲取所有選定日期的訓練計劃
+    // 獲取所有選定日的訓練計劃
     final allTrainings = _trainings[selectedDay] ?? [];
 
-    // 應用訓練計劃過濾器
+    // ⭐ v3.1: 應用訓練計劃過濾器（三種類型）
     _selectedDayTrainings = allTrainings.where((training) {
       final planType = training['planType'] as String? ?? '';
 
@@ -333,11 +335,35 @@ class _BookingPageState extends State<BookingPage> {
         return false;
       }
 
+      if (planType == 'session' && !_showSessionPlans) {
+        return false;
+      }
+
       return true;
     }).toList();
 
-    // 獲取選定日期的預約
-    _selectedDayBookings = _showBookings ? (_bookings[selectedDay] ?? []) : [];
+    // 獲取預約數據（不再過濾，直接顯示）
+    _selectedDayBookings = _bookings[selectedDay] ?? [];
+  }
+
+  /// ⭐ v3.1: 判斷訓練類型
+  /// 
+  /// 優先級：session > trainer > self
+  String _getPlanType({
+    String? appointmentId,
+    String? creatorId,
+    String? traineeId,
+  }) {
+    // 有 appointmentId → 上課
+    if (appointmentId != null && appointmentId.isNotEmpty) {
+      return 'session';
+    }
+    // creatorId != traineeId → 教練安排
+    if (creatorId != null && traineeId != null && creatorId != traineeId) {
+      return 'trainer';
+    }
+    // 其他 → 自主
+    return 'self';
   }
 
   // 切換過濾器
@@ -350,8 +376,8 @@ class _BookingPageState extends State<BookingPage> {
         case 'trainer':
           _showTrainerPlans = !_showTrainerPlans;
           break;
-        case 'bookings':
-          _showBookings = !_showBookings;
+        case 'session':
+          _showSessionPlans = !_showSessionPlans;
           break;
       }
       _updateSelectedDayData();
@@ -396,7 +422,7 @@ class _BookingPageState extends State<BookingPage> {
     }
   }
 
-  // 創建新的訓練計劃
+  // 創建新訓練計劃
   Future<void> _createTrainingPlan() async {
     if (!mounted) return;
 
@@ -405,7 +431,7 @@ class _BookingPageState extends State<BookingPage> {
       MaterialPageRoute(
         builder: (context) => PlanEditorPage(
           selectedDate: _selectedDay,
-          // ⭐ 個人創建：不預設時間，讓用戶自由選擇
+          // 個人創建：不預設值，讓用戶自由選擇
         ),
       ),
     );
@@ -430,7 +456,7 @@ class _BookingPageState extends State<BookingPage> {
     );
 
     if (result == true) {
-      // 如果訓練計劃有更新，重新載入數據
+      // 如果訓練計劃有更改，重新載入數據
       _loadTrainingPlans();
     }
   }
@@ -452,17 +478,17 @@ class _BookingPageState extends State<BookingPage> {
     );
 
     if (result == true) {
-      // 重新加載訓練計劃
+      // 重新載入訓練計劃
       _loadTrainingPlans();
     }
   }
 
   // 刪除訓練計畫
-  // ⭐ v2.9.1: 前端權限檢查，避免依賴 RLS 靜默失敗
+  // ⭐ v2.9.1: 前端權限檢查，避免觸發 RLS 刪除失敗
   Future<void> _deleteTrainingPlan(String planId, String planTitle) async {
     if (!mounted) return;
 
-    // ⭐ v2.9.1: 先從快取的訓練資料中找到這個計畫，檢查創建者
+    // ⭐ v2.9.1: 從快取的訓練計劃中找到這個計劃並檢查創建者
     final currentUserId = _authController.user?.uid;
     final plan = _selectedDayTrainings.firstWhere(
       (p) => p['id'] == planId,
@@ -470,7 +496,7 @@ class _BookingPageState extends State<BookingPage> {
     );
 
     if (plan.isEmpty) {
-      NotificationUtils.showError(context, '找不到訓練計畫');
+      NotificationUtils.showError(context, '找不到訓練計劃');
       return;
     }
 
@@ -479,12 +505,12 @@ class _BookingPageState extends State<BookingPage> {
 
     // ⭐ v2.9.1 TRN-2: 權限檢查 - 只有創建者可以刪除
     // 如果 creatorId 存在且不等於當前用戶，阻止刪除
-    // 如果 creatorId 不存在（舊記錄），則用 traineeId 判斷（自己創建的可以刪）
+    // 如果 creatorId 不存在則回退，基於 traineeId 判斷（自己創建的可以刪除）
     final effectiveCreatorId = creatorId ?? traineeId;
     if (effectiveCreatorId != null && effectiveCreatorId != currentUserId) {
       NotificationUtils.showWarning(
         context,
-        '無法刪除教練安排的訓練計畫，如需調整請聯繫教練',
+        '無法刪除教練安排的訓練計劃，如需調整請聯繫教練',
       );
       return;
     }
@@ -492,7 +518,7 @@ class _BookingPageState extends State<BookingPage> {
     // 顯示確認對話框
     final confirmed = await showDialog<bool>(
       context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+      barrierDismissible: false, // 修復：禁止點擊旁邊關閉
       builder: (context) => AlertDialog(
         title: const Text('刪除訓練計畫'),
         content: Text('確定要刪除「$planTitle」嗎？此操作無法復原。'),
@@ -525,7 +551,7 @@ class _BookingPageState extends State<BookingPage> {
           NotificationUtils.showError(context, '刪除失敗，請稍後再試');
         }
 
-        // 重新加載訓練計畫
+        // 重新載入訓練計畫
         _loadTrainingPlans();
       }
     } catch (e) {
@@ -543,7 +569,7 @@ class _BookingPageState extends State<BookingPage> {
       appBar: AppBar(
         title: const Text('訓練行事曆'),
         actions: [
-          // ⭐ 重新載入按鈕
+          // 重新載入按鈕
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: '重新載入',
@@ -564,10 +590,10 @@ class _BookingPageState extends State<BookingPage> {
                 selectedDayTrainings: _selectedDayTrainings,
                 selectedDayBookings: _selectedDayBookings,
                 currentUserId: _authController.user?.uid,
-                isCoachMode: false, // 統一視圖，不分教練/學員模式
+                isCoachMode: false, // 統一視角，不再區分學員模式
                 showSelfPlans: _showSelfPlans,
                 showTrainerPlans: _showTrainerPlans,
-                showBookings: _showBookings,
+                showSessionPlans: _showSessionPlans,
                 onDaySelected: (selectedDay, focusedDay) {
                   setState(() {
                     _selectedDay = selectedDay;
@@ -595,6 +621,7 @@ class _BookingPageState extends State<BookingPage> {
               ),
             ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'booking_page_fab', // ⭐ 防止 Hero tag 衝突
         onPressed: _createTrainingPlan,
         tooltip: '創建訓練計劃',
         child: const Icon(Icons.add),

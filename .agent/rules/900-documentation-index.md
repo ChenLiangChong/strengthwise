@@ -1,0 +1,76 @@
+﻿---
+description: "專案文檔索引與查閱指南。指導 AI 根據需求主動查找相關文檔。"
+globs: 
+alwaysApply: true
+---
+
+# 文檔索引
+
+## 📚 文檔地圖
+
+### 核心開發文檔
+
+| 主題 | 檔案路徑 | 何時使用 |
+|---|----|----|
+| **開發狀態** | `docs/DEVELOPMENT_STATUS.md` | 查詢當前進度、待完成任務 |
+| **專案架構** | `docs/PROJECT_OVERVIEW.md` | 了解技術棧、目錄結構 |
+| **開發規範** | `AGENTS.md` | 核心規則總覽 |
+
+### 資料庫文檔
+
+| 主題 | 檔案路徑 | 何時使用 |
+|---|----|----|
+| **完整 Schema** | `docs/DATABASE_SUPABASE.md` | 表格結構、RLS、查詢規範 |
+| **時間處理** | `docs/DATETIME_UTILS_GUIDE.md` | 時間解析、格式化 |
+| **Migration** | `migrations/README.md` | 執行順序、版本對應 |
+
+### 功能模組文檔
+
+| 主題 | 檔案路徑 | 何時使用 |
+|---|----|----|
+| **健康評估** | `docs/HEALTH_ASSESSMENT_SYSTEM.md` | PAR-Q+ 問卷、風險評估 |
+| **SaaS 路線圖** | `docs/SAAS_PLATFORM_ROADMAP.md` | 未來計劃 |
+| **功能規劃** | `docs/planning/*.md` | 新功能詳細規格書 |
+
+### UI/UX 文檔
+
+| 主題 | 檔案路徑 | 何時使用 |
+|---|----|----|
+| **設計系統** | `docs/UI_DESIGN_SYSTEM.md` | 設計理念、決策 |
+| **開發指南** | `docs/UI_DEVELOPER_GUIDE.md` | 色彩、字體、間距速查 |
+
+### 部署與工具
+
+| 主題 | 檔案路徑 | 何時使用 |
+|---|----|----|
+| **部署指南** | `docs/DEPLOYMENT_GUIDE.md` | APK 建置、OAuth 配置 |
+| **FCM 推播** | `docs/FCM_SETUP_GUIDE.md` | 推播通知、Edge Functions |
+| **Python 腳本** | `scripts/README.md` | 測試資料生成、統計重置 |
+
+---
+
+## 📋 快速查找
+
+| 我想了解... | 查閱文檔 |
+|---|----|
+| 專案當前狀態 | `DEVELOPMENT_STATUS.md` |
+| 資料庫設計 | `DATABASE_SUPABASE.md` |
+| 時間處理方式 | `DATETIME_UTILS_GUIDE.md` |
+| UI 設計規範 | `UI_DEVELOPER_GUIDE.md` |
+| 部署流程 | `DEPLOYMENT_GUIDE.md` |
+| 推播通知配置 | `FCM_SETUP_GUIDE.md` |
+| Python 工具 | `scripts/README.md` |
+| Migration 順序 | `migrations/README.md` |
+| 健康評估系統 | `HEALTH_ASSESSMENT_SYSTEM.md` |
+| 功能規劃詳情 | `docs/planning/*.md` |
+
+---
+
+## 🔍 使用規則
+
+<critical>
+1. **主動檢索**：當使用者詢問特定功能時，先讀取相關文檔
+2. **衝突檢測**：如果代碼與文檔描述衝突，明確告知
+3. **文檔更新**：如果修改代碼導致文檔過時，建議更新
+</critical>
+

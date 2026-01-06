@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - 全螢幕繪圖頁，無需約束
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -9,7 +10,7 @@ import 'package:strengthwise/views/pages/notes/widgets/annotation_painter.dart';
 /// - 在照片上繪製圓圈
 /// - 繪製箭頭
 /// - 添加文字註解
-/// - 儲存標註為向量數據
+/// - 儲存標註為結構化數據
 class PhotoAnnotationPage extends StatefulWidget {
   final File photo;
 
@@ -125,7 +126,7 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
     }
   }
 
-  /// 轉換為照片座標
+  /// 轉換到照片座標
   Offset _convertToImageCoordinates(Offset screenOffset, Size canvasSize) {
     if (_imageSize == null) return Offset.zero;
 
@@ -145,7 +146,7 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
 
     final text = await showDialog<String>(
       context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+      barrierDismissible: false, // 🔧 修復：禁止點擊外部關閉
       builder: (context) => AlertDialog(
         title: const Text('添加文字註解'),
         content: TextField(
@@ -182,7 +183,7 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
     }
   }
 
-  /// 撤銷上一個標註
+  /// 撤銷上一個操作
   void _undo() {
     if (_annotations.isNotEmpty) {
       setState(() {
@@ -191,7 +192,7 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
     }
   }
 
-  /// 清除所有標註
+  /// 清除所有操作
   void _clear() {
     setState(() {
       _annotations.clear();
@@ -201,7 +202,7 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
 
   /// 儲存標註
   void _save() {
-    // TODO: 將標註轉換為 JSONB 格式並返回
+    // TODO: 將標註轉換為 JSONB 格式並儲存
     Navigator.pop(context, _annotations);
   }
 

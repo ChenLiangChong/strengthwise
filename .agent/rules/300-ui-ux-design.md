@@ -1,0 +1,62 @@
+﻿---
+description: "UI/UX 設計規範：Kinetic 設計系統、色彩方案、Material 3。適用於 views 和 themes。"
+globs: lib/views/**/*.dart,lib/themes/**/*.dart
+alwaysApply: false
+---
+
+# UI/UX 設計規範
+
+<critical>
+1. 禁止硬編碼顏色，必須使用 `Theme.of(context).colorScheme`
+2. 禁止使用純黑 `#000000`，深色模式使用 `#0F172A`
+3. 禁止硬編碼尺寸，必須使用 8 點網格系統
+4. 最小觸控目標 48dp（菲茨定律）
+</critical>
+
+## ✅ 正確做法
+
+```dart
+// 顏色使用 Theme
+color: Theme.of(context).colorScheme.primary
+
+// 8 點網格間距
+padding: const EdgeInsets.all(16)  // 8 的倍數
+margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16)
+
+// 觸控目標
+ElevatedButton(
+  style: ElevatedButton.styleFrom(
+    minimumSize: const Size.fromHeight(48),
+  ),
+)
+
+// 卡片設計
+Card(
+  elevation: 0,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(16),
+    side: BorderSide(color: Theme.of(context).colorScheme.outline),
+  ),
+)
+```
+
+## ❌ 禁止做法
+
+```dart
+// 硬編碼顏色
+color: Colors.blue  // ❌
+color: Color(0xFF2563EB)  // ❌
+
+// 任意尺寸
+padding: const EdgeInsets.all(13)  // 不是 8 的倍數
+```
+
+## 🔤 字體策略
+
+| 用途 | 字體 |
+|------|------|
+| 標題、按鈕 | Inter |
+| 數據（重量、次數）| JetBrains Mono |
+
+詳見：`@docs/UI_UX_GUIDELINES.md`
+

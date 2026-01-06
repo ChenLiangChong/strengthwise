@@ -1,8 +1,10 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/interfaces/i_statistics_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/statistics/widgets/empty_state_widget.dart';
 import 'widgets/time_range_selector.dart';
 import 'tabs/overview_tab.dart';
@@ -13,6 +15,8 @@ import 'tabs/completion_rate_tab.dart';
 import 'tabs/body_data_tab.dart';
 
 /// 統計頁面（重構版）
+///
+/// 響應式設計：子組件已適配多尺寸螢幕
 ///
 /// 包含力量進步、肌群平衡、訓練日曆等專業統計功能
 ///
@@ -225,19 +229,29 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
   /// 構建錯誤狀態
   Widget _buildErrorState(
       IStatisticsController controller, String targetUserId) {
+    final textTheme = Theme.of(context).textTheme;
+    final iconSize = context.isMobileSmall ? 48.0 : 64.0;
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: Colors.red),
-          const SizedBox(height: 16),
-          Text(controller.errorMessage!),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => controller.initialize(targetUserId),
-            child: const Text('重試'),
-          ),
-        ],
+      child: Padding(
+        padding: context.pagePadding,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: iconSize, color: Colors.red),
+            SizedBox(height: context.spacing.md),
+            Text(
+              controller.errorMessage!,
+              style: textTheme.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: context.spacing.md),
+            ElevatedButton(
+              onPressed: () => controller.initialize(targetUserId),
+              child: const Text('重試'),
+            ),
+          ],
+        ),
       ),
     );
   }

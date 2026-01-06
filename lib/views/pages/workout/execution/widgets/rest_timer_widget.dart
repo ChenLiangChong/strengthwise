@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

@@ -2,7 +2,35 @@
 
 > 資料庫遷移、修復、架構變更的歷史記錄
 
-**最後更新**：2026-01-05
+**最後更新**：2026-01-06
+
+---
+
+## 🔧 v3.1 修復記錄
+
+### v3.1: session_notes 觸發器修復（2026-01-06）
+
+**問題**：`create_session_mode_data()` 觸發函數使用了不存在的欄位
+
+```sql
+-- 錯誤欄位
+session_date, note_type, soap
+
+-- 正確欄位
+title, content, visibility
+```
+
+**解決方案**：
+1. 修正 `031_session_auto_create.sql` 中的 INSERT 語句
+2. 新增唯一索引 `idx_session_notes_appointment_unique` 支援 `ON CONFLICT`
+3. 移除 `workout_plans` 自動創建（改為教練在 Session Mode 手動建立）
+
+**Migration**：`034_fix_session_auto_create.sql`
+
+**影響**：
+- `session_notes` 表：修正觸發器
+- `daily_readiness` 表：維持原邏輯
+- `workout_plans` 表：不再自動創建
 
 ---
 
@@ -96,6 +124,28 @@
 **技術決策**：
 - 教練備註使用獨立表格（RLS 隔離）
 - Upsert 模式處理備註更新
+
+---
+
+### v3.0: 預約系統優化 + Session Mode（2026-01-05）
+
+**新增表格**：
+- `coach_booking_settings`：教練預約設定（緩衝、限制）
+- `daily_readiness`：課前問卷（睡眠、痠痛、壓力、能量）
+
+**修改表格**：
+- `session_notes`：新增 `appointment_id` 欄位
+- `workout_plans`：新增 `appointment_id` 欄位
+- `appointments.status`：新增 `rejected` 狀態
+
+**新增觸發器**：
+- `trg_create_session_mode_data`：預約確認時自動創建 session_notes、daily_readiness
+
+**Migration 檔案**：
+- `028_coach_booking_settings.sql`
+- `029_add_rejected_status.sql`
+- `030_daily_readiness.sql`
+- `031_session_auto_create.sql`
 
 ---
 

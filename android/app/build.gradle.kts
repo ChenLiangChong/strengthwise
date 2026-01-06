@@ -3,6 +3,8 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // Firebase Cloud Messaging（推播通知）⭐ v3.0-C
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -13,6 +15,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // 啟用 Core Library Desugaring（flutter_local_notifications 需要）
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -44,11 +48,8 @@ flutter {
     source = "../.."
 }
 
-// Firebase 相關 Plugin 已移除（已遷移到 Supabase）
-// apply(plugin = "com.google.gms.google-services")
-// apply(plugin = "com.google.firebase.crashlytics")
-
 dependencies {
     implementation("androidx.multidex:multidex:2.0.1")
-    // 其他依賴...
+    // Core Library Desugaring（Java 8+ API 支援）
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

@@ -1,4 +1,6 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/session_note_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
@@ -15,7 +17,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 ///
 /// 功能：
 /// - 顯示完整的 SOAP 筆記內容
-/// - 顯示視覺元素（照片、手繪等）
+/// - 顯示視覺元素（照片、手繪圖）
 /// - 編輯筆記
 /// - 切換隱私設定
 class SessionNoteDetailPage extends StatefulWidget {
@@ -47,7 +49,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
 
   /// 載入筆記
   Future<void> _loadNote() async {
-    debugPrint('[NOTE_DETAIL] 🔵 開始載入筆記');
+    debugPrint('[NOTE_DETAIL] 📝 開始載入筆記');
     debugPrint('[NOTE_DETAIL] 🆔 筆記 ID: ${widget.noteId}');
 
     setState(() => _isLoading = true);
@@ -58,17 +60,17 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
       final note = _controller.selectedNote;
       if (note != null) {
         debugPrint('[NOTE_DETAIL] ✅ 筆記載入成功');
-        debugPrint('[NOTE_DETAIL] 👤 教練 ID: ${note.coachId}');
-        debugPrint('[NOTE_DETAIL] 👨‍🎓 學員 ID: ${note.clientId}');
+        debugPrint('[NOTE_DETAIL] 👨‍🏫 教練 ID: ${note.coachId}');
+        debugPrint('[NOTE_DETAIL] 👥 學員 ID: ${note.clientId}');
         debugPrint('[NOTE_DETAIL] 🔒 隱私: ${note.visibility}');
-        debugPrint('[NOTE_DETAIL] 🖼️ 視覺元素數量: ${note.visualElements.length}');
+        debugPrint('[NOTE_DETAIL] 📊 視覺元素數: ${note.visualElements.length}');
 
-        // 列出所有視覺元素
+        // 輸出每個視覺元素
         for (var i = 0; i < note.visualElements.length; i++) {
           final element = note.visualElements[i];
-          debugPrint('[NOTE_DETAIL] 📦 元素 $i: 類型=${element.type}');
+          debugPrint('[NOTE_DETAIL] 📷 元素 $i: 類型=${element.type}');
           if (element is PhotoElementModel) {
-            debugPrint('[NOTE_DETAIL]    📸 照片路徑: ${element.storagePath}');
+            debugPrint('[NOTE_DETAIL]    🖼️ 照片路徑: ${element.storagePath}');
           }
         }
       } else {
@@ -84,7 +86,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
       }
     } finally {
       setState(() => _isLoading = false);
-      debugPrint('[NOTE_DETAIL] 🔵 載入流程結束');
+      debugPrint('[NOTE_DETAIL] 📝 載入流程結束');
     }
   }
 
@@ -136,7 +138,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
   Future<void> _deleteNote(SessionNoteModel note) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+      barrierDismissible: false, // 🔧 修復：禁止點擊外部關閉
       builder: (context) => AlertDialog(
         title: const Text('刪除筆記'),
         content: const Text('確定要刪除此筆記嗎？此操作無法復原。'),
@@ -235,7 +237,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
                               ? Icons.share_outlined
                               : Icons.lock_outlined),
                           const SizedBox(width: 8),
-                          Text(note.isPrivate ? '設為共享' : '設為私人'),
+                          Text(note.isPrivate ? '設為分享' : '設為私人'),
                         ],
                       ),
                     ),
@@ -287,59 +289,64 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
 
                   return RefreshIndicator(
                     onRefresh: _loadNote,
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 筆記標題
-                          _buildTitleSection(note),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 600),
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: context.pagePadding,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 筆記標題
+                              _buildTitleSection(note),
 
-                          const SizedBox(height: 16),
+                              const SizedBox(height: 16),
 
-                          // 標題資訊卡
-                          _buildHeaderCard(note),
+                              // 標頭資訊卡
+                              _buildHeaderCard(note),
 
-                          const SizedBox(height: 16),
+                              const SizedBox(height: 16),
 
-                          // 快速標籤
-                          if (note.quickTags.isNotEmpty) ...[
-                            _buildQuickTags(note.quickTags),
-                            const SizedBox(height: 16),
-                          ],
+                              // 快速標籤
+                              if (note.quickTags.isNotEmpty) ...[
+                                _buildQuickTags(note.quickTags),
+                                const SizedBox(height: 16),
+                              ],
 
-                          // SOAP 內容
-                          if (note.soap != null && !note.soap!.isEmpty)
-                            _buildSoapContent(note.soap!),
+                              // SOAP 內容
+                              if (note.soap != null && !note.soap!.isEmpty)
+                                _buildSoapContent(note.soap!),
 
-                          // 視覺元素
-                          if (note.hasVisualElements) ...[
-                            const SizedBox(height: 16),
-                            _buildVisualElements(note),
-                          ],
+                              // 視覺元素
+                              if (note.hasVisualElements) ...[
+                                const SizedBox(height: 16),
+                                _buildVisualElements(note),
+                              ],
 
-                          // 空狀態（僅教練可編輯）
-                          if (note.isEmpty &&
-                              note.coachId == _authController.user?.uid) ...[
-                            const SizedBox(height: 32),
-                            Center(
-                              child: Column(
-                                children: [
-                                  const Icon(Icons.note_outlined, size: 64),
-                                  const SizedBox(height: 16),
-                                  const Text('此筆記尚無內容'),
-                                  const SizedBox(height: 16),
-                                  ElevatedButton.icon(
-                                    onPressed: () => _editNote(note),
-                                    icon: const Icon(Icons.edit),
-                                    label: const Text('開始編輯'),
+                              // 空狀態（僅教練可編輯）
+                              if (note.isEmpty &&
+                                  note.coachId == _authController.user?.uid) ...[
+                                const SizedBox(height: 32),
+                                Center(
+                                  child: Column(
+                                    children: [
+                                      const Icon(Icons.note_outlined, size: 64),
+                                      const SizedBox(height: 16),
+                                      const Text('此筆記尚無內容'),
+                                      const SizedBox(height: 16),
+                                      ElevatedButton.icon(
+                                        onPressed: () => _editNote(note),
+                                        icon: const Icon(Icons.edit),
+                                        label: const Text('開始編輯'),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   );
@@ -361,7 +368,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
     );
   }
 
-  /// 標題資訊卡
+  /// 標頭資訊卡
   Widget _buildHeaderCard(SessionNoteModel note) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -372,7 +379,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 學員資訊
+            // 學員資料
             Row(
               children: [
                 CircleAvatar(
@@ -402,7 +409,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
                     ],
                   ),
                 ),
-                // 隱私狀態標籤
+                // 隱私標籤
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -426,7 +433,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        note.isShared ? '共享' : '私人',
+                        note.isShared ? '分享' : '私人',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: note.isShared
                               ? colorScheme.onPrimaryContainer
@@ -491,7 +498,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
         if (soap.plan != null && soap.plan!.isNotEmpty) ...[
           const SizedBox(height: 12),
           SoapSectionCard(
-            title: 'P - 計劃',
+            title: 'P - 計畫',
             content: soap.plan!,
             icon: Icons.calendar_today_outlined,
             color: Colors.purple,
@@ -503,8 +510,8 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
 
   /// 視覺元素
   Widget _buildVisualElements(SessionNoteModel note) {
-    debugPrint('[NOTE_DETAIL] 🖼️ 開始建構視覺元素 UI');
-    debugPrint('[NOTE_DETAIL] 📦 總視覺元素數量: ${note.visualElements.length}');
+    debugPrint('[NOTE_DETAIL] 📊 開始建構視覺元素 UI');
+    debugPrint('[NOTE_DETAIL] 📷 總視覺元素數量: ${note.visualElements.length}');
 
     return Column(
       children: [
@@ -564,21 +571,21 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
   Widget _buildDrawingCard(DrawingElementModel drawing) {
     final theme = Theme.of(context);
 
-    // 提取底圖類型
+    // 取得底圖類型
     String templateName = '底圖';
     if (drawing.templateType != null) {
       switch (drawing.templateType) {
         case 'note1':
-          templateName = '三視圖（前/側/背）';
+          templateName = '三視圖（前/後/側）';
           break;
         case 'note2':
-          templateName = '前視圖';
+          templateName = '正面';
           break;
         case 'note3':
-          templateName = '側視圖';
+          templateName = '背面';
           break;
         case 'note4':
-          templateName = '背視圖';
+          templateName = '側面';
           break;
       }
     }
@@ -605,7 +612,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
           children: [
             if (drawing.drawingData != null)
               Text(
-                '向量繪圖 • 只讀',
+                '包含繪圖 · 點擊查看',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.primary,
                 ),
@@ -625,7 +632,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
           color: theme.colorScheme.onSurfaceVariant,
         ),
         onTap: () {
-          // 打開繪圖查看器（只讀模式）
+          // 開啟繪圖查看頁（唯讀模式）
           if (drawing.drawingData != null && drawing.templateType != null) {
             Navigator.push(
               context,
@@ -638,7 +645,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('繪圖數據不完整')),
+              const SnackBar(content: Text('繪圖資料不完整')),
             );
           }
         },
@@ -654,10 +661,10 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
         .cast<PhotoElementModel>()
         .toList();
 
-    debugPrint('[NOTE_DETAIL] 📸 照片元素數量: ${photoElements.length}');
+    debugPrint('[NOTE_DETAIL] 📷 照片元素數量: ${photoElements.length}');
 
     if (photoElements.isEmpty) {
-      debugPrint('[NOTE_DETAIL] ℹ️ 沒有照片元素，隱藏區塊');
+      debugPrint('[NOTE_DETAIL] ⏭️ 沒有照片元素，隱藏區塊');
       return const SizedBox.shrink();
     }
 
@@ -697,7 +704,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
 
   /// 照片縮圖
   Widget _buildPhotoThumbnail(PhotoElementModel photo) {
-    debugPrint('[NOTE_DETAIL] 🖼️ 開始建構照片縮圖: ${photo.storagePath}');
+    debugPrint('[NOTE_DETAIL] 📊 開始建構照片縮圖: ${photo.storagePath}');
 
     return FutureBuilder<String>(
       future: _getPhotoUrl(photo.storagePath),
@@ -761,17 +768,17 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
     );
   }
 
-  /// 獲取照片 URL（Supabase Storage Signed URL）
+  /// 取得照片 URL（Supabase Storage Signed URL）
   Future<String> _getPhotoUrl(String storagePath) async {
-    debugPrint('[NOTE_DETAIL] 🔗 開始獲取照片 URL');
+    debugPrint('[NOTE_DETAIL] 🔗 取得照片簽名 URL');
     debugPrint('[NOTE_DETAIL] 📂 Storage 路徑: $storagePath');
-    debugPrint('[NOTE_DETAIL] 🪣 Bucket: session_photos');
+    debugPrint('[NOTE_DETAIL] 📦 Bucket: session_photos');
 
     try {
       final supabase = Supabase.instance.client;
       // 生成 24 小時有效的 signed URL
       final signedUrl = supabase.storage
-          .from('session_photos') // ✅ 修正：使用下劃線，不是破折號
+          .from('session_photos') // 🔧 修正：使用正確名稱，不含破折號
           .createSignedUrl(storagePath, 86400); // 24 小時
 
       debugPrint('[NOTE_DETAIL] ✅ Signed URL 生成成功');
@@ -779,7 +786,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
 
       return signedUrl;
     } catch (e) {
-      debugPrint('[NOTE_DETAIL] ❌ 獲取照片 URL 失敗: $e');
+      debugPrint('[NOTE_DETAIL] ❌ 取得照片 URL 失敗: $e');
       debugPrint('[NOTE_DETAIL] 📋 Stack trace: ${StackTrace.current}');
       rethrow;
     }
@@ -789,7 +796,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
   void _showPhotoDialog(String photoUrl, String? caption) {
     showDialog(
       context: context,
-      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+      barrierDismissible: false, // 🔧 修復：禁止點擊外部關閉
       builder: (context) => Dialog(
         backgroundColor: Colors.black,
         child: Column(
@@ -848,7 +855,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
 
   /// 格式化日期
   String _formatDate(DateTime date) {
-    // ⭐ date 已經是本地時間，不需要 .toLocal()
+    // 【date 已經是本地時間，不需要 .toLocal()】
     return '${date.year}/${date.month}/${date.day} '
         '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }

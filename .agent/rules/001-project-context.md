@@ -1,0 +1,93 @@
+﻿---
+description: "StrengthWise 專案的全域上下文、技術棧與版本狀態。適用於所有開發任務。"
+globs: *
+alwaysApply: true
+---
+
+# Project Context - StrengthWise
+
+## 📋 專案資訊
+
+| 項目 | 內容 |
+|------|------|
+| **專案名稱** | StrengthWise |
+| **當前版本** | v3.0（2026-01-05 開發中）|
+| **專案類型** | 跨平台健身訓練追蹤應用 |
+| **目標平台** | Android / iOS / Windows |
+
+## 🛠️ 技術棧
+
+```
+Frontend:
+├── Flutter 3.16+ / Dart 3.1+
+├── 狀態管理：Provider (ChangeNotifier)
+├── 依賴注入：GetIt (Service Locator)
+├── 圖表：fl_chart
+└── 設計：Material 3 + Kinetic Design
+
+Backend:
+├── Supabase (PostgreSQL 14+)
+├── Authentication：Supabase Auth + Google Sign-In
+├── Storage：Supabase Storage
+├── 安全性：Row Level Security (RLS)
+└── 時間類型：TIMESTAMPTZ / TSTZRANGE
+```
+
+## 🏗️ 架構模式
+
+**MVVM + Clean Architecture**（100% 實施）
+
+```
+View Layer (UI)          → lib/views/
+    ↓ Provider
+Controller Layer         → lib/controllers/
+    ↓ Interface
+Service Layer            → lib/services/
+    ↓
+Model Layer              → lib/models/
+```
+
+## ✅ 已完成功能
+
+### v1.0 單機版
+- 訓練計劃管理、模板系統
+- 794 個專業動作資料庫
+- 統計分析系統（秒開）
+- 身體數據追蹤
+- Google Sign-In
+
+### v2.0-v2.9 教練學員平台
+- Phase 1：教練學員系統（邀請、綁定、狀態管理）
+- Phase 2：預約系統（TSTZRANGE、GiST 排除約束）
+- Phase 3：視覺化筆記（SOAP、照片、手繪板）
+- Phase 4：統一行事曆、多學員統計
+- v2.3-v2.7：資料庫修復、登入驗證、UI 重構
+- v2.8：健康評估系統（PAR-Q+ 問卷）
+- v2.8.1-v2.8.4：教練評估備註、文檔重構、PR 修復、角色修復
+- v2.9：教練公開檔案 + 訓練權限系統
+- v2.9.1：訓練 UX 優化（狀態機、休息計時器、權限阻止）
+- v3.0：預約系統優化 + Session Mode（開發中）⭐
+
+## 📊 專案規模
+
+```
+總代碼量：~66,300 行
+├── Flutter/Dart：~63,000 行
+├── SQL/Migrations：~3,500 行（13 個檔案）
+└── Python 腳本：~2,200 行
+
+核心組件：
+├── Pages：60+
+├── Controllers：20+（含 67 子模組）
+├── Services：53+
+├── Models：65+
+└── Widgets：196+
+```
+
+## 🔗 關鍵文檔
+
+- **開發狀態**：`docs/DEVELOPMENT_STATUS.md` ⭐⭐⭐
+- **資料庫設計**：`docs/DATABASE_SUPABASE.md`
+- **專案架構**：`docs/PROJECT_OVERVIEW.md`
+- **開發規範**：`AGENTS.md`
+

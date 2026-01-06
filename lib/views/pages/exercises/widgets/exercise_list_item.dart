@@ -1,9 +1,15 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import '../../../../models/exercise_model.dart';
 
 /// 動作列表項 Widget
 ///
 /// 用於在動作列表中顯示單個動作的卡片
+///
+/// 響應式設計：
+/// - 使用 Theme 文字樣式
+/// - 響應式間距
 class ExerciseListItem extends StatelessWidget {
   final Exercise exercise;
   final String? selectedBodyPart;
@@ -28,13 +34,21 @@ class ExerciseListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayName = exercise.name;
     final infoParts = _buildInfoParts();
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8.0),
+      elevation: 0,
+      margin: EdgeInsets.only(bottom: context.spacing.sm),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+      ),
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: context.cardPadding,
           child: Row(
             children: [
               // 左側：動作名稱和資訊
@@ -45,19 +59,17 @@ class ExerciseListItem extends StatelessWidget {
                     // 動作名稱
                     Text(
                       displayName,
-                      style: const TextStyle(
+                      style: textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
                       ),
                     ),
                     // 底部資訊（肌群、器材）
                     if (infoParts.isNotEmpty) ...[
-                      const SizedBox(height: 6),
+                      SizedBox(height: context.spacing.xs),
                       Text(
                         infoParts.join(' • '),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -71,14 +83,14 @@ class ExerciseListItem extends StatelessWidget {
                   IconButton(
                     icon: Icon(
                       Icons.add_circle,
-                      color: Theme.of(context).colorScheme.secondary,
+                      color: colorScheme.secondary,
                     ),
                     tooltip: '選擇此動作',
                     onPressed: onSelect,
                   ),
                   Icon(
                     Icons.info_outline,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ],
               ),

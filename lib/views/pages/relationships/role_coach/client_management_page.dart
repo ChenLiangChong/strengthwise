@@ -1,18 +1,29 @@
+// ✅ 已響應式改造 (Phase 0 + P3 Master-Detail)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/services/interfaces/i_coaching_relationship_service.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/coaching_relationship_model.dart';
 import 'package:strengthwise/models/user_model.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/widgets/client_list_card.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/widgets/generate_invite_code_dialog.dart';
 import 'package:strengthwise/views/pages/scheduling/availability/client_availability_page.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/client_detail_page.dart';
 import 'package:strengthwise/views/pages/relationships/binding/binding_page.dart';
+// ⭐ P3: Master-Detail 支援
+import 'package:strengthwise/views/shared/layouts/master_detail_layout.dart';
+import 'package:strengthwise/views/pages/relationships/role_coach/widgets/client_detail_content.dart';
 
 /// 學員管理頁面（教練專用）
 class ClientManagementPage extends StatefulWidget {
-  const ClientManagementPage({super.key});
+  /// ⭐ P3：選中學員回調（用於 True Dual-Pane 佈局）
+  final void Function(UserModel? client)? onClientSelected;
+
+  const ClientManagementPage({
+    super.key,
+    this.onClientSelected,
+  });
 
   @override
   State<ClientManagementPage> createState() => _ClientManagementPageState();
@@ -28,6 +39,8 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
   List<CoachingRelationshipModel> _relationships = [];
   Map<String, UserModel> _clientsMap = {};
   String? _currentUserId;
+  // ⭐ P3: Master-Detail 選中的學員
+  UserModel? _selectedClient;
 
   @override
   void initState() {
@@ -235,10 +248,13 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
+    // ⭐ P3: 使用 MasterDetailLayout 包裝
+    final masterContent = Scaffold(
+      // ⭐ 移除標題（外層 TabBar 已有標籤），只保留 actions
       appBar: AppBar(
-        automaticallyImplyLeading: false, // ⭐ 移除返回按鈕（TabBar 子頁面不需要）
-        title: const Text('學員管理'),
+        automaticallyImplyLeading: false,
+        title: null,
+        toolbarHeight: 48, // 縮小高度
         actions: [
           // 刷新按鈕
           IconButton(
@@ -283,7 +299,7 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.1),
+                            color: Colors.orange.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Row(
@@ -408,26 +424,54 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
               onDeleteClient: (relationship) => _deleteClient(relationship.id),
               onViewClientAvailability: _viewClientAvailability,
               onClientTap: (relationship, client) {
-                // 導航到學員詳情頁面
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ClientDetailPage(
-                      clientId: client.uid,
-                      client: client,
+                // ⭐ P3: 如果有回調，通知父層；否則使用內部 MasterDetailLayout
+                if (widget.onClientSelected != null) {
+                  widget.onClientSelected!(client);
+                } else if (context.isMobile) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ClientDetailPage(
+                        clientId: client.uid,
+                        client: client,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } else {
+                  setState(() {
+                    _selectedClient = client;
+                  });
+                }
               },
             ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'client_management_fab',
         onPressed: _showInviteOptions,
         icon: const Icon(Icons.person_add),
         label: const Text('邀請學員'),
       ),
+    );
+
+    // ⭐ P3: 如果父層處理 Detail（有 onClientSelected），直接返回 masterContent
+    if (widget.onClientSelected != null) {
+      return masterContent;
+    }
+
+    // 否則使用內部 MasterDetailLayout
+    return MasterDetailLayout(
+      master: masterContent,
+      masterWidth: 380, // 學員列表稍寬，因為有統計卡片
+      detail: _selectedClient != null
+          ? ClientDetailContent(
+              key: ValueKey(_selectedClient!.uid),
+              clientId: _selectedClient!.uid,
+              client: _selectedClient!,
+              onDataChanged: _loadClients,
+            )
+          : null,
     );
   }
 
@@ -440,8 +484,8 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
         _relationships.where((r) => r.status == 'pending').length;
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
+      margin: context.pagePadding, // ⭐ 響應式邊距
+      padding: EdgeInsets.all(context.spacing.lg), // ⭐ 響應式內距
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -455,18 +499,21 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatItem(
+            context,
             icon: Icons.people,
             label: '總學員',
             value: totalClients.toString(),
             color: colorScheme.primary,
           ),
           _buildStatItem(
+            context,
             icon: Icons.check_circle,
             label: '活躍',
             value: activeClients.toString(),
             color: Colors.green,
           ),
           _buildStatItem(
+            context,
             icon: Icons.pending,
             label: '待接受',
             value: pendingClients.toString(),
@@ -478,7 +525,8 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
   }
 
   /// 統計項目
-  Widget _buildStatItem({
+  Widget _buildStatItem(
+    BuildContext context, {
     required IconData icon,
     required String label,
     required String value,
@@ -486,23 +534,21 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
   }) {
     return Column(
       children: [
-        Icon(icon, size: 32, color: color),
-        const SizedBox(height: 8),
+        Icon(icon, size: 32.scaled(context), color: color), // ⭐ 響應式圖標
+        SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
         Text(
           value,
-          style: TextStyle(
-            fontSize: 24,
+          style: context.responsive.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: color,
-          ),
+          ), // ⭐ 響應式文字
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: context.spacing.xs), // ⭐ 響應式間距
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: color.withOpacity(0.8),
-          ),
+          style: context.responsive.labelSmall?.copyWith(
+            color: color.withValues(alpha: 0.8),
+          ), // ⭐ 響應式文字
         ),
       ],
     );

@@ -32,6 +32,11 @@ dependencies:
   qr_flutter: ^4.1.0         # QR Code 生成
   mobile_scanner: ^5.1.1     # QR Code 掃描（新一代）
   permission_handler: ^11.0.0  # 相機權限管理
+  
+  # ⭐ v3.0-C: 推播通知
+  firebase_messaging: ^15.1.6     # FCM 推播（Android/iOS）
+  firebase_core: ^3.8.1           # Firebase 核心（FCM 必需）
+  flutter_local_notifications: ^18.0.1  # 本地通知顯示
 
 dev_dependencies:
   flutter_test:

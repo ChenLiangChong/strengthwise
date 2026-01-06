@@ -284,5 +284,20 @@ class DateTimeUtils {
   static DateTime localDateToUtcDate(DateTime localDate) {
     return DateTime.utc(localDate.year, localDate.month, localDate.day);
   }
+
+  /// 格式化 DateTime 為 PostgreSQL DATE 格式（YYYY-MM-DD）
+  ///
+  /// 範例：
+  /// ```dart
+  /// final date = DateTime(2026, 1, 10, 19, 30);
+  /// final dateStr = DateTimeUtils.formatToDateOnly(date);
+  /// print(dateStr); // "2026-01-10"
+  /// ```
+  static String formatToDateOnly(DateTime date) {
+    final year = date.year.toString();
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
 }
 

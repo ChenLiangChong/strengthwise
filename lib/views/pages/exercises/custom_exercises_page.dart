@@ -1,3 +1,4 @@
+// ✅ 已響應式改造 (Phase 0) - 列表頁
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/custom_exercise_model.dart';
 import 'package:strengthwise/controllers/interfaces/i_custom_exercise_controller.dart';
@@ -160,6 +161,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
               ? _buildEmptyState()
               : _buildExerciseList(),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'custom_exercises_fab', // ⭐ 防止 Hero tag 衝突
         onPressed: _addExercise,
         tooltip: '添加新的自訂動作',
         child: const Icon(Icons.add),

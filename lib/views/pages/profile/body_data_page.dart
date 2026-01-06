@@ -1,17 +1,21 @@
+// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../../controllers/body_data_controller.dart';
-import '../../../services/service_locator.dart';
-import '../../../models/body_data_record.dart';
-import '../../../models/user_model.dart';
-import '../../../utils/notification_utils.dart';
+import 'package:strengthwise/controllers/body_data_controller.dart';
+import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/models/body_data_record.dart';
+import 'package:strengthwise/models/user_model.dart';
+import 'package:strengthwise/utils/notification_utils.dart';
+import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'widgets/latest_body_data_card.dart';
 import 'widgets/weight_trend_chart.dart';
 import 'widgets/bmi_trend_chart.dart';
 import 'widgets/body_data_records_list.dart';
 
 /// 身體數據頁面
+///
+/// 響應式設計：內容區域限制最大寬度 600dp
 /// 顯示體重、體脂、BMI 等身體指標的歷史趨勢
 class BodyDataPage extends StatefulWidget {
   final UserModel? userProfile;
@@ -96,43 +100,53 @@ class _BodyDataPageState extends State<BodyDataPage> {
 
             if (!controller.hasRecords) {
               return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.monitor_weight_outlined,
-                        size: 64, color: colorScheme.outline),
-                    const SizedBox(height: 16),
-                    Text('尚未有身體數據記錄', style: textTheme.titleLarge),
-                    const SizedBox(height: 8),
-                    Text('點擊下方按鈕開始記錄', style: textTheme.bodyMedium),
-                  ],
+                child: Padding(
+                  padding: context.pagePadding,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.monitor_weight_outlined,
+                          size: 64, color: colorScheme.outline),
+                      SizedBox(height: context.spacing.md),
+                      Text('尚未有身體數據記錄', style: textTheme.titleLarge),
+                      SizedBox(height: context.spacing.sm),
+                      Text('點擊下方按鈕開始記錄', style: textTheme.bodyMedium),
+                    ],
+                  ),
                 ),
               );
             }
 
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // 最新數據卡片
-                LatestBodyDataCard(record: controller.latestRecord!),
-                const SizedBox(height: 16),
-                // 體重趨勢圖表
-                WeightTrendChart(records: controller.records),
-                const SizedBox(height: 16),
-                // BMI 趨勢圖表
-                if (controller.records.any((r) => r.bmi != null))
-                  BMITrendChart(records: controller.records),
-                const SizedBox(height: 16),
-                // 歷史記錄列表
-                BodyDataRecordsList(
-                  records: controller.records,
-                  onDelete: _deleteRecord,
+            // ✅ 內容區域限制最大寬度
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: ListView(
+                  padding: context.pagePadding,
+                  children: [
+                    // 最新數據卡片
+                    LatestBodyDataCard(record: controller.latestRecord!),
+                    SizedBox(height: context.spacing.md),
+                    // 體重趨勢圖表
+                    WeightTrendChart(records: controller.records),
+                    SizedBox(height: context.spacing.md),
+                    // BMI 趨勢圖表
+                    if (controller.records.any((r) => r.bmi != null))
+                      BMITrendChart(records: controller.records),
+                    SizedBox(height: context.spacing.md),
+                    // 歷史記錄列表
+                    BodyDataRecordsList(
+                      records: controller.records,
+                      onDelete: _deleteRecord,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             );
           },
         ),
         floatingActionButton: FloatingActionButton.extended(
+          heroTag: 'body_data_fab', // ⭐ 防止 Hero tag 衝突
           onPressed: () => _showAddRecordDialog(),
           icon: const Icon(Icons.add),
           label: const Text('新增記錄'),
