@@ -24,16 +24,16 @@ class EmptyClientsState extends StatelessWidget {
             SizedBox(height: context.spacing.lg), // ⭐ 響應式間距
             Text(
               '還沒有學員',
-              style: context.responsive.titleLarge?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.6),
-                  ), // ⭐ 響應式文字
+              style: context.responsive.titleLarge.copyWith(
+                color: colorScheme.onSurface.withOpacity(0.6),
+              ), // ⭐ 響應式文字
             ),
             SizedBox(height: context.spacing.md), // ⭐ 響應式間距
             Text(
               '點擊右下角「+」按鈕開始邀請學員',
-              style: context.responsive.bodyMedium?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.4),
-                  ), // ⭐ 響應式文字
+              style: context.responsive.bodyMedium.copyWith(
+                color: colorScheme.onSurface.withOpacity(0.4),
+              ), // ⭐ 響應式文字
               textAlign: TextAlign.center,
             ),
           ],
@@ -42,4 +42,3 @@ class EmptyClientsState extends StatelessWidget {
     );
   }
 }
-

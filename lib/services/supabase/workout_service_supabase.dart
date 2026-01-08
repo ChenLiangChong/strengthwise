@@ -269,6 +269,47 @@ class WorkoutServiceSupabase implements IWorkoutService {
     return await _recordOps.getRecordById(recordId);
   }
 
+  /// ⭐ v3.1-B: 獲取教練創建給學員的訓練計劃
+  @override
+  Future<List<WorkoutRecord>> getCoachCreatedPlans({
+    required String coachId,
+    required List<String> clientIds,
+    int limit = 100,
+  }) async {
+    _ensureInitialized();
+
+    if (clientIds.isEmpty) {
+      _logDebug('獲取教練創建的計劃：學員列表為空');
+      return [];
+    }
+
+    try {
+      _logDebug('查詢教練 $coachId 創建的計劃，學員: $clientIds');
+
+      final response = await _supabase
+          .from('workout_plans')
+          .select(
+              'id, user_id, trainee_id, creator_id, title, scheduled_date, completed_date, completed, '
+              'total_volume, total_exercises, total_sets, plan_type, exercises, note, training_time, '
+              'actual_start_time, actual_end_time, elapsed_seconds, training_status, appointment_id, '
+              'created_at, updated_at')
+          .eq('creator_id', coachId)
+          .inFilter('trainee_id', clientIds)
+          .order('scheduled_date', ascending: false)
+          .limit(limit);
+
+      final records = (response as List)
+          .map((data) => WorkoutRecord.fromSupabase(data))
+          .toList();
+
+      _logDebug('找到 ${records.length} 筆教練創建的計劃');
+      return records;
+    } catch (e) {
+      _logError('查詢教練創建的計劃失敗: $e');
+      return [];
+    }
+  }
+
   @override
   Future<WorkoutRecord?> getRecordByAppointmentId(String appointmentId) async {
     _ensureInitialized();

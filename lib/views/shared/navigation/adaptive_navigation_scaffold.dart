@@ -188,6 +188,9 @@ class AdaptiveNavigationScaffold extends StatelessWidget {
   }
 
   /// 桌面模式：常駐側邊欄
+  ///
+  /// 保留供未來使用，目前使用 extended NavigationRail 代替
+  // ignore: unused_element
   Widget _buildWithNavigationDrawer(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;

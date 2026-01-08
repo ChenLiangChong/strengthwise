@@ -29,7 +29,7 @@ class AppointmentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Card(
       elevation: 0, // ⭐ 移除陰影
       shape: RoundedRectangleBorder(
@@ -56,7 +56,7 @@ class AppointmentCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       _formatDate(appointment.startTime),
-                      style: context.responsive.titleMedium?.copyWith(
+                      style: context.responsive.titleMedium.copyWith(
                         fontWeight: FontWeight.w600,
                       ), // ⭐ 響應式文字
                     ),
@@ -84,7 +84,7 @@ class AppointmentCard extends StatelessWidget {
                       SizedBox(width: context.spacing.xs),
                       Text(
                         _formatTimeRange(),
-                        style: context.responsive.bodyMedium?.copyWith(
+                        style: context.responsive.bodyMedium.copyWith(
                           color: colorScheme.onSurface,
                         ),
                       ),
@@ -92,7 +92,7 @@ class AppointmentCard extends StatelessWidget {
                   ),
                   Text(
                     '${appointment.durationMinutes} 分鐘',
-                    style: context.responsive.bodyMedium?.copyWith(
+                    style: context.responsive.bodyMedium.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -114,7 +114,7 @@ class AppointmentCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         appointment.notes!,
-                        style: context.responsive.bodySmall?.copyWith(
+                        style: context.responsive.bodySmall.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ), // ⭐ 響應式文字
                         maxLines: 2,
@@ -141,7 +141,7 @@ class AppointmentCard extends StatelessWidget {
 
   Widget _buildStatusChip(BuildContext context) {
     final color = _getStatusColor();
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: context.spacing.md, // ⭐ 響應式內距
@@ -153,7 +153,7 @@ class AppointmentCard extends StatelessWidget {
       ),
       child: Text(
         appointment.status.displayName,
-        style: context.responsive.labelSmall?.copyWith(
+        style: context.responsive.labelSmall.copyWith(
           fontWeight: FontWeight.w600,
           color: color,
         ), // ⭐ 響應式文字
@@ -196,7 +196,8 @@ class AppointmentCard extends StatelessWidget {
           ),
         ],
       );
-    } else if (isCoachMode && appointment.status == AppointmentStatus.confirmed) {
+    } else if (isCoachMode &&
+        appointment.status == AppointmentStatus.confirmed) {
       // 教練：已確認時 - 開始課程 / 查看課程 / 取消
       final canStart = _canStartSession();
       return Wrap(
@@ -216,7 +217,8 @@ class AppointmentCard extends StatelessWidget {
           if (onStartSession != null)
             FilledButton.icon(
               onPressed: onStartSession,
-              icon: Icon(canStart ? Icons.play_arrow : Icons.visibility, size: 18),
+              icon: Icon(canStart ? Icons.play_arrow : Icons.visibility,
+                  size: 18),
               label: Text(canStart ? '開始課程' : '查看課程'),
             ),
         ],
@@ -237,7 +239,8 @@ class AppointmentCard extends StatelessWidget {
             ),
           ),
           // ⭐ v3.1: 學員已確認時顯示「查看課程」按鈕
-          if (appointment.status == AppointmentStatus.confirmed && onViewSession != null)
+          if (appointment.status == AppointmentStatus.confirmed &&
+              onViewSession != null)
             FilledButton.icon(
               onPressed: onViewSession,
               icon: const Icon(Icons.fitness_center, size: 18),
@@ -251,7 +254,8 @@ class AppointmentCard extends StatelessWidget {
   /// 判斷是否可以開始課程（課程開始前 15 分鐘到結束後 4 小時）⭐ v3.0
   bool _canStartSession() {
     final now = DateTime.now();
-    final startBuffer = appointment.startTime.subtract(const Duration(minutes: 15));
+    final startBuffer =
+        appointment.startTime.subtract(const Duration(minutes: 15));
     final endBuffer = appointment.endTime.add(const Duration(hours: 4));
     return now.isAfter(startBuffer) && now.isBefore(endBuffer);
   }
@@ -310,4 +314,3 @@ class AppointmentCard extends StatelessWidget {
     }
   }
 }
-

@@ -1,4 +1,5 @@
 // ✅ 已響應式改造 (Phase 0)
+// ✅ Phase 3.1-B: 首頁 UX 優化（今日行程 + 我的學員 + 快捷按鈕 + 可折疊）
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
@@ -6,8 +7,10 @@ import 'package:strengthwise/controllers/interfaces/i_statistics_controller.dart
 import 'package:strengthwise/services/interfaces/i_workout_service.dart';
 import 'package:strengthwise/services/interfaces/i_user_service.dart';
 import 'package:strengthwise/services/interfaces/i_appointment_service.dart';
+import 'package:strengthwise/services/interfaces/i_coaching_relationship_service.dart';
 import 'package:strengthwise/models/user_model.dart';
 import 'package:strengthwise/models/appointment_model.dart';
+import 'package:strengthwise/models/workout_record/workout_record.dart';
 import 'package:intl/intl.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/workout/execution/workout_execution_page.dart';
@@ -15,7 +18,18 @@ import 'package:strengthwise/views/pages/statistics/statistics_page_v2.dart';
 import 'package:strengthwise/views/pages/dev/notification_test_page.dart'; // 通知測試頁面
 import 'package:strengthwise/common_widgets/cards/quick_rebook_card.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/client_booking_page.dart';
+import 'package:strengthwise/views/pages/scheduling/booking/widgets/training_plan_card.dart';
+import 'package:strengthwise/views/pages/session/session_mode_page.dart';
+import 'package:strengthwise/views/pages/readiness/readiness_form_page.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart'; // ⭐ 響應式框架
+// ⭐ Phase 3.1-B: 快捷按鈕和可折疊區塊
+import 'package:strengthwise/views/widgets/quick_action_bar.dart';
+import 'package:strengthwise/views/widgets/collapsible_section.dart';
+import 'package:strengthwise/views/pages/relationships/role_coach/coach_hub_page.dart';
+import 'package:strengthwise/views/pages/relationships/role_client/client_hub_page.dart';
+import 'package:strengthwise/views/pages/scheduling/appointments/coach_slots_management_page.dart';
+import 'package:strengthwise/views/pages/scheduling/availability/client_availability_page.dart';
+import 'package:strengthwise/views/pages/workout/execution/plan_editor_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -29,10 +43,10 @@ class _HomePageState extends State<HomePage> {
   late final IWorkoutService _workoutService;
   late final IUserService _userService;
   late final IAppointmentService _appointmentService;
+  late final ICoachingRelationshipService _coachingService;
 
-  List<Map<String, dynamic>> _recentWorkouts = [];
-  List<Map<String, dynamic>> _todayPlans = [];
-  bool _isLoading = true;
+  // ⭐ Phase 3.1-B: 使用 WorkoutRecord 取代 Map
+  List<WorkoutRecord> _todayPlans = [];
   bool _isLoadingPlans = true;
   UserModel? _userProfile; // ⭐ 完整的用戶資料
 
@@ -41,12 +55,25 @@ class _HomePageState extends State<HomePage> {
   UserModel? _lastCoach;
   bool _isLoadingRebook = true;
 
+  // ⭐ Phase 3.1-B: 教練視角 - 我的學員今日課程
+  List<AppointmentModel> _todayCoachSessions = [];
+  Map<String, UserModel> _studentProfiles = {}; // studentId -> UserModel
+  bool _isLoadingCoachSessions = true;
+
+  // ⭐ Phase 3.1-B: 教練視角 - 待確認預約
+  List<AppointmentModel> _pendingAppointments = [];
+  bool _isLoadingPending = true;
+
+  // ⭐ Phase 3.1-B: 是否有綁定教練（用於快捷按鈕）
+  bool _hasCoach = false;
+
   @override
   void initState() {
     super.initState();
     _authController = serviceLocator<IAuthController>();
     _workoutService = serviceLocator<IWorkoutService>();
     _userService = serviceLocator<IUserService>();
+    _coachingService = serviceLocator<ICoachingRelationshipService>();
     _appointmentService = serviceLocator<IAppointmentService>();
 
     // ⚡ 優先載入首頁關鍵數據，完成後才預載入其他
@@ -69,18 +96,60 @@ class _HomePageState extends State<HomePage> {
 
   /// ⚡ 並行載入關鍵數據
   ///
-  /// 只載入首頁必需的數據（最近訓練 + 今日計劃 + 用戶資料 + 一鍵續約）
+  /// Phase 3.1-B: 移除最近訓練，新增教練視角數據
   Future<void> _loadCriticalDataInParallel() async {
     // 並行執行並等待完成
     await Future.wait([
       _loadUserProfile(), // ⭐ 載入用戶資料
-      _loadRecentWorkouts(),
-      _loadTodayPlans(),
+      _loadTodayPlans(), // ⭐ 今日行程（作為學員）
       _loadQuickRebookData(), // ⭐ v3.0 一鍵續約資料
+      _checkHasCoach(), // ⭐ Phase 3.1-B: 檢查是否有綁定教練
     ], eagerError: false);
+
+    // ⭐ Phase 3.1-B: 用戶資料載入後，根據身份載入教練數據
+    if (kDebugMode) {
+      print('[HomePage] 🔍 檢查教練身份：isCoach = ${_userProfile?.isCoach}');
+      print('[HomePage] 🔍 檢查是否有教練：hasCoach = $_hasCoach');
+    }
+    if (_userProfile?.isCoach == true) {
+      if (kDebugMode) {
+        print('[HomePage] ✅ 用戶是教練，開始載入教練數據...');
+      }
+      await Future.wait([
+        _loadTodayCoachSessions(), // 今日要教的課
+        _loadPendingAppointments(), // 待確認預約
+      ], eagerError: false);
+    } else {
+      if (kDebugMode) {
+        print('[HomePage] ⏭️ 用戶不是教練，跳過教練數據載入');
+      }
+    }
 
     if (kDebugMode) {
       print('[HomePage] ✅ 首頁關鍵數據載入完成');
+    }
+  }
+
+  /// ⭐ Phase 3.1-B: 檢查用戶是否有綁定教練
+  Future<void> _checkHasCoach() async {
+    try {
+      final userId = _authController.user?.uid;
+      if (userId == null) return;
+
+      final coaches = await _coachingService.getClientCoaches(
+        userId,
+        status: 'active',
+      );
+
+      if (mounted) {
+        setState(() {
+          _hasCoach = coaches.isNotEmpty;
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[HomePage] ⚠️ 檢查教練綁定失敗: $e');
+      }
     }
   }
 
@@ -196,67 +265,9 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _loadRecentWorkouts() async {
-    if (!mounted) return;
+  // ⭐ Phase 3.1-B: 移除 _loadRecentWorkouts，歷史記錄改到行事曆查看
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // 使用 AuthController 獲取當前用戶
-      final userId = _authController.user?.uid;
-      if (userId == null) {
-        print('[HomePage] 用戶未登入');
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-
-      print('[HomePage] 查詢最近訓練，userId: $userId');
-
-      // 使用 WorkoutService 查詢已完成的訓練記錄
-      final records = await _workoutService.getUserRecords();
-
-      print('[HomePage] 查詢到 ${records.length} 個已完成的訓練');
-
-      // 轉換為 Map 格式（為了相容現有 UI）
-      final recentWorkouts = records.take(5).map((record) {
-        return {
-          'id': record.id,
-          'title': record.title, // 使用實際的訓練標題
-          'completedDate': record.date,
-          'exercises': record.exerciseRecords
-              .map((e) => {
-                    'exerciseName': e.exerciseName,
-                    'sets': e.sets.length,
-                    'completed': e.completed, // 添加完成狀態
-                  })
-              .toList(),
-          'completed': record.completed, // 添加整體完成狀態
-          '_sortDate': record.date,
-        };
-      }).toList();
-
-      if (!mounted) return;
-
-      setState(() {
-        _recentWorkouts = recentWorkouts;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      print('[HomePage] 載入最近訓練失敗: $e');
-    }
-  }
-
-  // 載入今日訓練計畫
+  /// ⭐ Phase 3.1-B: 載入今日行程（作為學員的課程 + 自主訓練）
   Future<void> _loadTodayPlans() async {
     if (!mounted) return;
 
@@ -265,7 +276,6 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      // 使用 AuthController 的當前用戶 UID（已經是 Supabase UUID）
       final userId = _authController.user?.uid;
       if (userId == null) {
         print('[HomePage] 用戶未登入');
@@ -276,43 +286,25 @@ class _HomePageState extends State<HomePage> {
         return;
       }
 
-      print('[HomePage] 查詢今日訓練計畫，userId: $userId');
+      print('[HomePage] 查詢今日行程，userId: $userId');
 
       // 計算今天的日期範圍（00:00 到 23:59）
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       final tomorrow = today.add(const Duration(days: 1));
 
-      // 使用 WorkoutService 查詢今天的訓練計畫（未完成的）
+      // ⭐ Phase 3.1-B: 查詢今天的訓練計畫（包含上課、自主訓練、教練安排）
       final plans = await _workoutService.getUserPlans(
-        completed: false,
         startDate: today,
         endDate: tomorrow,
       );
 
-      print('[HomePage] 查詢到 ${plans.length} 個今日訓練計畫');
-
-      // 轉換為 Map 格式（為了相容現有 UI）
-      final todayPlans = plans.map((plan) {
-        return {
-          'id': plan.id,
-          'title': plan.title,
-          'scheduledDate': plan.date, // 使用 date 而不是 scheduledDate
-          'exercises': plan.exerciseRecords
-              .map((e) => {
-                    'exerciseName': e.exerciseName,
-                    'sets': e.sets.length,
-                    'completed': e.completed, // 使用 completed 而不是 isCompleted
-                  })
-              .toList(),
-          'completed': plan.completed,
-        };
-      }).toList();
+      print('[HomePage] 查詢到 ${plans.length} 個今日行程');
 
       if (!mounted) return;
 
       setState(() {
-        _todayPlans = todayPlans;
+        _todayPlans = plans;
         _isLoadingPlans = false;
       });
     } catch (e) {
@@ -321,7 +313,147 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _isLoadingPlans = false;
       });
-      print('[HomePage] 載入今日計畫失敗: $e');
+      print('[HomePage] 載入今日行程失敗: $e');
+    }
+  }
+
+  /// ⭐ Phase 3.1-B: 載入今日要教的課（教練視角）
+  Future<void> _loadTodayCoachSessions() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingCoachSessions = true;
+    });
+
+    try {
+      final userId = _authController.user?.uid;
+      if (userId == null) {
+        if (kDebugMode) {
+          print('[HomePage] ⚠️ 無法載入教練課程：userId 為 null');
+        }
+        setState(() => _isLoadingCoachSessions = false);
+        return;
+      }
+
+      // 計算今天的日期範圍
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final tomorrow = today.add(const Duration(days: 1));
+
+      if (kDebugMode) {
+        print('[HomePage] 🔍 查詢教練課程：coachId=$userId');
+        print('[HomePage] 🔍 日期範圍：$today ~ $tomorrow');
+      }
+
+      // 查詢今日已確認的預約（教練視角）
+      final appointments = await _appointmentService.getCoachAppointments(
+        coachId: userId,
+        startDate: today,
+        endDate: tomorrow,
+        status: AppointmentStatus.confirmed,
+      );
+
+      if (kDebugMode) {
+        print('[HomePage] 🔍 查詢結果：${appointments.length} 筆已確認預約');
+        for (final apt in appointments) {
+          print('[HomePage]   - ${apt.id}: ${apt.startTime} ~ ${apt.endTime}, status=${apt.status}');
+        }
+      }
+
+      // 也查詢所有狀態的預約（debug 用）
+      if (kDebugMode) {
+        final allAppointments = await _appointmentService.getCoachAppointments(
+          coachId: userId,
+          startDate: today,
+          endDate: tomorrow,
+        );
+        print('[HomePage] 🔍 今日所有狀態預約：${allAppointments.length} 筆');
+        for (final apt in allAppointments) {
+          print('[HomePage]   - ${apt.id}: status=${apt.status}');
+        }
+      }
+
+      // 收集所有學員 ID
+      final studentIds = appointments.map((a) => a.clientId).toSet();
+
+      // 批量查詢學員資料
+      final profiles = <String, UserModel>{};
+      for (final studentId in studentIds) {
+        final profile = await _userService.getUserProfile(studentId);
+        if (profile != null) {
+          profiles[studentId] = profile;
+        }
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _todayCoachSessions = appointments;
+        _studentProfiles = profiles;
+        _isLoadingCoachSessions = false;
+      });
+
+      if (kDebugMode) {
+        print('[HomePage] ✅ 載入今日要教的課：${appointments.length} 堂');
+      }
+    } catch (e, stack) {
+      if (!mounted) return;
+      setState(() => _isLoadingCoachSessions = false);
+      if (kDebugMode) {
+        print('[HomePage] ⚠️ 載入今日要教的課失敗: $e');
+        print('[HomePage] ⚠️ Stack: $stack');
+      }
+    }
+  }
+
+  /// ⭐ Phase 3.1-B: 載入待確認預約（教練視角）
+  Future<void> _loadPendingAppointments() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingPending = true;
+    });
+
+    try {
+      final userId = _authController.user?.uid;
+      if (userId == null) {
+        setState(() => _isLoadingPending = false);
+        return;
+      }
+
+      // 查詢待確認的預約（status = 'requested'）
+      final appointments = await _appointmentService.getCoachAppointments(
+        coachId: userId,
+        status: AppointmentStatus.requested,
+      );
+
+      // 收集所有學員 ID（可能與 _loadTodayCoachSessions 重複，但不影響）
+      for (final appointment in appointments) {
+        if (!_studentProfiles.containsKey(appointment.clientId)) {
+          final profile =
+              await _userService.getUserProfile(appointment.clientId);
+          if (profile != null) {
+            _studentProfiles[appointment.clientId] = profile;
+          }
+        }
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _pendingAppointments = appointments;
+        _isLoadingPending = false;
+      });
+
+      if (kDebugMode) {
+        print('[HomePage] ✅ 載入待確認預約：${appointments.length} 個');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingPending = false);
+      if (kDebugMode) {
+        print('[HomePage] ⚠️ 載入待確認預約失敗: $e');
+      }
     }
   }
 
@@ -339,7 +471,6 @@ class _HomePageState extends State<HomePage> {
     if (result == true) {
       // 重新載入數據
       _loadTodayPlans();
-      _loadRecentWorkouts();
     }
   }
 
@@ -368,11 +499,17 @@ class _HomePageState extends State<HomePage> {
           if (userId != null) {
             _workoutService.clearUserPlansCache(userId);
           }
-          
-          await Future.wait([
-            _loadRecentWorkouts(),
-            _loadTodayPlans(),
-          ]);
+
+          // ⭐ Phase 3.1-B: 刷新今日行程
+          await _loadTodayPlans();
+
+          // 教練額外刷新
+          if (_userProfile?.isCoach == true) {
+            await Future.wait([
+              _loadTodayCoachSessions(),
+              _loadPendingAppointments(),
+            ]);
+          }
         },
         child: CustomScrollView(
           slivers: [
@@ -494,14 +631,19 @@ class _HomePageState extends State<HomePage> {
               SliverToBoxAdapter(
                 child: _buildQuickRebookCard(),
               ),
-            // 今日訓練計畫
+            // ⭐ Phase 3.1-B: 快捷操作按鈕列
             SliverToBoxAdapter(
-              child: _buildTodayPlans(),
+              child: _buildQuickActions(),
             ),
-            // 最近訓練記錄
+            // ⭐ Phase 3.1-B: 今日行程（可折疊）
             SliverToBoxAdapter(
-              child: _buildRecentWorkouts(),
+              child: _buildTodayScheduleCollapsible(),
             ),
+            // ⭐ Phase 3.1-B: 我的學員（教練視角，可折疊）
+            if (_userProfile?.isCoach == true)
+              SliverToBoxAdapter(
+                child: _buildMyStudentsCollapsible(),
+              ),
             // 底部填充，避免被底部導航遮擋
             SliverPadding(
               padding: const EdgeInsets.only(bottom: 24),
@@ -512,22 +654,243 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 今日訓練計畫
-  Widget _buildTodayPlans() {
+  /// ⭐ Phase 3.1-B: 快捷操作按鈕列
+  ///
+  /// 按鈕順序：
+  /// - 教練+學員+有教練：我的教練 → 我的學員 → 設可訓練 → 設可上課 → 新訓練 → 統計
+  /// - 教練+學員+無教練：我的學員 → 設可上課 → 新訓練 → 統計
+  /// - 學員+有教練：我的教練 → 設可訓練 → 新訓練 → 統計
+  /// - 學員：新訓練 → 統計
+  Widget _buildQuickActions() {
+    final List<QuickAction> actions = [];
+    final isCoach = _userProfile?.isCoach == true;
+
+    // 有教練 → 顯示「我的教練」
+    if (_hasCoach) {
+      actions.add(QuickAction(
+        icon: Icons.person,
+        label: '我的教練',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ClientHubPage(),
+          ),
+        ),
+      ));
+    }
+
+    // 是教練 → 顯示「我的學員」
+    if (isCoach) {
+      actions.add(QuickAction(
+        icon: Icons.groups,
+        label: '我的學員',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CoachHubPage(),
+          ),
+        ),
+      ));
+    }
+
+    // 有教練 → 顯示「設可訓練」
+    if (_hasCoach) {
+      actions.add(QuickAction(
+        icon: Icons.event_available,
+        label: '設可訓練',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ClientAvailabilityPage(),
+          ),
+        ),
+      ));
+    }
+
+    // 是教練 → 顯示「設可上課」
+    if (isCoach) {
+      actions.add(QuickAction(
+        icon: Icons.schedule,
+        label: '設可上課',
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CoachSlotsManagementPage(),
+          ),
+        ),
+      ));
+    }
+
+    // 基礎按鈕（所有人）- 放在最後
+    actions.add(QuickAction(
+      icon: Icons.add_circle_outline,
+      label: '新訓練',
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PlanEditorPage(
+            selectedDate: DateTime.now(),
+          ),
+        ),
+      ),
+    ));
+
+    actions.add(QuickAction(
+      icon: Icons.bar_chart,
+      label: '統計',
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const StatisticsPageV2(),
+        ),
+      ),
+    ));
+
+    return Container(
+      padding: context.cardPadding,
+      child: QuickActionBar(
+        actions: actions,
+        title: '⚡ 快捷操作',
+      ),
+    );
+  }
+
+  /// ⭐ Phase 3.1-B: 今日行程（可折疊版）
+  Widget _buildTodayScheduleCollapsible() {
+    return Container(
+      padding: context.cardPadding,
+      child: CollapsibleSection(
+        title: '📚 今日行程',
+        icon: Icons.today,
+        initiallyExpanded: true,
+        trailing: _isLoadingPlans
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : _todayPlans.isNotEmpty
+                ? Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_todayPlans.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  )
+                : null,
+        child: _buildTodayScheduleContent(),
+      ),
+    );
+  }
+
+  /// ⭐ Phase 3.1-B: 今日行程內容
+  Widget _buildTodayScheduleContent() {
+    if (_isLoadingPlans) {
+      return _buildLoadingSkeleton();
+    }
+
+    if (_todayPlans.isEmpty) {
+      return _buildNoPlansToday();
+    }
+
+    return Column(
+      children: _todayPlans.map((record) {
+        return _buildScheduleCard(record);
+      }).toList(),
+    );
+  }
+
+  /// ⭐ Phase 3.1-B: 我的學員（可折疊版）
+  Widget _buildMyStudentsCollapsible() {
+    final totalCount =
+        _todayCoachSessions.length + _pendingAppointments.length;
+
+    return Container(
+      padding: context.cardPadding,
+      child: CollapsibleSection(
+        title: '🏋️ 我的學員',
+        icon: Icons.groups,
+        initiallyExpanded: true,
+        trailing: _isLoadingCoachSessions
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : totalCount > 0
+                ? Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '$totalCount',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                    ),
+                  )
+                : null,
+        child: _buildMyStudentsContent(),
+      ),
+    );
+  }
+
+  /// ⭐ Phase 3.1-B: 我的學員內容
+  Widget _buildMyStudentsContent() {
+    if (_isLoadingCoachSessions) {
+      return _buildLoadingSkeleton();
+    }
+
+    if (_todayCoachSessions.isEmpty && _pendingAppointments.isEmpty) {
+      return _buildNoStudentSessions();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 今日課程
+        ..._todayCoachSessions.map((appointment) {
+          return _buildCoachSessionCard(appointment);
+        }),
+
+        // 待確認預約
+        if (_pendingAppointments.isNotEmpty) ...[
+          SizedBox(height: context.spacing.md),
+          _buildPendingSection(),
+        ],
+      ],
+    );
+  }
+
+  /// ⭐ Phase 3.1-B: 今日行程區塊（作為學員）- 舊版，保留相容
+  Widget _buildTodaySchedule() {
     return Container(
       padding: context.cardPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ⭐ 標題行（含刷新按鈕）
+          // 標題行（含刷新按鈕）
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '今日訓練',
+                '📚 今日行程',
                 style: context.responsive.sectionTitle,
               ),
-              // ⭐ 刷新按鈕
               IconButton(
                 icon: const Icon(Icons.refresh),
                 onPressed: () async {
@@ -543,14 +906,404 @@ class _HomePageState extends State<HomePage> {
           ),
           SizedBox(height: context.spacing.md),
           _isLoadingPlans
-              ? _buildLoadingSkeleton() // ⚡ 使用骨架屏替代 Loading
+              ? _buildLoadingSkeleton()
               : _todayPlans.isEmpty
                   ? _buildNoPlansToday()
                   : Column(
-                      children: _todayPlans
-                          .map((plan) => _buildTodayPlanCard(plan))
-                          .toList(),
+                      children: _todayPlans.map((plan) {
+                        return _buildScheduleCard(plan);
+                      }).toList(),
                     ),
+        ],
+      ),
+    );
+  }
+
+  /// ⭐ Phase 3.1-B: 構建行程卡片（複用 TrainingPlanCard）
+  Widget _buildScheduleCard(WorkoutRecord plan) {
+    final userId = _authController.user?.uid;
+    final hasAppointment =
+        plan.appointmentId != null && plan.appointmentId!.isNotEmpty;
+
+    // 判斷是否為上課（有 appointmentId）
+    final isSession = hasAppointment;
+
+    // 判斷是否顯示填問卷按鈕（課前 1 小時內）
+    final showReadinessButton = isSession && _isWithinOneHourBefore(plan.date);
+
+    // 轉換為 TrainingPlanCard 需要的 Map 格式
+    final trainingData = {
+      'id': plan.id,
+      'title': plan.title,
+      'description': plan.notes,
+      'scheduled_date': plan.date.toIso8601String(),
+      'exercises': plan.exerciseRecords
+          .map((e) => {
+                'exerciseName': e.exerciseName,
+                'sets': e.sets.length,
+                'completed': e.completed,
+              })
+          .toList(),
+      'completed': plan.completed,
+      'trainee_id': plan.traineeId ?? plan.userId,
+      'creator_id': plan.creatorId,
+      'appointment_id': plan.appointmentId,
+      'isCoachView': false, // 學員視角
+    };
+
+    return TrainingPlanCard(
+      training: trainingData,
+      currentUserId: userId,
+      // 上課類型：進入 Session Mode
+      onEnterSession: isSession
+          ? (planId, appointmentId) {
+              _navigateToSession(planId, appointmentId, isCoachView: false);
+            }
+          : null,
+      // 填問卷按鈕
+      onFillReadiness: isSession
+          ? (appointmentId) {
+              _navigateToReadinessForm(appointmentId);
+            }
+          : null,
+      showReadinessButton: showReadinessButton,
+      // 自主訓練/教練安排：執行訓練
+      onExecute: !isSession ? (planId) => _navigateToPlan(planId) : null,
+      onEdit: (planId, date) {
+        // TODO: 編輯訓練計畫
+      },
+      onDelete: (planId, title) {
+        // TODO: 刪除訓練計畫
+      },
+    );
+  }
+
+  /// ⭐ Phase 3.1-B: 我的學員區塊（教練視角）
+  Widget _buildMyStudentsSection() {
+    return Container(
+      padding: context.cardPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 標題
+          Text(
+            '🏋️ 我的學員',
+            style: context.responsive.sectionTitle,
+          ),
+          SizedBox(height: context.spacing.md),
+
+          // 今日要教的課
+          if (_isLoadingCoachSessions)
+            _buildLoadingSkeleton()
+          else if (_todayCoachSessions.isEmpty && _pendingAppointments.isEmpty)
+            _buildNoStudentSessions()
+          else ...[
+            // 今日課程
+            ..._todayCoachSessions.map((appointment) {
+              return _buildCoachSessionCard(appointment);
+            }),
+
+            // 待確認預約
+            if (_pendingAppointments.isNotEmpty) ...[
+              SizedBox(height: context.spacing.md),
+              _buildPendingSection(),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// ⭐ Phase 3.1-B: 教練的課程卡片
+  Widget _buildCoachSessionCard(AppointmentModel appointment) {
+    final student = _studentProfiles[appointment.clientId];
+    final studentName = student?.displayName ?? student?.email ?? '學員';
+
+    // 查詢對應的訓練計畫
+    // TODO: 需要關聯 appointment -> workout_plan
+
+    return Card(
+      margin: EdgeInsets.only(bottom: context.spacing.sm),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          child: Text(
+            studentName.isNotEmpty ? studentName[0].toUpperCase() : '?',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        title: Text(
+          studentName,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          '${_formatTime(appointment.startTime)} - ${_formatTime(appointment.endTime)}',
+        ),
+        trailing: FilledButton(
+          onPressed: () {
+            // 跳轉到 Session Mode（教練視角）
+            _navigateToSessionByAppointment(appointment, isCoachView: true);
+          },
+          child: const Text('開始課程'),
+        ),
+      ),
+    );
+  }
+
+  /// ⭐ Phase 3.1-B: 待確認預約區塊
+  Widget _buildPendingSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.schedule, size: 18),
+            const SizedBox(width: 4),
+            Text(
+              '待確認 (${_pendingAppointments.length})',
+              style: context.responsive.bodyMedium.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: context.spacing.sm),
+        ..._pendingAppointments.map((appointment) {
+          return _buildPendingCard(appointment);
+        }),
+      ],
+    );
+  }
+
+  /// ⭐ Phase 3.1-B: 待確認預約卡片（inline 確認/拒絕）
+  Widget _buildPendingCard(AppointmentModel appointment) {
+    final student = _studentProfiles[appointment.clientId];
+    final studentName = student?.displayName ?? student?.email ?? '學員';
+    final dateStr = DateFormat('MM/dd HH:mm').format(appointment.startTime);
+
+    return Card(
+      margin: EdgeInsets.only(bottom: context.spacing.xs),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: context.spacing.md,
+          vertical: context.spacing.sm,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    studentName,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  Text(
+                    dateStr,
+                    style: context.responsive.bodySmall.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // 拒絕按鈕
+            IconButton(
+              icon: const Icon(Icons.close),
+              color: Theme.of(context).colorScheme.error,
+              onPressed: () => _rejectAppointment(appointment),
+              tooltip: '拒絕',
+            ),
+            // 確認按鈕
+            IconButton(
+              icon: const Icon(Icons.check),
+              color: Theme.of(context).colorScheme.primary,
+              onPressed: () => _confirmAppointment(appointment),
+              tooltip: '確認',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 確認預約
+  Future<void> _confirmAppointment(AppointmentModel appointment) async {
+    try {
+      await _appointmentService.confirmAppointment(appointment.id);
+      // 刷新列表
+      await _loadPendingAppointments();
+      await _loadTodayCoachSessions();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已確認預約')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('確認失敗: $e')),
+        );
+      }
+    }
+  }
+
+  /// 拒絕預約
+  Future<void> _rejectAppointment(AppointmentModel appointment) async {
+    // 顯示確認對話框
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('拒絕預約'),
+        content: const Text('確定要拒絕此預約嗎？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('拒絕'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      // 使用 cancelAppointment 取消預約（拒絕 = 取消）
+      final userId = _authController.user?.uid ?? '';
+      await _appointmentService.cancelAppointment(
+        appointmentId: appointment.id,
+        cancelledBy: userId,
+        reason: '教練拒絕預約',
+      );
+      // 刷新列表
+      await _loadPendingAppointments();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已拒絕預約')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('拒絕失敗: $e')),
+        );
+      }
+    }
+  }
+
+  /// 判斷是否在課前 1 小時內
+  bool _isWithinOneHourBefore(DateTime scheduledDate) {
+    final now = DateTime.now();
+    final oneHourBefore = scheduledDate.subtract(const Duration(hours: 1));
+    return now.isAfter(oneHourBefore) && now.isBefore(scheduledDate);
+  }
+
+  /// 格式化時間
+  String _formatTime(DateTime dateTime) {
+    return DateFormat('HH:mm').format(dateTime);
+  }
+
+  /// 跳轉到 Session Mode
+  void _navigateToSession(String planId, String? appointmentId,
+      {required bool isCoachView}) {
+    if (appointmentId == null) return;
+
+    // 需要查詢預約詳情來獲取必要參數
+    _navigateToSessionByAppointmentId(appointmentId, isCoachView: isCoachView);
+  }
+
+  /// 通過預約 ID 跳轉到 Session Mode
+  Future<void> _navigateToSessionByAppointmentId(String appointmentId,
+      {required bool isCoachView}) async {
+    try {
+      final appointment =
+          await _appointmentService.getAppointmentById(appointmentId);
+      if (appointment == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('找不到預約資訊')),
+          );
+        }
+        return;
+      }
+
+      _navigateToSessionByAppointment(appointment, isCoachView: isCoachView);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('載入失敗: $e')),
+        );
+      }
+    }
+  }
+
+  /// 通過預約跳轉到 Session Mode
+  void _navigateToSessionByAppointment(AppointmentModel appointment,
+      {required bool isCoachView}) {
+    final student = _studentProfiles[appointment.clientId];
+    final studentName = student?.displayName ?? student?.email ?? '學員';
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SessionModePage(
+          appointmentId: appointment.id,
+          clientId: appointment.clientId,
+          clientName: studentName,
+          sessionStartTime: appointment.startTime,
+          sessionEndTime: appointment.endTime,
+          isCoachMode: isCoachView,
+        ),
+      ),
+    );
+  }
+
+  /// 跳轉到填問卷頁面
+  void _navigateToReadinessForm(String? appointmentId) {
+    if (appointmentId == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReadinessFormPage(
+          appointmentId: appointmentId,
+        ),
+      ),
+    );
+  }
+
+  /// 無學員課程的空狀態
+  Widget _buildNoStudentSessions() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: context.spacing.lg),
+      alignment: Alignment.center,
+      child: Column(
+        children: [
+          Icon(
+            Icons.event_available,
+            size: 48,
+            color: Theme.of(context).colorScheme.outline,
+          ),
+          SizedBox(height: context.spacing.md),
+          Text(
+            '今天沒有要教的課',
+            style: context.responsive.bodyLarge.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
@@ -707,247 +1460,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildTodayPlanCard(Map<String, dynamic> plan) {
-    final title = plan['title'] ?? '未命名訓練';
-    final exercises = plan['exercises'] as List<dynamic>? ?? [];
-    final completed = plan['completed'] as bool? ?? false;
-
-    final exerciseCount = exercises.length;
-    final completedCount =
-        exercises.where((e) => e['completed'] == true).length;
-    final progress = exerciseCount > 0 ? completedCount / exerciseCount : 0.0;
-
-    // 計算時間顯示（暫時簡化）
-    String timeInfo = '全天';
-
-    return Card(
-      margin: EdgeInsets.only(bottom: context.spacing.sm + 4), // 12dp
-      elevation: completed ? 1 : 3,
-      child: InkWell(
-        onTap: () => _navigateToPlan(plan['id']),
-        child: Padding(
-          padding: context.cardPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  SizedBox(width: context.spacing.xs),
-                  Text(
-                    timeInfo,
-                    style: context.responsive.bodyMedium.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: context.spacing.sm,
-                      vertical: context.spacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      completed ? '已完成' : '待完成',
-                      style: context.responsive.labelSmall.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: context.spacing.sm),
-              Text(
-                title,
-                style: context.responsive.cardTitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: context.spacing.sm),
-              Text(
-                '$exerciseCount 個動作',
-                style: context.responsive.bodyMedium.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              if (exerciseCount > 0) ...[
-                SizedBox(height: context.spacing.sm),
-                LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                SizedBox(height: context.spacing.xs),
-                Text(
-                  '完成度: ${(progress * 100).toInt()}%',
-                  style: context.responsive.labelSmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentWorkouts() {
-    return Container(
-      padding: context.cardPadding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '最近訓練',
-            style: context.responsive.sectionTitle,
-          ),
-          SizedBox(height: context.spacing.md),
-          _isLoading
-              ? _buildLoadingSkeleton() // ⚡ 使用骨架屏替代 Loading
-              : _recentWorkouts.isEmpty
-                  ? _buildEmptyWorkouts()
-                  : Column(
-                      children: _recentWorkouts
-                          .map((workout) => _buildWorkoutCard(workout))
-                          .toList(),
-                    ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyWorkouts() {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: context.spacing.xl),
-      alignment: Alignment.center,
-      child: Column(
-        children: [
-          Icon(
-            Icons.fitness_center,
-            size: 48,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          SizedBox(height: context.spacing.md),
-          Text(
-            '還沒有訓練記錄',
-            style: context.responsive.bodyLarge.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          SizedBox(height: context.spacing.sm),
-          Text(
-            '完成訓練後就能看到記錄了！',
-            style: context.responsive.bodyMedium.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWorkoutCard(Map<String, dynamic> workout) {
-    // 獲取日期（Supabase 已經是 DateTime，不需要轉換）
-    DateTime date = DateTime.now();
-    if (workout['completedDate'] is DateTime) {
-      date = workout['completedDate'] as DateTime;
-    } else if (workout['_sortDate'] is DateTime) {
-      date = workout['_sortDate'] as DateTime;
-    }
-
-    final formattedDate = DateFormat('MM/dd').format(date);
-    final title = workout['title'] ?? '未命名訓練';
-    final exercises = workout['exercises'] as List<dynamic>? ?? [];
-    final completed = workout['completed'] as bool? ?? true; // 已完成的訓練
-
-    // 計算完成度
-    final exerciseCount = exercises.length;
-    final completedCount =
-        exercises.where((e) => e['completed'] == true).length;
-    final progress = exerciseCount > 0 ? completedCount / exerciseCount : 1.0;
-
-    return Card(
-      margin: EdgeInsets.only(bottom: context.spacing.sm + 4), // 12dp
-      child: InkWell(
-        onTap: () {
-          // 導航到訓練記錄詳情頁面
-          _navigateToPlan(workout['id']);
-        },
-        child: Padding(
-          padding: context.cardPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    formattedDate,
-                    style: context.responsive.bodyMedium.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  SizedBox(width: context.spacing.sm),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: context.responsive.titleMedium.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Icon(
-                    completed ? Icons.check_circle : Icons.circle_outlined,
-                    color: completed
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.outline,
-                  ),
-                ],
-              ),
-              SizedBox(height: context.spacing.sm),
-              Text(
-                '$exerciseCount 個動作',
-                style: context.responsive.bodyMedium.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              SizedBox(height: context.spacing.sm),
-              LinearProgressIndicator(
-                value: progress,
-                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              SizedBox(height: context.spacing.xs),
-              Text(
-                '完成度: ${(progress * 100).toInt()}%',
-                style: context.responsive.labelSmall.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // ⭐ Phase 3.1-B: 移除 _buildTodayPlanCard，改用 _buildScheduleCard（複用 TrainingPlanCard）
+  // ⭐ Phase 3.1-B: 移除 _buildRecentWorkouts，歷史記錄改到行事曆查看
 }

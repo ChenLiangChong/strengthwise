@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'calendar_layer.dart';
 import 'layers/marker_layer.dart';
+import 'models/calendar_marker.dart';
 
 /// 統一行事曆組合器
 ///
@@ -143,6 +144,36 @@ class UnifiedCalendar extends StatelessWidget {
                   final isToday = isSameDay(day, DateTime.now());
                   return _buildDayCell(context, day, isToday, false,
                       isOutside: true);
+                },
+                // ⭐ v3.1-B: 自定義 marker 渲染，支援不同顏色
+                markerBuilder: (context, day, events) {
+                  if (events.isEmpty) return const SizedBox.shrink();
+
+                  // 取前 4 個 markers（與 markersMaxCount 一致）
+                  final displayMarkers = events.take(4).toList();
+
+                  return Positioned(
+                    bottom: 1,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: displayMarkers.map((event) {
+                        // 如果是 CalendarMarker，使用其顏色
+                        Color markerColor = colorScheme.primary;
+                        if (event is CalendarMarker) {
+                          markerColor = event.color;
+                        }
+                        return Container(
+                          width: 7,
+                          height: 7,
+                          margin: const EdgeInsets.symmetric(horizontal: 0.5),
+                          decoration: BoxDecoration(
+                            color: markerColor,
+                            shape: BoxShape.circle,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  );
                 },
               ),
 

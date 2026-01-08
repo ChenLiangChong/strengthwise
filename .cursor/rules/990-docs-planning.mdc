@@ -9,9 +9,10 @@ globs: "docs/planning/**"
 
 ```
 docs/planning/
-├── TRAINING_PERMISSION_MATRIX.md   ← v3.1 訓練權限矩陣 ⭐
+├── HOME_BOOKING_UX_SPEC.md         ← v3.1-B 首頁+行事曆 UX ⭐ 新增
+├── TRAINING_PERMISSION_MATRIX.md   ← v3.1 訓練權限矩陣
+├── SESSION_MODE_SPEC.md            ← v3.0/v3.1-SM 教練上課模式
 ├── BOOKING_SYSTEM_OPTIMIZATION.md  ← v3.0 預約系統優化
-├── SESSION_MODE_SPEC.md            ← v3.0 教練上課模式
 ├── COACH_PROFILE_SPEC.md           ← v2.9 教練公開檔案
 ├── RESPONSIVE_ARCHITECTURE_DESIGN.md ← v3.0 響應式架構設計
 └── [功能名稱]_SPEC.md              ← 未來功能規劃

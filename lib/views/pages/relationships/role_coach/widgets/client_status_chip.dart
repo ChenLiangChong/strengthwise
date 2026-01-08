@@ -73,14 +73,13 @@ class ClientStatusChip extends StatelessWidget {
           SizedBox(width: context.spacing.xs), // ⭐ 響應式間距
           Text(
             displayText,
-            style: context.responsive.labelSmall?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w600,
-                ), // ⭐ 響應式文字
+            style: context.responsive.labelSmall.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.w600,
+            ), // ⭐ 響應式文字
           ),
         ],
       ),
     );
   }
 }
-

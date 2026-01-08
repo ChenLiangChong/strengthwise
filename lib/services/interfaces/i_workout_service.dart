@@ -62,6 +62,18 @@ abstract class IWorkoutService {
   /// 獲取特定訓練記錄
   Future<WorkoutRecord?> getRecordById(String recordId);
 
+  /// ⭐ v3.1-B: 獲取教練創建給學員的訓練計劃
+  ///
+  /// [coachId] 教練 ID（creator_id）
+  /// [clientIds] 學員 ID 列表（trainee_id）
+  ///
+  /// 返回 creator_id = coachId AND trainee_id IN clientIds 的訓練計劃
+  Future<List<WorkoutRecord>> getCoachCreatedPlans({
+    required String coachId,
+    required List<String> clientIds,
+    int limit = 100,
+  });
+
   /// 獲取指定預約的訓練記錄 ⭐ v3.1 Session Mode
   ///
   /// [appointmentId] 預約 ID

@@ -15,6 +15,7 @@ class BodyDataRecordsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
       child: Padding(
@@ -31,27 +32,82 @@ class BodyDataRecordsList extends StatelessWidget {
               separatorBuilder: (context, index) => const Divider(),
               itemBuilder: (context, index) {
                 final record = records[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    child: Text('${record.weight.toInt()}'),
-                  ),
-                  title: Text('${record.weight.toStringAsFixed(1)} kg'),
-                  subtitle: Text(_formatDate(record.recordDate)),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (record.bmi != null)
-                        Chip(
-                          label: Text('BMI ${record.bmi!.toStringAsFixed(1)}'),
-                          backgroundColor:
-                              _getBMIColor(record.bmi!).withOpacity(0.2),
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    // 響應式斷點：< 350 為小螢幕
+                    final isCompact = constraints.maxWidth < 350;
+
+                    if (isCompact) {
+                      // 小螢幕：垂直佈局，簡化顯示
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${record.weight.toStringAsFixed(1)} kg',
+                                    style: textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _formatDate(record.recordDate),
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  if (record.bmi != null) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'BMI ${record.bmi!.toStringAsFixed(1)}',
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: _getBMIColor(record.bmi!),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              onPressed: () => onDelete(record),
+                            ),
+                          ],
                         ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () => onDelete(record),
+                      );
+                    }
+
+                    // 大螢幕：標準 ListTile 佈局
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        child: Text('${record.weight.toInt()}'),
                       ),
-                    ],
-                  ),
+                      title: Text('${record.weight.toStringAsFixed(1)} kg'),
+                      subtitle: Text(_formatDate(record.recordDate)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (record.bmi != null)
+                            Chip(
+                              label:
+                                  Text('BMI ${record.bmi!.toStringAsFixed(1)}'),
+                              backgroundColor: _getBMIColor(record.bmi!)
+                                  .withValues(alpha: 0.2),
+                            ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: () => onDelete(record),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -72,4 +128,3 @@ class BodyDataRecordsList extends StatelessWidget {
     return Colors.red;
   }
 }
-

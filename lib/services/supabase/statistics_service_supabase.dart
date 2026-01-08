@@ -20,6 +20,9 @@ import 'statistics/statistics_strength_progress.dart';
 
 import 'statistics/statistics_models.dart';
 
+/// ⭐ Debug 開關：設為 false 可隱藏統計服務的詳細 log
+const bool _kStatisticsDebugLog = false;
+
 /// 統計服務 Supabase 實作
 ///
 /// 提供訓練數據統計和分析功能（Supabase PostgreSQL 版本）
@@ -429,9 +432,11 @@ class StatisticsServiceSupabase implements IStatisticsService {
       final Map<String, _ExerciseRecordData> exerciseStats = {};
       int filteredCount = 0;
 
-      print('[GET_EXERCISES] 查詢到 ${workoutPlans.length} 個訓練計劃');
-      if (timeRange != null) {
-        print('[GET_EXERCISES] 時間範圍: ${timeRange.startDate.toLocal()} ~ ${timeRange.endDate.toLocal()}');
+      if (_kStatisticsDebugLog) {
+        print('[GET_EXERCISES] 查詢到 ${workoutPlans.length} 個訓練計劃');
+        if (timeRange != null) {
+          print('[GET_EXERCISES] 時間範圍: ${timeRange.startDate.toLocal()} ~ ${timeRange.endDate.toLocal()}');
+        }
       }
 
       for (var planData in workoutPlans) {
@@ -553,8 +558,10 @@ class StatisticsServiceSupabase implements IStatisticsService {
         _cachedSystemExerciseIds =
             (systemResponse as List).map((e) => e['id'] as String).toSet();
 
-        print(
-            '[STATISTICS] 批量查詢系統動作：${allExerciseIds.length} 個動作 ID，${_cachedSystemExerciseIds!.length} 個是系統動作');
+        if (_kStatisticsDebugLog) {
+          print(
+              '[STATISTICS] 批量查詢系統動作：${allExerciseIds.length} 個動作 ID，${_cachedSystemExerciseIds!.length} 個是系統動作');
+        }
       }
 
       // 獲取動作分類信息並過濾
@@ -590,7 +597,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
         _cachedExercisesVersion = _exerciseCacheVersion;
       }
 
-      if (timeRange != null) {
+      if (_kStatisticsDebugLog && timeRange != null) {
         print('[GET_EXERCISES] 過濾掉 $filteredCount/${workoutPlans.length} 個訓練計劃');
         print('[GET_EXERCISES] 統計到 ${exerciseStats.length} 個不同的動作');
       }
@@ -610,11 +617,13 @@ class StatisticsServiceSupabase implements IStatisticsService {
         filtered = filtered.where((e) => e.bodyPart == bodyPart).toList();
       }
 
-      print('[GET_EXERCISES] 返回 ${filtered.length} 個動作');
-      if (trainingType != null) print('   過濾條件 - 訓練類型: $trainingType');
-      if (bodyPart != null) print('   過濾條件 - 身體部位: $bodyPart');
-      for (var r in filtered.take(3)) {
-        print('   - ${r.exerciseName} (${r.isCustom ? "自訂" : "系統"}, ${r.bodyPart})');
+      if (_kStatisticsDebugLog) {
+        print('[GET_EXERCISES] 返回 ${filtered.length} 個動作');
+        if (trainingType != null) print('   過濾條件 - 訓練類型: $trainingType');
+        if (bodyPart != null) print('   過濾條件 - 身體部位: $bodyPart');
+        for (var r in filtered.take(3)) {
+          print('   - ${r.exerciseName} (${r.isCustom ? "自訂" : "系統"}, ${r.bodyPart})');
+        }
       }
 
       return filtered;
@@ -815,7 +824,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
   /// 輔助方法：記錄調試信息
   void _logDebug(String message) {
-    if (kDebugMode) {
+    if (kDebugMode && _kStatisticsDebugLog) {
       print('[STATISTICS_SERVICE] $message');
     }
   }

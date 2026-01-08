@@ -145,7 +145,6 @@ class _FilterItemGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final columns = context.listColumns;
     final padding = context.pagePadding;
 

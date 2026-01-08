@@ -52,7 +52,7 @@ class ClientListItem extends StatelessWidget {
                     backgroundColor: colorScheme.primaryContainer,
                     child: Text(
                       _getInitials(client.displayName ?? client.email),
-                      style: context.responsive.titleSmall?.copyWith(
+                      style: context.responsive.titleSmall.copyWith(
                         color: colorScheme.onPrimaryContainer,
                         fontWeight: FontWeight.bold,
                       ), // ⭐ 響應式文字
@@ -67,14 +67,14 @@ class ClientListItem extends StatelessWidget {
                       children: [
                         Text(
                           client.displayName ?? '未設定姓名',
-                          style: context.responsive.titleMedium?.copyWith(
+                          style: context.responsive.titleMedium.copyWith(
                             fontWeight: FontWeight.w600,
                           ), // ⭐ 響應式文字
                         ),
                         SizedBox(height: context.spacing.xs), // ⭐ 響應式間距
                         Text(
                           client.email,
-                          style: context.responsive.bodySmall?.copyWith(
+                          style: context.responsive.bodySmall.copyWith(
                             color: colorScheme.onSurface.withOpacity(0.6),
                           ), // ⭐ 響應式文字
                           overflow: TextOverflow.ellipsis,
@@ -160,7 +160,7 @@ class ClientListItem extends StatelessWidget {
                       SizedBox(width: context.spacing.xs), // ⭐ 響應式間距
                       Text(
                         '邀請於 ${_formatDate(relationship.invitedAt)}',
-                        style: context.responsive.bodySmall?.copyWith(
+                        style: context.responsive.bodySmall.copyWith(
                           color: colorScheme.onSurface.withOpacity(0.4),
                         ), // ⭐ 響應式文字
                       ),
@@ -179,7 +179,7 @@ class ClientListItem extends StatelessWidget {
                         SizedBox(width: context.spacing.xs), // ⭐ 響應式間距
                         Text(
                           '接受於 ${_formatDate(relationship.acceptedAt!)}',
-                          style: context.responsive.bodySmall?.copyWith(
+                          style: context.responsive.bodySmall.copyWith(
                             color: colorScheme.primary,
                           ), // ⭐ 響應式文字
                         ),

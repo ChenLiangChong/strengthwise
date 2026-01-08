@@ -38,14 +38,11 @@ class AppointmentServiceSupabase implements IAppointmentService {
               'cancelled_by, cancelled_at, created_at, updated_at')
           .eq('coach_id', coachId);
 
-      // 時間範圍篩選（使用 TSTZRANGE 查詢）
-      if (startDate != null) {
-        query = query.gte('time_range',
-            DateTimeUtils.formatToTstzRange(startDate, startDate));
-      }
-      if (endDate != null) {
-        query = query.lte('time_range',
-            DateTimeUtils.formatToTstzRange(endDate, endDate));
+      // ⭐ 時間範圍篩選（使用 TSTZRANGE overlaps 運算子）
+      // 查詢 time_range 與指定日期範圍有重疊的預約
+      if (startDate != null && endDate != null) {
+        final rangeStr = DateTimeUtils.formatToTstzRange(startDate, endDate);
+        query = query.filter('time_range', 'ov', rangeStr);
       }
 
       // 狀態篩選
@@ -81,13 +78,10 @@ class AppointmentServiceSupabase implements IAppointmentService {
               'cancelled_by, cancelled_at, created_at, updated_at')
           .eq('client_id', clientId);
 
-      if (startDate != null) {
-        query = query.gte('time_range',
-            DateTimeUtils.formatToTstzRange(startDate, startDate));
-      }
-      if (endDate != null) {
-        query = query.lte('time_range',
-            DateTimeUtils.formatToTstzRange(endDate, endDate));
+      // ⭐ 時間範圍篩選（使用 TSTZRANGE overlaps 運算子）
+      if (startDate != null && endDate != null) {
+        final rangeStr = DateTimeUtils.formatToTstzRange(startDate, endDate);
+        query = query.filter('time_range', 'ov', rangeStr);
       }
 
       if (status != null) {

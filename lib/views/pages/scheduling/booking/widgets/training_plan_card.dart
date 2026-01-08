@@ -40,7 +40,7 @@ class TrainingPlanCard extends StatelessWidget {
   /// 當前用戶 ID
   final String? currentUserId;
 
-  /// 執行訓練計劃回調
+  /// 執行訓練計劃回調（自主訓練/教練安排）
   final void Function(String planId)? onExecute;
 
   /// 編輯訓練計劃回調
@@ -49,6 +49,25 @@ class TrainingPlanCard extends StatelessWidget {
   /// 刪除訓練計劃回調
   final void Function(String planId, String planTitle)? onDelete;
 
+  // =====================================================================
+  // ⭐ Phase 3.1-B 新增參數
+  // =====================================================================
+
+  /// 學員名稱（教練視角顯示）
+  final String? studentName;
+
+  /// 進入課程回調（上課類型）→ SessionModePage
+  final void Function(String planId, String? appointmentId)? onEnterSession;
+
+  /// 填寫問卷回調（學員課前填問卷）→ ReadinessFormPage
+  final void Function(String? appointmentId)? onFillReadiness;
+
+  /// 是否顯示填問卷按鈕（課前 1hr 內，學員限定）
+  final bool showReadinessButton;
+
+  /// 是否為首頁卡片模式（簡化顯示）
+  final bool isHomeCard;
+
   const TrainingPlanCard({
     super.key,
     required this.training,
@@ -56,6 +75,12 @@ class TrainingPlanCard extends StatelessWidget {
     this.onExecute,
     this.onEdit,
     this.onDelete,
+    // ⭐ Phase 3.1-B 新增
+    this.studentName,
+    this.onEnterSession,
+    this.onFillReadiness,
+    this.showReadinessButton = false,
+    this.isHomeCard = false,
   });
 
   @override
@@ -118,6 +143,28 @@ class TrainingPlanCard extends StatelessWidget {
                     creatorId, currentUserId, isPastPlan, trainingCategory),
                 canEdit: _canEdit(isPastPlan, completed, trainingCategory),
               ),
+
+              // ⭐ Phase 3.1-B: 學員名稱（教練視角）
+              if (studentName != null && studentName!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.person,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      studentName!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
 
               // 描述
               if (description.isNotEmpty) ...[
@@ -185,29 +232,14 @@ class TrainingPlanCard extends StatelessWidget {
 
               // 完成狀態和操作按鈕
               const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    completed
-                        ? '已完成'
-                        : '進行中: ${progressInfo.completed}/${progressInfo.total}',
-                    style: TextStyle(
-                      color: completed
-                          ? Theme.of(context).colorScheme.secondary
-                          : Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (onExecute != null)
-                    OutlinedButton(
-                      onPressed: () => onExecute!(planId),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: typeInfo.color,
-                      ),
-                      child: Text(completed ? '查看訓練' : '開始訓練'),
-                    ),
-                ],
+              _buildActionRow(
+                context,
+                planId: planId,
+                appointmentId: appointmentId,
+                completed: completed,
+                trainingCategory: trainingCategory,
+                typeInfo: typeInfo,
+                progressInfo: progressInfo,
               ),
             ],
           ),
@@ -470,6 +502,91 @@ class TrainingPlanCard extends StatelessWidget {
     final progress = total > 0 ? completed / total : 0.0;
 
     return _ProgressInfo(total, completed, progress);
+  }
+
+  // =====================================================================
+  // ⭐ Phase 3.1-B: 操作按鈕區域
+  // =====================================================================
+
+  /// 構建操作按鈕區域
+  ///
+  /// 根據訓練類型和角色顯示不同按鈕：
+  /// - 📍 上課（學員）：[填問卷] [進入課程]
+  /// - 📍 上課（教練）：[開始課程] [查看狀態]
+  /// - 🏃 自主 / 📋 教練安排：[開始訓練]
+  Widget _buildActionRow(
+    BuildContext context, {
+    required String planId,
+    required String? appointmentId,
+    required bool completed,
+    required _TrainingCategory trainingCategory,
+    required _TypeInfo typeInfo,
+    required _ProgressInfo progressInfo,
+  }) {
+    final isCoachView = training['isCoachView'] as bool? ?? false;
+    final isSessionType = trainingCategory == _TrainingCategory.session;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // 左側：進度狀態
+        Text(
+          completed
+              ? '已完成'
+              : '進行中: ${progressInfo.completed}/${progressInfo.total}',
+          style: TextStyle(
+            color: completed
+                ? Theme.of(context).colorScheme.secondary
+                : Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        // 右側：操作按鈕
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ⭐ 上課類型的按鈕
+            if (isSessionType) ...[
+              // 學員視角：填問卷按鈕（課前 1hr 內）→ ReadinessFormPage
+              if (!isCoachView &&
+                  showReadinessButton &&
+                  onFillReadiness != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: OutlinedButton(
+                    onPressed: () => onFillReadiness!(appointmentId),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.tertiary,
+                    ),
+                    child: const Text('填問卷'),
+                  ),
+                ),
+
+              // 進入/開始課程按鈕 → SessionModePage
+              if (onEnterSession != null)
+                FilledButton(
+                  onPressed: () => onEnterSession!(planId, appointmentId),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: typeInfo.color,
+                  ),
+                  child: Text(isCoachView ? '開始課程' : '進入課程'),
+                ),
+            ]
+
+            // ⭐ 自主訓練 / 教練安排 的按鈕 → WorkoutExecutionPage
+            else if (onExecute != null)
+              OutlinedButton(
+                onPressed: () => onExecute!(planId),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: typeInfo.color,
+                ),
+                child: Text(completed ? '查看訓練' : '開始訓練'),
+              ),
+          ],
+        ),
+      ],
+    );
   }
 }
 

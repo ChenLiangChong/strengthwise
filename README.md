@@ -8,7 +8,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Latest-3ECF8E?logo=supabase)](https://supabase.com/)
 [![Dart](https://img.shields.io/badge/Dart-3.1+-0175C2?logo=dart)](https://dart.dev/)
 
-**最新版本**：v3.1（2026-01-07）✅  
+**最新版本**：v3.1（2026-01-08）✅  
 **專案狀態**：🚀 生產就緒 (Production Ready)
 
 ---
@@ -368,12 +368,19 @@ strengthwise/
 
 ## 🗺️ 版本歷程
 
-### 🎉 v3.1 - Session Mode 完善 + Realtime（2026-01-07）✅
+### 🎉 v3.1 - Session Mode 完善 + 首頁行事曆 UX（2026-01-08）✅
 
 **Session Mode 完善**
 - ✅ 訓練執行內嵌（WorkoutExecutionContent 可復用 Widget）
 - ✅ 即時保存機制（所有修改即時保存 + SOAP Debounced）
 - ✅ Supabase Realtime 同步（workout_plans + session_notes）
+
+**首頁 + 行事曆 UX 優化（Phase 3.1-B）**
+- ✅ 首頁快捷按鈕列（根據身份動態顯示）
+- ✅ 今日行程 / 我的學員可折疊區塊
+- ✅ 行事曆「我的」/「教練」Tab
+- ✅ 多色點點標記：🟠上課 🔵訓練 🟢教練可上課 🟡學員可訓練
+- ✅ SpeedDial FAB（根據身份+Tab 顯示選項）
 - ✅ 學員模式（唯讀 + 運動時長顯示）
 - ✅ SpeedDial FAB（照片、繪圖、新增動作）
 - ✅ 可復用組件（UploadedPhotoGrid、QuickTagsSection）

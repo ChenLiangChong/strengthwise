@@ -457,7 +457,8 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
                     ),
                   ),
                 ),
-                if (index < _totalSteps - 1) SizedBox(width: context.spacing.xs),
+                if (index < _totalSteps - 1)
+                  SizedBox(width: context.spacing.xs),
               ],
             ),
           ),
@@ -473,14 +474,14 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
       children: [
         Text(
           '步驟 1/5：基礎安全篩檢',
-          style: context.responsive.titleLarge?.copyWith(
+          style: context.responsive.titleLarge.copyWith(
             fontWeight: FontWeight.bold,
           ), // ⭐ 響應式文字
         ),
         SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
         Text(
           '請誠實回答以下問題，以確保訓練安全',
-          style: context.responsive.bodyMedium?.copyWith(
+          style: context.responsive.bodyMedium.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ), // ⭐ 響應式文字
         ),
@@ -579,14 +580,14 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
       children: [
         Text(
           '步驟 2/5：傷病史記錄',
-          style: context.responsive.titleLarge?.copyWith(
+          style: context.responsive.titleLarge.copyWith(
             fontWeight: FontWeight.bold,
           ), // ⭐ 響應式文字
         ),
         SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
         Text(
           '記錄學員的傷病史，幫助規劃安全的訓練計劃',
-          style: context.responsive.bodyMedium?.copyWith(
+          style: context.responsive.bodyMedium.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ), // ⭐ 響應式文字
         ),
@@ -918,14 +919,14 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
       children: [
         Text(
           '步驟 3/5：生活型態與訓練背景',
-          style: context.responsive.titleLarge?.copyWith(
+          style: context.responsive.titleLarge.copyWith(
             fontWeight: FontWeight.bold,
           ), // ⭐ 響應式文字
         ),
         SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
         Text(
           '幫助我們了解學員的訓練背景與生活型態',
-          style: context.responsive.bodyMedium?.copyWith(
+          style: context.responsive.bodyMedium.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ), // ⭐ 響應式文字
         ),
@@ -1076,14 +1077,14 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
       children: [
         Text(
           '步驟 4/5：訓練目標',
-          style: context.responsive.titleLarge?.copyWith(
+          style: context.responsive.titleLarge.copyWith(
             fontWeight: FontWeight.bold,
           ), // ⭐ 響應式文字
         ),
         SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
         Text(
           '設定明確的訓練目標與期望時程',
-          style: context.responsive.bodyMedium?.copyWith(
+          style: context.responsive.bodyMedium.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ), // ⭐ 響應式文字
         ),
@@ -1206,14 +1207,14 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
       children: [
         Text(
           '步驟 5/5：緊急聯絡人',
-          style: context.responsive.titleLarge?.copyWith(
+          style: context.responsive.titleLarge.copyWith(
             fontWeight: FontWeight.bold,
           ), // ⭐ 響應式文字
         ),
         SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
         Text(
           '建議填寫以確保訓練安全（選填）',
-          style: context.responsive.bodyMedium?.copyWith(
+          style: context.responsive.bodyMedium.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ), // ⭐ 響應式文字
         ),

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 空筆記狀態組件
-/// 
+///
 /// 當沒有筆記時顯示的空狀態提示
 class EmptyNotesState extends StatelessWidget {
   final String filter; // 'all', 'private', 'shared'
@@ -31,31 +31,31 @@ class EmptyNotesState extends StatelessWidget {
               size: 80.scaled(context), // ⭐ 響應式圖標
               color: colorScheme.primary.withOpacity(0.3),
             ),
-            
+
             SizedBox(height: context.spacing.lg), // ⭐ 響應式間距
-            
+
             // 標題
             Text(
               _getTitle(),
-              style: context.responsive.headlineSmall?.copyWith(
+              style: context.responsive.headlineSmall.copyWith(
                 fontWeight: FontWeight.bold,
-              ), // ⭐ 響應式文字
+              ),
               textAlign: TextAlign.center,
             ),
-            
+
             SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
-            
+
             // 說明文字
             Text(
               _getDescription(),
-              style: context.responsive.bodyMedium?.copyWith(
+              style: context.responsive.bodyMedium.copyWith(
                 color: colorScheme.onSurfaceVariant,
-              ), // ⭐ 響應式文字
+              ),
               textAlign: TextAlign.center,
             ),
-            
+
             SizedBox(height: context.spacing.xl), // ⭐ 響應式間距
-            
+
             // 新增筆記按鈕（僅在 'all' 篩選時顯示）
             if (filter == 'all')
               ElevatedButton.icon(
@@ -111,4 +111,3 @@ class EmptyNotesState extends StatelessWidget {
     }
   }
 }
-

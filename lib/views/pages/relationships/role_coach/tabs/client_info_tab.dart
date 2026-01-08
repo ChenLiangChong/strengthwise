@@ -38,12 +38,14 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
   late final ICoachDisplayPreferencesService _preferencesService;
   late final ICoachAssessmentNoteService _assessmentNoteService; // ⭐ 新增
 
+  // ignore: unused_field - 用於未來功能擴展
   CoachingRelationshipModel? _relationship;
   bool _isLoadingProfile = true;
 
   HealthAssessmentModel? _healthAssessment;
+  // ignore: unused_field - 用於未來 UI 狀態顯示
   bool _isLoadingHealthAssessment = true;
-  
+
   CoachDisplayPreferencesModel? _displayPreferences;
   CoachAssessmentNoteModel? _coachNote; // ⭐ 新增
 
@@ -54,7 +56,8 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
     _authController = serviceLocator<IAuthController>();
     _healthAssessmentService = serviceLocator<IHealthAssessmentService>();
     _preferencesService = serviceLocator<ICoachDisplayPreferencesService>();
-    _assessmentNoteService = serviceLocator<ICoachAssessmentNoteService>(); // ⭐ 新增
+    _assessmentNoteService =
+        serviceLocator<ICoachAssessmentNoteService>(); // ⭐ 新增
     _loadRelationship();
     _loadHealthAssessment();
     _loadDisplayPreferences();
@@ -134,8 +137,9 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
       final currentUser = _authController.user;
       if (currentUser == null) return;
 
-      final preferences = await _preferencesService.getPreferences(currentUser.uid);
-      
+      final preferences =
+          await _preferencesService.getPreferences(currentUser.uid);
+
       if (mounted) {
         setState(() {
           _displayPreferences = preferences;
@@ -153,7 +157,7 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
         builder: (context) => const CoachDisplayPreferencesPage(),
       ),
     );
-    
+
     // 重新載入偏好
     await _loadDisplayPreferences();
   }
@@ -188,7 +192,7 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
   /// 顯示健康評估完整檢視
   Future<void> _showHealthAssessmentFull() async {
     if (_healthAssessment == null) return;
-    
+
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => HealthAssessmentDetailPage(
@@ -202,7 +206,7 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
   /// ⭐ 儲存教練備註
   Future<void> _saveCoachNote(String notes) async {
     if (_healthAssessment == null) return;
-    
+
     try {
       final currentUser = _authController.user;
       if (currentUser == null) return;

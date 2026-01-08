@@ -538,7 +538,7 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
         SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
         Text(
           value,
-          style: context.responsive.headlineSmall?.copyWith(
+          style: context.responsive.headlineSmall.copyWith(
             fontWeight: FontWeight.bold,
             color: color,
           ), // ⭐ 響應式文字
@@ -546,7 +546,7 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
         SizedBox(height: context.spacing.xs), // ⭐ 響應式間距
         Text(
           label,
-          style: context.responsive.labelSmall?.copyWith(
+          style: context.responsive.labelSmall.copyWith(
             color: color.withValues(alpha: 0.8),
           ), // ⭐ 響應式文字
         ),

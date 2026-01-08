@@ -2,7 +2,7 @@
 
 > 專案文檔索引
 
-**最後更新**：2026-01-07
+**最後更新**：2026-01-08
 
 ---
 
@@ -40,8 +40,9 @@
 
 | 文檔 | 說明 |
 |------|------|
-| [planning/TRAINING_PERMISSION_MATRIX.md](planning/TRAINING_PERMISSION_MATRIX.md) | v3.1 訓練權限矩陣 ⭐ |
-| [planning/SESSION_MODE_SPEC.md](planning/SESSION_MODE_SPEC.md) | v3.0-3.1 教練上課模式 + Realtime ⭐ |
+| [planning/HOME_BOOKING_UX_SPEC.md](planning/HOME_BOOKING_UX_SPEC.md) | v3.1-B 首頁 + 行事曆 UX ⭐ |
+| [planning/TRAINING_PERMISSION_MATRIX.md](planning/TRAINING_PERMISSION_MATRIX.md) | v3.1 訓練權限矩陣 |
+| [planning/SESSION_MODE_SPEC.md](planning/SESSION_MODE_SPEC.md) | v3.0-3.1 教練上課模式 + Realtime |
 | [planning/BOOKING_SYSTEM_OPTIMIZATION.md](planning/BOOKING_SYSTEM_OPTIMIZATION.md) | v3.0 預約系統優化規劃 |
 | [planning/RESPONSIVE_ARCHITECTURE_DESIGN.md](planning/RESPONSIVE_ARCHITECTURE_DESIGN.md) | v3.0 響應式架構設計 |
 | [planning/COACH_PROFILE_SPEC.md](planning/COACH_PROFILE_SPEC.md) | v2.9 教練公開檔案規劃 |

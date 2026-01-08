@@ -17,7 +17,7 @@ class EmptyAppointmentsState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -30,7 +30,7 @@ class EmptyAppointmentsState extends StatelessWidget {
           SizedBox(height: context.spacing.lg), // ⭐ 響應式間距
           Text(
             _getTitle(),
-            style: context.responsive.titleMedium?.copyWith(
+            style: context.responsive.titleMedium.copyWith(
               fontWeight: FontWeight.w600,
               color: colorScheme.onSurface,
             ), // ⭐ 響應式文字
@@ -38,7 +38,7 @@ class EmptyAppointmentsState extends StatelessWidget {
           SizedBox(height: context.spacing.sm), // ⭐ 響應式間距
           Text(
             _getSubtitle(),
-            style: context.responsive.bodyMedium?.copyWith(
+            style: context.responsive.bodyMedium.copyWith(
               color: colorScheme.onSurfaceVariant,
             ), // ⭐ 響應式文字
             textAlign: TextAlign.center,

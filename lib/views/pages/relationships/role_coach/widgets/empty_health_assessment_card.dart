@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 健康評估空狀態卡片
-/// 
+///
 /// 提示教練建立健康評估
 class EmptyHealthAssessmentCard extends StatelessWidget {
   final VoidCallback onCreateTap;
@@ -41,15 +41,15 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
                 SizedBox(width: context.spacing.md), // ⭐ 響應式間距
                 Text(
                   '健康評估',
-                  style: context.responsive.titleLarge?.copyWith(
+                  style: context.responsive.titleLarge.copyWith(
                     fontWeight: FontWeight.bold,
                   ), // ⭐ 響應式文字
                 ),
               ],
             ),
-            
+
             SizedBox(height: context.spacing.md), // ⭐ 響應式間距
-            
+
             // 提示內容
             Container(
               padding: EdgeInsets.all(context.spacing.md), // ⭐ 響應式內距
@@ -70,7 +70,7 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
                       SizedBox(width: context.spacing.sm), // ⭐ 響應式間距
                       Text(
                         '尚未建立健康評估',
-                        style: context.responsive.titleMedium?.copyWith(
+                        style: context.responsive.titleMedium.copyWith(
                           color: colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ), // ⭐ 響應式文字
@@ -80,7 +80,7 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
                   SizedBox(height: context.spacing.md), // ⭐ 響應式間距
                   Text(
                     '建議在首次上課前完成評估，以確保訓練安全與效果',
-                    style: context.responsive.bodyMedium?.copyWith(
+                    style: context.responsive.bodyMedium.copyWith(
                       color: colorScheme.onSurface.withOpacity(0.7),
                     ), // ⭐ 響應式文字
                   ),
@@ -105,9 +105,9 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             SizedBox(height: context.spacing.md), // ⭐ 響應式間距
-            
+
             // 建立按鈕
             SizedBox(
               width: double.infinity,
@@ -116,7 +116,8 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
                 icon: Icon(Icons.add, size: 20.scaled(context)), // ⭐ 響應式圖標
                 label: Text('立即建立評估', style: context.responsive.labelLarge),
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: context.spacing.md), // ⭐ 響應式內距
+                  padding: EdgeInsets.symmetric(
+                      vertical: context.spacing.md), // ⭐ 響應式內距
                 ),
               ),
             ),
@@ -133,7 +134,7 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
     required String text,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Row(
       children: [
         Icon(
@@ -145,7 +146,7 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: context.responsive.bodySmall?.copyWith(
+            style: context.responsive.bodySmall.copyWith(
               color: colorScheme.onSurface.withOpacity(0.7),
             ), // ⭐ 響應式文字
           ),
@@ -154,4 +155,3 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
     );
   }
 }
-
