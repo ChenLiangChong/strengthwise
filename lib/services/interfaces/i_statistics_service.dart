@@ -95,6 +95,13 @@ abstract class IStatisticsService {
   /// 清除快取
   void clearCache();
 
+  /// ⚡ 檢查指定時間範圍的快取是否有效
+  ///
+  /// [userId] 用戶 ID
+  /// [timeRange] 時間範圍
+  /// 返回 true 表示快取有效，切換時間範圍時可以跳過 loading
+  Future<bool> hasCachedStatistics(String userId, TimeRange timeRange);
+
   /// ⚡ 預載入所有時間範圍的統計數據（後台執行）
   /// 
   /// 在進入統計頁面時調用，預先載入所有常用時間範圍的數據
@@ -103,6 +110,12 @@ abstract class IStatisticsService {
   /// [userId] 用戶 ID
   /// [currentTimeRange] 當前時間範圍（會跳過，避免重複載入）
   Future<void> preloadAllTimeRanges(String userId, {TimeRange? currentTimeRange});
+
+  /// ⚡ 預熱：從本地快取載入所有資料到記憶體
+  /// 
+  /// 在 App 啟動時調用，確保進入統計頁面時資料已經準備好
+  /// [userId] 用戶 ID
+  Future<void> warmupFromLocalCache(String userId);
 
   /// 獲取有訓練記錄的動作列表（用於收藏功能）
   ///

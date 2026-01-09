@@ -1,6 +1,7 @@
 /// 訓練頻率統計
 class TrainingFrequency {
-  final int totalWorkouts;          // 總訓練計劃數（有數據的）
+  final int scheduledWorkouts;      // ⭐ 新增：全部排定的訓練計劃數（包括未開始）
+  final int totalWorkouts;          // 有活動的訓練計劃數（有至少 1 組完成）
   final int completedWorkouts;      // 完整完成的訓練計劃數
   final int partialWorkouts;        // 部分完成的訓練計劃數
   final int trainingDays;           // 訓練天數
@@ -10,6 +11,7 @@ class TrainingFrequency {
   final int comparisonValue;        // 與上期對比值（正數表示增加）
 
   TrainingFrequency({
+    this.scheduledWorkouts = 0,
     required this.totalWorkouts,
     this.completedWorkouts = 0,
     this.partialWorkouts = 0,
@@ -19,6 +21,9 @@ class TrainingFrequency {
     required this.consecutiveDays,
     required this.comparisonValue,
   });
+
+  /// 未開始的訓練計劃數（計算欄位）
+  int get pendingWorkouts => scheduledWorkouts - totalWorkouts;
 
   /// 是否有增長
   bool get hasGrowth => comparisonValue > 0;

@@ -110,25 +110,29 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
 
     return AlertDialog(
       title: Text(isEditing ? '編輯自訂動作' : '新增自訂動作'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildNameField(),
-              const SizedBox(height: 16),
-              _buildTrainingTypeDropdown(),
-              const SizedBox(height: 16),
-              _buildBodyPartDropdown(),
-              const SizedBox(height: 16),
-              _buildEquipmentDropdown(),
-              const SizedBox(height: 16),
-              _buildDescriptionField(),
-              const SizedBox(height: 16),
-              _buildNotesField(),
-            ],
+      // ⭐ v3.1.1: 設定最小寬度避免文字被截斷
+      content: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.8,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildNameField(),
+                const SizedBox(height: 16),
+                _buildTrainingTypeDropdown(),
+                const SizedBox(height: 16),
+                _buildBodyPartDropdown(),
+                const SizedBox(height: 16),
+                _buildEquipmentDropdown(),
+                const SizedBox(height: 16),
+                _buildDescriptionField(),
+                const SizedBox(height: 16),
+                _buildNotesField(),
+              ],
+            ),
           ),
         ),
       ),
@@ -164,6 +168,7 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
   Widget _buildTrainingTypeDropdown() {
     return DropdownButtonFormField<String>(
       value: _selectedTrainingType,
+      isExpanded: true, // ⭐ v3.1.1: 展開以避免文字截斷
       decoration: const InputDecoration(
         labelText: '訓練類型 *',
         border: OutlineInputBorder(),
@@ -187,6 +192,7 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
   Widget _buildBodyPartDropdown() {
     return DropdownButtonFormField<String>(
       value: _selectedBodyPart,
+      isExpanded: true, // ⭐ v3.1.1: 展開以避免文字截斷
       decoration: const InputDecoration(
         labelText: '身體部位 *',
         border: OutlineInputBorder(),
@@ -199,7 +205,7 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
             children: [
               Icon(BodyPartUtils.getBodyPartIcon(part), size: 20),
               const SizedBox(width: 8),
-              Text(part),
+              Expanded(child: Text(part)), // ⭐ v3.1.1: 使用 Expanded
             ],
           ),
         );
@@ -216,6 +222,7 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
   Widget _buildEquipmentDropdown() {
     return DropdownButtonFormField<String>(
       value: _selectedEquipment,
+      isExpanded: true, // ⭐ v3.1.1: 展開以避免文字截斷
       decoration: const InputDecoration(
         labelText: '使用器材',
         border: OutlineInputBorder(),

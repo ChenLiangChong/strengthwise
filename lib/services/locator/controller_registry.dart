@@ -298,9 +298,13 @@ class ControllerRegistry {
   }
 
   /// 註冊個人資料控制器
+  ///
+  /// ⭐ v3.1-B 修復：改為 LazySingleton
+  /// 確保所有頁面共享同一個實例，當用戶更新 isCoach 時，
+  /// 其他頁面（如 TrainingHubPage）能即時收到 notifyListeners 通知
   static void _registerProfileController(GetIt serviceLocator) {
     if (!serviceLocator.isRegistered<ProfileController>()) {
-      serviceLocator.registerFactory<ProfileController>(
+      serviceLocator.registerLazySingleton<ProfileController>(
         () => ProfileController(
           userService: serviceLocator<IUserService>(),
           authService: serviceLocator<IAuthService>(),

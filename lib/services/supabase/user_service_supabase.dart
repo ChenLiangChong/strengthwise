@@ -6,6 +6,7 @@ import '../../models/user/user_model.dart';
 import '../interfaces/i_user_service.dart';
 import '../interfaces/i_auth_service.dart';
 import '../core/error_handling_service.dart';
+import '../cache/user_local_cache_service.dart';
 import 'user/user_cache_manager.dart';
 import 'user/user_operations.dart';
 import 'user/user_avatar_manager.dart';
@@ -16,7 +17,8 @@ import 'user/user_avatar_manager.dart';
 class UserServiceSupabase implements IUserService {
   final SupabaseClient _supabase;
   final ErrorHandlingService? _errorService;
-  final IAuthService? _authService;  // ✅ 新增：用於完整登出（包含 Google）
+  final IAuthService? _authService;  // ✅ 用於完整登出（包含 Google）
+  final UserLocalCacheService? _localCacheService;  // ⚡ Hive 持久化快取
   
   // 子模組
   late final UserCacheManager _cacheManager;
@@ -26,10 +28,12 @@ class UserServiceSupabase implements IUserService {
   UserServiceSupabase({
     SupabaseClient? supabase,
     ErrorHandlingService? errorService,
-    IAuthService? authService,  // ✅ 新增參數
+    IAuthService? authService,
+    UserLocalCacheService? localCacheService,  // ⚡ 新增參數
   })  : _supabase = supabase ?? Supabase.instance.client,
         _errorService = errorService,
-        _authService = authService {
+        _authService = authService,
+        _localCacheService = localCacheService {
     _cacheManager = UserCacheManager();
     _operations = UserOperations(
       supabase: _supabase,
@@ -69,18 +73,33 @@ class UserServiceSupabase implements IUserService {
         return null;
       }
 
-      // ⚡ 檢查快取
-      final cached = _cacheManager.getCachedProfile(userId);
-      if (cached != null) {
-        return cached;
+      // ⚡ 1. 優先檢查記憶體快取（最快）
+      final memoryCached = _cacheManager.getCachedProfile(userId);
+      if (memoryCached != null) {
+        return memoryCached;
       }
 
-      // 從資料庫獲取
+      // ⚡ 2. 檢查 Hive 持久化快取
+      if (_localCacheService != null) {
+        final hiveCached = await _localCacheService!.getCachedUserAsync(userId);
+        if (hiveCached != null) {
+          _logDebug('⚡ 從 Hive 快取載入用戶');
+          // 同步到記憶體快取
+          _cacheManager.updateCache(userId, hiveCached);
+          // 背景更新（不阻塞）
+          _refreshUserInBackground(userId);
+          return hiveCached;
+        }
+      }
+
+      // 3. 從資料庫獲取
       final user = await _operations.getUserProfile(userId);
       
       if (user != null) {
-        // ⚡ 更新快取
+        // ⚡ 更新記憶體快取
         _cacheManager.updateCache(userId, user);
+        // ⚡ 更新 Hive 快取
+        await _localCacheService?.cacheUser(user);
       }
 
       return user;
@@ -88,6 +107,20 @@ class UserServiceSupabase implements IUserService {
       _logError('獲取用戶資料失敗: $e');
       _errorService?.logError('獲取用戶資料失敗: $e', type: 'UserServiceError');
       return null;
+    }
+  }
+
+  /// 背景刷新用戶資料（不阻塞 UI）
+  Future<void> _refreshUserInBackground(String userId) async {
+    try {
+      final user = await _operations.getUserProfile(userId);
+      if (user != null) {
+        _cacheManager.updateCache(userId, user);
+        await _localCacheService?.cacheUser(user);
+        _logDebug('⚡ 背景刷新用戶資料完成');
+      }
+    } catch (e) {
+      _logDebug('背景刷新用戶資料失敗: $e');
     }
   }
 
@@ -167,8 +200,10 @@ class UserServiceSupabase implements IUserService {
       final success = await _operations.updateUserProfile(userId, updateData);
 
       if (success) {
-        // ⚡ 清除快取，下次會重新載入
+        // ⚡ 清除記憶體快取
         _cacheManager.clearCache();
+        // ⚡ 清除 Hive 快取（下次會重新載入最新資料）
+        await _localCacheService?.clearUserCache(userId);
       }
 
       return success;
@@ -250,8 +285,10 @@ class UserServiceSupabase implements IUserService {
       
       if (result['success'] == true) {
         _logDebug('用戶帳號刪除成功');
-        // ⚡ 清除快取
+        // ⚡ 清除記憶體快取
         _cacheManager.clearCache();
+        // ⚡ 清除 Hive 快取
+        await _localCacheService?.clearAllCache();
         
         // ✅ 使用 AuthService 登出（會同時登出 Google 和 Supabase）
         if (_authService != null) {

@@ -3,8 +3,15 @@ import 'package:strengthwise/utils/datetime_utils.dart';
 import '../../../models/body_data_record.dart';
 
 /// 身體數據查詢模組
-/// 
+///
 /// 負責執行身體數據的查詢操作
+
+/// ⭐ 定義 body_data 表的標準查詢欄位（避免 SELECT *）
+const String _kBodyDataSelectFields = '''
+  id, user_id, record_date, weight, height, body_fat_percentage, 
+  muscle_mass, bmi, notes, created_at, updated_at
+''';
+
 class BodyDataQuery {
   final SupabaseClient _supabase;
   final void Function(String) _logDebug;
@@ -19,7 +26,7 @@ class BodyDataQuery {
         _logError = logError;
 
   /// 查詢用戶的身體數據記錄
-  /// 
+  ///
   /// 🆕 自動去重：如果同一天有多筆記錄，只保留最新一筆（向後兼容舊數據）
   Future<List<BodyDataRecord>> getUserRecords({
     required String userId,
@@ -32,11 +39,12 @@ class BodyDataQuery {
 
       dynamic query = _supabase
           .from('body_data')
-          .select()
+          .select(_kBodyDataSelectFields)
           .eq('user_id', userId);
 
       if (startDate != null) {
-        query = query.gte('record_date', DateTimeUtils.formatToUtcIso(startDate));
+        query =
+            query.gte('record_date', DateTimeUtils.formatToUtcIso(startDate));
       }
 
       if (endDate != null) {
@@ -57,8 +65,9 @@ class BodyDataQuery {
       // 🆕 去重：同一天只保留最新一筆（created_at 最晚）
       final Map<String, BodyDataRecord> uniqueRecordsByDate = {};
       for (var record in allRecords) {
-        final dateKey = '${record.recordDate.year}-${record.recordDate.month.toString().padLeft(2, '0')}-${record.recordDate.day.toString().padLeft(2, '0')}';
-        
+        final dateKey =
+            '${record.recordDate.year}-${record.recordDate.month.toString().padLeft(2, '0')}-${record.recordDate.day.toString().padLeft(2, '0')}';
+
         if (!uniqueRecordsByDate.containsKey(dateKey)) {
           uniqueRecordsByDate[dateKey] = record;
         } else {
@@ -73,7 +82,8 @@ class BodyDataQuery {
       final records = uniqueRecordsByDate.values.toList()
         ..sort((a, b) => b.recordDate.compareTo(a.recordDate)); // 按日期降序排列
 
-      _logDebug('✅ 成功查詢 ${records.length} 筆身體數據記錄（已去重，原始 ${allRecords.length} 筆）');
+      _logDebug(
+          '✅ 成功查詢 ${records.length} 筆身體數據記錄（已去重，原始 ${allRecords.length} 筆）');
       return records;
     } catch (e) {
       _logError('查詢身體數據記錄失敗', e);
@@ -88,7 +98,7 @@ class BodyDataQuery {
 
       final response = await _supabase
           .from('body_data')
-          .select()
+          .select(_kBodyDataSelectFields)
           .eq('user_id', userId)
           .order('record_date', ascending: false)
           .limit(1);
@@ -108,7 +118,7 @@ class BodyDataQuery {
   }
 
   /// 🆕 查詢指定日期的身體數據記錄
-  /// 
+  ///
   /// 用於實現"每日一筆數據"邏輯
   Future<BodyDataRecord?> getRecordByDate(String userId, DateTime date) async {
     try {
@@ -120,7 +130,7 @@ class BodyDataQuery {
 
       final response = await _supabase
           .from('body_data')
-          .select()
+          .select(_kBodyDataSelectFields)
           .eq('user_id', userId)
           .gte('record_date', DateTimeUtils.formatToUtcIso(startOfDay))
           .lte('record_date', DateTimeUtils.formatToUtcIso(endOfDay))
@@ -141,4 +151,3 @@ class BodyDataQuery {
     }
   }
 }
-

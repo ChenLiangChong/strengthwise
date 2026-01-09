@@ -1,16 +1,21 @@
 // ✅ 已響應式改造 (Phase 0)
+// ✅ v3.2: Coach Mark 引導
 import 'package:flutter/material.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:strengthwise/models/workout_template_model.dart';
 import 'package:strengthwise/models/workout_record_model.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/interfaces/i_workout_service.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
+import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/workout/execution/template_editor_page.dart';
 import 'package:strengthwise/views/pages/workout/execution/widgets/schedule_workout_dialog.dart';
 import 'package:strengthwise/views/pages/workout/execution/widgets/select_time_dialog.dart';
+import 'package:strengthwise/views/widgets/onboarding/coach_mark_helper.dart';
+import 'package:strengthwise/views/widgets/current_page_provider.dart';
 import 'widgets/empty_templates_state.dart';
 import 'widgets/template_list.dart';
 import 'widgets/template_menu_sheet.dart';
@@ -38,6 +43,10 @@ class _TrainingPageState extends State<TrainingPage> {
 
   List<WorkoutTemplate> _templates = [];
   bool _isLoading = true;
+  
+  // ⭐ v3.2: Coach Mark 引導
+  final GlobalKey _fabKey = GlobalKey();
+  bool _coachMarkShown = false;
 
   @override
   void initState() {
@@ -47,6 +56,64 @@ class _TrainingPageState extends State<TrainingPage> {
     _authController = serviceLocator<IAuthController>();
     _errorService = serviceLocator<ErrorHandlingService>();
     _loadTemplates();
+  }
+  
+  // ⭐ v3.2: 當頁面變為可見時檢查 Coach Mark
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 當頁面變為當前頁面時，檢查 Coach Mark
+    if (CurrentPageProvider.isCurrentPage(context, 2) && !_coachMarkShown) {
+      _checkCoachMark();
+    }
+  }
+  
+  // ⭐ v3.2: 檢查是否顯示 Coach Mark
+  Future<void> _checkCoachMark() async {
+    if (_coachMarkShown) return;
+    
+    // ⭐ 檢查是否是當前頁面（TrainingPage 是 index 2）
+    if (!CurrentPageProvider.isCurrentPage(context, 2)) return;
+    
+    final onboardingService = serviceLocator<OnboardingService>();
+    final shouldShow = await onboardingService.shouldShowCoachMark(
+      OnboardingService.keyTrainingPage,
+    );
+    
+    if (shouldShow && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && CurrentPageProvider.isCurrentPage(context, 2)) {
+          _showCoachMark();
+        }
+      });
+    }
+  }
+  
+  // ⭐ v3.2: 顯示 Coach Mark 引導
+  void _showCoachMark() {
+    if (_coachMarkShown) return;
+    _coachMarkShown = true;
+    
+    final targets = <TargetFocus>[];
+    
+    // FAB 引導
+    if (_fabKey.currentContext != null) {
+      targets.add(
+        CoachMarkHelper.createTarget(
+          key: _fabKey,
+          title: '訓練模板',
+          description: '這裡顯示你的訓練模板\n點擊「+」建立新的訓練模板',
+          contentAlign: ContentAlign.top,
+        ),
+      );
+    }
+    
+    if (targets.isNotEmpty) {
+      CoachMarkHelper.show(
+        context: context,
+        targets: targets,
+      );
+    }
   }
 
   /// 載入模板列表
@@ -68,6 +135,9 @@ class _TrainingPageState extends State<TrainingPage> {
           _templates = templates;
           _isLoading = false;
         });
+        
+        // ⭐ v3.2: 檢查 Coach Mark 引導
+        _checkCoachMark();
       }
     } catch (e) {
       if (mounted) {
@@ -348,6 +418,7 @@ class _TrainingPageState extends State<TrainingPage> {
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
+        key: _fabKey, // ⭐ v3.2: Coach Mark 引導用
         heroTag: 'training_page_fab', // ⭐ 防止 Hero tag 衝突
         onPressed: _createNewTemplate,
         tooltip: '新模板',

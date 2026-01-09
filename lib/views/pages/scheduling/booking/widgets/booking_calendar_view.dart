@@ -60,6 +60,9 @@ class BookingCalendarView extends StatelessWidget {
   /// 教練 ID -> 名稱映射（多教練支援）
   final Map<String, String> coachNames;
 
+  /// ⭐ v3.1.1: 學員 ID -> 名稱映射
+  final Map<String, String> clientNames;
+
   /// 日期選擇回調
   final void Function(DateTime selectedDay, DateTime focusedDay) onDaySelected;
 
@@ -119,6 +122,7 @@ class BookingCalendarView extends StatelessWidget {
     this.clientAvailability,
     this.selectedDayClientAvailability,
     this.coachNames = const {},
+    this.clientNames = const {}, // ⭐ v3.1.1
     required this.onDaySelected,
     required this.onFormatChanged,
     required this.onPageChanged,
@@ -204,7 +208,7 @@ class BookingCalendarView extends StatelessWidget {
               }
             }
 
-            // ⭐ v3.1-B: Tab 2 - 學員可訓練時段（🟡 黃色）
+            // ⭐ v3.1.1: Tab 2 - 學員可訓練時段（區分 preferred/available）
             if (isCoachMode && clientAvailability != null) {
               final slots = clientAvailability![normalizedDay] ?? [];
               if (slots.isNotEmpty) {
@@ -212,9 +216,12 @@ class BookingCalendarView extends StatelessWidget {
                     '[CALENDAR MARKER] 🟡 $normalizedDay: ${slots.length} 個學員可訓練時段');
               }
               for (var slot in slots) {
+                // ⭐ v3.1.1: 根據 priority 區分顏色
+                // preferred = 綠色，available = 橘色
+                final isPreferred = slot.priority == AvailabilityPriority.preferred;
                 markers.add(CalendarMarker(
-                  color: Colors.amber, // 🟡 黃色
-                  tooltip: '學員可訓練',
+                  color: isPreferred ? Colors.green : Colors.orange, 
+                  tooltip: isPreferred ? '首選時段' : '可訓練時段',
                   data: {'type': 'clientSlot', 'slot': slot},
                 ));
               }
@@ -408,9 +415,22 @@ class BookingCalendarView extends StatelessWidget {
     final trainingData = Map<String, dynamic>.from(training);
     trainingData['isCoachView'] = isCoachView;
 
+    // ⭐ v3.1.1: 獲取教練/學員名稱
+    final traineeId = training['trainee_id'] as String?;
+    final creatorId = training['creator_id'] as String?;
+    // 教練視角顯示學員名稱，學員視角顯示教練名稱
+    final studentName = isCoachView && traineeId != null
+        ? clientNames[traineeId]
+        : null;
+    final coachDisplayName = !isCoachView && creatorId != null
+        ? coachNames[creatorId]
+        : null;
+
     return TrainingPlanCard(
       training: trainingData,
       currentUserId: currentUserId,
+      studentName: studentName, // ⭐ v3.1.1
+      coachName: coachDisplayName, // ⭐ v3.1.1
       // ⭐ v3.1-B: 進入 Session Mode
       onEnterSession: isSession && appointmentId != null
           ? (pId, aId) {
@@ -532,6 +552,7 @@ class BookingCalendarView extends StatelessWidget {
   }
 
   /// 學員可訓練時段卡片
+  /// ⭐ v3.1.1: 根據 priority 區分顏色（preferred=綠色，available=橘色）
   Widget _buildClientSlotCard(
     BuildContext context,
     ClientAvailabilityModel slot,
@@ -540,11 +561,17 @@ class BookingCalendarView extends StatelessWidget {
     final startTime = slot.startTime;
     final endTime = slot.endTime;
     final timeStr = '${_formatTime(startTime)} - ${_formatTime(endTime)}';
-    final clientName = '學員'; // TODO: 從外部傳入學員名稱
+    // ⭐ v3.1.1: 使用 clientNames 映射獲取學員名稱
+    final clientName = clientNames[slot.clientId] ?? '學員';
+
+    // ⭐ v3.1.1: 根據 priority 決定顏色和標籤
+    final isPreferred = slot.priority == AvailabilityPriority.preferred;
+    final slotColor = isPreferred ? Colors.green : Colors.orange;
+    final priorityLabel = isPreferred ? '⭐ 首選' : '可訓練';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: Colors.amber.withOpacity(0.05),
+      color: slotColor.withOpacity(0.05),
       child: InkWell(
         onTap: () {
           if (onSelectClientSlot != null) {
@@ -556,12 +583,12 @@ class BookingCalendarView extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // 黃色指示器
+              // 顏色指示器
               Container(
                 width: 4,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.amber,
+                  color: slotColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -571,10 +598,14 @@ class BookingCalendarView extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.1),
+                  color: slotColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.person, color: Colors.amber, size: 20),
+                child: Icon(
+                  isPreferred ? Icons.star : Icons.schedule,
+                  color: slotColor,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               // 內容
@@ -582,11 +613,33 @@ class BookingCalendarView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      clientName,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
+                    Row(
+                      children: [
+                        Text(
+                          clientName,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(width: 8),
+                        // 優先級標籤
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: slotColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(4),
                           ),
+                          child: Text(
+                            priorityLabel,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: slotColor,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(

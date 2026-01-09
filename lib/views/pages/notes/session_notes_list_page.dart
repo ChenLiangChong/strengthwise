@@ -422,12 +422,17 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
               IconButton(
                 icon: const Icon(Icons.add),
                 onPressed: () async {
-                  // 顯示學員選擇對話框
-                  final clientId = await showDialog<String>(
-                    context: context,
-                    barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
-                    builder: (context) => const ClientSelectorDialog(),
-                  );
+                  // ⭐ v3.1.1: 如果已傳入 clientId，直接使用（學員詳情頁）
+                  String? clientId = widget.clientId;
+                  
+                  // 如果沒有傳入 clientId，才顯示選擇對話框
+                  if (clientId == null) {
+                    clientId = await showDialog<String>(
+                      context: context,
+                      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+                      builder: (context) => const ClientSelectorDialog(),
+                    );
+                  }
 
                   if (clientId != null && mounted) {
                     // 導航到新增筆記頁面

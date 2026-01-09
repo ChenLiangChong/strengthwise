@@ -15,6 +15,7 @@ import 'package:strengthwise/views/pages/relationships/role_coach/widgets/empty_
 import 'package:strengthwise/views/pages/relationships/role_coach/health_assessment_page.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/coach_display_preferences_page.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
+import 'package:strengthwise/common_widgets/loading/skeleton_loader.dart';
 
 /// 健康評估 Tab
 ///
@@ -123,7 +124,8 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      // ⚡ 使用骨架屏取代轉圈
+      return const SkeletonSessionMode();
     }
 
     final controller = context.read<SessionModeController>();

@@ -8,6 +8,7 @@ import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/statistics/widgets/frequency_card.dart';
 import 'package:strengthwise/views/pages/statistics/widgets/volume_trend_chart.dart';
 import 'package:strengthwise/views/pages/statistics/widgets/personal_records_card.dart';
+import 'package:strengthwise/common_widgets/loading/skeleton_loader.dart';
 
 /// 近期統計 Tab
 ///
@@ -68,7 +69,8 @@ class _SessionStatisticsTabState extends State<SessionStatisticsTab> {
     final colorScheme = theme.colorScheme;
 
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      // ⚡ 使用骨架屏取代轉圈
+      return const SkeletonStatistics();
     }
 
     if (_data == null) {
@@ -95,7 +97,10 @@ class _SessionStatisticsTabState extends State<SessionStatisticsTab> {
           const SizedBox(height: 16),
 
           // 訓練頻率（複用現有組件）
-          FrequencyCard(frequency: _data!.frequency),
+          FrequencyCard(
+            frequency: _data!.frequency,
+            timeRange: TimeRange.sevenDays,
+          ),
           const SizedBox(height: 16),
 
           // 訓練量趨勢（複用現有組件）

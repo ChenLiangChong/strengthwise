@@ -4,10 +4,15 @@ import 'package:strengthwise/services/interfaces/i_client_availability_service.d
 import 'package:strengthwise/utils/datetime_utils.dart';
 
 /// Client Availability Service Supabase 實現
-/// 
+///
 /// Phase 3: 雙向時間管理系統
-class ClientAvailabilityServiceSupabase
-    implements IClientAvailabilityService {
+
+/// ⭐ 定義 client_availability 表的標準查詢欄位
+const String _kClientAvailabilitySelectFields = '''
+  id, client_id, time_range, priority, notes, created_at, updated_at
+''';
+
+class ClientAvailabilityServiceSupabase implements IClientAvailabilityService {
   final SupabaseClient _supabase;
 
   ClientAvailabilityServiceSupabase(this._supabase);
@@ -21,7 +26,7 @@ class ClientAvailabilityServiceSupabase
   }) async {
     var query = _supabase
         .from('client_availability')
-        .select('*')
+        .select(_kClientAvailabilitySelectFields)
         .eq('client_id', clientId);
 
     if (priority != null) {
@@ -38,7 +43,7 @@ class ClientAvailabilityServiceSupabase
   Future<ClientAvailabilityModel?> getAvailabilityById(String id) async {
     final response = await _supabase
         .from('client_availability')
-        .select('*')
+        .select(_kClientAvailabilitySelectFields)
         .eq('id', id)
         .maybeSingle();
 
@@ -57,7 +62,7 @@ class ClientAvailabilityServiceSupabase
 
     final response = await _supabase
         .from('client_availability')
-        .select('*')
+        .select(_kClientAvailabilitySelectFields)
         .eq('client_id', clientId)
         .filter('time_range', 'ov', rangeStr)
         .order('time_range', ascending: true);
@@ -88,7 +93,7 @@ class ClientAvailabilityServiceSupabase
     final response = await _supabase
         .from('client_availability')
         .insert(data)
-        .select()
+        .select(_kClientAvailabilitySelectFields)
         .single();
 
     return ClientAvailabilityModel.fromSupabase(response);
@@ -104,7 +109,7 @@ class ClientAvailabilityServiceSupabase
         .from('client_availability')
         .update(data)
         .eq('id', availability.id)
-        .select()
+        .select(_kClientAvailabilitySelectFields)
         .single();
 
     return ClientAvailabilityModel.fromSupabase(response);
@@ -122,8 +127,10 @@ class ClientAvailabilityServiceSupabase
     final dataList =
         availabilities.map((a) => a.toSupabase(includeId: false)).toList();
 
-    final response =
-        await _supabase.from('client_availability').insert(dataList).select();
+    final response = await _supabase
+        .from('client_availability')
+        .insert(dataList)
+        .select(_kClientAvailabilitySelectFields);
 
     return (response as List)
         .map((json) => ClientAvailabilityModel.fromSupabase(json))
@@ -185,4 +192,3 @@ class ClientAvailabilityServiceSupabase
     return slots;
   }
 }
-

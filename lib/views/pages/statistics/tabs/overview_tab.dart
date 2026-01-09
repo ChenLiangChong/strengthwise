@@ -31,7 +31,10 @@ class OverviewTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 訓練頻率卡片
-          FrequencyCard(frequency: data.frequency),
+          FrequencyCard(
+            frequency: data.frequency,
+            timeRange: controller.timeRange,
+          ),
           const SizedBox(height: 16),
 
           // 訓練量趨勢圖

@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../models/workout_record_model.dart';
 import '../../../utils/datetime_utils.dart'; // ⭐ 使用時間工具
+import '../../../utils/isolate_utils.dart';
 import '_workout_cache_manager.dart';
 
 /// 訓練記錄操作類別
@@ -66,9 +68,8 @@ class WorkoutRecordOperations {
           .order('completed_date', ascending: false)
           .limit(limit);
 
-      final records = (response as List)
-          .map((data) => WorkoutRecord.fromSupabase(data))
-          .toList();
+      // ⚡ 使用 Isolate 解析大型列表（避免阻塞主執行緒）
+      final records = await _parseWorkoutRecordsAsync(response as List);
 
       // 更新緩存
       if (_cacheRecords) {
@@ -204,9 +205,8 @@ class WorkoutRecordOperations {
           .order('scheduled_date', ascending: completed == false)
           .limit(limit);
 
-      final plans = (response as List)
-          .map((data) => WorkoutRecord.fromSupabase(data))
-          .toList();
+      // ⚡ 使用 Isolate 解析大型列表（避免阻塞主執行緒）
+      final plans = await _parseWorkoutRecordsAsync(response as List);
 
       _logDebug('成功獲取 ${plans.length} 個訓練計劃（Cursor 分頁）');
 
@@ -372,7 +372,11 @@ class WorkoutRecordOperations {
       final response = await _supabase
           .from('workout_plans')
           .insert(recordData)
-          .select()
+          .select(
+              'id, user_id, trainee_id, creator_id, title, scheduled_date, completed_date, completed, '
+              'total_volume, total_exercises, total_sets, plan_type, exercises, note, training_time, '
+              'actual_start_time, actual_end_time, elapsed_seconds, training_status, appointment_id, '
+              'created_at, updated_at')
           .single();
 
       final newRecord = WorkoutRecord.fromSupabase(response);
@@ -459,7 +463,7 @@ class WorkoutRecordOperations {
       await _supabase
           .from('workout_plans')
           .update(recordData)
-          .eq('id', record.id);  // ⚡ 只用 ID 查詢，不限制 trainee_id（教練也能更新）
+          .eq('id', record.id); // ⚡ 只用 ID 查詢，不限制 trainee_id（教練也能更新）
 
       // ⚡ Optimistic Update：同步更新快取
       // ⭐ 使用 traineeId 作為快取 key
@@ -498,7 +502,7 @@ class WorkoutRecordOperations {
       await _supabase
           .from('workout_plans')
           .delete()
-          .eq('id', recordId);  // ⚡ 只用 ID 查詢，不限制 trainee_id（教練也能刪除）
+          .eq('id', recordId); // ⚡ 只用 ID 查詢，不限制 trainee_id（教練也能刪除）
 
       // ⚡ Optimistic Update：同步更新快取
       if (_cacheRecords) {
@@ -526,9 +530,8 @@ class WorkoutRecordOperations {
           .order('scheduled_date', ascending: false)
           .limit(100); // 預載入最近 100 筆
 
-      final plans = (response as List)
-          .map((data) => WorkoutRecord.fromSupabase(data))
-          .toList();
+      // ⚡ 使用 Isolate 解析大型列表
+      final plans = await _parseWorkoutRecordsAsync(response as List);
 
       if (_cacheRecords && plans.isNotEmpty) {
         _cacheManager.updateAllPlansCache(userId, plans);
@@ -539,6 +542,42 @@ class WorkoutRecordOperations {
     }
   }
 
+  // ============================================================================
+  // Isolate 解析輔助方法
+  // ============================================================================
+
+  /// ⚡ 使用 Isolate 解析訓練記錄列表（避免阻塞主執行緒）
+  Future<List<WorkoutRecord>> _parseWorkoutRecordsAsync(List<dynamic> rawData) async {
+    // 小型列表直接在主執行緒解析
+    if (rawData.length < IsolateUtils.listThreshold) {
+      return rawData
+          .map((data) => WorkoutRecord.fromSupabase(data as Map<String, dynamic>))
+          .toList();
+    }
+
+    // 大型列表使用 Isolate
+    try {
+      final result = await compute(
+        _parseWorkoutRecordsIsolate,
+        rawData.cast<Map<String, dynamic>>(),
+      );
+
+      if (kDebugMode) {
+        _logDebug('⚡ Isolate 解析完成：${result.length} 筆訓練');
+      }
+
+      return result;
+    } catch (e) {
+      if (kDebugMode) {
+        _logDebug('⚠️ Isolate 解析失敗，降級到主執行緒: $e');
+      }
+      // 降級：在主執行緒解析
+      return rawData
+          .map((data) => WorkoutRecord.fromSupabase(data as Map<String, dynamic>))
+          .toList();
+    }
+  }
+
   /// 清除特定用戶的快取（用於刷新）⭐
   void clearUserCache(String userId) {
     if (_cacheRecords) {
@@ -546,4 +585,11 @@ class WorkoutRecordOperations {
       _logDebug('🔄 已清除用戶快取: $userId');
     }
   }
+}
+
+/// Isolate 內執行的解析函數（必須是頂層函數）
+List<WorkoutRecord> _parseWorkoutRecordsIsolate(List<Map<String, dynamic>> rawData) {
+  return rawData
+      .map((data) => WorkoutRecord.fromSupabase(data))
+      .toList();
 }

@@ -5,6 +5,18 @@ import '../../../utils/datetime_utils.dart';
 /// 預約資料庫操作
 ///
 /// 負責所有 Supabase 資料庫的 CRUD 操作
+
+/// ⭐ 定義 bookings 表的標準查詢欄位（避免 SELECT *）
+const String _kBookingSelectFields = '''
+  id, user_id, coach_id, slot_id, date_time, duration, status, 
+  notes, created_at, updated_at, confirmed_at, cancelled_at, cancelled_by
+''';
+
+/// ⭐ 定義 available_slots 表的標準查詢欄位
+const String _kSlotSelectFields = '''
+  id, coach_id, date_time, duration, is_booked, created_at, updated_at
+''';
+
 class BookingOperations {
   final SupabaseClient _supabase;
   final String? Function() _getCurrentUserId;
@@ -26,7 +38,7 @@ class BookingOperations {
     _logDebug('從 Supabase 獲取用戶預約');
     final response = await _supabase
         .from('bookings')
-        .select()
+        .select(_kBookingSelectFields)
         .eq('user_id', userId)
         .order('date_time', ascending: true);
 
@@ -43,7 +55,7 @@ class BookingOperations {
     _logDebug('從 Supabase 獲取教練預約');
     final response = await _supabase
         .from('bookings')
-        .select()
+        .select(_kBookingSelectFields)
         .eq('coach_id', userId)
         .order('date_time', ascending: true);
 
@@ -60,7 +72,7 @@ class BookingOperations {
     _logDebug('從 Supabase 獲取預約詳情: $bookingId');
     final response = await _supabase
         .from('bookings')
-        .select()
+        .select(_kBookingSelectFields)
         .eq('id', bookingId)
         .maybeSingle();
 
@@ -111,7 +123,7 @@ class BookingOperations {
     // 檢查權限
     final bookingResponse = await _supabase
         .from('bookings')
-        .select()
+        .select(_kBookingSelectFields)
         .eq('id', bookingId)
         .maybeSingle();
 
@@ -146,7 +158,7 @@ class BookingOperations {
     // 檢查預約詳情
     final bookingResponse = await _supabase
         .from('bookings')
-        .select()
+        .select(_kBookingSelectFields)
         .eq('id', bookingId)
         .maybeSingle();
 
@@ -178,8 +190,7 @@ class BookingOperations {
     if (bookingDetails.containsKey('slot_id')) {
       await _supabase
           .from('available_slots')
-          .update({'is_booked': false})
-          .eq('id', bookingDetails['slot_id']);
+          .update({'is_booked': false}).eq('id', bookingDetails['slot_id']);
     }
 
     _logDebug('預約取消成功');
@@ -196,7 +207,7 @@ class BookingOperations {
     // 檢查預約詳情，確保只有教練能確認預約
     final bookingResponse = await _supabase
         .from('bookings')
-        .select()
+        .select(_kBookingSelectFields)
         .eq('id', bookingId)
         .maybeSingle();
 
@@ -233,7 +244,7 @@ class BookingOperations {
     // 檢查預約詳情
     final bookingResponse = await _supabase
         .from('bookings')
-        .select()
+        .select(_kBookingSelectFields)
         .eq('id', bookingId)
         .maybeSingle();
 
@@ -272,7 +283,7 @@ class BookingOperations {
 
     final response = await _supabase
         .from('available_slots')
-        .select()
+        .select(_kSlotSelectFields)
         .eq('coach_id', coachId)
         .eq('is_booked', false)
         .gte('date_time', DateTimeUtils.formatToUtcIso(now))
@@ -291,8 +302,7 @@ class BookingOperations {
     _logDebug('設置時段已預約: $slotId');
     await _supabase
         .from('available_slots')
-        .update({'is_booked': true})
-        .eq('id', slotId);
+        .update({'is_booked': true}).eq('id', slotId);
 
     _logDebug('時段設置已預約成功');
     return true;
@@ -305,7 +315,7 @@ class BookingOperations {
     // 獲取用戶即將到來的預約
     final userResponse = await _supabase
         .from('bookings')
-        .select()
+        .select(_kBookingSelectFields)
         .eq('user_id', userId)
         .gte('date_time', DateTimeUtils.formatToUtcIso(now))
         .eq('status', 'confirmed')
@@ -321,7 +331,7 @@ class BookingOperations {
     // 獲取教練即將到來的預約
     final coachResponse = await _supabase
         .from('bookings')
-        .select()
+        .select(_kBookingSelectFields)
         .eq('coach_id', userId)
         .gte('date_time', DateTimeUtils.formatToUtcIso(now))
         .eq('status', 'confirmed')
@@ -345,5 +355,3 @@ class BookingOperations {
     return allBookings.take(5).toList();
   }
 }
-
-

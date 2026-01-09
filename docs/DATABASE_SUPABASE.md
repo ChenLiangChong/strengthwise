@@ -2,7 +2,7 @@
 
 > Supabase PostgreSQL 資料庫架構與最佳實踐
 
-**最後更新**：2026-01-07（v3.1）
+**最後更新**：2026-01-09（v3.2）
 
 ---
 
@@ -624,8 +624,16 @@ CREATE TABLE public.personal_records (
 | SELECT | clients_view_own_appointments | `client_id = auth.uid()` |
 | SELECT | coaches_view_own_appointments | `coach_id = auth.uid()` |
 | INSERT | clients_create_appointments | `client_id = auth.uid()` + 活躍教練關係 |
+| INSERT | coaches_create_appointments | `coach_id = auth.uid()` + 活躍教練關係（v3.1.1 臨時課程）|
 | UPDATE | clients_update_own_appointments | `client_id = auth.uid()` |
 | UPDATE | coaches_update_own_appointments | `coach_id = auth.uid()` |
+
+**觸發器**（v3.1.1）：
+
+| 觸發器 | 事件 | 說明 |
+|--------|------|------|
+| `trg_cleanup_cancelled_appointment` | UPDATE status='cancelled' | 刪除關聯的 session_notes、daily_readiness、workout_plan（如有）|
+| `trg_cleanup_rejected_appointment` | UPDATE status='rejected' | 刪除關聯的 session_notes、daily_readiness |
 
 #### availability_slots（教練時段）
 
@@ -922,7 +930,8 @@ try {
 | 016-021 | v2.8 | 健康評估系統 |
 | 025-027 | v2.9 | 教練公開檔案 + 訓練狀態 |
 | 028-031, 033 | v3.0 | 預約設定 + 課前問卷 + Session Mode + FCM |
-| 034-035 | v3.1 | Session Mode 修復（觸發器 + visibility）|
+| 034-037 | v3.1 | Session Mode 修復 + RLS 修復 |
+| 040-041 | v3.1.1 | 教練創建預約 RLS + 預約取消清理觸發器 |
 
 ---
 

@@ -163,13 +163,15 @@ class AppointmentCard extends StatelessWidget {
 
   bool _shouldShowQuickActions() {
     if (isCoachMode) {
-      // 教練：待確認時顯示確認/拒絕按鈕，已確認時顯示取消按鈕
+      // 教練：待確認/已確認/已完成時顯示操作按鈕
       return appointment.status == AppointmentStatus.requested ||
-          appointment.status == AppointmentStatus.confirmed;
+          appointment.status == AppointmentStatus.confirmed ||
+          appointment.status == AppointmentStatus.completed; // ⭐ v3.1.1
     } else {
-      // 學員：待確認或已確認時顯示取消按鈕
+      // 學員：待確認/已確認/已完成時顯示操作按鈕
       return appointment.status == AppointmentStatus.requested ||
-          appointment.status == AppointmentStatus.confirmed;
+          appointment.status == AppointmentStatus.confirmed ||
+          appointment.status == AppointmentStatus.completed; // ⭐ v3.1.1
     }
   }
 
@@ -220,6 +222,38 @@ class AppointmentCard extends StatelessWidget {
               icon: Icon(canStart ? Icons.play_arrow : Icons.visibility,
                   size: 18),
               label: Text(canStart ? '開始課程' : '查看課程'),
+            ),
+        ],
+      );
+    } else if (isCoachMode &&
+        appointment.status == AppointmentStatus.completed) {
+      // ⭐ v3.1.1: 教練：已完成時 - 查看課程紀錄
+      return Wrap(
+        alignment: WrapAlignment.end,
+        spacing: context.spacing.sm,
+        runSpacing: context.spacing.xs,
+        children: [
+          if (onStartSession != null)
+            FilledButton.icon(
+              onPressed: onStartSession,
+              icon: const Icon(Icons.history, size: 18),
+              label: const Text('查看課程紀錄'),
+            ),
+        ],
+      );
+    } else if (!isCoachMode &&
+        appointment.status == AppointmentStatus.completed) {
+      // ⭐ v3.1.1: 學員：已完成時 - 查看課程紀錄
+      return Wrap(
+        alignment: WrapAlignment.end,
+        spacing: context.spacing.sm,
+        runSpacing: context.spacing.xs,
+        children: [
+          if (onViewSession != null)
+            FilledButton.icon(
+              onPressed: onViewSession,
+              icon: const Icon(Icons.history, size: 18),
+              label: const Text('查看課程紀錄'),
             ),
         ],
       );

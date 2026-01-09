@@ -160,35 +160,44 @@ class _SessionModeContentState extends State<_SessionModeContent>
               ],
             ),
           ),
-          body: Stack(
+          body: Column(
             children: [
+              // ⭐ v3.1.1: 課程已完成提示橫幅（從 controller 讀取狀態）
+              if (controller.isSessionCompleted)
+                _buildSessionCompletedBanner(context, controller),
               // Tab 內容
-              TabBarView(
-                controller: _tabController,
-                children: [
-                  // Tab 1: 課程執行
-                  SessionExecutionTab(
-                    workoutContentKey: _workoutContentKey,
-                  ),
-                  // Tab 2: 近期統計
-                  const SessionStatisticsTab(),
-                  // Tab 3: 健康評估
-                  const HealthAssessmentTab(),
-                ],
-              ),
-              // ⭐ v3.1: 展開式 FAB（僅教練可見）
-              if (widget.isCoachMode)
-                Positioned(
-                  right: 16,
-                  bottom: 16,
-                  child: SessionSpeedDial(
-                    onPhoto: () => _handlePhoto(context, controller),
-                    onDrawing: (templateType) => _navigateToDrawingCanvas(
-                        context, controller, templateType),
-                    onAddExercise: () => _handleAddExercise(context),
-                    showAddExercise: controller.hasWorkoutPlan,
-                  ),
+              Expanded(
+                child: Stack(
+                  children: [
+                    TabBarView(
+                      controller: _tabController,
+                      children: [
+                        // Tab 1: 課程執行
+                        SessionExecutionTab(
+                          workoutContentKey: _workoutContentKey,
+                        ),
+                        // Tab 2: 近期統計
+                        const SessionStatisticsTab(),
+                        // Tab 3: 健康評估
+                        const HealthAssessmentTab(),
+                      ],
+                    ),
+                    // ⭐ v3.1: 展開式 FAB（僅教練可見）
+                    if (widget.isCoachMode)
+                      Positioned(
+                        right: 16,
+                        bottom: 16,
+                        child: SessionSpeedDial(
+                          onPhoto: () => _handlePhoto(context, controller),
+                          onDrawing: (templateType) => _navigateToDrawingCanvas(
+                              context, controller, templateType),
+                          onAddExercise: () => _handleAddExercise(context),
+                          showAddExercise: controller.hasWorkoutPlan,
+                        ),
+                      ),
+                  ],
                 ),
+              ),
             ],
           ),
         );
@@ -223,6 +232,65 @@ class _SessionModeContentState extends State<_SessionModeContent>
     final end = controller.sessionEndTime;
     return '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')} - '
         '${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// ⭐ v3.1.1: 課程已完成提示橫幅
+  Widget _buildSessionCompletedBanner(
+    BuildContext context,
+    SessionModeController controller,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final remainingMinutes = controller.remainingEditMinutes;
+    final isExpired = remainingMinutes <= 0;
+
+    // 根據角色和時間狀態決定提示文字
+    String message;
+    if (widget.isCoachMode) {
+      if (isExpired) {
+        message = '課程已完成';
+      } else {
+        // 格式化剩餘時間
+        String timeText;
+        if (remainingMinutes >= 60) {
+          final hours = remainingMinutes ~/ 60;
+          final mins = remainingMinutes % 60;
+          timeText = mins > 0 ? '$hours 小時 $mins 分鐘' : '$hours 小時';
+        } else {
+          timeText = '$remainingMinutes 分鐘';
+        }
+        message = '課程已完成，您仍然可以在 $timeText 內編輯訓練計畫';
+      }
+    } else {
+      // 學員端
+      message = '課程已完成';
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check_circle_outline,
+            size: 20,
+            color: colorScheme.onPrimaryContainer,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w500,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 結束課程對話框
@@ -265,10 +333,51 @@ class _SessionModeContentState extends State<_SessionModeContent>
 
     if (confirmed == true && context.mounted) {
       await controller.endSession();
+
       if (context.mounted) {
-        Navigator.of(context).pop(true); // 返回上一頁
+        // ⭐ v3.1.1: SOAP 未填寫完畢時，彈窗提醒
+        final soapStatus = controller.soapStatus;
+        final allFilled = soapStatus.values.every((filled) => filled);
+
+        if (!allFilled) {
+          final goToSoap = await _showSoapReminderDialog(context);
+          if (goToSoap == true && context.mounted) {
+            // 切換到 Session 執行 Tab（SOAP 在那裡）
+            // 不離開頁面，讓教練填寫
+            return;
+          }
+        }
+
+        if (context.mounted) {
+          Navigator.of(context).pop(true); // 返回上一頁
+        }
       }
     }
+  }
+
+  /// ⭐ v3.1.1: SOAP 提醒彈窗
+  Future<bool?> _showSoapReminderDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.note_alt_outlined, size: 48),
+        title: const Text('課程已結束'),
+        content: const Text(
+          'SOAP 筆記尚未填寫完畢，要現在填寫嗎？\n\n'
+          '填寫 SOAP 有助於追蹤學員進度和課程記錄。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('稍後填寫'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('現在填寫'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// SOAP 填寫狀態

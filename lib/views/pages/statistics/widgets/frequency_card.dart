@@ -2,17 +2,23 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import '../../../../models/statistics_model.dart';
+import '../../../../models/statistics/time_range.dart';
 
 /// 訓練頻率卡片組件
 ///
-/// 顯示本週訓練次數、總時長、連續天數等統計
+/// 顯示訓練次數、總時長、連續天數等統計
+/// 標題會根據 [timeRange] 動態顯示（本週/本月/三個月/本年）
 class FrequencyCard extends StatelessWidget {
   /// 訓練頻率數據
   final TrainingFrequency frequency;
 
+  /// 當前時間範圍（用於顯示標題）
+  final TimeRange timeRange;
+
   const FrequencyCard({
     Key? key,
     required this.frequency,
+    required this.timeRange,
   }) : super(key: key);
 
   @override
@@ -23,25 +29,26 @@ class FrequencyCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.fitness_center, size: 20),
-                SizedBox(width: 8),
+                const Icon(Icons.fitness_center, size: 20),
+                const SizedBox(width: 8),
                 Text(
-                  '本週訓練',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  '${timeRange.displayName}訓練',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            // 第一行：訓練次數、完整完成、部分完成
+            // 第一行：訓練計劃總數、完整完成、部分完成
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildFrequencyStat(
                   context,
                   Icons.event_note,
-                  '${frequency.totalWorkouts} 次',
+                  '${frequency.scheduledWorkouts} 次',
                   '訓練計劃',
                   frequency.comparisonPercentage,
                 ),
@@ -55,7 +62,7 @@ class FrequencyCard extends StatelessWidget {
                 ),
                 _buildFrequencyStat(
                   context,
-                  Icons.schedule,
+                  Icons.timelapse,
                   '${frequency.partialWorkouts} 次',
                   '部分完成',
                   null,

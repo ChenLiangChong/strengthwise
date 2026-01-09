@@ -1,16 +1,20 @@
 // ✅ 已響應式改造 (Phase 0) - 表單頁，複雜操作不約束
+// ✅ v3.2: Coach Mark 引導
 import 'package:flutter/material.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:strengthwise/models/workout_exercise_model.dart'
     as exercise_models;
 import 'package:strengthwise/models/workout_record_model.dart';
 import 'package:strengthwise/models/exercise_model.dart';
 import 'package:strengthwise/services/interfaces/i_workout_service.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
+import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/exercises/exercises_page.dart';
 import 'package:strengthwise/views/pages/workout/execution/template_management_page.dart';
 import 'package:strengthwise/models/workout_template_model.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
+import 'package:strengthwise/views/widgets/onboarding/coach_mark_helper.dart';
 import 'widgets/plan_date_header.dart';
 import 'widgets/plan_basic_info_form.dart';
 import 'widgets/plan_exercise_card.dart';
@@ -52,6 +56,10 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   List<exercise_models.WorkoutExercise> _exercises = [];
   bool _isLoading = false;
   String? _selectedPlanType;
+  
+  // ⭐ v3.2: Coach Mark 引導
+  final GlobalKey _addExerciseButtonKey = GlobalKey();
+  bool _coachMarkShown = false;
 
   // ⭐ v2.1: 訓練時間（開始時為 null，在 initState 中設定）
   late DateTime _trainingTime;
@@ -96,6 +104,11 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         now.minute,
       );
     }
+
+    // ⭐ v3.2: 檢查 Coach Mark 引導
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkCoachMark();
+    });
 
     // ⭐ v2.1: 設定訓練結束時間
     if (widget.initialEndTime != null) {
@@ -640,6 +653,50 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       );
     });
   }
+  
+  // ⭐ v3.2: 檢查是否顯示 Coach Mark
+  Future<void> _checkCoachMark() async {
+    if (_coachMarkShown) return;
+    
+    final onboardingService = serviceLocator<OnboardingService>();
+    final shouldShow = await onboardingService.shouldShowCoachMark(
+      OnboardingService.keyWorkoutPlanCreate,
+    );
+    
+    if (shouldShow && mounted) {
+      // 延遲顯示，確保 UI 已渲染
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _showCoachMark();
+      });
+    }
+  }
+  
+  // ⭐ v3.2: 顯示 Coach Mark 引導
+  void _showCoachMark() {
+    if (_coachMarkShown) return;
+    _coachMarkShown = true;
+    
+    final targets = <TargetFocus>[];
+    
+    // 添加動作按鈕引導
+    if (_addExerciseButtonKey.currentContext != null) {
+      targets.add(
+        CoachMarkHelper.createRectTarget(
+          key: _addExerciseButtonKey,
+          title: '新增訓練動作',
+          description: '點擊這裡新增訓練動作\n\n進入動作庫後，找不到動作？\n可以點擊右上角新增自訂動作',
+          contentAlign: ContentAlign.top,
+        ),
+      );
+    }
+    
+    if (targets.isNotEmpty) {
+      CoachMarkHelper.show(
+        context: context,
+        targets: targets,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -733,6 +790,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                   // 添加動作按鈕
                   Center(
                     child: ElevatedButton.icon(
+                      key: _addExerciseButtonKey, // ⭐ v3.2: Coach Mark 引導用
                       onPressed: _addExercise,
                       icon: const Icon(Icons.add),
                       label: const Text('添加訓練動作'),

@@ -10,6 +10,7 @@ import 'package:strengthwise/services/interfaces/i_session_note_service.dart';
 import 'package:strengthwise/services/interfaces/i_workout_service.dart';
 import 'package:strengthwise/services/interfaces/i_appointment_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/models/appointment_model.dart';
 import 'package:strengthwise/services/realtime/session_realtime_service.dart';
 
 /// Session Mode 控制器
@@ -74,6 +75,10 @@ class SessionModeController extends ChangeNotifier {
   /// - true: 教練端，可編輯
   /// - false: 學員端，只能查看和填問卷
   final bool isCoachMode;
+
+  /// ⭐ v3.1.1: 課程是否已完成（從 appointment 查詢）
+  bool _isSessionCompleted = false;
+  bool get isSessionCompleted => _isSessionCompleted;
 
   // ============================================================
   // 狀態
@@ -146,6 +151,22 @@ class SessionModeController extends ChangeNotifier {
 
   /// 課程結束後 4 小時的截止時間
   DateTime get _editDeadline => sessionEndTime.add(const Duration(hours: 4));
+
+  /// ⭐ v3.1.1: 公開的編輯截止時間
+  DateTime get editDeadline => _editDeadline;
+
+  /// ⭐ v3.1.1: 課程是否已結束（超過課程結束時間）
+  bool get isSessionEnded {
+    final now = DateTime.now();
+    return now.isAfter(sessionEndTime);
+  }
+
+  /// ⭐ v3.1.1: 剩餘編輯時間（分鐘），0 表示已超時
+  int get remainingEditMinutes {
+    final now = DateTime.now();
+    if (now.isAfter(_editDeadline)) return 0;
+    return _editDeadline.difference(now).inMinutes;
+  }
 
   /// 是否在可打勾時間內（課程開始後 → 結束後 4 小時）
   bool get isWithinMarkWindow {
@@ -223,12 +244,25 @@ class SessionModeController extends ChangeNotifier {
         _loadReadiness(),
         _loadSessionNote(),
         _loadWorkoutPlan(), // ⭐ v3.1: 載入訓練計畫
+        _loadAppointmentStatus(), // ⭐ v3.1.1: 載入預約狀態
       ]);
     } catch (e) {
       debugPrint('Session Mode 載入資料失敗: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// ⭐ v3.1.1: 載入預約狀態
+  Future<void> _loadAppointmentStatus() async {
+    try {
+      final appointment =
+          await _appointmentService.getAppointmentById(appointmentId);
+      _isSessionCompleted = appointment?.status == AppointmentStatus.completed;
+      debugPrint('[SessionModeController] 預約狀態: ${appointment?.status}, isSessionCompleted: $_isSessionCompleted');
+    } catch (e) {
+      debugPrint('載入預約狀態失敗: $e');
     }
   }
 

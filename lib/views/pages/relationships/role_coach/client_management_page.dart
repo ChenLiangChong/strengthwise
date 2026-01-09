@@ -64,11 +64,16 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
   }
 
   /// 載入學員列表
+  ///
+  /// ⚡ 使用 Stale-While-Revalidate 策略：
+  /// - 立即顯示快取數據（如有）
+  /// - Service 層會在背景刷新數據
+  /// - 不再強制清除快取
   Future<void> _loadClients() async {
     if (_currentUserId == null) return;
 
-    // 清除教練關係快取
-    _relationshipService.clearCoachCache(_currentUserId!);
+    // ⚡ 移除 clearCoachCache，使用 Stale-While-Revalidate
+    // _relationshipService.clearCoachCache(_currentUserId!);
 
     setState(() {
       _isLoading = true;

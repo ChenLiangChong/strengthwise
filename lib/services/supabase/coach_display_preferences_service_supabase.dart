@@ -4,7 +4,15 @@ import '../interfaces/i_coach_display_preferences_service.dart';
 import '../core/error_handling_service.dart';
 
 /// 教練顯示偏好服務 Supabase 實作
-class CoachDisplayPreferencesServiceSupabase implements ICoachDisplayPreferencesService {
+
+/// ⭐ 定義 coach_display_preferences 表的標準查詢欄位
+const String _kDisplayPrefsSelectFields = '''
+  coach_id, show_all_exercises, enable_superset_mode, 
+  default_rest_between_sets, display_mode, created_at, updated_at
+''';
+
+class CoachDisplayPreferencesServiceSupabase
+    implements ICoachDisplayPreferencesService {
   final SupabaseClient _supabase;
   final ErrorHandlingService _errorService;
 
@@ -19,7 +27,7 @@ class CoachDisplayPreferencesServiceSupabase implements ICoachDisplayPreferences
     try {
       final response = await _supabase
           .from('coach_display_preferences')
-          .select()
+          .select(_kDisplayPrefsSelectFields)
           .eq('coach_id', coachId)
           .maybeSingle();
 
@@ -41,12 +49,11 @@ class CoachDisplayPreferencesServiceSupabase implements ICoachDisplayPreferences
   }
 
   @override
-  Future<void> updatePreferences(CoachDisplayPreferencesModel preferences) async {
+  Future<void> updatePreferences(
+      CoachDisplayPreferencesModel preferences) async {
     try {
       // 使用 UPSERT 操作
-      await _supabase
-          .from('coach_display_preferences')
-          .upsert(
+      await _supabase.from('coach_display_preferences').upsert(
             preferences.toSupabase(),
             onConflict: 'coach_id',
           );
@@ -63,7 +70,8 @@ class CoachDisplayPreferencesServiceSupabase implements ICoachDisplayPreferences
   @override
   Future<void> resetToDefault(String coachId) async {
     try {
-      final defaultPreferences = CoachDisplayPreferencesModel.createDefault(coachId);
+      final defaultPreferences =
+          CoachDisplayPreferencesModel.createDefault(coachId);
       await updatePreferences(defaultPreferences);
     } catch (e, stackTrace) {
       _errorService.logError(
@@ -75,4 +83,3 @@ class CoachDisplayPreferencesServiceSupabase implements ICoachDisplayPreferences
     }
   }
 }
-

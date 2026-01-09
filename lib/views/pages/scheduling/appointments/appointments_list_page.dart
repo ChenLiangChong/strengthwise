@@ -1,6 +1,7 @@
 // ✅ 已響應式改造 (Phase 0 + P3 Master-Detail)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/services/interfaces/i_user_service.dart';
 import 'package:strengthwise/controllers/appointment_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
@@ -133,10 +134,19 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
   }
 
   /// 開始課程（進入 Session Mode - 教練）⭐ v3.0
-  void _onStartSession(AppointmentModel appointment) {
-    // 嘗試從備註中獲取學員名稱，否則使用預設值
-    // TODO: 可考慮在 AppointmentModel 中加入 clientName 快取
-    final clientName = '學員';
+  /// ⭐ v3.1.1: 異步獲取學員名稱
+  Future<void> _onStartSession(AppointmentModel appointment) async {
+    // 獲取學員名稱
+    String clientName = '學員';
+    try {
+      final userService = serviceLocator<IUserService>();
+      final profile = await userService.getUserProfile(appointment.clientId);
+      clientName = profile?.displayName ?? profile?.email ?? '學員';
+    } catch (e) {
+      debugPrint('[APPOINTMENTS_LIST] 獲取學員名稱失敗: $e');
+    }
+
+    if (!mounted) return;
 
     Navigator.push(
       context,
@@ -148,25 +158,38 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
           sessionStartTime: appointment.startTime,
           sessionEndTime: appointment.endTime,
           workoutPlanId: appointment.workoutPlanId,
-          isCoachMode: true, // ⭐ v3.1: 教練模式
+          isCoachMode: true,
         ),
       ),
     );
   }
 
   /// 查看課程（進入 Session Mode - 學員）⭐ v3.1
-  void _onViewSession(AppointmentModel appointment) {
+  /// ⭐ v3.1.1: 異步獲取教練名稱
+  Future<void> _onViewSession(AppointmentModel appointment) async {
+    // 獲取教練名稱
+    String coachName = '教練';
+    try {
+      final userService = serviceLocator<IUserService>();
+      final profile = await userService.getUserProfile(appointment.coachId);
+      coachName = profile?.displayName ?? profile?.email ?? '教練';
+    } catch (e) {
+      debugPrint('[APPOINTMENTS_LIST] 獲取教練名稱失敗: $e');
+    }
+
+    if (!mounted) return;
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => SessionModePage(
           appointmentId: appointment.id,
           clientId: appointment.clientId,
-          clientName: '我', // 學員查看自己的課程
+          clientName: coachName, // ⭐ v3.1.1: 學員視角顯示教練名稱
           sessionStartTime: appointment.startTime,
           sessionEndTime: appointment.endTime,
           workoutPlanId: appointment.workoutPlanId,
-          isCoachMode: false, // ⭐ v3.1: 學員模式（唯讀）
+          isCoachMode: false,
         ),
       ),
     );
@@ -183,11 +206,21 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
 
       switch (action) {
         case 'cancel':
-          // 根據角色設置不同的取消原因
+          // ⭐ v3.1.1: 必須填寫取消原因
+          final cancelReason = await _showReasonDialog(
+            title: '取消預約',
+            hintText: '例如：時間無法配合、臨時有事...',
+          );
+          if (cancelReason == null) return;
+          
+          // 加上角色前綴
+          final cancelPrefix = widget.isCoachMode ? '教練取消' : '學員取消';
+          final fullCancelReason = '$cancelPrefix：$cancelReason';
+          
           success = await _appointmentController.cancelAppointment(
             appointmentId: appointment.id,
             cancelledBy: _currentUser!.uid,
-            reason: widget.isCoachMode ? '教練取消' : '學員取消',
+            reason: fullCancelReason,
           );
           break;
 
@@ -204,10 +237,20 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
           break;
 
         case 'reject':
+          // ⭐ v3.1.1: 必須填寫拒絕原因
+          final rejectReason = await _showReasonDialog(
+            title: '拒絕預約',
+            hintText: '例如：該時段已滿、時間無法配合...',
+          );
+          if (rejectReason == null) return;
+          
+          // 加上角色前綴
+          final fullRejectReason = '教練拒絕：$rejectReason';
+          
           success = await _appointmentController.rejectAppointment(
             appointmentId: appointment.id,
             cancelledBy: _currentUser!.uid,
-            reason: '教練拒絕',
+            reason: fullRejectReason,
           );
           break;
       }
@@ -266,12 +309,86 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
     }
   }
 
+  /// ⭐ v3.1.1: 顯示原因輸入對話框
+  Future<String?> _showReasonDialog({
+    required String title,
+    required String hintText,
+  }) async {
+    final reasonController = TextEditingController();
+    
+    final reason = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(title),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('請說明原因：'),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: reasonController,
+                    decoration: InputDecoration(
+                      hintText: hintText,
+                      border: const OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                    autofocus: true,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: const Text('返回'),
+                ),
+                FilledButton(
+                  onPressed: reasonController.text.trim().isEmpty
+                      ? null
+                      : () => Navigator.pop(context, reasonController.text.trim()),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red,
+                  ),
+                  child: const Text('確定'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    reasonController.dispose();
+    return reason;
+  }
+
   /// 建立臨時課程（教練專用）⭐ v3.0
+  /// ⭐ v3.1.1: 創建後自動跳轉到 Session Mode
   Future<void> _onCreateAdHocSession() async {
     if (_currentUser == null) return;
 
     final result = await AdHocSessionDialog.show(context, _currentUser!.uid);
-    if (result == true) {
+    if (result != null && mounted) {
+      // ⭐ v3.1.1: 跳轉到 Session Mode
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SessionModePage(
+            appointmentId: result.appointmentId,
+            clientId: result.clientId,
+            clientName: result.clientName,
+            sessionStartTime: result.startTime,
+            sessionEndTime: result.endTime,
+            isCoachMode: true,
+          ),
+        ),
+      );
+      // 返回後刷新列表
       await _loadData();
     }
   }

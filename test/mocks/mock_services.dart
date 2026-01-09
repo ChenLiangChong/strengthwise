@@ -24,18 +24,12 @@ class MockSessionNoteService extends Mock implements ISessionNoteService {}
 /// 註冊 fallback values（用於 any() matcher）
 void registerFallbackValues() {
   // 註冊 DailyReadinessModel 的 fallback
-  registerFallbackValue(DailyReadinessModel(
-    id: 'fallback',
-    userId: 'fallback',
-    logDate: DateTime.now(),
-    metrics: const ReadinessMetrics(
-      sleepQuality: 3,
-      sleepHours: 7.0,
-      soreness: 3,
-      stress: 3,
-      energyLevel: 3,
-    ),
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-  ));
+  // registerFallbackValue(DailyReadinessModel(
+  //   id: 'fallback',
+  //   userId: 'fallback',
+  //   logDate: DateTime.now(),
+  //   metrics: const ReadinessMetrics(),
+  //   createdAt: DateTime.now(),
+  //   updatedAt: DateTime.now(),
+  // ));
 }

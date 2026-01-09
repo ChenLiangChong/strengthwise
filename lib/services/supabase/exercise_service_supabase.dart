@@ -16,6 +16,21 @@ import 'exercise/exercise_preload_manager.dart';
 ///
 /// 提供訓練動作查詢、分類過濾和詳情獲取等功能
 /// 與緩存服務協同工作，支援環境配置和統一錯誤處理
+
+/// ⭐ 定義 exercises 表的標準查詢欄位（避免 SELECT *）
+const String _kExerciseSelectFields = '''
+  id, name, name_en, body_parts, training_type, equipment, 
+  level1, level2, level3, level4, level5, action_name, 
+  description, image_url, video_url, body_part, 
+  specific_muscle, equipment_category, equipment_subcategory, created_at
+''';
+
+/// ⭐ 定義 custom_exercises 表的標準查詢欄位
+const String _kCustomExerciseSelectFields = '''
+  id, name, body_part, training_type, equipment, description, 
+  user_id, created_at, updated_at
+''';
+
 class ExerciseServiceSupabase implements IExerciseService {
   // 依賴注入
   final SupabaseClient _client;
@@ -330,8 +345,8 @@ class ExerciseServiceSupabase implements IExerciseService {
       // ⚠️ 快取未準備好，回退到資料庫查詢
       _logDebug('⚠️ 快取未準備好，從資料庫查詢...');
 
-      // 建構 Supabase 查詢
-      var query = _client.from('exercises').select();
+      // 建構 Supabase 查詢（明確指定欄位）
+      var query = _client.from('exercises').select(_kExerciseSelectFields);
 
       // 新增所有有效的過濾條件
       for (final entry in filters.entries) {
@@ -388,7 +403,7 @@ class ExerciseServiceSupabase implements IExerciseService {
       // 先嘗試從 exercises 表格獲取（系統動作）
       final response = await _client
           .from('exercises')
-          .select()
+          .select(_kExerciseSelectFields)
           .eq('id', exerciseId)
           .maybeSingle()
           .timeout(
@@ -407,7 +422,7 @@ class ExerciseServiceSupabase implements IExerciseService {
 
       final customResponse = await _client
           .from('custom_exercises')
-          .select()
+          .select(_kCustomExerciseSelectFields)
           .eq('id', exerciseId)
           .maybeSingle()
           .timeout(
@@ -435,7 +450,6 @@ class ExerciseServiceSupabase implements IExerciseService {
           'description': customResponse['description'] ?? '用戶自訂動作',
           'image_url': '',
           'video_url': '',
-          'apps': [],
           'created_at': customResponse['created_at'],
           'training_type':
               customResponse['training_type'] ?? '阻力訓練', // 使用實際訓練類型
@@ -473,7 +487,7 @@ class ExerciseServiceSupabase implements IExerciseService {
       // 批量查詢系統動作（一次查詢）
       final systemResponse = await _client
           .from('exercises')
-          .select()
+          .select(_kExerciseSelectFields)
           .inFilter('id', exerciseIds)
           .timeout(
             Duration(seconds: _queryTimeout),
@@ -500,7 +514,7 @@ class ExerciseServiceSupabase implements IExerciseService {
         // 批量查詢自訂動作
         final customResponse = await _client
             .from('custom_exercises')
-            .select()
+            .select(_kCustomExerciseSelectFields)
             .inFilter('id', notFoundIds)
             .timeout(
               Duration(seconds: _queryTimeout),
@@ -528,7 +542,6 @@ class ExerciseServiceSupabase implements IExerciseService {
               'description': item['description'] ?? '用戶自訂動作',
               'image_url': '',
               'video_url': '',
-              'apps': [],
               'created_at': item['created_at'],
               'training_type': item['training_type'] ?? '阻力訓練', // 使用實際訓練類型
               'body_part': item['body_part'],
@@ -622,7 +635,7 @@ class ExerciseServiceSupabase implements IExerciseService {
     try {
       final response = await _client
           .from('exercises')
-          .select()
+          .select(_kExerciseSelectFields)
           .or('name.ilike.%$query%,name_en.ilike.%$query%')
           .limit(limit)
           .timeout(

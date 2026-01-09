@@ -1,4 +1,6 @@
 // ✅ 已響應式改造 (Phase 2)
+// ⚡ v3.1.1: LazyIndexedStack 優化啟動速度
+// ⭐ v3.2: 移除 Carousel，改用 Coach Mark + CurrentPageProvider
 import 'package:flutter/material.dart';
 import 'package:strengthwise/views/pages/home/home_page.dart';
 import 'package:strengthwise/views/pages/scheduling/booking/booking_page.dart';
@@ -6,6 +8,8 @@ import 'package:strengthwise/views/pages/profile/profile_page.dart';
 import 'package:strengthwise/views/pages/workout/training/training_page.dart';
 import 'package:strengthwise/views/pages/relationships/hub/training_hub_page.dart';
 import 'package:strengthwise/views/shared/navigation/adaptive_navigation_scaffold.dart';
+import 'package:strengthwise/views/widgets/lazy_indexed_stack.dart';
+import 'package:strengthwise/views/widgets/current_page_provider.dart';
 
 /// 主頁面 - 包含底部/側邊自適應導航
 ///
@@ -73,10 +77,17 @@ class _MainHomePageState extends State<MainHomePage> {
       selectedIndex: _selectedIndex,
       onDestinationSelected: _onDestinationSelected,
       destinations: _destinations,
-      // 使用 IndexedStack 保持所有頁面狀態
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
+      // ⭐ v3.2: 使用 CurrentPageProvider 傳遞當前頁面索引
+      // 讓子頁面知道自己是否是當前顯示的頁面（用於 Coach Mark 觸發控制）
+      body: CurrentPageProvider(
+        currentIndex: _selectedIndex,
+        // ⚡ v3.1.1: 使用 LazyIndexedStack 延遲初始化
+        // 只初始化當前頁面，其他頁面等用戶切換時才載入
+        // 大幅減少首次進入主頁面的載入時間
+        child: LazyIndexedStack(
+          index: _selectedIndex,
+          children: _pages,
+        ),
       ),
     );
   }

@@ -100,6 +100,20 @@ class ActionsSection extends StatelessWidget {
             ),
           ),
         );
+      } else if (appointment.status == AppointmentStatus.completed) {
+        // ⭐ v3.1.1: 教練端已完成：可查看課程紀錄（進入 Session Mode 編輯）
+        if (onViewSession != null) {
+          buttons.add(
+            FilledButton.icon(
+              onPressed: onViewSession,
+              icon: const Icon(Icons.history),
+              label: const Text('查看課程紀錄'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          );
+        }
       }
     } else {
       // 學員端操作
@@ -144,12 +158,12 @@ class ActionsSection extends StatelessWidget {
           ),
         );
       } else if (appointment.status == AppointmentStatus.completed) {
-        // ⭐ v3.0: 已完成：顯示查看課程紀錄按鈕
-        if (onViewRecord != null) {
+        // ⭐ v3.1.1: 已完成：學員可查看課程紀錄（進入 Session Mode）
+        if (onViewSession != null) {
           buttons.add(
             FilledButton.icon(
-              onPressed: onViewRecord,
-              icon: const Icon(Icons.description_outlined),
+              onPressed: onViewSession,
+              icon: const Icon(Icons.history),
               label: const Text('查看課程紀錄'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),

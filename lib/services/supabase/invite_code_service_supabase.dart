@@ -4,6 +4,12 @@ import '../interfaces/i_invite_code_service.dart';
 import '../../models/invite_code_model.dart';
 
 /// 邀請碼服務實作（Supabase）- 簡化版
+
+/// ⭐ 定義 invite_codes 表的標準查詢欄位（避免 SELECT *）
+const String _kInviteCodeSelectFields = '''
+  id, code, coach_id, created_at, expires_at
+''';
+
 class InviteCodeServiceSupabase implements IInviteCodeService {
   final SupabaseClient _supabase;
 
@@ -21,10 +27,7 @@ class InviteCodeServiceSupabase implements IInviteCodeService {
   @override
   Future<InviteCodeModel> generateInviteCode(String coachId) async {
     // 刪除該教練之前的所有邀請碼（確保只有一個有效碼）
-    await _supabase
-        .from('invite_codes')
-        .delete()
-        .eq('coach_id', coachId);
+    await _supabase.from('invite_codes').delete().eq('coach_id', coachId);
 
     // 生成唯一邀請碼（最多嘗試 10 次）
     String code = '';
@@ -65,7 +68,7 @@ class InviteCodeServiceSupabase implements IInviteCodeService {
     final result = await _supabase
         .from('invite_codes')
         .insert(data)
-        .select()
+        .select(_kInviteCodeSelectFields)
         .single();
 
     return InviteCodeModel.fromSupabase(result);
@@ -86,7 +89,7 @@ class InviteCodeServiceSupabase implements IInviteCodeService {
     // 查詢邀請碼
     final result = await _supabase
         .from('invite_codes')
-        .select()
+        .select(_kInviteCodeSelectFields)
         .eq('code', upperCode)
         .maybeSingle();
 
@@ -99,10 +102,7 @@ class InviteCodeServiceSupabase implements IInviteCodeService {
     // 檢查是否過期
     if (!inviteCode.isValid) {
       // 刪除過期邀請碼
-      await _supabase
-          .from('invite_codes')
-          .delete()
-          .eq('code', upperCode);
+      await _supabase.from('invite_codes').delete().eq('code', upperCode);
 
       throw Exception('邀請碼已過期');
     }
@@ -113,10 +113,7 @@ class InviteCodeServiceSupabase implements IInviteCodeService {
     }
 
     // 刪除邀請碼（用完即刪）
-    await _supabase
-        .from('invite_codes')
-        .delete()
-        .eq('code', upperCode);
+    await _supabase.from('invite_codes').delete().eq('code', upperCode);
 
     return inviteCode.coachId;
   }
@@ -149,4 +146,3 @@ class InviteCodeServiceSupabase implements IInviteCodeService {
     );
   }
 }
-

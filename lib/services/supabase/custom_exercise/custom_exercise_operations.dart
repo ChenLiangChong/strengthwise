@@ -5,6 +5,13 @@ import '../../../utils/translation_helper.dart';
 import 'custom_exercise_id_generator.dart';
 
 /// 自訂動作資料庫操作
+
+/// ⭐ 定義 custom_exercises 表的標準查詢欄位（避免 SELECT *）
+const String _kCustomExerciseSelectFields = '''
+  id, user_id, name, training_type, training_type_en, body_part, body_part_en, 
+  equipment, equipment_en, description, notes, created_at, updated_at
+''';
+
 class CustomExerciseOperations {
   final SupabaseClient _supabase;
   final Function(String) _logDebug;
@@ -28,10 +35,11 @@ class CustomExerciseOperations {
     String description = '',
     String notes = '',
   }) async {
-    _logDebug('創建新的自定義動作: $name (類型: $trainingType, 部位: $bodyPart, 器材: $equipment)');
+    _logDebug(
+        '創建新的自定義動作: $name (類型: $trainingType, 部位: $bodyPart, 器材: $equipment)');
 
     final id = CustomExerciseIdGenerator.generate();
-    
+
     // 自動填充英文欄位
     final trainingTypeEn = TranslationHelper.getTrainingTypeEn(trainingType);
     final bodyPartEn = TranslationHelper.getBodyPartEn(bodyPart);
@@ -52,7 +60,7 @@ class CustomExerciseOperations {
           'description': description,
           'notes': notes,
         })
-        .select()
+        .select(_kCustomExerciseSelectFields)
         .single()
         .timeout(
           Duration(seconds: _queryTimeout),
@@ -70,7 +78,7 @@ class CustomExerciseOperations {
 
     final response = await _supabase
         .from('custom_exercises')
-        .select()
+        .select(_kCustomExerciseSelectFields)
         .eq('user_id', userId)
         .order('created_at', ascending: false)
         .timeout(
@@ -104,7 +112,8 @@ class CustomExerciseOperations {
     if (name != null) updateData['name'] = name;
     if (trainingType != null) {
       updateData['training_type'] = trainingType;
-      updateData['training_type_en'] = TranslationHelper.getTrainingTypeEn(trainingType);
+      updateData['training_type_en'] =
+          TranslationHelper.getTrainingTypeEn(trainingType);
     }
     if (bodyPart != null) {
       updateData['body_part'] = bodyPart;
@@ -159,4 +168,3 @@ class TimeoutException implements Exception {
   @override
   String toString() => message;
 }
-

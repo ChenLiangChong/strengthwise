@@ -6,6 +6,7 @@ import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/statistics/widgets/empty_state_widget.dart';
+import 'package:strengthwise/common_widgets/loading/skeleton_loader.dart';
 import 'widgets/time_range_selector.dart';
 import 'tabs/overview_tab.dart';
 import 'tabs/strength_progress_tab.dart';
@@ -74,31 +75,22 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
   /// ⚡ 智能初始化統計數據
   ///
   /// - 如果已預載入（從首頁進入），使用現有數據
-  /// - 如果未預載入（直接進入），使用 initializeMinimal
-  /// - 初始化完成後，背景載入其他時間範圍
+  /// - 如果未預載入（直接進入），載入當前時間範圍數據
+  /// - ⭐ 優化：移除重複的預載入邏輯，由首頁統一負責
   Future<void> _initializeStatistics() async {
     final targetUserId = _getTargetUserId();
     if (targetUserId == null) return;
 
-    // 如果還沒有數據，載入本週數據
-    if (_controller.statisticsData == null) {
+    // ⭐ 只有在「完全沒有數據且未在載入中」時才載入
+    // 這樣可以避免與首頁預載入的重複
+    if (!_controller.hasData && !_controller.isLoading) {
+      // ⭐ 使用 initializeMinimal 確保 userId 被正確設定
       await _controller.initializeMinimal(targetUserId);
     }
 
-    // ⚡ 背景載入其他時間範圍（本月、三個月、本年）
-    _preloadOtherTimeRanges(targetUserId);
-  }
-
-  /// ⚡ 背景載入其他時間範圍
-  ///
-  /// 在本週數據載入完成後，背景載入其他時間範圍
-  /// 這樣切換時間範圍時就能秒開
-  Future<void> _preloadOtherTimeRanges(String userId) async {
-    // 延遲 500ms，確保頁面渲染完成
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    // 背景初始化（會預載入其他時間範圍）
-    await _controller.initialize(userId);
+    // ⭐ 移除 _preloadOtherTimeRanges() 調用
+    // 預載入統一由首頁的 _preloadStatistics() 負責
+    // 這樣可以避免重複查詢
   }
 
   @override
@@ -163,9 +155,9 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
   Widget _buildBodyOnly(String targetUserId) {
     return Consumer<IStatisticsController>(
       builder: (context, controller, _) {
-        // 載入中
+        // ⚡ 載入中使用骨架屏
         if (controller.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const SkeletonStatistics();
         }
 
         // 錯誤狀態

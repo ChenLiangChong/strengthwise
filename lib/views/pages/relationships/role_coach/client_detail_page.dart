@@ -1,7 +1,10 @@
 // ✅ 已響應式改造 (Phase 0) - Tab 子組件處理
+// ✅ v3.2: Coach Mark 引導
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:strengthwise/controllers/client_management_controller.dart';
+import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/services/interfaces/i_workout_service.dart';
 import 'package:strengthwise/models/user/user_model.dart';
@@ -9,6 +12,7 @@ import 'package:strengthwise/views/pages/relationships/role_coach/tabs/client_in
 import 'package:strengthwise/views/pages/relationships/role_coach/tabs/client_workout_calendar_tab.dart';
 import 'package:strengthwise/views/pages/notes/session_notes_list_page.dart';
 import 'package:strengthwise/views/pages/statistics/statistics_page_v2.dart';
+import 'package:strengthwise/views/widgets/onboarding/coach_mark_helper.dart';
 
 /// 學員詳情頁面（教練端）
 ///
@@ -35,6 +39,10 @@ class _ClientDetailPageState extends State<ClientDetailPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late ClientManagementController _controller;
+  
+  // ⭐ v3.2: Coach Mark 引導
+  final GlobalKey _tabBarKey = GlobalKey();
+  bool _coachMarkShown = false;
 
   @override
   void initState() {
@@ -44,6 +52,53 @@ class _ClientDetailPageState extends State<ClientDetailPage>
 
     // 選中學員（載入詳細資料）
     _controller.selectClient(widget.clientId);
+    
+    // ⭐ v3.2: 檢查 Coach Mark 引導
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkCoachMark();
+    });
+  }
+  
+  // ⭐ v3.2: 檢查是否顯示 Coach Mark
+  Future<void> _checkCoachMark() async {
+    if (_coachMarkShown) return;
+    
+    final onboardingService = serviceLocator<OnboardingService>();
+    final shouldShow = await onboardingService.shouldShowCoachMark(
+      OnboardingService.keyCoachClientDetail,
+    );
+    
+    if (shouldShow && mounted) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _showCoachMark();
+      });
+    }
+  }
+  
+  // ⭐ v3.2: 顯示 Coach Mark 引導
+  void _showCoachMark() {
+    if (_coachMarkShown) return;
+    _coachMarkShown = true;
+    
+    final targets = <TargetFocus>[];
+    
+    if (_tabBarKey.currentContext != null) {
+      targets.add(
+        CoachMarkHelper.createRectTarget(
+          key: _tabBarKey,
+          title: '學員詳情',
+          description: '學員行事曆：查看學員可訓練時間\n過往運動紀錄',
+          contentAlign: ContentAlign.bottom,
+        ),
+      );
+    }
+    
+    if (targets.isNotEmpty) {
+      CoachMarkHelper.show(
+        context: context,
+        targets: targets,
+      );
+    }
   }
 
   @override
@@ -113,6 +168,7 @@ class _ClientDetailPageState extends State<ClientDetailPage>
             ),
           ],
           bottom: TabBar(
+            key: _tabBarKey, // ⭐ v3.2: Coach Mark 引導用
             controller: _tabController,
             isScrollable: true,
             tabs: const [

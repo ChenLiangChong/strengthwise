@@ -1,10 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../interfaces/i_coaching_relationship_service.dart';
 import '../../models/coaching_relationship_model.dart';
 import '../../models/user/user_model.dart';
-import '../../models/client_with_relationship.dart'; // ⭐ 新增
-import '../../models/coach_with_relationship.dart'; // ⭐ 新增
+import '../../models/client_with_relationship.dart';
+import '../../models/coach_with_relationship.dart';
 import '../core/error_handling_service.dart';
+import '../cache/relationship_local_cache_service.dart';
 import 'coaching_relationship/coaching_relationship_query.dart';
 import 'coaching_relationship/coaching_relationship_operations.dart';
 import 'coaching_relationship/coaching_relationship_cache_manager.dart';
@@ -16,6 +18,7 @@ class CoachingRelationshipServiceSupabase
     implements ICoachingRelationshipService {
   final SupabaseClient _supabase;
   final ErrorHandlingService _errorService;
+  final RelationshipLocalCacheService? _localCacheService;  // ⚡ Hive 持久化快取
 
   // 子模組
   late final CoachingRelationshipQuery _query;
@@ -24,8 +27,9 @@ class CoachingRelationshipServiceSupabase
 
   CoachingRelationshipServiceSupabase(
     this._supabase,
-    this._errorService,
-  ) {
+    this._errorService, {
+    RelationshipLocalCacheService? localCacheService,  // ⚡ 新增參數
+  }) : _localCacheService = localCacheService {
     _query = CoachingRelationshipQuery(_supabase);
     _operations = CoachingRelationshipOperations(_supabase);
     _cache = CoachingRelationshipCacheManager();
@@ -41,20 +45,37 @@ class CoachingRelationshipServiceSupabase
     String? status,
   }) async {
     try {
-      // 檢查快取
-      final cached = _cache.getCoachClients(coachId, status);
-      if (cached != null) {
-        return cached;
+      // ⚡ 1. 優先檢查記憶體快取（最快）
+      final memoryCached = _cache.getCoachClients(coachId, status);
+      if (memoryCached != null) {
+        return memoryCached;
       }
 
-      // 查詢資料庫
+      // ⚡ 2. 檢查 Hive 持久化快取
+      if (_localCacheService != null) {
+        final hiveCached = await _localCacheService!.getCachedCoachClientsAsync(coachId, status);
+        if (hiveCached != null) {
+          if (kDebugMode) {
+            print('[RELATIONSHIP_SERVICE] ⚡ 從 Hive 快取載入 ${hiveCached.length} 個學員關係');
+          }
+          // 同步到記憶體快取
+          _cache.setCoachClients(coachId, status, hiveCached);
+          // 背景更新（不阻塞）
+          _refreshCoachClientsInBackground(coachId, status);
+          return hiveCached;
+        }
+      }
+
+      // 3. 查詢資料庫
       final relationships = await _query.queryCoachClients(
         coachId,
         status: status,
       );
 
-      // 更新快取
+      // ⚡ 更新記憶體快取
       _cache.setCoachClients(coachId, status, relationships);
+      // ⚡ 更新 Hive 快取
+      await _localCacheService?.cacheCoachClients(coachId, status, relationships);
 
       return relationships;
     } catch (e) {
@@ -66,26 +87,59 @@ class CoachingRelationshipServiceSupabase
     }
   }
 
+  /// 背景刷新教練的學員列表（不阻塞 UI）
+  Future<void> _refreshCoachClientsInBackground(String coachId, String? status) async {
+    try {
+      final relationships = await _query.queryCoachClients(coachId, status: status);
+      _cache.setCoachClients(coachId, status, relationships);
+      await _localCacheService?.cacheCoachClients(coachId, status, relationships);
+      if (kDebugMode) {
+        print('[RELATIONSHIP_SERVICE] ⚡ 背景刷新學員列表完成');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[RELATIONSHIP_SERVICE] 背景刷新學員列表失敗: $e');
+      }
+    }
+  }
+
   @override
   Future<List<CoachingRelationshipModel>> getClientCoaches(
     String clientId, {
     String? status,
   }) async {
     try {
-      // 檢查快取
-      final cached = _cache.getClientCoaches(clientId, status);
-      if (cached != null) {
-        return cached;
+      // ⚡ 1. 優先檢查記憶體快取（最快）
+      final memoryCached = _cache.getClientCoaches(clientId, status);
+      if (memoryCached != null) {
+        return memoryCached;
       }
 
-      // 查詢資料庫
+      // ⚡ 2. 檢查 Hive 持久化快取
+      if (_localCacheService != null) {
+        final hiveCached = await _localCacheService!.getCachedClientCoachesAsync(clientId, status);
+        if (hiveCached != null) {
+          if (kDebugMode) {
+            print('[RELATIONSHIP_SERVICE] ⚡ 從 Hive 快取載入 ${hiveCached.length} 個教練關係');
+          }
+          // 同步到記憶體快取
+          _cache.setClientCoaches(clientId, status, hiveCached);
+          // 背景更新（不阻塞）
+          _refreshClientCoachesInBackground(clientId, status);
+          return hiveCached;
+        }
+      }
+
+      // 3. 查詢資料庫
       final relationships = await _query.queryClientCoaches(
         clientId,
         status: status,
       );
 
-      // 更新快取
+      // ⚡ 更新記憶體快取
       _cache.setClientCoaches(clientId, status, relationships);
+      // ⚡ 更新 Hive 快取
+      await _localCacheService?.cacheClientCoaches(clientId, status, relationships);
 
       return relationships;
     } catch (e) {
@@ -94,6 +148,22 @@ class CoachingRelationshipServiceSupabase
         type: 'CoachingRelationshipServiceError',
       );
       rethrow;
+    }
+  }
+
+  /// 背景刷新學員的教練列表（不阻塞 UI）
+  Future<void> _refreshClientCoachesInBackground(String clientId, String? status) async {
+    try {
+      final relationships = await _query.queryClientCoaches(clientId, status: status);
+      _cache.setClientCoaches(clientId, status, relationships);
+      await _localCacheService?.cacheClientCoaches(clientId, status, relationships);
+      if (kDebugMode) {
+        print('[RELATIONSHIP_SERVICE] ⚡ 背景刷新教練列表完成');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[RELATIONSHIP_SERVICE] 背景刷新教練列表失敗: $e');
+      }
     }
   }
 
@@ -355,8 +425,10 @@ class CoachingRelationshipServiceSupabase
         status: 'pending',
       );
 
-      // 清除快取
+      // ⚡ 清除記憶體快取
       _cache.clearRelationshipCache(coachId, clientId);
+      // ⚡ 清除 Hive 快取
+      await _localCacheService?.clearRelationshipCache(coachId, clientId);
 
       return relationship;
     } catch (e) {
@@ -381,8 +453,10 @@ class CoachingRelationshipServiceSupabase
         status: status,
       );
 
-      // 清除快取
+      // ⚡ 清除記憶體快取
       _cache.clearRelationshipCache(coachId, clientId);
+      // ⚡ 清除 Hive 快取
+      await _localCacheService?.clearRelationshipCache(coachId, clientId);
 
       return relationship;
     } catch (e) {
@@ -417,7 +491,10 @@ class CoachingRelationshipServiceSupabase
         
         // 成功時清除快取
         if (result.success && result.coachId != null && result.clientId != null) {
+          // ⚡ 清除記憶體快取
           _cache.clearRelationshipCache(result.coachId!, result.clientId!);
+          // ⚡ 清除 Hive 快取
+          await _localCacheService?.clearRelationshipCache(result.coachId!, result.clientId!);
         }
         
         return result;
@@ -459,8 +536,13 @@ class CoachingRelationshipServiceSupabase
         acceptedAt: DateTime.now(),
       );
 
-      // 清除快取
+      // ⚡ 清除記憶體快取
       _cache.clearRelationshipCache(
+        relationship.coachId,
+        relationship.clientId,
+      );
+      // ⚡ 清除 Hive 快取
+      await _localCacheService?.clearRelationshipCache(
         relationship.coachId,
         relationship.clientId,
       );
@@ -486,7 +568,13 @@ class CoachingRelationshipServiceSupabase
         status: 'rejected',
       );
 
+      // ⚡ 清除記憶體快取
       _cache.clearRelationshipCache(
+        relationship.coachId,
+        relationship.clientId,
+      );
+      // ⚡ 清除 Hive 快取
+      await _localCacheService?.clearRelationshipCache(
         relationship.coachId,
         relationship.clientId,
       );
@@ -512,7 +600,13 @@ class CoachingRelationshipServiceSupabase
         status: 'archived',
       );
 
+      // ⚡ 清除記憶體快取
       _cache.clearRelationshipCache(
+        relationship.coachId,
+        relationship.clientId,
+      );
+      // ⚡ 清除 Hive 快取
+      await _localCacheService?.clearRelationshipCache(
         relationship.coachId,
         relationship.clientId,
       );
@@ -535,7 +629,13 @@ class CoachingRelationshipServiceSupabase
 
       await _operations.deleteRelationship(relationshipId);
 
+      // ⚡ 清除記憶體快取
       _cache.clearRelationshipCache(
+        relationship.coachId,
+        relationship.clientId,
+      );
+      // ⚡ 清除 Hive 快取
+      await _localCacheService?.clearRelationshipCache(
         relationship.coachId,
         relationship.clientId,
       );
@@ -555,16 +655,22 @@ class CoachingRelationshipServiceSupabase
   @override
   void clearCache() {
     _cache.clearAll();
+    // ⚡ 同步清除 Hive 快取
+    _localCacheService?.clearAllCache();
   }
 
   @override
   void clearCoachCache(String coachId) {
     _cache.clearCoachCache(coachId);
+    // ⚡ 同步清除 Hive 快取
+    _localCacheService?.clearCoachCache(coachId);
   }
 
   @override
   void clearClientCache(String clientId) {
     _cache.clearClientCache(clientId);
+    // ⚡ 同步清除 Hive 快取
+    _localCacheService?.clearClientCache(clientId);
   }
 
   // ============================================================================

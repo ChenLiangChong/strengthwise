@@ -8,6 +8,8 @@ import '../../utils/datetime_utils.dart';  // ⭐ 使用時間工具
 import '../interfaces/i_workout_service.dart';
 import '../core/error_handling_service.dart';
 import '../service_locator.dart' show Environment;
+import '../cache/workout_plan_local_cache_service.dart';
+import '../cache/statistics_local_cache_service.dart';
 import 'workout/_workout_cache_manager.dart';
 import 'workout/workout_template_operations.dart';
 import 'workout/workout_record_operations.dart';
@@ -16,10 +18,13 @@ import 'workout/workout_id_generator.dart';
 /// 訓練計畫服務的 Supabase 實現
 ///
 /// 提供訓練模板管理、訓練記錄追蹤和從模板創建記錄等功能
+/// v3.1.1: 新增本地持久化快取支持
 class WorkoutServiceSupabase implements IWorkoutService {
   // 依賴注入
   final SupabaseClient _supabase;
   final ErrorHandlingService? _errorService;
+  final WorkoutPlanLocalCacheService? _localCacheService;
+  final StatisticsLocalCacheService? _statisticsCacheService;
 
   // 服務狀態
   bool _isInitialized = false;
@@ -39,8 +44,12 @@ class WorkoutServiceSupabase implements IWorkoutService {
   WorkoutServiceSupabase({
     SupabaseClient? supabase,
     ErrorHandlingService? errorService,
+    WorkoutPlanLocalCacheService? localCacheService,
+    StatisticsLocalCacheService? statisticsCacheService,
   })  : _supabase = supabase ?? Supabase.instance.client,
-        _errorService = errorService {
+        _errorService = errorService,
+        _localCacheService = localCacheService,
+        _statisticsCacheService = statisticsCacheService {
     _cacheManager = WorkoutCacheManager();
     _templateOps = WorkoutTemplateOperations(
       supabase: _supabase,
@@ -253,7 +262,24 @@ class WorkoutServiceSupabase implements IWorkoutService {
       return [];
     }
 
-    return await _recordOps.getUserPlans(
+    // ⚡ v3.1.1: 本地快取優先（僅適用於查詢未完成的計劃，且沒有分頁）
+    if (_localCacheService != null &&
+        completed == false &&
+        cursor == null &&
+        startDate == null &&
+        endDate == null) {
+      final cachedPlans = await _localCacheService!.getCachedPlans(targetUserId);
+      if (cachedPlans != null && cachedPlans.isNotEmpty) {
+        _logDebug('⚡ 從本地快取返回 ${cachedPlans.length} 個訓練計劃');
+        
+        // 背景更新快取（不阻塞返回）
+        _refreshAndCachePlans(targetUserId, completed, limit);
+        
+        return cachedPlans;
+      }
+    }
+
+    final plans = await _recordOps.getUserPlans(
       userId: targetUserId,
       completed: completed,
       startDate: startDate,
@@ -261,6 +287,34 @@ class WorkoutServiceSupabase implements IWorkoutService {
       cursor: cursor,
       limit: limit,
     );
+
+    // ⚡ 更新本地快取（僅未完成的計劃）
+    if (_localCacheService != null && completed == false && cursor == null) {
+      _localCacheService!.cacheActivePlans(targetUserId, plans);
+    }
+
+    return plans;
+  }
+
+  /// ⚡ 背景刷新並更新本地快取
+  Future<void> _refreshAndCachePlans(
+    String userId,
+    bool? completed,
+    int limit,
+  ) async {
+    try {
+      final freshPlans = await _recordOps.getUserPlans(
+        userId: userId,
+        completed: completed,
+        limit: limit,
+      );
+      if (_localCacheService != null && completed == false) {
+        await _localCacheService!.cacheActivePlans(userId, freshPlans);
+        _logDebug('⚡ 本地快取已更新');
+      }
+    } catch (e) {
+      _logDebug('⚠️ 背景刷新失敗：$e');
+    }
   }
 
   @override
@@ -325,11 +379,18 @@ class WorkoutServiceSupabase implements IWorkoutService {
       throw Exception('用戶未登入');
     }
 
-    return await _recordOps.createRecord(
+    final createdRecord = await _recordOps.createRecord(
       userId: currentUserId!,
       record: record,
       generateId: WorkoutIdGenerator.generateFirestoreId,
     );
+
+    // ⚡ v3.1.1: 更新本地快取
+    if (_localCacheService != null && !createdRecord.completed) {
+      _localCacheService!.updateCachedPlan(currentUserId!, createdRecord);
+    }
+
+    return createdRecord;
   }
 
   @override
@@ -341,10 +402,29 @@ class WorkoutServiceSupabase implements IWorkoutService {
       return false;
     }
 
-    return await _recordOps.updateRecord(
+    final success = await _recordOps.updateRecord(
       userId: currentUserId!,
       record: record,
     );
+
+    // ⚡ v3.1.1: 更新本地快取
+    if (success && _localCacheService != null) {
+      if (record.completed) {
+        // 已完成的計劃從快取移除
+        _localCacheService!.removeCachedPlan(currentUserId!, record.id);
+        
+        // ⚡ 訓練完成時，清除統計快取（下次會重新計算）
+        if (_statisticsCacheService != null) {
+          _statisticsCacheService!.clearUserCache(currentUserId!);
+          _logDebug('🔄 訓練完成，已清除統計快取');
+        }
+      } else {
+        // 未完成的計劃更新快取
+        _localCacheService!.updateCachedPlan(currentUserId!, record);
+      }
+    }
+
+    return success;
   }
 
   @override
@@ -356,10 +436,17 @@ class WorkoutServiceSupabase implements IWorkoutService {
       return false;
     }
 
-    return await _recordOps.deleteRecord(
+    final success = await _recordOps.deleteRecord(
       userId: currentUserId!,
       recordId: recordId,
     );
+
+    // ⚡ v3.1.1: 從本地快取移除
+    if (success && _localCacheService != null) {
+      _localCacheService!.removeCachedPlan(currentUserId!, recordId);
+    }
+
+    return success;
   }
 
   @override

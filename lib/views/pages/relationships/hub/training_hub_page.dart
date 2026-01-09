@@ -1,4 +1,5 @@
 // ✅ 已響應式改造 (Phase 0)
+// ⭐ v3.2: 移除 Carousel，Coach Mark 在各子頁面觸發
 import 'package:flutter/material.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/coach_hub_page.dart';
 import 'package:strengthwise/views/pages/relationships/role_client/client_hub_page.dart';

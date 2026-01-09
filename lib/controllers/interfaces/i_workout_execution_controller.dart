@@ -24,9 +24,11 @@ abstract class IWorkoutExecutionController {
   /// ⭐ v3.1: 設置權限覆蓋（Session Mode 用）
   ///
   /// 當 Session Mode 內嵌使用此 Controller 時，可以覆蓋預設的權限判斷
+  /// ⭐ v3.1.1: 新增 showTimerUI 參數
   void setPermissionOverride({
     bool? canEdit,
     bool? canMarkSet,
+    bool? showTimerUI,
   });
   
   /// 加載訓練計劃

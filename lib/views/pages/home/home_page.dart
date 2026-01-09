@@ -1,9 +1,14 @@
 // ✅ 已響應式改造 (Phase 0)
 // ✅ Phase 3.1-B: 首頁 UX 優化（今日行程 + 我的學員 + 快捷按鈕 + 可折疊）
+// ✅ v3.1.1: 載入優化 - 骨架屏取代轉圈
+// ✅ v3.2: Coach Mark 引導
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_statistics_controller.dart';
+import 'package:strengthwise/services/interfaces/i_statistics_service.dart';
 import 'package:strengthwise/services/interfaces/i_workout_service.dart';
 import 'package:strengthwise/services/interfaces/i_user_service.dart';
 import 'package:strengthwise/services/interfaces/i_appointment_service.dart';
@@ -30,6 +35,12 @@ import 'package:strengthwise/views/pages/relationships/role_client/client_hub_pa
 import 'package:strengthwise/views/pages/scheduling/appointments/coach_slots_management_page.dart';
 import 'package:strengthwise/views/pages/scheduling/availability/client_availability_page.dart';
 import 'package:strengthwise/views/pages/workout/execution/plan_editor_page.dart';
+// ⭐ v3.1.1: 臨時課程
+import 'package:strengthwise/views/pages/scheduling/appointments/widgets/adhoc_session_dialog.dart';
+// ⭐ v3.2: Coach Mark 引導
+import 'package:strengthwise/services/core/onboarding_service.dart';
+import 'package:strengthwise/views/widgets/onboarding/coach_mark_helper.dart';
+import 'package:strengthwise/views/widgets/current_page_provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -67,6 +78,15 @@ class _HomePageState extends State<HomePage> {
   // ⭐ Phase 3.1-B: 是否有綁定教練（用於快捷按鈕）
   bool _hasCoach = false;
 
+  // ⭐ v3.1 修復：學員視角 - 只有預約沒有訓練計畫的上課
+  List<AppointmentModel> _todayStudentSessions = [];
+  Map<String, UserModel> _coachProfiles = {}; // coachId -> UserModel（學員查看教練名稱）
+
+  // ⭐ v3.2: Coach Mark 引導
+  final GlobalKey _quickActionsKey = GlobalKey();
+  final GlobalKey _statisticsKey = GlobalKey();
+  bool _coachMarkShown = false;
+
   @override
   void initState() {
     super.initState();
@@ -83,14 +103,38 @@ class _HomePageState extends State<HomePage> {
   /// ⚡ 初始化首頁（優先級策略）
   ///
   /// 1. 立即載入首頁必需數據（最近訓練 + 今日計劃 + 用戶資料）
-  /// 2. 首頁數據完成後，背景預載入統計（不阻塞）
+  /// 2. 同時從本地快取預熱統計資料（不阻塞首頁）
+  /// 3. 首頁數據完成後，背景從 DB 補充缺少的統計
   Future<void> _initializeHomePage() async {
+    // ⚡ v3.1.2: 立即開始預熱統計資料（從 Hive 載入到記憶體）
+    // 不 await，讓它在背景執行，不阻塞首頁載入
+    _warmupStatisticsCache();
+
     // 步驟 1：並行載入首頁必需數據
     await _loadCriticalDataInParallel();
 
-    // 步驟 2：背景預載入統計（完全不阻塞用戶操作）
+    // 步驟 2：延遲從 DB 補充缺少的統計（讓首頁完全穩定後再開始）
     if (mounted) {
-      _preloadStatistics();
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) {
+          _preloadStatistics();
+        }
+      });
+    }
+  }
+
+  /// ⚡ v3.1.2: 立即預熱統計快取（從 Hive 到記憶體）
+  Future<void> _warmupStatisticsCache() async {
+    try {
+      final user = _authController.user;
+      if (user == null) return;
+
+      final statisticsService = serviceLocator<IStatisticsService>();
+      await statisticsService.warmupFromLocalCache(user.uid);
+    } catch (e) {
+      if (kDebugMode) {
+        print('[HomePage] ⚠️ 統計快取預熱失敗: $e');
+      }
     }
   }
 
@@ -128,6 +172,80 @@ class _HomePageState extends State<HomePage> {
     if (kDebugMode) {
       print('[HomePage] ✅ 首頁關鍵數據載入完成');
     }
+    
+    // ⭐ v3.2: 檢查 Coach Mark 引導
+    _checkCoachMark();
+  }
+  
+  // ⭐ v3.2: 當頁面變為可見時檢查 Coach Mark
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 當頁面變為當前頁面時，檢查 Coach Mark
+    if (CurrentPageProvider.isCurrentPage(context, 0) && !_coachMarkShown) {
+      _checkCoachMark();
+    }
+  }
+  
+  // ⭐ v3.2: 檢查是否顯示 Coach Mark
+  Future<void> _checkCoachMark() async {
+    if (_coachMarkShown) return;
+    
+    // ⭐ 檢查是否是當前頁面（HomePage 是 index 0）
+    if (!CurrentPageProvider.isCurrentPage(context, 0)) return;
+    
+    final onboardingService = serviceLocator<OnboardingService>();
+    final shouldShow = await onboardingService.shouldShowCoachMark(
+      OnboardingService.keyHomePage,
+    );
+    
+    if (shouldShow && mounted) {
+      // 延遲顯示，確保 UI 已渲染
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && CurrentPageProvider.isCurrentPage(context, 0)) {
+          _showCoachMark();
+        }
+      });
+    }
+  }
+  
+  // ⭐ v3.2: 顯示 Coach Mark 引導
+  void _showCoachMark() {
+    if (_coachMarkShown) return;
+    _coachMarkShown = true;
+    
+    final targets = <TargetFocus>[];
+    
+    // 快捷操作按鈕引導
+    if (_quickActionsKey.currentContext != null) {
+      targets.add(
+        CoachMarkHelper.createRectTarget(
+          key: _quickActionsKey,
+          title: '快捷操作',
+          description: '常用功能一鍵直達：\n新訓練、統計、設定可訓練時間等',
+          contentAlign: ContentAlign.bottom,
+        ),
+      );
+    }
+    
+    // 統計入口引導
+    if (_statisticsKey.currentContext != null) {
+      targets.add(
+        CoachMarkHelper.createTarget(
+          key: _statisticsKey,
+          title: '訓練統計',
+          description: '點這裡查看你的訓練數據',
+          contentAlign: ContentAlign.bottom,
+        ),
+      );
+    }
+    
+    if (targets.isNotEmpty) {
+      CoachMarkHelper.show(
+        context: context,
+        targets: targets,
+      );
+    }
   }
 
   /// ⭐ Phase 3.1-B: 檢查用戶是否有綁定教練
@@ -155,25 +273,40 @@ class _HomePageState extends State<HomePage> {
 
   /// ⚡ 背景預載入統計數據（所有時間範圍）
   ///
-  /// 真機效能足夠，預載入所有時間範圍（本週、本月、三個月、本年）
+  /// v3.1.1 優化：直接並行預載入所有時間範圍，不阻塞首頁
+  /// ⭐ Phase 1 優化：確保只執行一次
+  static bool _hasPreloadedStatistics = false;
+
   Future<void> _preloadStatistics() async {
-    // ⚡ 真機優化：首頁數據完成後立即預載入所有時間範圍
-    // 使用 microtask 確保在下一個事件循環執行
+    // ⭐ 防止重複預載入
+    if (_hasPreloadedStatistics) {
+      if (kDebugMode) {
+        print('[HomePage] ⏭️ 統計數據已預載入，跳過');
+      }
+      return;
+    }
+    _hasPreloadedStatistics = true;
+
+    // ⚡ v3.1.2: 從 DB 補充本地沒有的統計資料
+    // 預熱（Hive → 記憶體）已經在 _warmupStatisticsCache 中完成
     Future.microtask(() async {
       try {
         final user = _authController.user;
         if (user == null) return;
 
-        final statisticsController = serviceLocator<IStatisticsController>();
-
-        // ⚡ 完整初始化：預載入所有時間範圍（本週、本月、三個月、本年）
-        await statisticsController.initialize(user.uid);
+        final statisticsService = serviceLocator<IStatisticsService>();
 
         if (kDebugMode) {
-          print('[HomePage] ✅ 統計數據預載入完成（所有時間範圍）');
+          print('[HomePage] 🚀 檢查並從 DB 補充缺少的時間範圍...');
+        }
+        await statisticsService.preloadAllTimeRanges(user.uid);
+
+        if (kDebugMode) {
+          print('[HomePage] ✅ 統計數據預載入完成');
         }
       } catch (e) {
-        // 預載入失敗不影響主頁面
+        // 預載入失敗不影響主頁面，但重置標記以便下次重試
+        _hasPreloadedStatistics = false;
         if (kDebugMode) {
           print('[HomePage] ⚠️ 統計數據預載入失敗: $e');
         }
@@ -268,6 +401,7 @@ class _HomePageState extends State<HomePage> {
   // ⭐ Phase 3.1-B: 移除 _loadRecentWorkouts，歷史記錄改到行事曆查看
 
   /// ⭐ Phase 3.1-B: 載入今日行程（作為學員的課程 + 自主訓練）
+  /// ⭐ v3.1 修復：合併「只有預約沒有訓練計畫」的上課卡片
   Future<void> _loadTodayPlans() async {
     if (!mounted) return;
 
@@ -278,15 +412,16 @@ class _HomePageState extends State<HomePage> {
     try {
       final userId = _authController.user?.uid;
       if (userId == null) {
-        print('[HomePage] 用戶未登入');
+        debugPrint('[HomePage] 用戶未登入');
         setState(() {
           _todayPlans = [];
+          _todayStudentSessions = [];
           _isLoadingPlans = false;
         });
         return;
       }
 
-      print('[HomePage] 查詢今日行程，userId: $userId');
+      debugPrint('[HomePage] 查詢今日行程，userId: $userId');
 
       // 計算今天的日期範圍（00:00 到 23:59）
       final now = DateTime.now();
@@ -299,12 +434,52 @@ class _HomePageState extends State<HomePage> {
         endDate: tomorrow,
       );
 
-      print('[HomePage] 查詢到 ${plans.length} 個今日行程');
+      debugPrint('[HomePage] 查詢到 ${plans.length} 個今日訓練計畫');
+
+      // ⭐ v3.1 修復：額外查詢學員的已確認預約（可能沒有訓練計畫）
+      final appointments = await _appointmentService.getClientAppointments(
+        clientId: userId,
+        startDate: today,
+        endDate: tomorrow,
+        status: AppointmentStatus.confirmed,
+      );
+
+      debugPrint('[HomePage] 查詢到 ${appointments.length} 個已確認預約');
+
+      // 過濾掉已有 workout_plan 的預約（避免與 plans 重複）
+      final plansWithAppointment = plans
+          .where((p) => p.appointmentId != null && p.appointmentId!.isNotEmpty)
+          .map((p) => p.appointmentId!)
+          .toSet();
+
+      final sessionsWithoutPlan = appointments
+          .where((a) => !plansWithAppointment.contains(a.id))
+          .toList();
+
+      debugPrint('[HomePage] 過濾後：${sessionsWithoutPlan.length} 個預約沒有訓練計畫');
+
+      // 載入教練資料（用於顯示教練名稱）
+      if (sessionsWithoutPlan.isNotEmpty) {
+        final coachIds = sessionsWithoutPlan.map((a) => a.coachId).toSet();
+        final profiles = <String, UserModel>{};
+        for (final coachId in coachIds) {
+          try {
+            final profile = await _userService.getUserProfile(coachId);
+            if (profile != null) {
+              profiles[coachId] = profile;
+            }
+          } catch (e) {
+            debugPrint('[HomePage] 載入教練資料失敗: $coachId, $e');
+          }
+        }
+        _coachProfiles = profiles;
+      }
 
       if (!mounted) return;
 
       setState(() {
         _todayPlans = plans;
+        _todayStudentSessions = sessionsWithoutPlan;
         _isLoadingPlans = false;
       });
     } catch (e) {
@@ -313,7 +488,7 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _isLoadingPlans = false;
       });
-      print('[HomePage] 載入今日行程失敗: $e');
+      debugPrint('[HomePage] 載入今日行程失敗: $e');
     }
   }
 
@@ -356,7 +531,8 @@ class _HomePageState extends State<HomePage> {
       if (kDebugMode) {
         print('[HomePage] 🔍 查詢結果：${appointments.length} 筆已確認預約');
         for (final apt in appointments) {
-          print('[HomePage]   - ${apt.id}: ${apt.startTime} ~ ${apt.endTime}, status=${apt.status}');
+          print(
+              '[HomePage]   - ${apt.id}: ${apt.startTime} ~ ${apt.endTime}, status=${apt.status}');
         }
       }
 
@@ -584,7 +760,8 @@ class _HomePageState extends State<HomePage> {
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  DateFormat('yyyy年MM月dd日 EEEE', 'zh_TW').format(now),
+                                  DateFormat('yyyy年MM月dd日 EEEE', 'zh_TW')
+                                      .format(now),
                                   style: context.responsive.date,
                                 ),
                               ),
@@ -599,6 +776,7 @@ class _HomePageState extends State<HomePage> {
               actions: [
                 // 📊 訓練統計
                 IconButton(
+                  key: _statisticsKey, // ⭐ v3.2: Coach Mark 引導用
                   icon: const Icon(Icons.bar_chart, color: Colors.white),
                   onPressed: () {
                     Navigator.push(
@@ -721,6 +899,15 @@ class _HomePageState extends State<HomePage> {
       ));
     }
 
+    // ⭐ v3.1.1: 是教練 → 顯示「臨時課程」
+    if (isCoach) {
+      actions.add(QuickAction(
+        icon: Icons.flash_on,
+        label: '臨時課程',
+        onTap: _onCreateAdHocSession,
+      ));
+    }
+
     // 基礎按鈕（所有人）- 放在最後
     actions.add(QuickAction(
       icon: Icons.add_circle_outline,
@@ -747,6 +934,7 @@ class _HomePageState extends State<HomePage> {
     ));
 
     return Container(
+      key: _quickActionsKey, // ⭐ v3.2: Coach Mark 引導用
       padding: context.cardPadding,
       child: QuickActionBar(
         actions: actions,
@@ -756,63 +944,73 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// ⭐ Phase 3.1-B: 今日行程（可折疊版）
+  /// ⭐ v3.1.1: 移除標題轉圈，使用骨架屏
   Widget _buildTodayScheduleCollapsible() {
+    // ⭐ 計算總數（包含只有預約沒有訓練計畫的課程）
+    final totalCount = _todayPlans.length + _todayStudentSessions.length;
+
     return Container(
       padding: context.cardPadding,
       child: CollapsibleSection(
         title: '📚 今日行程',
         icon: Icons.today,
         initiallyExpanded: true,
-        trailing: _isLoadingPlans
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
+        // ⭐ v3.1.1: 移除轉圈，載入中不顯示數量
+        trailing: !_isLoadingPlans && totalCount > 0
+            ? Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$totalCount',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
               )
-            : _todayPlans.isNotEmpty
-                ? Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${_todayPlans.length}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  )
-                : null,
+            : null,
         child: _buildTodayScheduleContent(),
       ),
     );
   }
 
   /// ⭐ Phase 3.1-B: 今日行程內容
+  /// ⭐ v3.1.1: 合併顯示「有訓練計畫」和「只有預約」的卡片
   Widget _buildTodayScheduleContent() {
     if (_isLoadingPlans) {
       return _buildLoadingSkeleton();
     }
 
-    if (_todayPlans.isEmpty) {
+    final hasAnySchedule =
+        _todayPlans.isNotEmpty || _todayStudentSessions.isNotEmpty;
+
+    if (!hasAnySchedule) {
       return _buildNoPlansToday();
     }
 
     return Column(
-      children: _todayPlans.map((record) {
-        return _buildScheduleCard(record);
-      }).toList(),
+      children: [
+        // 有訓練計畫的卡片
+        ..._todayPlans.map((record) {
+          return _buildScheduleCard(record);
+        }),
+        // 只有預約沒有訓練計畫的上課卡片
+        ..._todayStudentSessions.map((appointment) {
+          return _buildSessionOnlyCard(appointment);
+        }),
+      ],
     );
   }
 
   /// ⭐ Phase 3.1-B: 我的學員（可折疊版）
+  /// ⭐ v3.1.1: 移除標題轉圈，使用骨架屏
   Widget _buildMyStudentsCollapsible() {
-    final totalCount =
-        _todayCoachSessions.length + _pendingAppointments.length;
+    final totalCount = _todayCoachSessions.length + _pendingAppointments.length;
 
     return Container(
       padding: context.cardPadding,
@@ -820,30 +1018,25 @@ class _HomePageState extends State<HomePage> {
         title: '🏋️ 我的學員',
         icon: Icons.groups,
         initiallyExpanded: true,
-        trailing: _isLoadingCoachSessions
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
+        // ⭐ v3.1.1: 移除轉圈，載入中不顯示數量
+        trailing: !_isLoadingCoachSessions && totalCount > 0
+            ? Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$totalCount',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                ),
               )
-            : totalCount > 0
-                ? Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '$totalCount',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.secondary,
-                      ),
-                    ),
-                  )
-                : null,
+            : null,
         child: _buildMyStudentsContent(),
       ),
     );
@@ -876,8 +1069,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// ⭐ Phase 3.1-B: 今日行程區塊（作為學員）- 舊版，保留相容
+  /// ⭐ Phase 3.1-B: 今日行程區塊（作為學員）
+  /// ⭐ v3.1 修復：合併顯示「有訓練計畫」和「只有預約」的卡片
   Widget _buildTodaySchedule() {
+    // 計算總數（訓練計畫 + 只有預約的上課）
+    final hasAnySchedule =
+        _todayPlans.isNotEmpty || _todayStudentSessions.isNotEmpty;
+
     return Container(
       padding: context.cardPadding,
       child: Column(
@@ -907,14 +1105,102 @@ class _HomePageState extends State<HomePage> {
           SizedBox(height: context.spacing.md),
           _isLoadingPlans
               ? _buildLoadingSkeleton()
-              : _todayPlans.isEmpty
+              : !hasAnySchedule
                   ? _buildNoPlansToday()
                   : Column(
-                      children: _todayPlans.map((plan) {
-                        return _buildScheduleCard(plan);
-                      }).toList(),
+                      children: [
+                        // 有訓練計畫的卡片
+                        ..._todayPlans.map((plan) {
+                          return _buildScheduleCard(plan);
+                        }),
+                        // ⭐ v3.1 修復：只有預約沒有訓練計畫的上課卡片
+                        ..._todayStudentSessions.map((appointment) {
+                          return _buildSessionOnlyCard(appointment);
+                        }),
+                      ],
                     ),
         ],
+      ),
+    );
+  }
+
+  /// ⭐ v3.1 修復：構建「只有預約沒有訓練計畫」的上課卡片
+  Widget _buildSessionOnlyCard(AppointmentModel appointment) {
+    final coach = _coachProfiles[appointment.coachId];
+    final coachName = coach?.displayName ?? coach?.email ?? '教練';
+    final timeStr =
+        '${_formatTime(appointment.startTime)} - ${_formatTime(appointment.endTime)}';
+
+    // 判斷是否顯示填問卷按鈕（課前 1 小時內）
+    final showReadinessButton = _isWithinOneHourBefore(appointment.startTime);
+
+    return Card(
+      margin: EdgeInsets.only(bottom: context.spacing.sm),
+      child: ListTile(
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            Icons.fitness_center,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        title: Text(
+          '與 $coachName 的課程',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(timeStr),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.tertiaryContainer,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '教練尚未建立訓練計畫',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onTertiaryContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 填問卷按鈕（課前 1hr 內）
+            if (showReadinessButton)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: OutlinedButton(
+                  onPressed: () => _navigateToReadinessForm(appointment.id),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.tertiary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                  child: const Text('填問卷'),
+                ),
+              ),
+            // 進入課程按鈕
+            FilledButton(
+              onPressed: () {
+                _navigateToSessionByAppointment(appointment,
+                    isCoachView: false);
+              },
+              child: const Text('進入課程'),
+            ),
+          ],
+        ),
+        isThreeLine: true,
       ),
     );
   }
@@ -1153,38 +1439,70 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// 拒絕預約
+  /// ⭐ v3.1.1: 必須填寫拒絕原因
   Future<void> _rejectAppointment(AppointmentModel appointment) async {
-    // 顯示確認對話框
-    final confirmed = await showDialog<bool>(
+    final reasonController = TextEditingController();
+    
+    final reason = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('拒絕預約'),
-        content: const Text('確定要拒絕此預約嗎？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('拒絕'),
-          ),
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('拒絕預約'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('請說明拒絕原因：'),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: reasonController,
+                    decoration: const InputDecoration(
+                      hintText: '例如：該時段已滿、時間無法配合...',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                    autofocus: true,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: reasonController.text.trim().isEmpty
+                      ? null
+                      : () => Navigator.pop(context, reasonController.text.trim()),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                  child: const Text('拒絕'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
-    if (confirmed != true) return;
+    reasonController.dispose();
+
+    if (reason == null || reason.isEmpty) return;
 
     try {
       // 使用 cancelAppointment 取消預約（拒絕 = 取消）
+      // ⭐ v3.1.1: 加上角色前綴
+      final fullReason = '教練拒絕：$reason';
       final userId = _authController.user?.uid ?? '';
       await _appointmentService.cancelAppointment(
         appointmentId: appointment.id,
         cancelledBy: userId,
-        reason: '教練拒絕預約',
+        reason: fullReason,
       );
       // 刷新列表
       await _loadPendingAppointments();
@@ -1250,10 +1568,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// 通過預約跳轉到 Session Mode
+  /// ⭐ v3.1.1 修復：根據視角顯示正確的名稱
   void _navigateToSessionByAppointment(AppointmentModel appointment,
       {required bool isCoachView}) {
-    final student = _studentProfiles[appointment.clientId];
-    final studentName = student?.displayName ?? student?.email ?? '學員';
+    String displayName;
+
+    if (isCoachView) {
+      // 教練視角：顯示學員名稱
+      final student = _studentProfiles[appointment.clientId];
+      displayName = student?.displayName ?? student?.email ?? '學員';
+    } else {
+      // 學員視角：顯示教練名稱
+      final coach = _coachProfiles[appointment.coachId];
+      displayName = coach?.displayName ?? coach?.email ?? '教練';
+    }
 
     Navigator.push(
       context,
@@ -1261,7 +1589,7 @@ class _HomePageState extends State<HomePage> {
         builder: (context) => SessionModePage(
           appointmentId: appointment.id,
           clientId: appointment.clientId,
-          clientName: studentName,
+          clientName: displayName, // ⭐ v3.1.1: 使用正確的名稱
           sessionStartTime: appointment.startTime,
           sessionEndTime: appointment.endTime,
           isCoachMode: isCoachView,
@@ -1282,6 +1610,36 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  /// ⭐ v3.1.1: 建立臨時課程（教練專用）
+  ///
+  /// 創建後自動跳轉到 Session Mode
+  Future<void> _onCreateAdHocSession() async {
+    final user = _authController.user;
+    if (user == null) return;
+
+    final result = await AdHocSessionDialog.show(context, user.uid);
+    if (result != null && mounted) {
+      // 跳轉到 Session Mode
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SessionModePage(
+            appointmentId: result.appointmentId,
+            clientId: result.clientId,
+            clientName: result.clientName,
+            sessionStartTime: result.startTime,
+            sessionEndTime: result.endTime,
+            isCoachMode: true,
+          ),
+        ),
+      );
+      // 返回後刷新首頁數據
+      if (mounted) {
+        await _loadTodayCoachSessions();
+      }
+    }
   }
 
   /// 無學員課程的空狀態
@@ -1310,6 +1668,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// ⚡ 骨架屏（Loading 狀態）
+  /// ⭐ v3.1.1: 添加 Shimmer 動畫效果
   Widget _buildLoadingSkeleton() {
     return Column(
       children: List.generate(2, (index) {
@@ -1317,8 +1676,10 @@ class _HomePageState extends State<HomePage> {
           margin: EdgeInsets.only(bottom: context.spacing.sm + 4), // 12dp
           padding: context.cardPadding,
           decoration: BoxDecoration(
-            color:
-                Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            color: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.3),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -1332,7 +1693,7 @@ class _HomePageState extends State<HomePage> {
                   color: Theme.of(context)
                       .colorScheme
                       .onSurfaceVariant
-                      .withOpacity(0.2),
+                      .withOpacity(0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -1345,7 +1706,7 @@ class _HomePageState extends State<HomePage> {
                   color: Theme.of(context)
                       .colorScheme
                       .onSurfaceVariant
-                      .withOpacity(0.2),
+                      .withOpacity(0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -1357,13 +1718,21 @@ class _HomePageState extends State<HomePage> {
                   color: Theme.of(context)
                       .colorScheme
                       .onSurfaceVariant
-                      .withOpacity(0.2),
+                      .withOpacity(0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
             ],
           ),
-        );
+        )
+            .animate(onPlay: (c) => c.repeat())
+            .shimmer(
+              duration: 1200.ms,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurfaceVariant
+                  .withOpacity(0.08),
+            );
       }),
     );
   }

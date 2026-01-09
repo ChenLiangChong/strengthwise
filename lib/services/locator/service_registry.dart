@@ -40,17 +40,22 @@ import '../supabase/coach_display_preferences_service_supabase.dart';
 import '../supabase/coach_assessment_note_service_supabase.dart';
 import '../supabase/coach_profile_service_supabase.dart';
 import '../supabase/readiness_service_supabase.dart';
-import '../appointment_service_supabase.dart';
-import '../availability_slot_service_supabase.dart';
-import '../session_note_service_supabase.dart';
-import '../client_availability_service_supabase.dart';
-import '../drawing_service_supabase.dart';
+import '../supabase/appointment_service_supabase.dart';
+import '../supabase/availability_slot_service_supabase.dart';
+import '../supabase/session_note_service_supabase.dart';
+import '../supabase/client_availability_service_supabase.dart';
+import '../supabase/drawing_service_supabase.dart';
 import '../supabase/invite_code_service_supabase.dart';
 
 import '../cache/favorites_service.dart';
+import '../cache/statistics_local_cache_service.dart';
+import '../cache/workout_plan_local_cache_service.dart';
+import '../cache/user_local_cache_service.dart';
+import '../cache/relationship_local_cache_service.dart';
 import '../core/error_handling_service.dart';
 import '../notification/notification_service.dart';
 import '../realtime/session_realtime_service.dart';
+import '../core/onboarding_service.dart';
 
 /// 服務註冊器
 /// 
@@ -58,6 +63,9 @@ import '../realtime/session_realtime_service.dart';
 class ServiceRegistry {
   /// 註冊所有服務層（懶加載單例）
   static void registerServices(GetIt serviceLocator) {
+    // ⚡ Phase 2：先註冊快取服務（其他服務依賴）
+    _registerLocalCacheServices(serviceLocator);
+    
     _registerAuthService(serviceLocator);
     _registerBookingService(serviceLocator);
     _registerCustomExerciseService(serviceLocator);
@@ -79,6 +87,38 @@ class ServiceRegistry {
     _registerReadinessService(serviceLocator);
     _registerNotificationService(serviceLocator);
     _registerSessionRealtimeService(serviceLocator);
+    _registerOnboardingService(serviceLocator);
+  }
+
+  /// ⚡ 註冊本地快取服務（Phase 2 持久化優化）
+  static void _registerLocalCacheServices(GetIt serviceLocator) {
+    // 統計數據快取
+    if (!serviceLocator.isRegistered<StatisticsLocalCacheService>()) {
+      serviceLocator.registerLazySingleton<StatisticsLocalCacheService>(
+        () => StatisticsLocalCacheService(),
+      );
+    }
+
+    // 訓練計劃快取
+    if (!serviceLocator.isRegistered<WorkoutPlanLocalCacheService>()) {
+      serviceLocator.registerLazySingleton<WorkoutPlanLocalCacheService>(
+        () => WorkoutPlanLocalCacheService(),
+      );
+    }
+
+    // ⚡ 用戶資料快取（App 啟動時立即顯示用戶名稱、頭像）
+    if (!serviceLocator.isRegistered<UserLocalCacheService>()) {
+      serviceLocator.registerLazySingleton<UserLocalCacheService>(
+        () => UserLocalCacheService(),
+      );
+    }
+
+    // ⚡ 教練學員關係快取（首頁立即顯示學員列表）
+    if (!serviceLocator.isRegistered<RelationshipLocalCacheService>()) {
+      serviceLocator.registerLazySingleton<RelationshipLocalCacheService>(
+        () => RelationshipLocalCacheService(),
+      );
+    }
   }
 
   /// 註冊身份驗證服務（使用 Supabase 版本）
@@ -145,7 +185,8 @@ class ServiceRegistry {
       serviceLocator.registerLazySingleton<IUserService>(
         () => UserServiceSupabase(
           errorService: serviceLocator<ErrorHandlingService>(),
-          authService: serviceLocator<IAuthService>(),  // ✅ 注入 AuthService
+          authService: serviceLocator<IAuthService>(),
+          localCacheService: serviceLocator<UserLocalCacheService>(),  // ⚡ 注入 Hive 快取
         ),
       );
     }
@@ -158,6 +199,8 @@ class ServiceRegistry {
         () {
           final service = WorkoutServiceSupabase(
             errorService: serviceLocator<ErrorHandlingService>(),
+            localCacheService: serviceLocator<WorkoutPlanLocalCacheService>(),  // ⚡ 注入 Hive 快取
+            statisticsCacheService: serviceLocator<StatisticsLocalCacheService>(),  // ⚡ 統計快取聯動
           );
           // 立即初始化，避免警告
           service.initialize();
@@ -175,6 +218,7 @@ class ServiceRegistry {
           supabase: Supabase.instance.client,
           errorService: serviceLocator<ErrorHandlingService>(),
           exerciseService: serviceLocator<IExerciseService>(),
+          localCacheService: serviceLocator<StatisticsLocalCacheService>(),  // ⚡ 注入 Hive 快取
         ),
       );
     }
@@ -209,6 +253,7 @@ class ServiceRegistry {
         () => CoachingRelationshipServiceSupabase(
           Supabase.instance.client,
           serviceLocator<ErrorHandlingService>(),
+          localCacheService: serviceLocator<RelationshipLocalCacheService>(),  // ⚡ 注入 Hive 快取
         ),
       );
     }
@@ -354,6 +399,15 @@ class ServiceRegistry {
         () => SessionRealtimeService(
           supabase: Supabase.instance.client,
         ),
+      );
+    }
+  }
+
+  /// ⭐ v3.2: 註冊 Onboarding 引導服務
+  static void _registerOnboardingService(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<OnboardingService>()) {
+      serviceLocator.registerLazySingleton<OnboardingService>(
+        () => OnboardingService(),
       );
     }
   }

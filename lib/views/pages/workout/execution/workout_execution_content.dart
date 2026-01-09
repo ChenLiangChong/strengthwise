@@ -258,12 +258,16 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
 
     // ⭐ v3.1: 設置 Session Mode 的權限覆蓋
     // 這讓 Controller 內部的權限檢查尊重 Session Mode 的時間窗口邏輯
-    if (widget.overrideCanEdit != null || widget.overrideCanMarkSet != null) {
+    // ⭐ v3.1.1: 新增 showTimerUI 覆蓋，確保訓練狀態檢查正確
+    if (widget.overrideCanEdit != null ||
+        widget.overrideCanMarkSet != null ||
+        widget.overrideShowTimerUI != null) {
       debugPrint(
-          '[WORKOUT_CONTENT] 設置權限覆蓋: canEdit=${widget.overrideCanEdit}, canMarkSet=${widget.overrideCanMarkSet}');
+          '[WORKOUT_CONTENT] 設置權限覆蓋: canEdit=${widget.overrideCanEdit}, canMarkSet=${widget.overrideCanMarkSet}, showTimerUI=${widget.overrideShowTimerUI}');
       _executionController.setPermissionOverride(
         canEdit: widget.overrideCanEdit,
         canMarkSet: widget.overrideCanMarkSet,
+        showTimerUI: widget.overrideShowTimerUI, // ⭐ v3.1.1
       );
     }
 
@@ -307,8 +311,9 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
 
   bool get _canEdit => widget.overrideCanEdit ?? _executionController.canEdit();
 
-  bool get _canMarkSet =>
-      widget.overrideCanMarkSet ?? _executionController.canToggleCompletion();
+  /// ⭐ v3.1.1: 只使用 Controller 的判斷（包含權限覆蓋 + 訓練狀態檢查）
+  /// 不能直接使用 widget.overrideCanMarkSet，否則會跳過狀態檢查
+  bool get _canMarkSet => _executionController.canToggleCompletion();
 
   bool get _canDelete =>
       widget.overrideCanEdit ?? _executionController.canDelete();
@@ -329,16 +334,17 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
   }
 
   void _showCannotToggleCompletionMessage() {
-    if (_executionController.isCoachViewingTrainee()) {
+    // ⭐ v3.1.1: 優先檢查訓練狀態（Session Mode 中教練可以打勾，只是需要先開始/繼續）
+    if (_executionController.isPaused) {
+      NotificationUtils.showWarning(context, '請先點擊「繼續訓練」按鈕後再勾選');
+    } else if (_executionController.isPending) {
+      NotificationUtils.showWarning(context, '請先點擊「開始訓練」按鈕後再勾選');
+    } else if (_executionController.isCoachViewingTrainee()) {
       NotificationUtils.showWarning(context, '教練無法幫學員勾選動作，請由學員自行完成訓練');
     } else if (_executionController.isPastDate()) {
       NotificationUtils.showWarning(context, '無法修改過去的訓練記錄');
     } else if (_executionController.isFutureDate()) {
       NotificationUtils.showWarning(context, '未來的訓練無法勾選完成，請在訓練當天標記');
-    } else if (_executionController.isPaused) {
-      NotificationUtils.showWarning(context, '請先點擊「繼續訓練」按鈕後再勾選');
-    } else if (_executionController.isPending) {
-      NotificationUtils.showWarning(context, '請先點擊「開始訓練」按鈕後再勾選');
     }
   }
 

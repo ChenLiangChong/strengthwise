@@ -77,8 +77,12 @@ class StatisticsDataLoader {
   /// 因為 Parser 會根據 set.completed 來過濾組數
   Future<List<Map<String, dynamic>>> getAllCompletedWorkouts(
       String userId) async {
-    final response =
-        await _supabase.from('workout_plans').select().eq('trainee_id', userId);
+    // ⭐ 只查詢統計需要的欄位（避免 SELECT *）
+    final response = await _supabase
+        .from('workout_plans')
+        .select(
+            'id, completed_date, updated_at, exercises, total_volume, completed')
+        .eq('trainee_id', userId);
     // ✅ 移除 .eq('completed', true) 限制
 
     return (response as List<dynamic>)
@@ -92,14 +96,18 @@ class StatisticsDataLoader {
     DateTime startDate,
     DateTime endDate,
   ) async {
+    // ⭐ 修正：直接使用本地日期，不要轉換為 UTC（因為 date 欄位是 DATE 類型）
+    final startStr = '${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}';
+    final endStr = '${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}';
+    
     final response = await _supabase
         .from('daily_workout_summary')
         .select(
-            'workout_count, completed_workout_count, partial_workout_count, date')
+            'scheduled_workout_count, workout_count, completed_workout_count, partial_workout_count, date')
         .eq('user_id', userId)
-        .gte('date', DateTimeUtils.formatToUtcIso(startDate).split('T')[0])
-        .lte('date', DateTimeUtils.formatToUtcIso(endDate).split('T')[0])
-        .order('date', ascending: true);  // 明確指定升序排序
+        .gte('date', startStr)
+        .lte('date', endStr)
+        .order('date', ascending: true);
 
     return (response as List<dynamic>)
         .map((row) => row as Map<String, dynamic>)
@@ -118,7 +126,7 @@ class StatisticsDataLoader {
         .eq('user_id', userId)
         .gte('date', DateTimeUtils.formatToUtcIso(startDate).split('T')[0])
         .lte('date', DateTimeUtils.formatToUtcIso(endDate).split('T')[0])
-        .order('date', ascending: true);  // 明確指定升序：舊日期在左邊，新日期在右邊
+        .order('date', ascending: true); // 明確指定升序：舊日期在左邊，新日期在右邊
 
     return (response as List<dynamic>)
         .map((row) => row as Map<String, dynamic>)

@@ -2,7 +2,45 @@
 
 > 已完成並測試的版本詳細記錄
 
-**最後更新**：2026-01-05
+**最後更新**：2026-01-09
+
+---
+
+## v3.1: Session Mode + 性能優化 + UX 打磨（2026-01-09 完成）
+
+**功能**：
+- Session Mode 完善：Realtime 同步、即時保存、學員唯讀、RLS 修復
+- 首頁 + 行事曆 UX：快捷按鈕列、可折疊區塊、多色點點、Tab 架構
+- 性能優化：Hive 快取、Isolate 解析、骨架屏、LazyIndexedStack 延遲初始化
+- 預約優化：取消清理機制（觸發器）、必填原因、列表 UI 統一
+- 離線提示：全局 OfflineBanner、NetworkStatusService（connectivity_plus）
+- 啟動優化：SplashScreen 淡入淡出、積極導航策略
+
+**技術決策**：
+- `LazyIndexedStack`：首次只初始化當前頁面，500ms 後背景初始化其他頁面
+- `SplashScreen`：PageRouteBuilder + FadeTransition 平滑過渡
+- 預約取消觸發器：`cleanup_cancelled_appointment_data`、`cleanup_rejected_appointment_data`
+- 全局離線 Banner：在 MaterialApp.builder 中包裝 OfflineBanner
+
+**Migration**：034-041（8 個檔案）
+
+---
+
+## v3.0: 預約系統優化 + Session Mode + FCM（2026-01-06 完成）
+
+**功能**：
+- 預約系統優化：教練預約設定、學員時間偏好、衝突檢測
+- Session Mode：教練上課模式頁面、課前問卷、紅綠燈狀態
+- 響應式 UI：手機/平板/桌面自適應導航
+- FCM 推播通知：預約提醒、課前提醒、問卷通知
+
+**技術決策**：
+- `TSTZRANGE` + GiST 索引：時段衝突檢測
+- `coach_booking_settings`：教練預約設定表
+- `daily_readiness`：課前問卷表（預約確認時自動創建）
+- Supabase Edge Functions：推播通知觸發
+
+**Migration**：028-033（6 個檔案）
 
 ---
 

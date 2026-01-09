@@ -5,7 +5,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 /// 教練評估備註服務 Supabase 實作
-class CoachAssessmentNoteServiceSupabase implements ICoachAssessmentNoteService {
+
+/// ⭐ 定義 coach_assessment_notes 表的標準查詢欄位
+const String _kAssessmentNoteSelectFields = '''
+  id, coach_id, assessment_id, notes, created_at, updated_at
+''';
+
+class CoachAssessmentNoteServiceSupabase
+    implements ICoachAssessmentNoteService {
   final SupabaseClient _supabase;
   final ErrorHandlingService _errorService;
   final _uuid = const Uuid();
@@ -24,7 +31,7 @@ class CoachAssessmentNoteServiceSupabase implements ICoachAssessmentNoteService 
     try {
       final response = await _supabase
           .from('coach_assessment_notes')
-          .select()
+          .select(_kAssessmentNoteSelectFields)
           .eq('coach_id', coachId)
           .eq('assessment_id', assessmentId)
           .maybeSingle();
@@ -62,7 +69,7 @@ class CoachAssessmentNoteServiceSupabase implements ICoachAssessmentNoteService 
             },
             onConflict: 'coach_id,assessment_id', // 唯一約束欄位
           )
-          .select()
+          .select(_kAssessmentNoteSelectFields)
           .single();
 
       return CoachAssessmentNoteModel.fromSupabase(response);
@@ -103,7 +110,7 @@ class CoachAssessmentNoteServiceSupabase implements ICoachAssessmentNoteService 
     try {
       final response = await _supabase
           .from('coach_assessment_notes')
-          .select()
+          .select(_kAssessmentNoteSelectFields)
           .eq('coach_id', coachId)
           .order('updated_at', ascending: false)
           .limit(limit);
@@ -120,4 +127,3 @@ class CoachAssessmentNoteServiceSupabase implements ICoachAssessmentNoteService 
     }
   }
 }
-

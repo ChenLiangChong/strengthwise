@@ -7,6 +7,7 @@ import '../../utils/datetime_utils.dart';
 import '../interfaces/i_statistics_service.dart';
 import '../interfaces/i_exercise_service.dart';
 import '../core/error_handling_service.dart';
+import '../cache/statistics_local_cache_service.dart';
 import 'statistics/statistics_cache_manager.dart';
 import 'statistics/statistics_data_loader.dart';
 import 'statistics/statistics_data_parser.dart';
@@ -26,20 +27,23 @@ const bool _kStatisticsDebugLog = false;
 /// 統計服務 Supabase 實作
 ///
 /// 提供訓練數據統計和分析功能（Supabase PostgreSQL 版本）
+/// v3.1.1 新增：本地持久化快取支持
 class StatisticsServiceSupabase implements IStatisticsService {
   final SupabaseClient _supabase;
   final ErrorHandlingService _errorService;
   final IExerciseService _exerciseService;
+  final StatisticsLocalCacheService? _localCacheService;
 
   // 動作分類快取（exerciseId -> Exercise）
   final Map<String, Exercise> _exerciseCache = {};
 
   // ⚡ ExerciseWithRecord 列表快取（避免重複統計）
-  static const int _exerciseCacheVersion = 3; // 🆕 增加版本號清除舊快取
-  List<ExerciseWithRecord>? _cachedExercisesWithRecords;
+  static const int _exerciseCacheVersion = 4; // 🆕 v3.1.1 多時間範圍快取
+  List<ExerciseWithRecord>? _cachedExercisesWithRecords; // 一年範圍的完整數據
   String? _cachedExercisesUserId;
   Set<String>? _cachedSystemExerciseIds;
   int? _cachedExercisesVersion;
+  DateTime? _cachedExercisesTimestamp; // 快取時間（用於檢查有效性）
 
   // 子模組（各司其職）
   late final StatisticsCacheManager _cacheManager;
@@ -57,9 +61,11 @@ class StatisticsServiceSupabase implements IStatisticsService {
     required SupabaseClient supabase,
     required ErrorHandlingService errorService,
     required IExerciseService exerciseService,
+    StatisticsLocalCacheService? localCacheService,
   })  : _supabase = supabase,
         _errorService = errorService,
-        _exerciseService = exerciseService {
+        _exerciseService = exerciseService,
+        _localCacheService = localCacheService {
     // 初始化子模組
     _cacheManager = StatisticsCacheManager();
     _dataLoader = StatisticsDataLoader(supabase: supabase);
@@ -74,7 +80,8 @@ class StatisticsServiceSupabase implements IStatisticsService {
     _suggestionsGenerator = TrainingSuggestionsGenerator();
     _muscleBalanceAnalyzer =
         MuscleBalanceAnalyzer(exerciseCache: _exerciseCache);
-    _calendarGenerator = TrainingCalendarGenerator(exerciseCache: _exerciseCache);
+    _calendarGenerator =
+        TrainingCalendarGenerator(exerciseCache: _exerciseCache);
     _completionRateCalculator = CompletionRateCalculator();
     _strengthProgressCalculator =
         StrengthProgressCalculator(exerciseCache: _exerciseCache);
@@ -84,49 +91,72 @@ class StatisticsServiceSupabase implements IStatisticsService {
   Future<StatisticsData> getStatistics(
       String userId, TimeRange timeRange) async {
     try {
-      // ⚡ 檢查多時間範圍快取（5 分鐘內有效）
+      // ⚡ 1. 檢查記憶體快取（5 分鐘內有效）
       if (_cacheManager.isStatisticsCacheValid(userId, timeRange)) {
         final cached = _cacheManager.getCachedStatistics(userId, timeRange);
         if (cached != null) {
-          _logDebug('✅ 從快取返回統計數據（時間範圍：${timeRange.displayName}）');
+          _logDebug('✅ 從記憶體快取返回統計數據（${timeRange.displayName}）');
           return cached;
+        }
+      }
+
+      // ⚡ 2. 檢查本地持久化快取（24 小時內有效）
+      if (_localCacheService != null) {
+        final localValid = await _localCacheService!.isCacheValidAsync(userId, timeRange);
+        if (localValid) {
+          final localCached =
+              _localCacheService!.getCachedStatistics(userId, timeRange);
+          if (localCached != null) {
+            _logDebug('✅ 從本地快取返回統計數據（${timeRange.displayName}）');
+            // 同時更新記憶體快取
+            _cacheManager.cacheStatistics(userId, timeRange, localCached);
+            return localCached;
+          }
         }
       }
 
       _logDebug('🔍 首次查詢統計數據（時間範圍：${timeRange.displayName}）');
 
-      // ⚡ 關鍵優化：只查詢一次訓練數據
+      // ⭐ Phase 2 優化：統一查詢數據，減少重複調用
       final startDate = timeRange.startDate;
       final endDate = timeRange.endDate;
-      final workouts = await _getCompletedWorkouts(userId, startDate, endDate);
 
-      // ⚡ 預先批量載入所有動作分類（2 次查詢取代 N 次查詢）
+      // 1️⃣ 一次查詢所有訓練數據
+      final workouts = await _getCompletedWorkouts(userId, startDate, endDate);
+      final typedWorkouts = workouts.cast<UnifiedWorkoutData>();
+
+      // 2️⃣ 一次批量載入所有動作分類
       await _loadExerciseClassifications(workouts);
 
-      // 獲取各項統計（現在使用已載入的數據和快取）
+      // 3️⃣ 使用彙總表的方法（這些有獨立快取）
       final frequency = await getTrainingFrequency(userId, timeRange);
       final volumeHistory = await getVolumeHistory(userId, timeRange);
-      final bodyPartStats = await getBodyPartStats(userId, timeRange);
       final trainingTypeStats = await getTrainingTypeStats(userId, timeRange);
-      final equipmentStats = await getEquipmentStats(userId, timeRange);
       final personalRecords = await getPersonalRecords(userId, limit: 10);
 
-      // 獲取特定肌群細節
+      // 4️⃣ 純計算方法（直接使用已查詢的 workouts，不再重複調用 _getCompletedWorkouts）
+      final bodyPartStats = _calculator.calculateBodyPartStats(typedWorkouts);
+      final equipmentStats = _calculator.calculateEquipmentStats(typedWorkouts);
+
+      // ⭐ Phase 2 優化：一次計算所有肌群細節，避免循環調用
       final muscleDetails = <String, List<SpecificMuscleStats>>{};
       for (var stat in bodyPartStats) {
-        final details =
-            await getSpecificMuscleStats(userId, stat.bodyPart, timeRange);
+        final details = _calculator.calculateSpecificMuscleStats(
+            typedWorkouts, stat.bodyPart);
         if (details.isNotEmpty) {
           muscleDetails[stat.bodyPart] = details;
         }
       }
 
-      // 獲取新的統計數據
-      final strengthProgress =
-          await getStrengthProgress(userId, timeRange, limit: 10);
-      final muscleGroupBalance = await getMuscleGroupBalance(userId, timeRange);
-      final calendarData = await getTrainingCalendar(userId, timeRange);
-      final completionRate = await getCompletionRate(userId, timeRange);
+      // 5️⃣ 其他計算方法
+      final strengthProgress = _strengthProgressCalculator
+          .calculateProgress(typedWorkouts, startDate, timeRange, limit: 10);
+      final muscleGroupBalance =
+          _muscleBalanceAnalyzer.calculateBalance(typedWorkouts);
+      final calendarData = _calendarGenerator.generateCalendar(
+          typedWorkouts, startDate, endDate);
+      final completionRate =
+          _completionRateCalculator.calculateCompletionRate(typedWorkouts);
 
       final data = StatisticsData(
         timeRange: timeRange,
@@ -143,8 +173,14 @@ class StatisticsServiceSupabase implements IStatisticsService {
         completionRate: completionRate,
       );
 
-      // ⚡ 更新多時間範圍快取
+      // ⚡ 更新記憶體快取
       _cacheManager.cacheStatistics(userId, timeRange, data);
+
+      // ⚡ 更新本地持久化快取
+      if (_localCacheService != null) {
+        _localCacheService!.cacheStatistics(userId, timeRange, data);
+      }
+
       _logDebug('✅ 已快取統計數據（時間範圍：${timeRange.displayName}）');
 
       return data;
@@ -225,8 +261,8 @@ class StatisticsServiceSupabase implements IStatisticsService {
       // 載入動作分類
       await _loadExerciseClassifications(workouts);
 
-      return _calculator.calculateBodyPartStats(
-          workouts.cast<UnifiedWorkoutData>());
+      return _calculator
+          .calculateBodyPartStats(workouts.cast<UnifiedWorkoutData>());
     } catch (e) {
       _errorService.logError('計算身體部位統計失敗: $e', type: 'StatisticsServiceError');
       return [];
@@ -269,8 +305,8 @@ class StatisticsServiceSupabase implements IStatisticsService {
       _logDebug('⚡ 訓練類型統計：使用 daily_workout_summary 彙總表查詢');
 
       // ⚡ 使用彙總表查詢（效能提升 90%+）
-      final summaryData = await _dataLoader.getTrainingTypeSummary(
-          userId, startDate, endDate);
+      final summaryData =
+          await _dataLoader.getTrainingTypeSummary(userId, startDate, endDate);
 
       return _calculator.calculateTrainingTypeStats(summaryData);
     } catch (e) {
@@ -294,8 +330,8 @@ class StatisticsServiceSupabase implements IStatisticsService {
       // 載入動作分類
       await _loadExerciseClassifications(workouts);
 
-      return _calculator.calculateEquipmentStats(
-          workouts.cast<UnifiedWorkoutData>());
+      return _calculator
+          .calculateEquipmentStats(workouts.cast<UnifiedWorkoutData>());
     } catch (e) {
       _errorService.logError('計算器材統計失敗: $e', type: 'StatisticsServiceError');
       return [];
@@ -325,47 +361,201 @@ class StatisticsServiceSupabase implements IStatisticsService {
     _cacheManager.clearAll();
   }
 
+  /// ⚡ 檢查指定時間範圍的快取是否有效
+  /// 同時檢查記憶體快取和本地持久化快取
+  @override
+  Future<bool> hasCachedStatistics(String userId, TimeRange timeRange) async {
+    // 先檢查記憶體快取（同步）
+    if (_cacheManager.isStatisticsCacheValid(userId, timeRange)) {
+      return true;
+    }
+    // 再檢查本地快取（異步，確保初始化）
+    if (_localCacheService != null) {
+      final localValid = await _localCacheService!.isCacheValidAsync(userId, timeRange);
+      if (localValid) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// ⚡ 預載入所有時間範圍的統計數據（後台執行）
+  ///
+  /// v3.1.1 優化：一次查詢 + 多時間範圍計算（避免 N+1）
+  @override
   Future<void> preloadAllTimeRanges(String userId,
       {TimeRange? currentTimeRange}) async {
-    _logDebug('🚀 開始預載入其他時間範圍的統計數據...');
+    _logDebug('🚀 開始預載入所有時間範圍的統計數據...');
 
-    final timeRanges = [
+    // 常用時間範圍
+    final allTimeRanges = [
       TimeRange.week,
-      TimeRange.sevenDays,  // 🆕 最近七天
+      TimeRange.sevenDays,
       TimeRange.month,
       TimeRange.threeMonth,
       TimeRange.year,
     ];
 
-    final rangesToPreload =
-        timeRanges.where((range) => range != currentTimeRange).toList();
+    // 過濾掉已經快取的（檢查記憶體和本地快取）
+    final rangesToPreload = <TimeRange>[];
+    for (final range in allTimeRanges) {
+      if (range == currentTimeRange) continue;
+      
+      // 檢查記憶體快取
+      if (_cacheManager.isStatisticsCacheValid(userId, range)) {
+        _logDebug('⏭️ 跳過已快取（記憶體）：${range.displayName}');
+        continue;
+      }
+      
+      // 檢查本地快取
+      if (_localCacheService != null) {
+        final localValid = await _localCacheService!.isCacheValidAsync(userId, range);
+        if (localValid) {
+          _logDebug('⏭️ 跳過已快取（本地）：${range.displayName}');
+          continue;
+        }
+      }
+      
+      rangesToPreload.add(range);
+    }
 
     if (rangesToPreload.isEmpty) {
-      _logDebug('⏭️ 沒有需要預載入的時間範圍');
+      _logDebug('✅ 所有時間範圍都已快取');
       return;
     }
 
-    _logDebug(
-        '📋 將預載入 ${rangesToPreload.length} 個時間範圍：${rangesToPreload.map((r) => r.displayName).join('、')}');
+    _logDebug('📋 將預載入 ${rangesToPreload.length} 個時間範圍');
 
-    // 並行載入（不阻塞主線程）
-    final futures = rangesToPreload.map((TimeRange range) async {
-      try {
-        if (_cacheManager.isStatisticsCacheValid(userId, range)) {
-          _logDebug('⏭️ 跳過已快取的時間範圍：${range.displayName}');
-          return;
+    try {
+      // ⚡ 1. 一次查詢最大時間範圍的數據（一年）
+      final maxRange = TimeRange.year;
+      final allWorkouts = await _getCompletedWorkouts(
+        userId,
+        maxRange.startDate,
+        maxRange.endDate,
+      );
+      final typedWorkouts = allWorkouts.cast<UnifiedWorkoutData>();
+
+      _logDebug('📊 查詢到 ${allWorkouts.length} 筆訓練數據（一年內）');
+
+      // ⚡ 2. 一次批量載入所有動作分類
+      await _loadExerciseClassifications(allWorkouts);
+
+      // ⚡ 3. 對每個時間範圍進行客戶端計算（純記憶體操作，無 DB 查詢）
+      for (final timeRange in rangesToPreload) {
+        try {
+          final data = await _calculateStatisticsFromWorkouts(
+            userId,
+            timeRange,
+            typedWorkouts,
+          );
+          // 更新記憶體快取
+          _cacheManager.cacheStatistics(userId, timeRange, data);
+          // ⚡ 也更新本地持久化快取（App 重開後可用）
+          if (_localCacheService != null) {
+            _localCacheService!.cacheStatistics(userId, timeRange, data);
+          }
+          _logDebug('✅ 預載入完成：${timeRange.displayName}');
+        } catch (e) {
+          _logDebug('⚠️ 計算失敗（${timeRange.displayName}）: $e');
         }
-
-        await getStatistics(userId, range);
-        _logDebug('✅ 預載入完成：${range.displayName}');
-      } catch (e) {
-        _logDebug('⚠️ 預載入失敗（${range.displayName}）: $e');
       }
-    });
 
-    await Future.wait(futures);
-    _logDebug('🎉 所有時間範圍預載入完成！');
+      _logDebug('🎉 所有時間範圍預載入完成！（僅 1 次 DB 查詢）');
+    } catch (e) {
+      _logDebug('⚠️ 預載入失敗: $e');
+    }
+  }
+
+  /// ⚡ 預熱：從本地快取載入所有資料到記憶體
+  ///
+  /// 在 App 啟動時調用，確保進入統計頁面時資料已經準備好
+  @override
+  Future<void> warmupFromLocalCache(String userId) async {
+    if (_localCacheService == null) {
+      _logDebug('⚠️ 本地快取服務不可用，跳過預熱');
+      return;
+    }
+
+    try {
+      _logDebug('🔥 開始從本地快取預熱統計資料...');
+      
+      final cachedData = await _localCacheService!.getAllCachedStatistics(userId);
+      
+      if (cachedData.isEmpty) {
+        _logDebug('📭 本地沒有快取資料');
+        return;
+      }
+
+      // 並行載入所有快取到記憶體
+      for (final entry in cachedData.entries) {
+        _cacheManager.cacheStatistics(userId, entry.key, entry.value);
+      }
+
+      _logDebug('🔥 預熱完成！已載入 ${cachedData.length} 個時間範圍到記憶體');
+    } catch (e) {
+      _logDebug('⚠️ 預熱失敗: $e');
+    }
+  }
+
+  /// ⚡ 從已查詢的 workouts 計算統計數據（純記憶體計算，無 DB 查詢）
+  Future<StatisticsData> _calculateStatisticsFromWorkouts(
+    String userId,
+    TimeRange timeRange,
+    List<UnifiedWorkoutData> allWorkouts,
+  ) async {
+    final startDate = timeRange.startDate;
+    final endDate = timeRange.endDate;
+
+    // 過濾時間範圍內的訓練
+    final filteredWorkouts = allWorkouts.where((w) {
+      return !w.completedTime.isBefore(startDate) &&
+          !w.completedTime.isAfter(endDate);
+    }).toList();
+
+    // 使用已有的計算方法（這些會走獨立快取或純計算）
+    final frequency = await getTrainingFrequency(userId, timeRange);
+    final volumeHistory = await getVolumeHistory(userId, timeRange);
+    final trainingTypeStats = await getTrainingTypeStats(userId, timeRange);
+    final personalRecords = await getPersonalRecords(userId, limit: 10);
+
+    // 純計算方法
+    final bodyPartStats = _calculator.calculateBodyPartStats(filteredWorkouts);
+    final equipmentStats = _calculator.calculateEquipmentStats(filteredWorkouts);
+
+    final muscleDetails = <String, List<SpecificMuscleStats>>{};
+    for (var stat in bodyPartStats) {
+      final details = _calculator.calculateSpecificMuscleStats(
+          filteredWorkouts, stat.bodyPart);
+      if (details.isNotEmpty) {
+        muscleDetails[stat.bodyPart] = details;
+      }
+    }
+
+    final strengthProgress = _strengthProgressCalculator.calculateProgress(
+        filteredWorkouts, startDate, timeRange,
+        limit: 10);
+    final muscleGroupBalance =
+        _muscleBalanceAnalyzer.calculateBalance(filteredWorkouts);
+    final calendarData =
+        _calendarGenerator.generateCalendar(filteredWorkouts, startDate, endDate);
+    final completionRate =
+        _completionRateCalculator.calculateCompletionRate(filteredWorkouts);
+
+    return StatisticsData(
+      timeRange: timeRange,
+      frequency: frequency,
+      volumeHistory: volumeHistory,
+      bodyPartStats: bodyPartStats,
+      muscleDetails: muscleDetails,
+      trainingTypeStats: trainingTypeStats,
+      equipmentStats: equipmentStats,
+      personalRecords: personalRecords,
+      strengthProgress: strengthProgress,
+      muscleGroupBalance: muscleGroupBalance,
+      calendarData: calendarData,
+      completionRate: completionRate,
+    );
   }
 
   @override
@@ -378,15 +568,28 @@ class StatisticsServiceSupabase implements IStatisticsService {
     TimeRange? timeRange, // 時間範圍過濾（可選）
   }) async {
     try {
-      // ⚡ 優化：如果有快取的完整列表，直接從快取過濾
-      // ⚠️ 注意：如果傳入 timeRange，跳過快取（因為快取是全時間範圍的）
-      if (timeRange == null &&
-          _cachedExercisesWithRecords != null &&
+      // ⚡ v3.1.1 優化：使用一年範圍快取 + 客戶端過濾（避免 N+1）
+      // 快取有效期：5 分鐘
+      final cacheValid = _cachedExercisesWithRecords != null &&
           _cachedExercisesUserId == userId &&
-          _cachedExercisesVersion == _exerciseCacheVersion) {
+          _cachedExercisesVersion == _exerciseCacheVersion &&
+          _cachedExercisesTimestamp != null &&
+          DateTime.now().difference(_cachedExercisesTimestamp!).inMinutes < 5;
+
+      if (cacheValid) {
         var filtered = _cachedExercisesWithRecords!;
 
-        // 客戶端過濾
+        // 時間範圍過濾（客戶端）
+        if (timeRange != null) {
+          final startDate = timeRange.startDate;
+          final endDate = timeRange.endDate;
+          filtered = filtered.where((e) {
+            return !e.lastTrainingDate.isBefore(startDate) &&
+                !e.lastTrainingDate.isAfter(endDate);
+          }).toList();
+        }
+
+        // 訓練類型過濾
         if (trainingType != null) {
           if (trainingType == '自訂') {
             filtered = filtered.where((e) => e.isCustom).toList();
@@ -400,25 +603,23 @@ class StatisticsServiceSupabase implements IStatisticsService {
           filtered = filtered.where((e) => e.bodyPart == bodyPart).toList();
         }
 
+        _logDebug('✅ 從快取返回動作列表（${filtered.length} 個動作）');
         return filtered;
       }
 
+      // ⚡ v3.1.1 優化：固定查詢一年範圍，後續客戶端過濾
+      // 這樣可以快取結果，避免切換時間範圍時重複查詢
+      final yearRange = TimeRange.year;
+      final expandedStartDate = yearRange.startDate;
 
       // 查詢所有訓練計劃（包括部分完成的）
       // Parser 會過濾出 set.completed = true 的組
-      var query = _supabase
+      final query = _supabase
           .from('workout_plans')
-          .select('id, exercises, completed_date, updated_at, scheduled_date, created_at, trainee_id')
-          .eq('trainee_id', userId);
-
-      // 根據時間範圍過濾（使用訓練實際日期，而非更新日期）
-      // 優先順序：completed_date > scheduled_date > created_at
-      if (timeRange != null) {
-        // ⚠️ Supabase 不支援 COALESCE，所以需要在客戶端過濾
-        // 先用 updated_at 擴大範圍，再在客戶端精確過濾
-        final expandedStartDate = timeRange.startDate.subtract(const Duration(days: 365));
-        query = query.gte('updated_at', DateTimeUtils.formatToUtcIso(expandedStartDate));
-      }
+          .select(
+              'id, exercises, completed_date, updated_at, scheduled_date, created_at, trainee_id')
+          .eq('trainee_id', userId)
+          .gte('updated_at', DateTimeUtils.formatToUtcIso(expandedStartDate));
 
       final response = await query;
 
@@ -430,56 +631,23 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
       // 統計每個動作的訓練數據
       final Map<String, _ExerciseRecordData> exerciseStats = {};
-      int filteredCount = 0;
 
       if (_kStatisticsDebugLog) {
         print('[GET_EXERCISES] 查詢到 ${workoutPlans.length} 個訓練計劃');
-        if (timeRange != null) {
-          print('[GET_EXERCISES] 時間範圍: ${timeRange.startDate.toLocal()} ~ ${timeRange.endDate.toLocal()}');
-        }
       }
 
       for (var planData in workoutPlans) {
         final data = planData as Map<String, dynamic>;
-        
-        // ⚡ 客戶端時間範圍過濾
-        // 優先順序：completed_date > scheduled_date > created_at
-        if (timeRange != null) {
-          final completedDateStr = data['completed_date'] as String?;
-          final scheduledDateStr = data['scheduled_date'] as String?;
-          final createdAtStr = data['created_at'] as String?;
-          
-          DateTime? trainingDate;
-          if (completedDateStr != null) {
-            trainingDate = DateTimeUtils.parseIsoTimestamp(completedDateStr);
-          } else if (scheduledDateStr != null) {
-            trainingDate = DateTimeUtils.parseIsoTimestamp(scheduledDateStr);
-          } else if (createdAtStr != null) {
-            trainingDate = DateTimeUtils.parseIsoTimestamp(createdAtStr);
-          }
-          
-          // ⚠️ 重要：使用 UTC 日期（只比較年月日，忽略時間）
-          // 用戶期望：訓練計劃按 UTC 日期分組，不考慮本地時區
-          if (trainingDate != null) {
-            // 使用 DateTimeUtils 統一工具類進行時間範圍檢查
-            if (!DateTimeUtils.isWithinUtcDateRange(
-              trainingDate,
-              timeRange.startDate,
-              timeRange.endDate,
-            )) {
-              filteredCount++;
-              continue;
-            }
-          }
-        }
-        
+
+        // ⚡ v3.1.1 優化：不在遍歷時過濾時間範圍
+        // 改為在返回前統一過濾（支持快取 + 客戶端過濾）
+
         final exercises = data['exercises'] as List<dynamic>? ?? [];
 
         for (var exerciseData in exercises) {
           final exerciseMap = exerciseData as Map<String, dynamic>;
           final exerciseId = exerciseMap['exerciseId'] as String?;
-          final exerciseName =
-              exerciseMap['exerciseName'] as String? ?? '未知動作';
+          final exerciseName = exerciseMap['exerciseName'] as String? ?? '未知動作';
           final sets = exerciseMap['sets'] as List<dynamic>? ?? [];
 
           if (exerciseId == null) continue;
@@ -511,11 +679,11 @@ class StatisticsServiceSupabase implements IStatisticsService {
             final completedDateStr = data['completed_date'] as String?;
             final scheduledDateStr = data['scheduled_date'] as String?;
             final createdAtStr = data['created_at'] as String?;
-            final dateStr = completedDateStr ?? 
-                           scheduledDateStr ?? 
-                           createdAtStr ?? 
-                           DateTimeUtils.formatToUtcIso(DateTime.now());
-            
+            final dateStr = completedDateStr ??
+                scheduledDateStr ??
+                createdAtStr ??
+                DateTimeUtils.formatToUtcIso(DateTime.now());
+
             exerciseStats[exerciseId] = _ExerciseRecordData(
               exerciseId: exerciseId,
               exerciseName: exerciseName,
@@ -531,7 +699,8 @@ class StatisticsServiceSupabase implements IStatisticsService {
             final completedDateStr = data['completed_date'] as String?;
             final scheduledDateStr = data['scheduled_date'] as String?;
             final createdAtStr = data['created_at'] as String?;
-            final dateStr = completedDateStr ?? scheduledDateStr ?? createdAtStr;
+            final dateStr =
+                completedDateStr ?? scheduledDateStr ?? createdAtStr;
             if (dateStr != null) {
               final trainingDate = DateTimeUtils.parseIsoTimestamp(dateStr);
               if (trainingDate.isAfter(stat.lastTrainingDate)) {
@@ -564,11 +733,34 @@ class StatisticsServiceSupabase implements IStatisticsService {
         }
       }
 
-      // 獲取動作分類信息並過濾
+      // ⭐ Phase 3 優化：批量查詢動作分類信息（避免 N+1）
+      // 先收集所有需要查詢的 ID，然後一次性批量查詢
+      final uncachedIds = allExerciseIds
+          .where((id) => !_exerciseCache.containsKey(id))
+          .toList();
+
+      if (uncachedIds.isNotEmpty) {
+        try {
+          final exercises = await _exerciseService
+              .getExercisesByIds(uncachedIds.cast<String>());
+          _exerciseCache.addAll(exercises);
+
+          if (_kStatisticsDebugLog) {
+            print('[GET_EXERCISES] ⚡ 批量載入 ${exercises.length} 個動作分類');
+          }
+        } catch (e) {
+          if (_kStatisticsDebugLog) {
+            print('[GET_EXERCISES] ⚠️ 批量載入動作分類失敗: $e');
+          }
+        }
+      }
+
+      // 從快取獲取動作分類信息並構建結果
       final List<ExerciseWithRecord> results = [];
 
       for (var stat in exerciseStats.values) {
-        final exercise = await _getExerciseInfo(stat.exerciseId);
+        // ⭐ 從快取獲取（O(1) 操作）
+        final exercise = _exerciseCache[stat.exerciseId];
         if (exercise == null) continue;
 
         final isCustom = _cachedSystemExerciseIds != null
@@ -590,20 +782,27 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
       results.sort((a, b) => b.lastTrainingDate.compareTo(a.lastTrainingDate));
 
-      // ⚡ 快取完整結果（僅當沒有 timeRange 時）
-      if (timeRange == null) {
-        _cachedExercisesWithRecords = results;
-        _cachedExercisesUserId = userId;
-        _cachedExercisesVersion = _exerciseCacheVersion;
-      }
+      // ⚡ v3.1.1 優化：總是快取一年範圍的完整結果
+      _cachedExercisesWithRecords = results;
+      _cachedExercisesUserId = userId;
+      _cachedExercisesVersion = _exerciseCacheVersion;
+      _cachedExercisesTimestamp = DateTime.now();
+      _logDebug('📦 已快取動作列表（${results.length} 個動作）');
 
-      if (_kStatisticsDebugLog && timeRange != null) {
-        print('[GET_EXERCISES] 過濾掉 $filteredCount/${workoutPlans.length} 個訓練計劃');
-        print('[GET_EXERCISES] 統計到 ${exerciseStats.length} 個不同的動作');
-      }
-
-      // ⚡ 客戶端過濾（與快取邏輯一致）
+      // ⚡ 客戶端過濾
       var filtered = results;
+
+      // 時間範圍過濾
+      if (timeRange != null) {
+        final startDate = timeRange.startDate;
+        final endDate = timeRange.endDate;
+        filtered = filtered.where((e) {
+          return !e.lastTrainingDate.isBefore(startDate) &&
+              !e.lastTrainingDate.isAfter(endDate);
+        }).toList();
+      }
+
+      // 訓練類型過濾
       if (trainingType != null) {
         if (trainingType == '自訂') {
           filtered = filtered.where((e) => e.isCustom).toList();
@@ -619,11 +818,9 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
       if (_kStatisticsDebugLog) {
         print('[GET_EXERCISES] 返回 ${filtered.length} 個動作');
+        if (timeRange != null) print('   過濾條件 - 時間範圍: ${timeRange.displayName}');
         if (trainingType != null) print('   過濾條件 - 訓練類型: $trainingType');
         if (bodyPart != null) print('   過濾條件 - 身體部位: $bodyPart');
-        for (var r in filtered.take(3)) {
-          print('   - ${r.exerciseName} (${r.isCustom ? "自訂" : "系統"}, ${r.bodyPart})');
-        }
       }
 
       return filtered;
@@ -641,7 +838,8 @@ class StatisticsServiceSupabase implements IStatisticsService {
   }) async {
     try {
       // ⚡ 檢查多時間範圍快取
-      if (_cacheManager.isStrengthProgressCacheValid(userId, timeRange, limit)) {
+      if (_cacheManager.isStrengthProgressCacheValid(
+          userId, timeRange, limit)) {
         final cached =
             _cacheManager.getCachedStrengthProgress(userId, timeRange, limit);
         if (cached != null) {
@@ -688,8 +886,8 @@ class StatisticsServiceSupabase implements IStatisticsService {
       // 載入動作分類
       await _loadExerciseClassifications(workouts);
 
-      return _muscleBalanceAnalyzer.calculateBalance(
-          workouts.cast<UnifiedWorkoutData>());
+      return _muscleBalanceAnalyzer
+          .calculateBalance(workouts.cast<UnifiedWorkoutData>());
     } catch (e) {
       _errorService.logError('計算肌群平衡失敗: $e', type: 'StatisticsServiceError');
       return MuscleGroupBalance(
@@ -735,8 +933,8 @@ class StatisticsServiceSupabase implements IStatisticsService {
       final endDate = timeRange.endDate;
       final workouts = await _getCompletedWorkouts(userId, startDate, endDate);
 
-      return _completionRateCalculator.calculateCompletionRate(
-          workouts.cast<UnifiedWorkoutData>());
+      return _completionRateCalculator
+          .calculateCompletionRate(workouts.cast<UnifiedWorkoutData>());
     } catch (e) {
       _errorService.logError('計算完成率失敗: $e', type: 'StatisticsServiceError');
       return CompletionRateStats(
@@ -782,7 +980,9 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
     final rawWorkouts =
         await _dataLoader.getCompletedWorkouts(userId, startDate, endDate);
-    final workouts = _dataParser.parseWorkoutDataList(rawWorkouts);
+    
+    // ⚡ 使用 Isolate 解析大型列表（避免阻塞主執行緒）
+    final workouts = await _dataParser.parseWorkoutDataListAsync(rawWorkouts);
 
     // ⚡ 快取結果
     _cacheManager.cacheWorkouts(userId, startDate, endDate, workouts);
@@ -807,7 +1007,8 @@ class StatisticsServiceSupabase implements IStatisticsService {
     }
 
     try {
-      final exercises = await _exerciseService.getExercisesByIds(uncachedIds.cast<String>());
+      final exercises =
+          await _exerciseService.getExercisesByIds(uncachedIds.cast<String>());
       _exerciseCache.addAll(exercises);
     } catch (e) {
       _errorService.logError('批量載入動作分類失敗: $e', type: 'StatisticsServiceError');

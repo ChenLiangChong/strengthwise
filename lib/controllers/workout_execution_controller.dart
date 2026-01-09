@@ -33,6 +33,7 @@ class WorkoutExecutionController extends ChangeNotifier
   // 權限覆蓋（Session Mode 用）⭐ v3.1
   bool? _overrideCanEdit;
   bool? _overrideCanMarkSet;
+  bool? _overrideShowTimerUI; // ⭐ v3.1.1
 
   // 子模組
   late final WorkoutExecutionDataManager _dataManager;
@@ -281,12 +282,15 @@ class WorkoutExecutionController extends ChangeNotifier
   /// ⭐ v3.1: 設置權限覆蓋（Session Mode 用）
   ///
   /// 當 Session Mode 內嵌使用此 Controller 時，可以覆蓋預設的權限判斷
+  /// ⭐ v3.1.1: 新增 showTimerUI 覆蓋，確保狀態檢查正確
   void setPermissionOverride({
     bool? canEdit,
     bool? canMarkSet,
+    bool? showTimerUI, // ⭐ v3.1.1
   }) {
     _overrideCanEdit = canEdit;
     _overrideCanMarkSet = canMarkSet;
+    _overrideShowTimerUI = showTimerUI; // ⭐ v3.1.1
   }
 
   /// 檢查是否可以修改訓練（打勾用）
@@ -333,11 +337,27 @@ class WorkoutExecutionController extends ChangeNotifier
   /// - 過去的訓練：不能打勾
   /// - 未來的訓練：不能打勾
   /// - 今天的訓練（traineeId 是自己）：需在 in_progress 狀態
+  ///
+  /// ⭐ v3.1.1 修正：Session Mode 覆蓋權限時，仍需檢查訓練狀態
   @override
   bool canToggleCompletion() {
-    // ⭐ v3.1: 支援 Session Mode 覆蓋
-    if (_overrideCanMarkSet != null) return _overrideCanMarkSet!;
+    // ⭐ v3.1.1: 權限覆蓋只決定「誰可以」，訓練狀態檢查仍需進行
+    final hasPermission = _overrideCanMarkSet ?? _checkBaseMarkSetPermission();
+    if (!hasPermission) return false;
 
+    // ⭐ v3.1.1: 無論誰都需要遵守訓練狀態檢查
+    // 必須先「開始訓練」或「繼續訓練」才能打勾
+    if (shouldShowTimerUI()) {
+      if (_dataManager.isPaused || _dataManager.isPending) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /// ⭐ v3.1.1: 基礎權限檢查（不含訓練狀態）
+  bool _checkBaseMarkSetPermission() {
     // ⭐ 教練永遠不能幫學員打勾
     if (isCoachViewingTrainee()) {
       return false;
@@ -351,13 +371,6 @@ class WorkoutExecutionController extends ChangeNotifier
     // ⭐ 未來的訓練不能打勾（只能規劃）
     if (isFutureDate()) {
       return false;
-    }
-
-    // ⭐ 今天的訓練：需要先「開始訓練」才能打勾
-    if (shouldShowTimerUI()) {
-      if (_dataManager.isPaused || _dataManager.isPending) {
-        return false;
-      }
     }
 
     return true;
@@ -411,8 +424,13 @@ class WorkoutExecutionController extends ChangeNotifier
   /// - 「上課」類型：
   ///   - 教練查看（Session Mode）→ 可以計時
   ///   - 學員查看 → 不能計時（只能在 Session Mode 由教練執行）
+  ///
+  /// ⭐ v3.1.1: 支援 Session Mode 覆蓋
   @override
   bool shouldShowTimerUI() {
+    // ⭐ v3.1.1: Session Mode 覆蓋（確保狀態檢查邏輯一致）
+    if (_overrideShowTimerUI != null) return _overrideShowTimerUI!;
+
     // 只有今天的訓練才顯示計時功能
     if (!isToday()) return false;
 
@@ -617,6 +635,12 @@ class WorkoutExecutionController extends ChangeNotifier
       // 標記數據已變更
       _isDataChanged = true;
 
+      // ⭐ v3.1.1: 如果訓練已完成，新增動作後應變為暫停（需要繼續訓練才能打勾）
+      if (_dataManager.isCompleted && shouldShowTimerUI()) {
+        _dataManager.trainingStatus = 'paused';
+        await _saveTrainingStatus();
+      }
+
       notifyListeners();
 
       // ⭐ v3.1: 即時保存新增動作
@@ -655,6 +679,13 @@ class WorkoutExecutionController extends ChangeNotifier
     );
 
     _isDataChanged = true;
+
+    // ⭐ v3.1.1: 如果訓練已完成，新增組數後應變為暫停（需要繼續訓練才能打勾）
+    if (_dataManager.isCompleted && shouldShowTimerUI()) {
+      _dataManager.trainingStatus = 'paused';
+      await _saveTrainingStatus();
+    }
+
     notifyListeners();
 
     // 自動保存新增的組數

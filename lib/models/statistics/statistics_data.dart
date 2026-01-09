@@ -66,8 +66,8 @@ class StatisticsData {
     );
   }
 
-  /// 是否有數據
-  bool get hasData => frequency.totalWorkouts > 0;
+  /// 是否有數據（有任何排定的訓練計劃）
+  bool get hasData => frequency.scheduledWorkouts > 0;
 
   @override
   String toString() => 'StatisticsData(${timeRange.displayName}, ${frequency.totalWorkouts} workouts)';

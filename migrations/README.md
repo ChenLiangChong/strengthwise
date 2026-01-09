@@ -2,7 +2,7 @@
 
 > 資料庫架構變更腳本
 
-**最後更新**：2026-01-07
+**最後更新**：2026-01-09
 
 ---
 
@@ -61,6 +61,10 @@
 035_fix_session_note_visibility.sql # 修正 session_notes 預設 visibility 為 'shared'
 036_fix_missing_rls.sql             # 啟用 daily_workout_summary, personal_records RLS
 037_fix_daily_summary_rls.sql       # 修復 RLS（允許教練操作學員資料）
+
+-- v3.1.1 臨時課程 + 清理
+040_coach_create_appointment_rls.sql  # 教練創建預約 RLS（AdHoc Session）
+041_cancel_appointment_cleanup.sql    # 預約取消/拒絕時自動清理資料
 ```
 
 ### 僅部署 v1.0（單機版）
@@ -90,6 +94,8 @@
 | 034 | v3.1 | 修復 session_notes 觸發器 |
 | 035 | v3.1 | 修正 session_notes 預設 visibility |
 | 036-037 | v3.1 | RLS 修復（daily_workout_summary, personal_records）|
+| 040 | v3.1.1 | 教練創建預約 RLS（AdHoc Session）|
+| 041 | v3.1.1 | 預約取消/拒絕自動清理資料 |
 
 ---
 

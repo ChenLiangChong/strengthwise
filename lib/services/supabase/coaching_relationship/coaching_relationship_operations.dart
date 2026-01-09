@@ -31,34 +31,32 @@ class CoachingRelationshipOperations {
     if (existing != null) {
       final existingStatus = existing['status'] as String?;
       final existingId = existing['id'] as String;
-      
+
       // 如果是 active 關係，不允許重複綁定
       if (existingStatus == 'active') {
         throw Exception('該學員已存在有效的綁定關係');
       }
-      
+
       // ⭐ 如果是 archived 關係，重新激活（更新狀態為 active）
       if (existingStatus == 'archived') {
         final now = DateTimeUtils.formatToUtcIso(DateTime.now());
-        
+
         // 執行 UPDATE 操作
-        await _supabase
-            .from('coaching_relationships')
-            .update({
-              'status': 'active',
-              'invited_at': now,
-              'accepted_at': now,
-              'updated_at': now,
-            })
-            .eq('id', existingId);
-        
+        await _supabase.from('coaching_relationships').update({
+          'status': 'active',
+          'invited_at': now,
+          'accepted_at': now,
+          'updated_at': now,
+        }).eq('id', existingId);
+
         // 重新查詢完整資料
         final response = await _supabase
             .from('coaching_relationships')
-            .select('id, coach_id, client_id, coach_name, client_name, status, invited_at, accepted_at, created_at, updated_at')
+            .select(
+                'id, coach_id, client_id, coach_name, client_name, status, invited_at, accepted_at, created_at, updated_at')
             .eq('id', existingId)
             .single();
-        
+
         return CoachingRelationshipModel.fromSupabase(response);
       }
     }
@@ -77,7 +75,8 @@ class CoachingRelationshipOperations {
     final response = await _supabase
         .from('coaching_relationships')
         .insert(data)
-        .select()
+        .select(
+            'id, coach_id, client_id, coach_name, client_name, status, invited_at, accepted_at, created_at, updated_at')
         .single();
 
     return CoachingRelationshipModel.fromSupabase(response);
@@ -114,13 +113,10 @@ class CoachingRelationshipOperations {
   /// [relationshipId] 關係 ID
   /// ⚠️ 不直接刪除記錄，改為歸檔，以便保留歷史數據
   Future<void> deleteRelationship(String relationshipId) async {
-    await _supabase
-        .from('coaching_relationships')
-        .update({
-          'status': 'archived',
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .eq('id', relationshipId);
+    await _supabase.from('coaching_relationships').update({
+      'status': 'archived',
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', relationshipId);
   }
 
   /// 批量更新狀態（歸檔舊關係）
@@ -133,10 +129,13 @@ class CoachingRelationshipOperations {
     required List<String> clientIds,
     required String status,
   }) async {
-    await _supabase.from('coaching_relationships').update({
-      'status': status,
-      'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
-    }).eq('coach_id', coachId).inFilter('client_id', clientIds);
+    await _supabase
+        .from('coaching_relationships')
+        .update({
+          'status': status,
+          'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
+        })
+        .eq('coach_id', coachId)
+        .inFilter('client_id', clientIds);
   }
 }
-

@@ -1,8 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/availability_slot_model.dart';
-import '../utils/datetime_utils.dart';
-import 'interfaces/i_availability_slot_service.dart';
-import 'core/error_handling_service.dart';
+import '../../models/availability_slot_model.dart';
+import '../../utils/datetime_utils.dart';
+import '../interfaces/i_availability_slot_service.dart';
+import '../core/error_handling_service.dart';
 
 /// AvailabilitySlotServiceSupabase - Phase 2 時段服務實現
 ///

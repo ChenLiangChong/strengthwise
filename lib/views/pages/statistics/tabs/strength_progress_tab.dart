@@ -62,9 +62,13 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
       final favorites =
           await _favoritesService.getFavoriteExercises(widget.userId);
       if (mounted) {
+        final hasChanged = _hasFavorites != favorites.isNotEmpty;
         setState(() {
           _hasFavorites = favorites.isNotEmpty;
-          _refreshKey++; // 強制刷新 FavoriteExercisesList
+          // ⭐ 優化：只有在收藏狀態改變時才更新 refreshKey
+          if (hasChanged) {
+            _refreshKey++;
+          }
         });
       }
     } catch (e) {

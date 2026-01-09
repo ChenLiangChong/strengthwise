@@ -187,8 +187,7 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
 
   @override
   Widget build(BuildContext context) {
-    // ⭐ 判斷當前主題模式
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
     
     return Consumer<ClientManagementController>(
       builder: (context, controller, child) {
@@ -201,53 +200,48 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
           selectedDay: _selectedDay,
           format: _calendarFormat,
 
-          // 疊加兩層：背景（時間偏好） + 標記（訓練）
+          // ⭐ v3.1.1: 改用點點標記（與 booking page 一致）
           layers: [
-            // Layer 1: 背景色（學員時間偏好）⭐
-            BackgroundLayer(
-              colorProvider: (day) {
-                final prefs = controller.getAvailabilityForDate(day);
-                
-                if (kDebugMode && prefs.isNotEmpty) {
-                  print('[CLIENT_CALENDAR] ${day.month}/${day.day} 有 ${prefs.length} 個偏好時段');
-                }
-                
-                if (prefs.isEmpty) return null;
-
-                // ⭐ 根據主題模式使用不同顏色
-                if (prefs.any((p) => p.priority == AvailabilityPriority.preferred)) {
-                  // 偏好時段：綠色
-                  return isDarkMode 
-                      ? const Color(0xFF10B981)  // 深色模式：翡翠綠
-                      : const Color(0xFF86EFAC); // 淺色模式：更淡的綠色
-                } else if (prefs.any((p) => p.priority == AvailabilityPriority.available)) {
-                  // 可用時段：橙色
-                  return isDarkMode
-                      ? const Color(0xFFF97316)  // 深色模式：橙色
-                      : const Color(0xFFFBBF24); // 淺色模式：更淡的黃橙色
-                } else {
-                  // 避免時段：紅色
-                  return isDarkMode
-                      ? const Color(0xFFEF4444)  // 深色模式：紅色
-                      : const Color(0xFFFCA5A5); // 淺色模式：更淡的紅色
-                }
-              },
-              opacity: isDarkMode ? 0.25 : 0.35,  // ⚡ 淺色模式稍微提高透明度
-            ),
-
-            // Layer 2: 標記點（訓練計畫）
+            // 標記點（訓練計畫 + 學員偏好時段）
             MarkerLayer(
               markerProvider: (day) {
+                final markers = <CalendarMarker>[];
+                
+                // 訓練計畫（🔵 藍色）
                 final workouts = controller.getWorkoutsForDate(day);
-                return workouts
-                    .map((w) => CalendarMarker(
-                          color: Colors.blue,
-                          tooltip: w.title,
-                          data: w,
-                        ))
-                    .toList();
+                for (var w in workouts) {
+                  markers.add(CalendarMarker(
+                    color: colorScheme.primary,
+                    tooltip: w.title,
+                    data: {'type': 'workout', 'workout': w},
+                  ));
+                }
+                
+                // 學員偏好時段（🟢 綠色 = 首選，🟠 橘色 = 可訓練）
+                final prefs = controller.getAvailabilityForDate(day);
+                for (var p in prefs) {
+                  final isPreferred = p.priority == AvailabilityPriority.preferred;
+                  markers.add(CalendarMarker(
+                    color: isPreferred ? Colors.green : Colors.orange,
+                    tooltip: isPreferred ? '首選時段' : '可訓練時段',
+                    data: {'type': 'availability', 'slot': p},
+                  ));
+                }
+                
+                // 排序：藍 → 綠 → 橘
+                markers.sort((a, b) {
+                  int colorOrder(Color c) {
+                    if (c == colorScheme.primary) return 0;
+                    if (c == Colors.green) return 1;
+                    if (c == Colors.orange) return 2;
+                    return 3;
+                  }
+                  return colorOrder(a.color).compareTo(colorOrder(b.color));
+                });
+                
+                return markers;
               },
-              maxMarkers: 3,
+              maxMarkers: 5,
             ),
           ],
 
@@ -351,64 +345,119 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
     );
   }
 
-  /// ⭐ 可用時段卡片（使用 UnifiedSlotCard 統一組件）
+  /// ⭐ v3.1.1: 可用時段卡片（與 booking page 統一風格）
   Widget _buildAvailabilitySlotCard(ClientAvailabilityModel slot) {
-    final startTime = TimeOfDay.fromDateTime(slot.startTime);
-    final endTime = TimeOfDay.fromDateTime(slot.endTime);
-    final timeRange = '${startTime.format(context)} - ${endTime.format(context)}';
+    final colorScheme = Theme.of(context).colorScheme;
+    final timeStr =
+        '${_formatTime(slot.startTime)} - ${_formatTime(slot.endTime)}';
 
-    Color iconColor;
-    IconData icon;
-    String label;
-
-    // ⭐ 統一使用明確的色值（與行事曆背景一致）
-    switch (slot.priority) {
-      case AvailabilityPriority.preferred:
-        iconColor = const Color(0xFF10B981);  // 翡翠綠 (Emerald)
-        icon = Icons.star;
-        label = '偏好時段';
-        break;
-      case AvailabilityPriority.available:
-        iconColor = const Color(0xFFF97316);  // 橙色 (Orange)
-        icon = Icons.access_time;
-        label = '可用時段';
-        break;
-      case AvailabilityPriority.avoid:
-        iconColor = const Color(0xFFEF4444);  // 紅色 (Red)
-        icon = Icons.warning;
-        label = '避免時段';
-        break;
-    }
+    // 根據 priority 決定顏色和標籤
+    final isPreferred = slot.priority == AvailabilityPriority.preferred;
+    final slotColor = isPreferred ? Colors.green : Colors.orange;
+    final priorityLabel = isPreferred ? '⭐ 首選' : '可訓練';
 
     return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),  // ⭐ 統一 12dp
-        side: BorderSide(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-        ),
-      ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: iconColor.withOpacity(0.2),  // ⭐ 統一 0.2 透明度
-          child: Icon(icon, color: iconColor),
-        ),
-        title: Text(timeRange),  // ⭐ 使用 ListTile 默認樣式
-        subtitle: Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+      margin: const EdgeInsets.only(bottom: 8),
+      color: slotColor.withOpacity(0.05),
+      child: InkWell(
+        onTap: () => _createWorkoutDirectly(_selectedDay, slot),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // 顏色指示器
+              Container(
+                width: 4,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: slotColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // 圖標
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: slotColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  isPreferred ? Icons.star : Icons.schedule,
+                  color: slotColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // 內容
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          timeStr,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(width: 8),
+                        // 優先級標籤
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: slotColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            priorityLabel,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: slotColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (slot.notes != null && slot.notes!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        slot.notes!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              // 新增訓練按鈕
+              FilledButton.tonal(
+                onPressed: () => _createWorkoutDirectly(_selectedDay, slot),
+                style: FilledButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                ),
+                child: const Text('新增訓練'),
+              ),
+            ],
           ),
         ),
-        trailing: Icon(
-          Icons.add_circle,
-          color: iconColor,
-          size: 28,
-        ),
-        onTap: () => _createWorkoutDirectly(_selectedDay, slot),
       ),
     );
+  }
+
+  /// 格式化時間
+  String _formatTime(DateTime time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   /// 訓練卡片

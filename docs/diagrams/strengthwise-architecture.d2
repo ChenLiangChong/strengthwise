@@ -1,0 +1,171 @@
+# StrengthWise 系統架構圖
+# 使用 D2 宣告式語法 + Sketch Mode
+
+direction: right
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+    sketch: true
+    theme-id: 200
+  }
+}
+
+# 樣式類別
+classes: {
+  flutter: {
+    style: {
+      fill: "#0553B1"
+      stroke: "#042B59"
+      font-color: "#FFFFFF"
+      border-radius: 8
+    }
+  }
+  supabase: {
+    style: {
+      fill: "#3ECF8E"
+      stroke: "#249B63"
+      font-color: "#FFFFFF"
+      border-radius: 8
+    }
+  }
+  layer: {
+    style: {
+      fill: "#1E293B"
+      stroke: "#475569"
+      font-color: "#F8FAFC"
+      border-radius: 12
+    }
+  }
+  highlight: {
+    style: {
+      stroke-width: 3
+      stroke: "#FFD700"
+    }
+  }
+}
+
+# ============ 前端架構 ============
+frontend: Frontend (Flutter) {
+  class: flutter
+  
+  views: View Layer {
+    class: layer
+    pages: "Pages (65+)"
+    widgets: "Widgets (200+)"
+    painters: "Canvas Painters"
+  }
+  
+  controllers: Controller Layer {
+    class: layer
+    changenotifier: "ChangeNotifier"
+    business: "Business Logic"
+    state: "State Management"
+  }
+  
+  services: Service Layer {
+    class: layer
+    interfaces: "Interfaces"
+    supabase_impl: "Supabase Implementation"
+    realtime: "Realtime Service"
+  }
+  
+  models: Model Layer {
+    class: layer
+    entities: "67+ Models"
+    fromSupabase: "fromSupabase()"
+    toMap: "toMap()"
+  }
+  
+  # 內部連接
+  views -> controllers: Provider {
+    class: highlight
+  }
+  controllers -> services: Interface
+  services -> models: Data Transform
+}
+
+# ============ 後端架構 ============
+backend: Backend (Supabase) {
+  class: supabase
+  
+  auth: Authentication {
+    google: "Google Sign-In"
+    email: "Email/Password"
+    jwt: "JWT Tokens"
+  }
+  
+  database: PostgreSQL {
+    shape: cylinder
+    tables: "19 Tables"
+    rls: "50+ RLS Policies"
+    triggers: "Triggers"
+  }
+  
+  storage: Storage {
+    shape: cloud
+    photos: "Session Photos"
+    drawings: "Hand Drawings"
+  }
+  
+  realtime: Realtime {
+    shape: hexagon
+    subscribe: "Subscribe"
+    broadcast: "Broadcast"
+  }
+  
+  edge: Edge Functions {
+    fcm: "FCM Push"
+    webhook: "Webhooks"
+  }
+}
+
+# ============ 核心功能模組 ============
+features: Core Features {
+  style: {
+    fill: "#7C3AED"
+    stroke: "#5B21B6"
+    font-color: "#FFFFFF"
+    border-radius: 12
+  }
+  
+  workout: "訓練系統\n(794 動作)" {
+    shape: package
+  }
+  
+  scheduling: "預約系統\n(TSTZRANGE)" {
+    shape: package
+  }
+  
+  session: "Session Mode\n(Realtime)" {
+    shape: package
+  }
+  
+  statistics: "統計分析\n(<5ms 快取)" {
+    shape: package
+  }
+  
+  health: "健康評估\n(PAR-Q+)" {
+    shape: package
+  }
+}
+
+# ============ 外部連接 ============
+frontend.services -> backend.auth: "認證" {
+  style.stroke-dash: 3
+}
+
+frontend.services -> backend.database: "CRUD" {
+  class: highlight
+}
+
+frontend.services -> backend.storage: "檔案上傳"
+
+frontend.services.realtime -> backend.realtime: "即時同步" {
+  style: {
+    stroke: "#F59E0B"
+    stroke-width: 2
+  }
+}
+
+features -> frontend.controllers: "業務邏輯"

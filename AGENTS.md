@@ -2,7 +2,7 @@
 
 > AI 程式碼助手開發規範索引
 
-**最後更新**：2026年1月8日 - v3.1（Session Mode 完善 + 首頁行事曆 UX）
+**最後更新**：2026年1月9日 - v3.2（開發中 - Coach Mark Onboarding）
 
 ---
 
@@ -139,7 +139,7 @@
 
 ## 🎯 當前開發狀態
 
-**版本**：v3.1（功能測試 + Widget）🔄 待測試
+**版本**：v3.2 🚧 開發中（Coach Mark Onboarding ✅）
 
 詳細進度請查看：**[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)**
 

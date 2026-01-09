@@ -4,8 +4,14 @@ import '../../../models/workout_template_model.dart';
 import '_workout_cache_manager.dart';
 
 /// 訓練模板操作類別
-/// 
+///
 /// 負責訓練模板的 CRUD 操作
+
+/// ⭐ 定義 workout_templates 表的標準查詢欄位
+const String _kTemplateSelectFields = '''
+  id, user_id, title, description, plan_type, exercises, created_at, updated_at
+''';
+
 class WorkoutTemplateOperations {
   final SupabaseClient _supabase;
   final WorkoutCacheManager _cacheManager;
@@ -62,8 +68,9 @@ class WorkoutTemplateOperations {
       final response =
           await queryBuilder.order('updated_at', ascending: false).limit(limit);
 
-      final templates =
-          (response as List).map((data) => WorkoutTemplate.fromSupabase(data)).toList();
+      final templates = (response as List)
+          .map((data) => WorkoutTemplate.fromSupabase(data))
+          .toList();
 
       // 更新緩存
       if (_cacheTemplates) {
@@ -82,7 +89,8 @@ class WorkoutTemplateOperations {
 
       // 如果有結果，打印下一頁的游標（最後一筆的 updated_at）
       if (templates.isNotEmpty) {
-        final nextCursor = DateTimeUtils.formatToUtcIso(templates.last.updatedAt);
+        final nextCursor =
+            DateTimeUtils.formatToUtcIso(templates.last.updatedAt);
         _logDebug('下一頁游標: $nextCursor');
       }
 
@@ -154,7 +162,7 @@ class WorkoutTemplateOperations {
       final response = await _supabase
           .from('workout_templates')
           .insert(templateData)
-          .select()
+          .select(_kTemplateSelectFields)
           .single();
 
       final newTemplate = WorkoutTemplate.fromSupabase(response);
@@ -236,4 +244,3 @@ class WorkoutTemplateOperations {
     }
   }
 }
-

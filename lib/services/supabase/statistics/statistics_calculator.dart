@@ -17,20 +17,24 @@ class StatisticsCalculator {
     required List<Map<String, dynamic>> currentStats,
     required List<Map<String, dynamic>> previousStats,
   }) {
+    // ⭐ 新增：全部排定的訓練計劃數
+    final scheduledWorkouts = currentStats.fold<int>(
+        0, (sum, row) => sum + (row['scheduled_workout_count'] as int? ?? 0));
     final totalWorkouts = currentStats.fold<int>(
         0, (sum, row) => sum + (row['workout_count'] as int? ?? 0));
     final completedWorkouts = currentStats.fold<int>(
         0, (sum, row) => sum + (row['completed_workout_count'] as int? ?? 0));
     final partialWorkouts = currentStats.fold<int>(
         0, (sum, row) => sum + (row['partial_workout_count'] as int? ?? 0));
-    final previousWorkouts = previousStats.fold<int>(
-        0, (sum, row) => sum + (row['workout_count'] as int? ?? 0));
+    final previousScheduled = previousStats.fold<int>(
+        0, (sum, row) => sum + (row['scheduled_workout_count'] as int? ?? 0));
     final trainingDays = currentStats.length;
 
     final consecutiveDays =
         _calculateConsecutiveDaysFromSummary(currentStats);
 
     return TrainingFrequency(
+      scheduledWorkouts: scheduledWorkouts,
       totalWorkouts: totalWorkouts,
       completedWorkouts: completedWorkouts,
       partialWorkouts: partialWorkouts,
@@ -38,7 +42,7 @@ class StatisticsCalculator {
       totalHours: totalWorkouts.toDouble(),
       averageHours: trainingDays > 0 ? totalWorkouts / trainingDays : 0.0,
       consecutiveDays: consecutiveDays,
-      comparisonValue: totalWorkouts - previousWorkouts,
+      comparisonValue: scheduledWorkouts - previousScheduled,
     );
   }
 

@@ -12,6 +12,7 @@ import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appoint
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appointment_details/actions_section.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/session_record_page.dart';
 import 'package:strengthwise/views/pages/session/session_mode_page.dart';
+import 'package:strengthwise/services/interfaces/i_user_service.dart';
 
 /// 預約詳情頁面 - Phase 2
 ///
@@ -148,36 +149,70 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
   }
 
   Future<void> _cancelAppointment() async {
-    final confirmed = await showDialog<bool>(
+    // ⭐ v3.1.1: 必須填寫取消原因
+    final reasonController = TextEditingController();
+    
+    final reason = await showDialog<String>(
       context: context,
-      barrierDismissible: false, // 修復：禁止點擊旁邊關閉
-      builder: (context) => AlertDialog(
-        title: const Text('取消預約'),
-        content: const Text('確定要取消這個預約嗎？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('返回'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            child: const Text('確定取消'),
-          ),
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('取消預約'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('請說明取消原因：'),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: reasonController,
+                    decoration: const InputDecoration(
+                      hintText: '例如：時間無法配合、臨時有事...',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                    autofocus: true,
+                    onChanged: (_) => setState(() {}), // 更新按鈕狀態
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: const Text('返回'),
+                ),
+                FilledButton(
+                  onPressed: reasonController.text.trim().isEmpty
+                      ? null
+                      : () => Navigator.pop(context, reasonController.text.trim()),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red,
+                  ),
+                  child: const Text('確定取消'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
-    if (confirmed == true && mounted) {
+    reasonController.dispose();
+
+    if (reason != null && reason.isNotEmpty && mounted) {
       final userId = _authController.user?.uid;
       if (userId == null) return;
+
+      // ⭐ v3.1.1: 加上角色前綴
+      final rolePrefix = widget.isCoachMode ? '教練取消' : '學員取消';
+      final fullReason = '$rolePrefix：$reason';
 
       final success = await _appointmentController.cancelAppointment(
         appointmentId: widget.appointmentId,
         cancelledBy: userId,
-        reason: widget.isCoachMode ? '教練取消' : '學員取消',
+        reason: fullReason,
       );
 
       if (mounted) {
@@ -284,10 +319,8 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
                         onViewRecord: !widget.isCoachMode
                             ? () => _navigateToSessionRecord(appointment)
                             : null,
-                        // ⭐ v3.1: 學員查看課程詳情（進入 Session Mode）
-                        onViewSession: !widget.isCoachMode
-                            ? () => _navigateToSessionMode(appointment)
-                            : null,
+                        // ⭐ v3.1.1: 教練和學員都可查看課程詳情（進入 Session Mode）
+                        onViewSession: () => _navigateToSessionMode(appointment),
                       ),
 
                       const SizedBox(height: 32),
@@ -309,19 +342,39 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
     );
   }
 
-  /// 導航到 Session Mode（學員模式）⭐ v3.1
-  void _navigateToSessionMode(dynamic appointment) {
+  /// 導航到 Session Mode ⭐ v3.1.1
+  /// 修復：異步獲取正確的名稱
+  Future<void> _navigateToSessionMode(dynamic appointment) async {
+    String displayName = '';
+
+    try {
+      final userService = serviceLocator<IUserService>();
+      if (widget.isCoachMode) {
+        // 教練視角：獲取學員名稱
+        final profile = await userService.getUserProfile(appointment.clientId);
+        displayName = profile?.displayName ?? profile?.email ?? '學員';
+      } else {
+        // 學員視角：獲取教練名稱
+        final profile = await userService.getUserProfile(appointment.coachId);
+        displayName = profile?.displayName ?? profile?.email ?? '教練';
+      }
+    } catch (e) {
+      displayName = widget.isCoachMode ? '學員' : '教練';
+    }
+
+    if (!mounted) return;
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => SessionModePage(
           appointmentId: appointment.id,
           clientId: appointment.clientId,
-          clientName: '教練', // 學員視角：標題顯示「教練」
+          clientName: displayName,
           sessionStartTime: appointment.startTime,
           sessionEndTime: appointment.endTime,
           workoutPlanId: appointment.workoutPlanId,
-          isCoachMode: false, // ⭐ 學員模式：只能查看和填問卷
+          isCoachMode: widget.isCoachMode,
         ),
       ),
     );

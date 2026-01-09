@@ -56,6 +56,9 @@ class TrainingPlanCard extends StatelessWidget {
   /// 學員名稱（教練視角顯示）
   final String? studentName;
 
+  /// ⭐ v3.1.1: 教練名稱（學員視角顯示）
+  final String? coachName;
+
   /// 進入課程回調（上課類型）→ SessionModePage
   final void Function(String planId, String? appointmentId)? onEnterSession;
 
@@ -77,6 +80,7 @@ class TrainingPlanCard extends StatelessWidget {
     this.onDelete,
     // ⭐ Phase 3.1-B 新增
     this.studentName,
+    this.coachName, // ⭐ v3.1.1
     this.onEnterSession,
     this.onFillReadiness,
     this.showReadinessButton = false,
@@ -92,6 +96,10 @@ class TrainingPlanCard extends StatelessWidget {
     final exercises = training['exercises'] as List<dynamic>? ?? [];
     final completed = training['completed'] as bool? ?? false;
     final isCoachView = training['isCoachView'] as bool? ?? false;
+
+    // ⭐ v3.1 修復：檢測是否為「只有預約沒有訓練計畫」的課程
+    final dataType = training['dataType'] as String? ?? 'plan';
+    final isSessionOnly = dataType == 'session_only';
 
     // 訓練計劃創建者和受訓者資訊
     final traineeId = training['trainee_id'] as String?;
@@ -144,8 +152,11 @@ class TrainingPlanCard extends StatelessWidget {
                 canEdit: _canEdit(isPastPlan, completed, trainingCategory),
               ),
 
-              // ⭐ Phase 3.1-B: 學員名稱（教練視角）
-              if (studentName != null && studentName!.isNotEmpty) ...[
+              // ⭐ v3.1.1: 顯示教練/學員名稱（根據視角）
+              // 教練視角顯示學員名稱，學員視角顯示教練名稱
+              if (isCoachView &&
+                  studentName != null &&
+                  studentName!.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -159,6 +170,27 @@ class TrainingPlanCard extends StatelessWidget {
                       studentName!,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else if (!isCoachView &&
+                  coachName != null &&
+                  coachName!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.school, // 教練圖標
+                      size: 16,
+                      color: Theme.of(context).colorScheme.tertiary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      coachName!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.tertiary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -190,12 +222,20 @@ class TrainingPlanCard extends StatelessWidget {
 
               const SizedBox(height: 4),
 
-              // 動作數量
-              _buildInfoRow(
-                context,
-                Icons.fitness_center,
-                '${exercises.length} 個動作',
-              ),
+              // 動作數量（或「尚未建立訓練計畫」提示）
+              if (isSessionOnly)
+                _buildInfoRow(
+                  context,
+                  Icons.schedule,
+                  '教練尚未建立訓練計畫',
+                  color: Theme.of(context).colorScheme.tertiary,
+                )
+              else
+                _buildInfoRow(
+                  context,
+                  Icons.fitness_center,
+                  '${exercises.length} 個動作',
+                ),
 
               // 教練/學員資訊
               if (planType == 'trainer' &&
@@ -218,17 +258,19 @@ class TrainingPlanCard extends StatelessWidget {
                 ),
               ],
 
-              // 進度條
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: progressInfo.progress,
-                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                valueColor: AlwaysStoppedAnimation(
-                  completed
-                      ? Theme.of(context).colorScheme.secondary
-                      : Theme.of(context).colorScheme.primary,
+              // 進度條（只有預約的課程不顯示進度條）
+              if (!isSessionOnly) ...[
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: progressInfo.progress,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                  valueColor: AlwaysStoppedAnimation(
+                    completed
+                        ? Theme.of(context).colorScheme.secondary
+                        : Theme.of(context).colorScheme.primary,
+                  ),
                 ),
-              ),
+              ],
 
               // 完成狀態和操作按鈕
               const SizedBox(height: 4),
@@ -349,19 +391,22 @@ class TrainingPlanCard extends StatelessWidget {
   }
 
   /// 構建資訊列（圖示 + 文字）
-  Widget _buildInfoRow(BuildContext context, IconData icon, String text) {
+  Widget _buildInfoRow(BuildContext context, IconData icon, String text,
+      {Color? color}) {
+    final displayColor =
+        color ?? Theme.of(context).colorScheme.onSurfaceVariant;
     return Row(
       children: [
         Icon(
           icon,
           size: 16,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          color: displayColor,
         ),
         const SizedBox(width: 4),
         Text(
           text,
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            color: displayColor,
           ),
         ),
       ],

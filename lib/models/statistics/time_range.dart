@@ -30,12 +30,12 @@ extension TimeRangeExtension on TimeRange {
     final now = DateTime.now();
     switch (this) {
       case TimeRange.week:
-        // ⚡ 修正：本週 = 從週日開始
+        // ⚡ 修正：本週 = 從週一開始
         // weekday: 1=週一, 2=週二, ..., 7=週日
         final weekday = now.weekday;
-        final daysFromSunday = weekday % 7; // 週日=0, 週一=1, ..., 週六=6
-        final sunday = now.subtract(Duration(days: daysFromSunday));
-        return DateTime(sunday.year, sunday.month, sunday.day);
+        final daysFromMonday = weekday - 1; // 週一=0, 週二=1, ..., 週日=6
+        final monday = now.subtract(Duration(days: daysFromMonday));
+        return DateTime(monday.year, monday.month, monday.day);
       case TimeRange.sevenDays:
         // 🆕 最近七天：從今天往前推 7 天
         final sevenDaysAgo = now.subtract(const Duration(days: 7));

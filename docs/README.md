@@ -2,7 +2,7 @@
 
 > 專案文檔索引
 
-**最後更新**：2026-01-08
+**最後更新**：2026-01-09
 
 ---
 
@@ -38,14 +38,24 @@
 
 ## 📝 規劃文檔
 
+### 活躍規劃（開發中）
+
 | 文檔 | 說明 |
 |------|------|
 | [planning/HOME_BOOKING_UX_SPEC.md](planning/HOME_BOOKING_UX_SPEC.md) | v3.1-B 首頁 + 行事曆 UX ⭐ |
-| [planning/TRAINING_PERMISSION_MATRIX.md](planning/TRAINING_PERMISSION_MATRIX.md) | v3.1 訓練權限矩陣 |
-| [planning/SESSION_MODE_SPEC.md](planning/SESSION_MODE_SPEC.md) | v3.0-3.1 教練上課模式 + Realtime |
-| [planning/BOOKING_SYSTEM_OPTIMIZATION.md](planning/BOOKING_SYSTEM_OPTIMIZATION.md) | v3.0 預約系統優化規劃 |
-| [planning/RESPONSIVE_ARCHITECTURE_DESIGN.md](planning/RESPONSIVE_ARCHITECTURE_DESIGN.md) | v3.0 響應式架構設計 |
-| [planning/COACH_PROFILE_SPEC.md](planning/COACH_PROFILE_SPEC.md) | v2.9 教練公開檔案規劃 |
+| [planning/TESTING_STRATEGY.md](planning/TESTING_STRATEGY.md) | 測試策略（564 個通過）|
+| [planning/PRODUCTION_LAUNCH_GUIDE.md](planning/PRODUCTION_LAUNCH_GUIDE.md) | 生產環境發布指南 |
+
+### 已歸檔（實施完成）
+
+| 文檔 | 說明 |
+|------|------|
+| [planning/archived/DATA_FLOW_ANALYSIS.md](planning/archived/DATA_FLOW_ANALYSIS.md) | v3.1-E 數據流分析 + 快取策略 ✅ |
+| [planning/archived/SESSION_MODE_SPEC.md](planning/archived/SESSION_MODE_SPEC.md) | v3.1-SM 教練上課模式 ✅ |
+| [planning/archived/TRAINING_PERMISSION_MATRIX.md](planning/archived/TRAINING_PERMISSION_MATRIX.md) | v3.1 訓練權限矩陣 ✅ |
+| [planning/archived/BOOKING_SYSTEM_OPTIMIZATION.md](planning/archived/BOOKING_SYSTEM_OPTIMIZATION.md) | v3.0 預約系統優化 ✅ |
+| [planning/archived/RESPONSIVE_ARCHITECTURE_DESIGN.md](planning/archived/RESPONSIVE_ARCHITECTURE_DESIGN.md) | v3.0 響應式架構 ✅ |
+| [planning/archived/COACH_PROFILE_SPEC.md](planning/archived/COACH_PROFILE_SPEC.md) | v2.9 教練公開檔案 ✅ |
 
 ---
 
@@ -70,7 +80,7 @@
 | 了解技術架構 | `PROJECT_OVERVIEW.md` |
 | 查資料庫結構 | `DATABASE_SUPABASE.md` |
 | 查 UI 規範 | `UI_DEVELOPER_GUIDE.md` |
-| 查訓練權限邏輯 | `planning/TRAINING_PERMISSION_MATRIX.md` |
+| 查訓練權限邏輯 | `planning/archived/TRAINING_PERMISSION_MATRIX.md` |
 | 部署應用 | `DEPLOYMENT_GUIDE.md` |
 | 配置推播通知 | `FCM_SETUP_GUIDE.md` |
 | 使用 Python 工具 | `scripts/README.md` |

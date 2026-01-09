@@ -1,7 +1,11 @@
 // ✅ 已響應式改造 (P3 Dual-Pane)
+// ✅ v3.2: Coach Mark 引導
 import 'package:flutter/material.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/models/user/user_model.dart';
+import 'package:strengthwise/services/core/onboarding_service.dart';
+import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/coach_slots_management_page.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/appointments_list_page.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appointment_details_content.dart';
@@ -9,6 +13,7 @@ import 'package:strengthwise/views/pages/notes/session_notes_list_page.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/client_management_page.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/tabs/coach_profile_tab.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/widgets/client_detail_content.dart';
+import 'package:strengthwise/views/widgets/onboarding/coach_mark_helper.dart';
 
 /// 教練功能集成頁面（Hub Page）
 ///
@@ -30,12 +35,63 @@ class _CoachHubPageState extends State<CoachHubPage>
   // TODO: 當 ClientManagementPage 和 AppointmentsListPage 實作回調後啟用
   UserModel? _selectedClient;
   String? _selectedAppointmentId;
+  
+  // ⭐ v3.2: Coach Mark 引導
+  final GlobalKey _tabBarKey = GlobalKey();
+  bool _coachMarkShown = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(_onTabChanged);
+    
+    // ⭐ v3.2: 檢查 Coach Mark 引導
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkCoachMark();
+    });
+  }
+  
+  // ⭐ v3.2: 檢查是否顯示 Coach Mark
+  Future<void> _checkCoachMark() async {
+    if (_coachMarkShown) return;
+    
+    final onboardingService = serviceLocator<OnboardingService>();
+    final shouldShow = await onboardingService.shouldShowCoachMark(
+      OnboardingService.keyCoachHub,
+    );
+    
+    if (shouldShow && mounted) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _showCoachMark();
+      });
+    }
+  }
+  
+  // ⭐ v3.2: 顯示 Coach Mark 引導
+  void _showCoachMark() {
+    if (_coachMarkShown) return;
+    _coachMarkShown = true;
+    
+    final targets = <TargetFocus>[];
+    
+    if (_tabBarKey.currentContext != null) {
+      targets.add(
+        CoachMarkHelper.createRectTarget(
+          key: _tabBarKey,
+          title: '教練中心',
+          description: '這裡管理你的學員：\n• 我的學員：查看學員詳情、訓練記錄\n• 可上課時段：設定你的可上課時間\n• 預約管理：確認/拒絕學員預約',
+          contentAlign: ContentAlign.bottom,
+        ),
+      );
+    }
+    
+    if (targets.isNotEmpty) {
+      CoachMarkHelper.show(
+        context: context,
+        targets: targets,
+      );
+    }
   }
 
   /// Tab 切換時清除選中狀態
@@ -90,6 +146,7 @@ class _CoachHubPageState extends State<CoachHubPage>
       appBar: AppBar(
         title: const Text('教練管理中心'),
         bottom: TabBar(
+          key: _tabBarKey, // ⭐ v3.2: Coach Mark 引導用
           controller: _tabController,
           isScrollable: true,
           tabs: const [

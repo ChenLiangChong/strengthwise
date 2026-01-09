@@ -1,11 +1,13 @@
 // ✅ v3.1-B: 訓練行事曆 - Tab 分離（我的/教練）+ SpeedDial
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:strengthwise/utils/datetime_utils.dart';
 import 'package:strengthwise/views/pages/workout/execution/plan_editor_page.dart';
 import 'package:strengthwise/views/pages/workout/execution/workout_execution_page.dart';
-import 'package:strengthwise/views/pages/scheduling/availability/client_availability_page.dart';
-import 'package:strengthwise/views/pages/scheduling/appointments/coach_slots_management_page.dart';
+import 'package:strengthwise/views/pages/scheduling/availability/widgets/availability_slot_editor_dialog.dart';
+import 'package:strengthwise/views/pages/scheduling/appointments/widgets/quick_add_slot_dialog.dart';
+import 'package:strengthwise/models/client_availability_model.dart';
 import 'package:strengthwise/views/pages/session/session_mode_page.dart';
 import 'package:strengthwise/controllers/interfaces/i_booking_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
@@ -16,15 +18,18 @@ import 'package:strengthwise/services/interfaces/i_coaching_relationship_service
 import 'package:strengthwise/services/interfaces/i_availability_slot_service.dart';
 import 'package:strengthwise/services/interfaces/i_client_availability_service.dart';
 import 'package:strengthwise/services/interfaces/i_appointment_service.dart';
+import 'package:strengthwise/services/interfaces/i_user_service.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
+import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
-import 'package:strengthwise/models/client_availability_model.dart';
 import 'package:strengthwise/models/appointment_model.dart';
 import 'package:strengthwise/models/workout_record/workout_record.dart';
 import 'package:strengthwise/views/pages/scheduling/booking/widgets/booking_calendar_view.dart';
 import 'package:strengthwise/views/pages/scheduling/booking/widgets/booking_speed_dial.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/client_booking/booking_confirmation_dialog.dart';
+import 'package:strengthwise/views/widgets/onboarding/coach_mark_helper.dart';
+import 'package:strengthwise/views/widgets/current_page_provider.dart';
 
 class BookingPage extends StatefulWidget {
   // 允許外部注入控制器以實現依賴注入
@@ -65,6 +70,7 @@ class _BookingPageState extends State<BookingPage>
   List<String> _coachIds = []; // 我的教練 ID 列表（Tab 1 用）
   Map<String, String> _coachNames = {}; // 教練 ID -> 名稱 映射（預約 Dialog 用）
   List<String> _clientIds = []; // 我的學員 ID 列表（Tab 2 用）
+  Map<String, String> _clientNames = {}; // ⭐ v3.1.1: 學員 ID -> 名稱 映射
 
   // 行事曆相關狀態
   DateTime _selectedDay = DateTime.now();
@@ -72,15 +78,18 @@ class _BookingPageState extends State<BookingPage>
   CalendarFormat _calendarFormat = CalendarFormat.month;
 
   // ⭐ v3.1-B: Tab 1「我的」數據
-  Map<DateTime, List<Map<String, dynamic>>> _myTrainings = {}; // trainee_id = userId
+  Map<DateTime, List<Map<String, dynamic>>> _myTrainings =
+      {}; // trainee_id = userId
   List<Map<String, dynamic>> _selectedDayMyTrainings = [];
   Map<DateTime, List<AvailabilitySlotWithBooking>> _coachSlots = {}; // 教練可上課時段
   List<AvailabilitySlotWithBooking> _selectedDayCoachSlots = [];
 
   // ⭐ v3.1-B: Tab 2「教練」數據
-  Map<DateTime, List<Map<String, dynamic>>> _coachTrainings = {}; // creator_id = userId, trainee_id != userId, has appointment_id
+  Map<DateTime, List<Map<String, dynamic>>> _coachTrainings =
+      {}; // creator_id = userId, trainee_id != userId, has appointment_id
   List<Map<String, dynamic>> _selectedDayCoachTrainings = [];
-  Map<DateTime, List<ClientAvailabilityModel>> _clientAvailability = {}; // 學員可訓練時段
+  Map<DateTime, List<ClientAvailabilityModel>> _clientAvailability =
+      {}; // 學員可訓練時段
   List<ClientAvailabilityModel> _selectedDayClientAvailability = [];
 
   // 舊變數（保留相容性）
@@ -93,6 +102,11 @@ class _BookingPageState extends State<BookingPage>
   bool _showSelfPlans = true; // 顯示自主訓練計劃
   bool _showTrainerPlans = true; // 顯示教練創建的計劃
   bool _showSessionPlans = true; // ⭐ v3.1: 顯示上課（有 appointmentId）
+
+  // ⭐ v3.2: Coach Mark 引導
+  final GlobalKey _fabKey = GlobalKey();
+  bool _coachMarkShown = false;
+  bool _coachTabCoachMarkShown = false; // 教練 Tab 的引導
 
   @override
   void initState() {
@@ -152,6 +166,9 @@ class _BookingPageState extends State<BookingPage>
 
         // ⭐ v3.1-B: 載入所有必要數據
         await _loadAllData();
+
+        // ⭐ v3.2: 檢查 Coach Mark 引導
+        _checkCoachMark();
       }
     } catch (e) {
       // 確保頁面總是顯示，即使初始化完全失敗
@@ -195,23 +212,29 @@ class _BookingPageState extends State<BookingPage>
       final coaches =
           await _relationshipService.getClientCoachesWithRelationship(userId);
       _hasCoach = coaches.isNotEmpty;
-      _coachIds = coaches
-          .where((c) => c.user != null)
-          .map((c) => c.user!.uid)
-          .toList();
+      _coachIds =
+          coaches.where((c) => c.user != null).map((c) => c.user!.uid).toList();
       _coachNames = {
         for (var c in coaches.where((c) => c.user != null))
           c.user!.uid: c.user!.displayName ?? c.user?.email ?? '未知教練'
       };
 
-      debugPrint('[BOOKING PAGE] 🔍 用戶身份載入：isCoach=$_isCoach, hasCoach=$_hasCoach, coachIds=${_coachIds.length}個');
+      debugPrint(
+          '[BOOKING PAGE] 🔍 用戶身份載入：isCoach=$_isCoach, hasCoach=$_hasCoach, coachIds=${_coachIds.length}個');
 
       // 如果是教練，載入學員列表
       if (_isCoach) {
         final clients =
             await _relationshipService.getCoachClientsWithRelationship(userId);
-        _clientIds =
-            clients.where((c) => c.user != null).map((c) => c.user!.uid).toList();
+        _clientIds = clients
+            .where((c) => c.user != null)
+            .map((c) => c.user!.uid)
+            .toList();
+        // ⭐ v3.1.1: 建立學員名稱映射
+        _clientNames = {
+          for (var c in clients.where((c) => c.user != null))
+            c.user!.uid: c.user!.displayName ?? c.user?.email ?? '學員'
+        };
       }
 
       // 初始化 TabController（只有教練才有兩個 Tab）
@@ -235,12 +258,62 @@ class _BookingPageState extends State<BookingPage>
         _currentTabIndex = _tabController!.index;
         _updateSelectedDayData();
       });
+
+      // ⭐ v3.2: 切換到教練 Tab 時檢查是否需要顯示引導
+      if (_currentTabIndex == 1 && !_coachTabCoachMarkShown) {
+        _checkCoachTabCoachMark();
+      }
+    }
+  }
+
+  // ⭐ v3.2: 檢查教練 Tab 的 Coach Mark
+  Future<void> _checkCoachTabCoachMark() async {
+    if (_coachTabCoachMarkShown) return;
+
+    final onboardingService = serviceLocator<OnboardingService>();
+    final shouldShow = await onboardingService.shouldShowCoachMark(
+      OnboardingService.keyBookingPageCoachTab,
+    );
+
+    if (shouldShow && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _currentTabIndex == 1) {
+          _showCoachTabCoachMark();
+        }
+      });
+    }
+  }
+
+  // ⭐ v3.2: 顯示教練 Tab 的引導
+  void _showCoachTabCoachMark() {
+    if (_coachTabCoachMarkShown) return;
+    _coachTabCoachMarkShown = true;
+
+    final targets = <TargetFocus>[];
+
+    if (_fabKey.currentContext != null) {
+      targets.add(
+        CoachMarkHelper.createTarget(
+          key: _fabKey,
+          title: '教練視角',
+          description: '這裡查看你教的課和學員時段\n\n點擊「+」可以：\n• 幫學員新增訓練計劃\n• 設定可上課時間',
+          contentAlign: ContentAlign.top,
+        ),
+      );
+    }
+
+    if (targets.isNotEmpty) {
+      CoachMarkHelper.show(
+        context: context,
+        targets: targets,
+      );
     }
   }
 
   /// ⭐ v3.1-B: 載入所有必要數據
   Future<void> _loadAllData() async {
-    debugPrint('[BOOKING PAGE] 🔄 _loadAllData: hasCoach=$_hasCoach, coachIds=${_coachIds.length}個, isCoach=$_isCoach, clientIds=${_clientIds.length}個');
+    debugPrint(
+        '[BOOKING PAGE] 🔄 _loadAllData: hasCoach=$_hasCoach, coachIds=${_coachIds.length}個, isCoach=$_isCoach, clientIds=${_clientIds.length}個');
 
     final futures = <Future>[];
 
@@ -252,7 +325,8 @@ class _BookingPageState extends State<BookingPage>
       debugPrint('[BOOKING PAGE] ✅ 將載入 ${_coachIds.length} 位教練的可上課時段');
       futures.add(_loadCoachSlots());
     } else {
-      debugPrint('[BOOKING PAGE] ⚠️ 跳過載入教練時段：hasCoach=$_hasCoach, coachIds=${_coachIds.length}個');
+      debugPrint(
+          '[BOOKING PAGE] ⚠️ 跳過載入教練時段：hasCoach=$_hasCoach, coachIds=${_coachIds.length}個');
     }
 
     // 3. Tab 2：如果是教練，載入學員可訓練時段
@@ -260,7 +334,8 @@ class _BookingPageState extends State<BookingPage>
       debugPrint('[BOOKING PAGE] ✅ 將載入學員可訓練時段');
       futures.add(_loadClientAvailability());
     } else {
-      debugPrint('[BOOKING PAGE] ⚠️ 跳過載入學員時段：isCoach=$_isCoach, clientIds=${_clientIds.length}');
+      debugPrint(
+          '[BOOKING PAGE] ⚠️ 跳過載入學員時段：isCoach=$_isCoach, clientIds=${_clientIds.length}');
     }
 
     // 4. 載入預約數據（保留相容性）
@@ -300,7 +375,8 @@ class _BookingPageState extends State<BookingPage>
           final date = slot.slot.startTime;
           final day = DateTime(date.year, date.month, date.day);
 
-          debugPrint('[BOOKING PAGE]   🕐 [$coachName] ${slot.slot.startTime} - ${slot.slot.endTime}, isBooked=${slot.isBooked}');
+          debugPrint(
+              '[BOOKING PAGE]   🕐 [$coachName] ${slot.slot.startTime} - ${slot.slot.endTime}, isBooked=${slot.isBooked}');
 
           // 只顯示未被預約的時段
           if (slot.isBooked) {
@@ -326,10 +402,12 @@ class _BookingPageState extends State<BookingPage>
         });
       }
 
-      debugPrint('[BOOKING PAGE] ✅ 載入 ${_coachIds.length} 位教練時段完成，共 $totalSlots 個時段，可預約 ${slotsByDate.values.fold(0, (sum, list) => sum + list.length)} 個');
+      debugPrint(
+          '[BOOKING PAGE] ✅ 載入 ${_coachIds.length} 位教練時段完成，共 $totalSlots 個時段，可預約 ${slotsByDate.values.fold(0, (sum, list) => sum + list.length)} 個');
       // 顯示時段分佈
       for (var entry in slotsByDate.entries) {
-        debugPrint('[BOOKING PAGE]   📅 ${entry.key}: ${entry.value.length} 個時段');
+        debugPrint(
+            '[BOOKING PAGE]   📅 ${entry.key}: ${entry.value.length} 個時段');
       }
     } catch (e) {
       debugPrint('[BOOKING PAGE] ❌ 載入教練時段失敗: $e');
@@ -375,10 +453,72 @@ class _BookingPageState extends State<BookingPage>
       debugPrint('[BOOKING PAGE] ✅ 載入學員可訓練時段完成，共 ${allAvailability.length} 天');
       // 顯示時段分佈
       for (var entry in allAvailability.entries) {
-        debugPrint('[BOOKING PAGE]   📅 ${entry.key}: ${entry.value.length} 個時段');
+        debugPrint(
+            '[BOOKING PAGE]   📅 ${entry.key}: ${entry.value.length} 個時段');
       }
     } catch (e) {
       debugPrint('[BOOKING PAGE] ❌ 載入學員可訓練時段失敗: $e');
+    }
+  }
+
+  // ⭐ v3.2: 當頁面變為可見時檢查 Coach Mark
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 當頁面變為當前頁面時，檢查 Coach Mark
+    if (CurrentPageProvider.isCurrentPage(context, 1) && !_coachMarkShown) {
+      _checkCoachMark();
+    }
+  }
+
+  // ⭐ v3.2: 檢查是否顯示 Coach Mark
+  Future<void> _checkCoachMark() async {
+    if (_coachMarkShown) return;
+
+    // ⭐ 檢查是否是當前頁面（BookingPage 是 index 1）
+    if (!CurrentPageProvider.isCurrentPage(context, 1)) return;
+
+    final onboardingService = serviceLocator<OnboardingService>();
+    final shouldShow = await onboardingService.shouldShowCoachMark(
+      OnboardingService.keyBookingPage,
+    );
+
+    if (shouldShow && mounted) {
+      // 延遲顯示，確保 UI 已渲染
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && CurrentPageProvider.isCurrentPage(context, 1)) {
+          _showCoachMark();
+        }
+      });
+    }
+  }
+
+  // ⭐ v3.2: 顯示 Coach Mark 引導
+  void _showCoachMark() {
+    if (_coachMarkShown) return;
+    _coachMarkShown = true;
+
+    final targets = <TargetFocus>[];
+
+    // 高亮 FAB（主要操作入口）
+    if (_fabKey.currentContext != null) {
+      targets.add(
+        CoachMarkHelper.createTarget(
+          key: _fabKey,
+          title: '訓練行事曆',
+          description: _isCoach
+              ? '這裡顯示你的訓練計劃和教練可以上課的時段\n\n點擊「+」可以：\n• 新增訓練計劃\n• 設定可訓練時間\n\n切換「教練」Tab 可查看學員時段'
+              : '這裡顯示你的訓練計劃和教練可以上課的時段\n\n點擊「+」可以：\n• 新增訓練計劃\n• 設定可訓練時間',
+          contentAlign: ContentAlign.top,
+        ),
+      );
+    }
+
+    if (targets.isNotEmpty) {
+      CoachMarkHelper.show(
+        context: context,
+        targets: targets,
+      );
     }
   }
 
@@ -508,6 +648,40 @@ class _BookingPageState extends State<BookingPage>
 
       debugPrint('[BOOKING PAGE] ✅ 合併後共 ${plans.length} 筆訓練計劃');
 
+      // ⭐ v3.1 修復：查詢「只有預約沒有訓練計畫」的課程
+      // 收集已有訓練計畫的 appointment IDs
+      final plansWithAppointment = plans
+          .where((p) => p.appointmentId != null && p.appointmentId!.isNotEmpty)
+          .map((p) => p.appointmentId!)
+          .toSet();
+
+      // Tab 1「我的」：查詢學員的已確認預約
+      List<AppointmentModel> mySessionsWithoutPlan = [];
+      final myAppointments = await _appointmentService.getClientAppointments(
+        clientId: userId,
+        status: AppointmentStatus.confirmed,
+      );
+      mySessionsWithoutPlan = myAppointments
+          .where((a) => !plansWithAppointment.contains(a.id))
+          .toList();
+      debugPrint(
+          '[BOOKING PAGE] ✅ Tab1 沒有訓練計畫的預約：${mySessionsWithoutPlan.length} 筆');
+
+      // Tab 2「教練」：查詢教練的已確認預約
+      List<AppointmentModel> coachSessionsWithoutPlan = [];
+      if (_isCoach) {
+        final coachAppointments =
+            await _appointmentService.getCoachAppointments(
+          coachId: userId,
+          status: AppointmentStatus.confirmed,
+        );
+        coachSessionsWithoutPlan = coachAppointments
+            .where((a) => !plansWithAppointment.contains(a.id))
+            .toList();
+        debugPrint(
+            '[BOOKING PAGE] ✅ Tab2 沒有訓練計畫的預約：${coachSessionsWithoutPlan.length} 筆');
+      }
+
       // ⭐ v3.1-B: 分離 Tab 1 和 Tab 2 的訓練數據
       final myTrainings = <DateTime, List<Map<String, dynamic>>>{}; // Tab 1
       final coachTrainings = <DateTime, List<Map<String, dynamic>>>{}; // Tab 2
@@ -572,10 +746,79 @@ class _BookingPageState extends State<BookingPage>
             'creator=$creatorId, trainee=$traineeId, appointmentId=${plan.appointmentId}, '
             'planType=$planType, isCoachSession=$isCoachSession');
 
+        // ⭐ v3.1.1: 如果是上課類型，覆蓋標題為「XXX 的課程」格式
+        if (planType == 'session') {
+          // Tab 1「我的」視角（學員）：顯示教練名稱
+          if (traineeId == userId) {
+            final coachName = _coachNames[creatorId] ?? '教練';
+            planData['title'] = '與 $coachName 的課程';
+          }
+        }
+
         if (isCoachSession) {
+          // Tab 2「教練」視角：顯示學員名稱
+          final studentName = _clientNames[traineeId] ?? '學員';
+          planData['title'] = '$studentName 的課程';
+
           if (coachTrainings[day] == null) coachTrainings[day] = [];
           coachTrainings[day]!.add(planData);
         }
+      }
+
+      // ⭐ v3.1 修復：加入「只有預約沒有訓練計畫」的課程到 Tab 1
+      for (var appointment in mySessionsWithoutPlan) {
+        final day = DateTime(
+          appointment.startTime.year,
+          appointment.startTime.month,
+          appointment.startTime.day,
+        );
+
+        final coachName = _coachNames[appointment.coachId] ?? '教練';
+        final sessionData = _buildSessionOnlyData(
+          appointment: appointment,
+          displayName: coachName,
+          isCoachView: false,
+        );
+
+        if (myTrainings[day] == null) myTrainings[day] = [];
+        myTrainings[day]!.add(sessionData);
+
+        // 也加入 allTrainings
+        if (allTrainings[day] == null) allTrainings[day] = [];
+        allTrainings[day]!.add(sessionData);
+      }
+
+      // ⭐ v3.1 修復：加入「只有預約沒有訓練計畫」的課程到 Tab 2
+      for (var appointment in coachSessionsWithoutPlan) {
+        final day = DateTime(
+          appointment.startTime.year,
+          appointment.startTime.month,
+          appointment.startTime.day,
+        );
+
+        // 獲取學員名稱
+        String studentName = '學員';
+        try {
+          final userService = serviceLocator<IUserService>();
+          final profile =
+              await userService.getUserProfile(appointment.clientId);
+          studentName = profile?.displayName ?? profile?.email ?? '學員';
+        } catch (e) {
+          debugPrint('[BOOKING PAGE] 載入學員資料失敗: ${appointment.clientId}');
+        }
+
+        final sessionData = _buildSessionOnlyData(
+          appointment: appointment,
+          displayName: studentName,
+          isCoachView: true,
+        );
+
+        if (coachTrainings[day] == null) coachTrainings[day] = [];
+        coachTrainings[day]!.add(sessionData);
+
+        // 也加入 allTrainings
+        if (allTrainings[day] == null) allTrainings[day] = [];
+        allTrainings[day]!.add(sessionData);
       }
 
       if (!mounted) return;
@@ -599,6 +842,38 @@ class _BookingPageState extends State<BookingPage>
 
       debugPrint('[BOOKING PAGE] 載入訓練計劃失敗: $e');
     }
+  }
+
+  /// ⭐ v3.1 修復：構建「只有預約沒有訓練計畫」的課程數據
+  Map<String, dynamic> _buildSessionOnlyData({
+    required AppointmentModel appointment,
+    required String displayName,
+    required bool isCoachView,
+  }) {
+    final timeStr =
+        '${_formatTimeOnly(appointment.startTime)} - ${_formatTimeOnly(appointment.endTime)}';
+
+    return {
+      'id': 'session_${appointment.id}', // 使用 session_ 前綴區分
+      'title': isCoachView ? '$displayName 的課程' : '與 $displayName 的課程',
+      'description': '教練尚未建立訓練計畫',
+      'scheduled_date': DateTimeUtils.formatToUtcIso(appointment.startTime),
+      'trainingEndTime': DateTimeUtils.formatToUtcIso(appointment.endTime),
+      'exercises': <Map<String, dynamic>>[],
+      'completed': false,
+      'planType': 'session',
+      'trainee_id': appointment.clientId,
+      'creator_id': appointment.coachId,
+      'appointment_id': appointment.id,
+      'dataType': 'session_only', // 標記為「只有預約」
+      'isCoachView': isCoachView,
+      'time_display': timeStr,
+    };
+  }
+
+  /// 格式化時間（只顯示時:分）
+  String _formatTimeOnly(DateTime time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   // ⭐ v3.1-B: 更新選定日數據（根據當前 Tab）
@@ -637,12 +912,16 @@ class _BookingPageState extends State<BookingPage>
     debugPrint('[BOOKING PAGE] 📅 更新選定日數據：$selectedDay');
     debugPrint('[BOOKING PAGE]   - 我的訓練：${_selectedDayMyTrainings.length}');
     debugPrint('[BOOKING PAGE]   - 教練時段：${_selectedDayCoachSlots.length}');
-    debugPrint('[BOOKING PAGE]   - 教練Tab訓練：${_selectedDayCoachTrainings.length}');
-    debugPrint('[BOOKING PAGE]   - 學員可訓練：${_selectedDayClientAvailability.length}');
+    debugPrint(
+        '[BOOKING PAGE]   - 教練Tab訓練：${_selectedDayCoachTrainings.length}');
+    debugPrint(
+        '[BOOKING PAGE]   - 學員可訓練：${_selectedDayClientAvailability.length}');
     // 檢查 coachSlots 的 keys
     if (_coachSlots.isNotEmpty) {
-      debugPrint('[BOOKING PAGE]   - coachSlots keys: ${_coachSlots.keys.toList()}');
-      debugPrint('[BOOKING PAGE]   - 查找 key: $selectedDay, 找到: ${_coachSlots.containsKey(selectedDay)}');
+      debugPrint(
+          '[BOOKING PAGE]   - coachSlots keys: ${_coachSlots.keys.toList()}');
+      debugPrint(
+          '[BOOKING PAGE]   - 查找 key: $selectedDay, 找到: ${_coachSlots.containsKey(selectedDay)}');
     }
   }
 
@@ -742,24 +1021,50 @@ class _BookingPageState extends State<BookingPage>
     }
   }
 
-  // ⭐ v3.1-B: 設定可訓練時間
-  void _navigateToTrainableTime() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ClientAvailabilityPage(),
+  // ⭐ v3.1.1: 設定可訓練時間（直接彈出對話框）
+  Future<void> _setTrainableTime() async {
+    final result = await showDialog<ClientAvailabilityModel>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AvailabilitySlotEditorDialog(
+        selectedDate: _selectedDay, // 使用當前選中的日期
       ),
     );
+
+    if (result != null && mounted) {
+      try {
+        // 保存到資料庫
+        await _clientAvailabilityService.createAvailability(result);
+        NotificationUtils.showSuccess(context, '可訓練時段已新增');
+        // 重新載入數據
+        await _loadAllData();
+      } catch (e) {
+        if (mounted) {
+          NotificationUtils.showError(context, '新增失敗: $e');
+        }
+      }
+    }
   }
 
-  // ⭐ v3.1-B: 設定可上課時間
-  void _navigateToAvailableTime() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CoachSlotsManagementPage(),
+  // ⭐ v3.1.1: 設定可上課時間（直接彈出對話框）
+  Future<void> _setAvailableTime() async {
+    final userId = _authController.user?.uid;
+    if (userId == null) return;
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => QuickAddSlotDialog(
+        coachId: userId,
+        selectedDate: _selectedDay, // 使用當前選中的日期
       ),
     );
+
+    if (result == true && mounted) {
+      NotificationUtils.showSuccess(context, '可上課時段已新增');
+      // 創建成功後重新載入數據
+      await _loadAllData();
+    }
   }
 
   // ⭐ v3.1-B: 幫學員新增訓練（TODO: 需要選擇學員）
@@ -852,15 +1157,26 @@ class _BookingPageState extends State<BookingPage>
       final userId = _authController.user?.uid;
       final isCoachMode = appointment.coachId == userId;
 
-      // 獲取學員名稱
-      String clientName = '學員';
+      // ⭐ v3.1.1: 根據視角獲取對應名稱
+      // 教練視角：顯示學員名稱
+      // 學員視角：顯示教練名稱
+      String displayName = '';
       if (isCoachMode) {
-        // 從學員列表中找名稱
-        final clients =
-            await _relationshipService.getCoachClientsWithRelationship(userId!);
-        final client =
-            clients.where((c) => c.user?.uid == appointment.clientId).firstOrNull;
-        clientName = client?.user?.displayName ?? client?.user?.email ?? '學員';
+        // 教練視角：從 _clientNames 或重新查詢
+        displayName = _clientNames[appointment.clientId] ?? '學員';
+        if (displayName == '學員') {
+          // 如果快取中沒有，嘗試重新查詢
+          final clients = await _relationshipService
+              .getCoachClientsWithRelationship(userId!);
+          final client = clients
+              .where((c) => c.user?.uid == appointment.clientId)
+              .firstOrNull;
+          displayName =
+              client?.user?.displayName ?? client?.user?.email ?? '學員';
+        }
+      } else {
+        // 學員視角：從 _coachNames 獲取教練名稱
+        displayName = _coachNames[appointment.coachId] ?? '教練';
       }
 
       if (!mounted) return;
@@ -871,7 +1187,7 @@ class _BookingPageState extends State<BookingPage>
           builder: (context) => SessionModePage(
             appointmentId: appointmentId,
             clientId: appointment.clientId,
-            clientName: clientName,
+            clientName: displayName, // ⭐ v3.1.1: 使用正確的名稱
             sessionStartTime: appointment.startTime,
             sessionEndTime: appointment.endTime,
             isCoachMode: isCoachMode,
@@ -1041,14 +1357,17 @@ class _BookingPageState extends State<BookingPage>
                   ],
                 )
               : _buildCalendarContent(isCoachTab: false),
-      // ⭐ v3.1-B: SpeedDial（根據身份和 Tab 顯示不同選項）
+      // ⭐ v3.1.1: SpeedDial（根據身份和 Tab 顯示不同選項）
       floatingActionButton: BookingSpeedDial(
+        key: _fabKey, // ⭐ v3.2: Coach Mark 引導用
         onAddTraining: _createTrainingPlan,
-        onSetTrainableTime: _hasCoach ? _navigateToTrainableTime : null,
-        onAddTrainingForStudent:
-            _isCoach && _currentTabIndex == 1 ? _createTrainingForStudent : null,
-        onSetAvailableTime:
-            _isCoach && _currentTabIndex == 1 ? _navigateToAvailableTime : null,
+        onSetTrainableTime: _hasCoach ? _setTrainableTime : null, // ⭐ 直接彈對話框
+        onAddTrainingForStudent: _isCoach && _currentTabIndex == 1
+            ? _createTrainingForStudent
+            : null,
+        onSetAvailableTime: _isCoach && _currentTabIndex == 1
+            ? _setAvailableTime
+            : null, // ⭐ 直接彈對話框
         showTrainableTime: _hasCoach && _currentTabIndex == 0,
         isCoachTab: _isCoach && _currentTabIndex == 1,
       ),
@@ -1084,6 +1403,7 @@ class _BookingPageState extends State<BookingPage>
         selectedDayClientAvailability:
             isCoachTab ? _selectedDayClientAvailability : null,
         coachNames: _coachNames,
+        clientNames: _clientNames, // ⭐ v3.1.1: 學員名稱映射
         onDaySelected: (selectedDay, focusedDay) {
           setState(() {
             _selectedDay = selectedDay;

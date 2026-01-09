@@ -12,51 +12,96 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  late final IAuthController _authController;
-
   @override
   void initState() {
     super.initState();
 
-    // ⚡ 超級優化：立即嘗試導航，不等待 3 秒
+    // ⚡ v3.1.1 超級優化：立即嘗試導航
     _navigateToNextScreen();
   }
 
-  /// ⚡ 立即導航到下一個畫面（等待服務就緒）
+  /// ⚡ v3.1.1: 積極導航策略
+  ///
+  /// 1. 立即嘗試取得 AuthController（通常已註冊）
+  /// 2. 如果成功，立即跳轉（不等待其他服務）
+  /// 3. 如果失敗，等待服務就緒後重試（最多 1.5 秒）
   Future<void> _navigateToNextScreen() async {
-    // 等待一幀渲染（確保 Splash 畫面顯示）
-    await Future.delayed(const Duration(milliseconds: 100));
+    // 等待一幀渲染（確保原生 Splash 過渡自然）
+    await Future.delayed(const Duration(milliseconds: 50));
 
-    // ⚡ 等待服務定位器初始化（最多 2 秒）
-    int retries = 0;
-    while (retries < 20) {
-      try {
-        _authController = serviceLocator<IAuthController>();
-        break;
-      } catch (e) {
-        await Future.delayed(const Duration(milliseconds: 100));
-        retries++;
-      }
+    if (!mounted) return;
+
+    // ⚡ 第一次嘗試：立即導航（如果 Auth 已就緒）
+    if (_tryNavigate()) {
+      debugPrint('[SPLASH] ⚡ 立即導航成功');
+      return;
+    }
+
+    // ⚡ 等待服務就緒（縮短超時到 1.5 秒）
+    debugPrint('[SPLASH] ⏳ 等待服務就緒...');
+    try {
+      await waitForServiceReady().timeout(
+        const Duration(milliseconds: 1500),
+        onTimeout: () {
+          debugPrint('[SPLASH] ⚠️ 服務就緒超時，嘗試繼續');
+        },
+      );
+    } catch (e) {
+      debugPrint('[SPLASH] ⚠️ 等待服務就緒失敗: $e');
     }
 
     if (!mounted) return;
 
-    // 檢查登入狀態並導航
+    // ⚡ 第二次嘗試：服務應該已就緒
+    if (_tryNavigate()) {
+      debugPrint('[SPLASH] ✅ 服務就緒後導航成功');
+      return;
+    }
+
+    // 最終失敗，預設進入登入頁
+    debugPrint('[SPLASH] ⚠️ 導航失敗，預設進入登入頁');
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const LoginPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
+  }
+
+  /// 嘗試導航到下一個畫面
+  ///
+  /// 返回 true 表示成功導航，false 表示需要重試
+  bool _tryNavigate() {
     try {
-      if (_authController.isLoggedIn) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainHomePage()),
-        );
-      } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-        );
-      }
-    } catch (e) {
-      // 最終失敗，預設進入登入頁
+      final authController = serviceLocator<IAuthController>();
+      final targetPage = authController.isLoggedIn
+          ? const MainHomePage()
+          : const LoginPage();
+
+      // ⚡ v3.1.1: 使用淡入淡出動畫，避免卡頓感
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginPage()),
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => targetPage,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
       );
+      return true;
+    } catch (e) {
+      debugPrint('[SPLASH] ⚠️ 取得 AuthController 失敗: $e');
+      return false;
     }
   }
 

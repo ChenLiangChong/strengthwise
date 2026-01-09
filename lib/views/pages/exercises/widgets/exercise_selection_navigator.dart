@@ -9,9 +9,14 @@ import 'widgets/selection_breadcrumb.dart';
 import 'widgets/selection_list.dart';
 import 'widgets/exercise_list_view.dart';
 
-/// 5 層分類導航組件（用於選擇有訓練記錄的動作）
+/// 3 層分類導航組件（用於選擇有訓練記錄的動作）
 ///
-/// 只顯示使用者有訓練記錄的動作，支持收藏功能
+/// 層級結構：
+/// - 第 1 層：訓練類型（心肺、活動度、阻力訓練、自訂）
+/// - 第 2 層：身體部位（bodyPart）
+/// - 第 3 層：動作列表
+///
+/// 優化：一次性批量查詢所有數據，後續用客戶端過濾
 class ExerciseSelectionNavigator extends StatefulWidget {
   final String userId;
   final Function(ExerciseWithRecord exercise)? onExerciseSelected;
@@ -36,16 +41,14 @@ class _ExerciseSelectionNavigatorState
   final IStatisticsService _statisticsService =
       serviceLocator<IStatisticsService>();
 
-  int _currentStep = 0; // 0=訓練類型, 1=身體部位, 2=特定肌群, 3=器材類別, 4=動作列表
+  // 層級：0=訓練類型, 1=身體部位, 2=動作列表
+  int _currentStep = 0;
 
   String? _selectedTrainingType;
   String? _selectedBodyPart;
-  String? _selectedSpecificMuscle;
-  String? _selectedEquipmentCategory;
 
-  List<String> _trainingTypes = [];
-  List<String> _bodyParts = [];
-  List<ExerciseWithRecord> _exercises = [];
+  // ⭐ 一次性載入的完整數據（避免重複查詢）
+  List<ExerciseWithRecord> _allExercises = [];
 
   Set<String> _favoriteIds = {};
   bool _isLoading = false;
@@ -53,80 +56,64 @@ class _ExerciseSelectionNavigatorState
   @override
   void initState() {
     super.initState();
-    _loadFavorites();
-    _loadTrainingTypes();
+    _loadAllData();
   }
 
   @override
   void didUpdateWidget(ExerciseSelectionNavigator oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 當時間範圍改變時，重新載入當前層級的數據
+    // 當時間範圍改變時，重新載入所有數據
     if (oldWidget.timeRange != widget.timeRange) {
-      _reloadCurrentStep();
+      _resetAndReload();
     }
   }
 
-  /// 重新載入當前層級的數據
-  void _reloadCurrentStep() {
-    switch (_currentStep) {
-      case 0: // 訓練類型
-        _loadTrainingTypes();
-        break;
-      case 1: // 身體部位
-        _loadBodyParts();
-        break;
-      case 4: // 動作列表
-        _loadExercises();
-        break;
-    }
-  }
-
-  /// 載入收藏列表
-  Future<void> _loadFavorites() async {
-    try {
-      final ids = await _favoritesService.getFavoriteExerciseIds(widget.userId);
-      if (mounted) {
-        setState(() => _favoriteIds = ids.toSet());
-      }
-    } catch (e) {
-      // 忽略錯誤
-    }
-  }
-
-  /// 第1層：載入訓練類型
-  Future<void> _loadTrainingTypes() async {
+  /// 重置選擇並重新載入
+  void _resetAndReload() {
     setState(() {
-      _isLoading = true;
       _currentStep = 0;
+      _selectedTrainingType = null;
+      _selectedBodyPart = null;
     });
+    _loadAllData();
+  }
+
+  /// ⭐ 一次性載入所有數據（收藏 + 動作列表）
+  Future<void> _loadAllData() async {
+    setState(() => _isLoading = true);
 
     try {
-      // 獲取所有有記錄的動作
-      final exercises = await _statisticsService.getExercisesWithRecords(
-        widget.userId,
-        timeRange: widget.timeRange,
-      );
+      // 並行載入收藏和動作數據
+      final results = await Future.wait([
+        _favoritesService.getFavoriteExerciseIds(widget.userId),
+        _statisticsService.getExercisesWithRecords(
+          widget.userId,
+          timeRange: widget.timeRange,
+        ),
+      ]);
 
-      // 從動作中提取訓練類型（去重）
-      final typesSet = <String>{};
+      final favoriteIds = (results[0] as List<String>).toSet();
+      final exercises = results[1] as List<ExerciseWithRecord>;
 
-      for (var exercise in exercises) {
-        if (exercise.trainingType.isNotEmpty) {
-          typesSet.add(exercise.trainingType);
-        }
-      }
-
-      // 將訓練類型轉為列表並排序
-      final typesList = typesSet.toList()..sort();
-
-      // 始終添加「自訂」選項（方便用戶查看所有自訂動作）
-      if (!typesList.contains('自訂')) {
-        typesList.add('自訂');
-      }
+      // 標記收藏狀態
+      final exercisesWithFavorites = exercises.map((e) {
+        return ExerciseWithRecord(
+          exerciseId: e.exerciseId,
+          exerciseName: e.exerciseName,
+          bodyPart: e.bodyPart,
+          trainingType: e.trainingType,
+          lastTrainingDate: e.lastTrainingDate,
+          maxWeight: e.maxWeight,
+          totalSets: e.totalSets,
+          isFavorite: favoriteIds.contains(e.exerciseId),
+          isCustom: e.isCustom,
+        );
+      }).toList();
 
       if (mounted) {
         setState(() {
-          _trainingTypes = typesList;
+          _favoriteIds = favoriteIds;
+          _allExercises = exercisesWithFavorites;
           _isLoading = false;
         });
       }
@@ -138,83 +125,69 @@ class _ExerciseSelectionNavigatorState
     }
   }
 
-  /// 第2層：載入身體部位
-  Future<void> _loadBodyParts() async {
-    setState(() {
-      _isLoading = true;
-      _currentStep = 1;
-    });
+  /// 獲取第 1 層：訓練類型列表（客戶端過濾）
+  List<String> _getTrainingTypes() {
+    final typesSet = <String>{};
+    bool hasCustomExercises = false;
 
-    try {
-      final exercises = await _statisticsService.getExercisesWithRecords(
-        widget.userId,
-        trainingType: _selectedTrainingType,
-        timeRange: widget.timeRange,
-      );
-
-      final partsSet = <String>{};
-      for (var exercise in exercises) {
-        if (exercise.bodyPart.isNotEmpty) {
-          partsSet.add(exercise.bodyPart);
+    for (var exercise in _allExercises) {
+      if (exercise.isCustom) {
+        // 自訂動作歸入「自訂」分類
+        hasCustomExercises = true;
+      } else {
+        // 非自訂動作按 trainingType 分類
+        if (exercise.trainingType.isNotEmpty) {
+          typesSet.add(exercise.trainingType);
         }
       }
-
-      if (mounted) {
-        setState(() {
-          _bodyParts = partsSet.toList()..sort();
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
     }
+
+    final typesList = typesSet.toList()..sort();
+    if (hasCustomExercises) {
+      typesList.add('自訂');
+    }
+
+    return typesList;
   }
 
-  /// 第5層：載入動作列表
-  Future<void> _loadExercises() async {
-    setState(() {
-      _isLoading = true;
-      _currentStep = 4;
-    });
+  /// 獲取第 2 層：身體部位列表（客戶端過濾）
+  List<String> _getBodyParts() {
+    final filtered = _filterByTrainingType(_allExercises, _selectedTrainingType);
+    final partsSet = <String>{};
 
-    try {
-      final exercises = await _statisticsService.getExercisesWithRecords(
-        widget.userId,
-        trainingType: _selectedTrainingType,
-        bodyPart: _selectedBodyPart,
-        specificMuscle: _selectedSpecificMuscle,
-        equipmentCategory: _selectedEquipmentCategory,
-        timeRange: widget.timeRange,
-      );
-
-      // 標記收藏狀態
-      final exercisesWithFavorites = exercises.map((exercise) {
-        return ExerciseWithRecord(
-          exerciseId: exercise.exerciseId,
-          exerciseName: exercise.exerciseName,
-          bodyPart: exercise.bodyPart,
-          trainingType: exercise.trainingType,
-          lastTrainingDate: exercise.lastTrainingDate,
-          maxWeight: exercise.maxWeight,
-          totalSets: exercise.totalSets,
-          isFavorite: _favoriteIds.contains(exercise.exerciseId),
-          isCustom: exercise.isCustom,
-        );
-      }).toList();
-
-      if (mounted) {
-        setState(() {
-          _exercises = exercisesWithFavorites;
-          _isLoading = false;
-        });
+    for (var exercise in filtered) {
+      if (exercise.bodyPart.isNotEmpty) {
+        partsSet.add(exercise.bodyPart);
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        NotificationUtils.showError(context, '載入動作失敗: $e');
-      }
+    }
+
+    return partsSet.toList()..sort();
+  }
+
+  /// 獲取第 3 層：動作列表（客戶端過濾）
+  List<ExerciseWithRecord> _getExercises() {
+    var filtered = _filterByTrainingType(_allExercises, _selectedTrainingType);
+
+    if (_selectedBodyPart != null) {
+      filtered = filtered.where((e) => e.bodyPart == _selectedBodyPart).toList();
+    }
+
+    return filtered;
+  }
+
+  /// 按訓練類型過濾（與 Service 層邏輯一致）
+  List<ExerciseWithRecord> _filterByTrainingType(
+    List<ExerciseWithRecord> exercises,
+    String? trainingType,
+  ) {
+    if (trainingType == null) return exercises;
+
+    if (trainingType == '自訂') {
+      return exercises.where((e) => e.isCustom).toList();
+    } else {
+      return exercises
+          .where((e) => e.trainingType == trainingType && !e.isCustom)
+          .toList();
     }
   }
 
@@ -255,7 +228,7 @@ class _ExerciseSelectionNavigatorState
   /// 更新動作的收藏狀態
   void _updateExerciseFavoriteStatus(String exerciseId) {
     setState(() {
-      _exercises = _exercises.map((e) {
+      _allExercises = _allExercises.map((e) {
         if (e.exerciseId == exerciseId) {
           return ExerciseWithRecord(
             exerciseId: e.exerciseId,
@@ -266,6 +239,7 @@ class _ExerciseSelectionNavigatorState
             maxWeight: e.maxWeight,
             totalSets: e.totalSets,
             isFavorite: _favoriteIds.contains(e.exerciseId),
+            isCustom: e.isCustom,
           );
         }
         return e;
@@ -277,19 +251,13 @@ class _ExerciseSelectionNavigatorState
   void _navigateBack() {
     setState(() {
       switch (_currentStep) {
-        case 1:
+        case 1: // 從身體部位返回訓練類型
           _selectedTrainingType = null;
           _currentStep = 0;
           break;
-        case 2:
+        case 2: // 從動作列表返回身體部位
           _selectedBodyPart = null;
           _currentStep = 1;
-          _loadBodyParts();
-          break;
-        case 4:
-          _selectedBodyPart = null;
-          _currentStep = 1;
-          _loadBodyParts();
           break;
       }
     });
@@ -329,32 +297,42 @@ class _ExerciseSelectionNavigatorState
   /// 建立當前步驟的 UI
   Widget _buildCurrentStep() {
     switch (_currentStep) {
-      case 0:
+      case 0: // 第 1 層：訓練類型
+        final trainingTypes = _getTrainingTypes();
         return SelectionList(
           title: '💡 提示',
           subtitle: '選擇你想追蹤的動作，查看力量進步！\n你可以標記常用動作為「收藏」快速查看',
-          items: _trainingTypes,
+          items: trainingTypes,
           onSelect: (value) {
-            setState(() => _selectedTrainingType = value);
-            _loadBodyParts();
+            setState(() {
+              _selectedTrainingType = value;
+              _currentStep = 1;
+            });
           },
         );
-      case 1:
+
+      case 1: // 第 2 層：身體部位
+        final bodyParts = _getBodyParts();
         return SelectionList(
           title: '選擇身體部位',
           subtitle: '已選擇：$_selectedTrainingType',
-          items: _bodyParts,
+          items: bodyParts,
           onSelect: (value) {
-            setState(() => _selectedBodyPart = value);
-            _loadExercises();
+            setState(() {
+              _selectedBodyPart = value;
+              _currentStep = 2;
+            });
           },
         );
-      case 4:
+
+      case 2: // 第 3 層：動作列表
+        final exercises = _getExercises();
         return ExerciseListView(
-          exercises: _exercises,
+          exercises: exercises,
           onExerciseSelected: widget.onExerciseSelected,
           onToggleFavorite: _toggleFavorite,
         );
+
       default:
         return const Center(child: Text('開發中...'));
     }

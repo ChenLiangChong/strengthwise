@@ -6,13 +6,17 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'views/pages/startup/splash_screen.dart';
 import 'services/service_locator.dart';
 import 'services/core/supabase_service.dart';
 import 'services/core/deep_link_service.dart';
 import 'services/core/theme_service.dart';
+import 'services/core/network_status_service.dart';
+import 'views/widgets/offline_banner.dart';
 import 'services/interfaces/i_auth_service.dart';
 import 'services/interfaces/i_notification_service.dart';
+import 'services/interfaces/i_statistics_service.dart';
 import 'controllers/theme_controller.dart';
 import 'themes/app_theme.dart';
 
@@ -79,8 +83,11 @@ Future<void> _quickInitialization() async {
   await initializeDateFormatting('en_US', null);
   Intl.defaultLocale = 'zh_TW';
 
-  // ⚡ Supabase 必須在這裡初始化（AuthService 依賴它）
-  await SupabaseService.initialize();
+  // ⚡ 並行初始化 Supabase + Hive（兩者互不依賴）
+  await Future.wait([
+    SupabaseService.initialize(),
+    _initializeHive(),
+  ]);
 
   // ⚡ 初始化 Deep Link 服務（處理 Email 確認連結）
   await DeepLinkService.instance.initialize();
@@ -90,6 +97,38 @@ Future<void> _quickInitialization() async {
 
   // ⚡ 只註冊服務（不初始化，延遲到實際使用時）
   await setupServiceLocator(lazyInit: true);
+}
+
+/// ⚡ 初始化 Hive 並提前打開所有 Box
+///
+/// 讓 LocalCacheService 首次訪問時 Box 已經開啟，不需等待
+Future<void> _initializeHive() async {
+  try {
+    final startTime = DateTime.now();
+
+    // 初始化 Hive
+    await Hive.initFlutter();
+
+    // ⚡ 並行打開所有 Box（只開不讀，極快）
+    await Future.wait([
+      Hive.openBox('user_cache'),
+      Hive.openBox('relationship_cache'),
+      Hive.openBox('statistics_cache'),
+      Hive.openBox('workout_plan_cache'),
+      Hive.openBox('exercise_cache'),
+      Hive.openBox('onboarding_status'), // ⭐ v3.2: Onboarding 狀態
+    ]);
+
+    final duration = DateTime.now().difference(startTime);
+    if (kDebugMode) {
+      print('[MAIN] ✅ Hive 初始化完成（${duration.inMilliseconds}ms）');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('[MAIN] ⚠️ Hive 初始化失敗: $e');
+    }
+    // Hive 失敗不影響 App 啟動，降級為無本地快取模式
+  }
 }
 
 /// ⚡ 背景初始化（不阻塞 UI）
@@ -103,10 +142,78 @@ void _backgroundInitialization() {
       await setupServiceLocator(lazyInit: false);
       print('[MAIN] ✅ 背景服務初始化完成');
 
+      // ⚡ 標記服務就緒（通知 SplashScreen）
+      markServiceReady();
+
+      // ⚡ 提前預熱統計快取（不阻塞，背景執行）
+      _warmupStatisticsCache();
+
+      // ⚡ 預熱 GoogleFonts（避免首次使用時下載延遲）
+      _warmupGoogleFonts();
+
       // ⚡ FCM 推播初始化（v3.0-C）
       await _initializeFCM();
+
+      // ⚡ v3.1.1: 網路狀態服務初始化
+      await NetworkStatusService().initialize();
     } catch (e) {
       print('[MAIN] ⚠️ 背景服務初始化失敗: $e');
+      // 即使初始化失敗，也標記就緒讓 App 繼續（降級模式）
+      markServiceReady();
+    }
+  });
+}
+
+/// ⚡ 預熱 GoogleFonts
+///
+/// 在背景預載入 Inter 字體，避免首次渲染時閃爍
+void _warmupGoogleFonts() {
+  try {
+    // 預熱 Inter 字體（App 主字體）
+    GoogleFonts.pendingFonts([
+      GoogleFonts.inter(),
+    ]);
+
+    if (kDebugMode) {
+      print('[MAIN] ✅ GoogleFonts 預熱完成');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('[MAIN] ⚠️ GoogleFonts 預熱失敗: $e');
+    }
+  }
+}
+
+/// ⚡ 提前預熱統計快取
+///
+/// 從 Hive 載入統計數據到記憶體
+/// 讓用戶進入統計頁面時不需等待
+void _warmupStatisticsCache() {
+  // 不 await，讓它在背景執行
+  Future.microtask(() async {
+    try {
+      final authService = serviceLocator<IAuthService>();
+      if (!authService.isUserLoggedIn()) {
+        if (kDebugMode) {
+          print('[MAIN] ⏭️ 統計預熱跳過（用戶未登入）');
+        }
+        return;
+      }
+
+      final user = authService.getCurrentUser();
+      final userId = user?['uid'] as String?;
+      if (userId == null) return;
+
+      final statisticsService = serviceLocator<IStatisticsService>();
+      await statisticsService.warmupFromLocalCache(userId);
+
+      if (kDebugMode) {
+        print('[MAIN] ✅ 統計快取預熱完成');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[MAIN] ⚠️ 統計快取預熱失敗: $e');
+      }
     }
   });
 }
@@ -216,7 +323,7 @@ class MyApp extends StatelessWidget {
                 : ThemeMode.light, // 默認使用淺色主題
 
             // ========================================
-            // 無障礙字體縮放限制
+            // 無障礙字體縮放限制 + 全局離線提示
             // ========================================
             // 限制系統字體縮放範圍（0.85x - 1.35x）
             // 既尊重無障礙需求，又防止極端縮放破壞佈局
@@ -228,7 +335,8 @@ class MyApp extends StatelessWidget {
               );
               return MediaQuery(
                 data: mediaQuery.copyWith(textScaler: clampedTextScaler),
-                child: child!,
+                // ⚡ v3.1.1: 全局離線提示 Banner
+                child: OfflineBanner(child: child!),
               );
             },
 

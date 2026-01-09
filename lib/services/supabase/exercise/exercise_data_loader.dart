@@ -1,5 +1,19 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// ⭐ 定義 exercises 表的標準查詢欄位（避免 SELECT *）
+const String _kExerciseSelectFields = '''
+  id, name, name_en, body_parts, training_type, equipment, 
+  level1, level2, level3, level4, level5, action_name, 
+  description, image_url, video_url, body_part, 
+  specific_muscle, equipment_category, equipment_subcategory, created_at
+''';
+
+/// ⭐ 定義 custom_exercises 表的標準查詢欄位
+const String _kCustomExerciseSelectFields = '''
+  id, name, body_part, training_type, equipment, description, 
+  user_id, created_at, updated_at
+''';
+
 /// 動作資料載入器
 class ExerciseDataLoader {
   final SupabaseClient _client;
@@ -94,7 +108,7 @@ class ExerciseDataLoader {
 
   /// 根據過濾條件載入動作
   Future<dynamic> loadExercisesByFilters(Map<String, String> filters) async {
-    var query = _client.from('exercises').select();
+    var query = _client.from('exercises').select(_kExerciseSelectFields);
 
     // 新增所有有效的過濾條件
     for (final entry in filters.entries) {
@@ -123,7 +137,7 @@ class ExerciseDataLoader {
   Future<Map<String, dynamic>?> loadExerciseById(String exerciseId) async {
     final response = await _client
         .from('exercises')
-        .select()
+        .select(_kExerciseSelectFields)
         .eq('id', exerciseId)
         .maybeSingle()
         .timeout(
@@ -138,7 +152,7 @@ class ExerciseDataLoader {
   Future<List<dynamic>> loadExercisesByIds(List<String> exerciseIds) async {
     final response = await _client
         .from('exercises')
-        .select()
+        .select(_kExerciseSelectFields)
         .inFilter('id', exerciseIds)
         .timeout(
           Duration(seconds: _queryTimeout),
@@ -149,10 +163,11 @@ class ExerciseDataLoader {
   }
 
   /// 載入自訂動作
-  Future<Map<String, dynamic>?> loadCustomExerciseById(String exerciseId) async {
+  Future<Map<String, dynamic>?> loadCustomExerciseById(
+      String exerciseId) async {
     final response = await _client
         .from('custom_exercises')
-        .select()
+        .select(_kCustomExerciseSelectFields)
         .eq('id', exerciseId)
         .maybeSingle()
         .timeout(
@@ -164,10 +179,11 @@ class ExerciseDataLoader {
   }
 
   /// 批量載入自訂動作
-  Future<List<dynamic>> loadCustomExercisesByIds(List<String> exerciseIds) async {
+  Future<List<dynamic>> loadCustomExercisesByIds(
+      List<String> exerciseIds) async {
     final response = await _client
         .from('custom_exercises')
-        .select()
+        .select(_kCustomExerciseSelectFields)
         .inFilter('id', exerciseIds)
         .timeout(
           Duration(seconds: _queryTimeout),
@@ -178,7 +194,8 @@ class ExerciseDataLoader {
   }
 
   /// 全文搜尋（使用 pgroonga）
-  Future<List<dynamic>> searchExercisesWithPgroonga(String query, int limit) async {
+  Future<List<dynamic>> searchExercisesWithPgroonga(
+      String query, int limit) async {
     final response = await _client.rpc(
       'search_exercises_pgroonga',
       params: {
@@ -197,7 +214,7 @@ class ExerciseDataLoader {
   Future<List<dynamic>> fallbackSearch(String query, int limit) async {
     final response = await _client
         .from('exercises')
-        .select()
+        .select(_kExerciseSelectFields)
         .or('name.ilike.%$query%,name_en.ilike.%$query%')
         .limit(limit)
         .timeout(
@@ -210,10 +227,11 @@ class ExerciseDataLoader {
 
   /// 載入所有動作（預載入用）
   Future<List<dynamic>> loadAllExercises() async {
-    final response = await _client.from('exercises').select().timeout(
-          Duration(seconds: 30),
-          onTimeout: () => throw TimeoutException('載入所有動作超時'),
-        );
+    final response =
+        await _client.from('exercises').select(_kExerciseSelectFields).timeout(
+              Duration(seconds: 30),
+              onTimeout: () => throw TimeoutException('載入所有動作超時'),
+            );
 
     return response as List;
   }
@@ -225,4 +243,3 @@ class TimeoutException implements Exception {
   @override
   String toString() => message;
 }
-

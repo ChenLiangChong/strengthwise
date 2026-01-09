@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/appointment_model.dart';
+import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/services/interfaces/i_user_service.dart';
 
 /// 詳情資訊區域組件
-class DetailsInfoSection extends StatelessWidget {
+/// ⭐ v3.1.1: 改為 StatefulWidget 以支援異步加載用戶名稱
+class DetailsInfoSection extends StatefulWidget {
   final AppointmentModel appointment;
   final bool isCoachMode;
 
@@ -11,6 +14,46 @@ class DetailsInfoSection extends StatelessWidget {
     required this.appointment,
     required this.isCoachMode,
   });
+
+  @override
+  State<DetailsInfoSection> createState() => _DetailsInfoSectionState();
+}
+
+class _DetailsInfoSectionState extends State<DetailsInfoSection> {
+  String? _displayName;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  /// 加載用戶名稱
+  Future<void> _loadUserName() async {
+    try {
+      final userService = serviceLocator<IUserService>();
+      final userId = widget.isCoachMode
+          ? widget.appointment.clientId
+          : widget.appointment.coachId;
+      final profile = await userService.getUserProfile(userId);
+      if (mounted) {
+        setState(() {
+          _displayName = profile?.displayName ?? profile?.email ?? userId;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _displayName = widget.isCoachMode
+              ? widget.appointment.clientId
+              : widget.appointment.coachId;
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +75,8 @@ class DetailsInfoSection extends StatelessWidget {
           // 資訊列表
           _buildInfoRow(
             Icons.person_outline,
-            isCoachMode ? '學員' : '教練',
-            isCoachMode ? appointment.clientId : appointment.coachId,
+            widget.isCoachMode ? '學員' : '教練',
+            _isLoading ? '載入中...' : (_displayName ?? '未知'),
           ),
 
           const SizedBox(height: 12),
@@ -41,7 +84,7 @@ class DetailsInfoSection extends StatelessWidget {
           _buildInfoRow(
             Icons.calendar_today_outlined,
             '創建時間',
-            _formatDateTime(appointment.createdAt),
+            _formatDateTime(widget.appointment.createdAt),
           ),
 
           const SizedBox(height: 12),
@@ -49,11 +92,11 @@ class DetailsInfoSection extends StatelessWidget {
           _buildInfoRow(
             Icons.update_outlined,
             '最後更新',
-            _formatDateTime(appointment.updatedAt),
+            _formatDateTime(widget.appointment.updatedAt),
           ),
 
           // 取消資訊（如果已取消）
-          if (appointment.isCancelled) ...[
+          if (widget.appointment.isCancelled) ...[
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 16),
@@ -66,31 +109,31 @@ class DetailsInfoSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            if (appointment.cancelledAt != null)
+            if (widget.appointment.cancelledAt != null)
               _buildInfoRow(
                 Icons.event_busy,
                 '取消時間',
-                _formatDateTime(appointment.cancelledAt!),
+                _formatDateTime(widget.appointment.cancelledAt!),
               ),
-            if (appointment.cancellationReason != null) ...[
+            if (widget.appointment.cancellationReason != null) ...[
               const SizedBox(height: 12),
               _buildInfoRow(
                 Icons.comment_outlined,
                 '取消原因',
-                appointment.cancellationReason!,
+                widget.appointment.cancellationReason!,
               ),
             ],
           ],
 
           // 關聯訓練計劃（如果有）
-          if (appointment.workoutPlanId != null) ...[
+          if (widget.appointment.workoutPlanId != null) ...[
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 16),
             _buildInfoRow(
               Icons.fitness_center_outlined,
               '關聯訓練計劃',
-              appointment.workoutPlanId!,
+              widget.appointment.workoutPlanId!,
             ),
           ],
         ],

@@ -1,9 +1,12 @@
 // ✅ 已響應式改造 (Phase 0)
+// ⭐ v3.2: 重置功能引導
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
+import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/auth/login_page.dart';
 import 'package:strengthwise/views/pages/profile/profile_settings_page.dart';
 import 'package:strengthwise/views/pages/profile/body_data_page.dart';
@@ -23,8 +26,9 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => serviceLocator<ProfileController>()..loadUserProfile(),
+    // ⭐ v3.2 修復：使用 .value 避免自動 dispose 單例 controller
+    return ChangeNotifierProvider.value(
+      value: serviceLocator<ProfileController>()..loadUserProfile(),
       child: const _ProfilePageContent(),
     );
   }
@@ -172,7 +176,54 @@ class _ProfilePageContent extends StatelessWidget {
             );
           },
         ),
+        
+        // ⭐ v3.2: 重置功能引導
+        ProfileMenuItem(
+          icon: Icons.refresh,
+          iconColor: colorScheme.tertiary,
+          title: '重置功能引導',
+          subtitle: '重新顯示功能介紹提示',
+          onTap: () => _resetOnboarding(context),
+        ),
       ],
     );
+  }
+
+  /// ⭐ v3.2: 重置功能引導（Coach Mark）
+  Future<void> _resetOnboarding(BuildContext context) async {
+    // 確認對話框
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('重置功能引導'),
+        content: const Text('確定要重置所有功能引導嗎？\n下次進入各頁面時會重新顯示提示。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('重置'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmed != true) return;
+    
+    try {
+      final onboardingService = serviceLocator<OnboardingService>();
+      await onboardingService.initialize();
+      await onboardingService.resetAllCoachMarks();
+      
+      if (context.mounted) {
+        NotificationUtils.showSuccess(context, '功能引導已重置');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        NotificationUtils.showError(context, '重置失敗');
+      }
+    }
   }
 }

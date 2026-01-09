@@ -1,15 +1,20 @@
 // ✅ 已響應式改造 (Phase 0) - AvailabilityCalendarView 組件處理
+// ✅ v3.2: Coach Mark 引導
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:strengthwise/controllers/client_availability_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/models/client_availability_model.dart';
+import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/scheduling/availability/widgets/availability_slot_editor_dialog.dart';
 import 'package:strengthwise/views/pages/scheduling/availability/widgets/availability_calendar_view.dart';
 import 'package:strengthwise/views/pages/scheduling/availability/availability_app_bar_builder.dart';
 import 'package:strengthwise/views/pages/scheduling/availability/availability_dialogs.dart';
 import 'package:strengthwise/views/pages/scheduling/availability/copy_week_slots_mixin.dart';
+import 'package:strengthwise/common_widgets/loading/skeleton_loader.dart';
+import 'package:strengthwise/views/widgets/onboarding/coach_mark_helper.dart';
 
 /// 學員時間偏好設定頁面
 ///
@@ -57,12 +62,65 @@ class _ClientAvailabilityPageState extends State<ClientAvailabilityPage>
   // ⭐ 追蹤選中的日期
   DateTime _selectedDate = DateTime.now();
 
+  // ⭐ v3.2: Coach Mark 引導
+  final GlobalKey _fabKey = GlobalKey();
+  bool _coachMarkShown = false;
+
   @override
   void initState() {
     super.initState();
     _controller = serviceLocator<ClientAvailabilityController>();
     _authController = serviceLocator<IAuthController>();
     _loadAvailability();
+
+    // ⭐ v3.2: 檢查 Coach Mark（只在非查看模式下顯示）
+    if (!widget.isViewMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkCoachMark();
+      });
+    }
+  }
+
+  // ⭐ v3.2: 檢查是否顯示 Coach Mark
+  Future<void> _checkCoachMark() async {
+    if (_coachMarkShown || widget.isViewMode) return;
+
+    final onboardingService = serviceLocator<OnboardingService>();
+    final shouldShow = await onboardingService.shouldShowCoachMark(
+      OnboardingService.keyClientAvailability,
+    );
+
+    if (shouldShow && mounted) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _showCoachMark();
+      });
+    }
+  }
+
+  // ⭐ v3.2: 顯示 Coach Mark 引導
+  void _showCoachMark() {
+    if (_coachMarkShown) return;
+    _coachMarkShown = true;
+
+    final targets = <TargetFocus>[];
+
+    if (_fabKey.currentContext != null) {
+      targets.add(
+        CoachMarkHelper.createTarget(
+          key: _fabKey,
+          title: '可訓練時間',
+          description: '在這裡設定你方便訓練的時段\n\n教練可以看到你的時間偏好\n幫你安排訓練計畫',
+          contentAlign: ContentAlign.top,
+        ),
+      );
+    }
+
+    if (targets.isNotEmpty) {
+      CoachMarkHelper.show(
+        context: context,
+        targets: targets,
+      );
+    }
   }
 
   /// 載入可用時段
@@ -194,9 +252,9 @@ class _ClientAvailabilityPageState extends State<ClientAvailabilityPage>
             : null, // ⭐ 嵌入 Tab 時不顯示 AppBar
         body: Consumer<ClientAvailabilityController>(
           builder: (context, controller, child) {
-            // 載入中
+            // ⚡ 載入中使用骨架屏
             if (controller.isLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const SkeletonSlotCalendar();
             }
 
             // 錯誤
@@ -245,6 +303,7 @@ class _ClientAvailabilityPageState extends State<ClientAvailabilityPage>
         floatingActionButton: widget.isViewMode
             ? null
             : FloatingActionButton(
+                key: _fabKey, // ⭐ v3.2: Coach Mark 引導用
                 heroTag: 'client_availability_fab', // ⭐ 防止 Hero tag 衝突
                 onPressed: _addSlot,
                 tooltip: '新增時段',

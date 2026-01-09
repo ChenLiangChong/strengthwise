@@ -5,6 +5,25 @@ import 'package:strengthwise/services/interfaces/i_coaching_relationship_service
 import 'package:strengthwise/services/interfaces/i_appointment_service.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
 
+/// ⭐ v3.1.1: 臨時課程建立結果
+///
+/// 包含創建課程所需的所有資訊，用於跳轉到 Session Mode
+class AdHocSessionResult {
+  final String appointmentId;
+  final String clientId;
+  final String clientName;
+  final DateTime startTime;
+  final DateTime endTime;
+
+  const AdHocSessionResult({
+    required this.appointmentId,
+    required this.clientId,
+    required this.clientName,
+    required this.startTime,
+    required this.endTime,
+  });
+}
+
 /// 臨時課程建立對話框
 ///
 /// 教練可直接建立 confirmed 狀態的課程，不經過預約流程。
@@ -18,9 +37,9 @@ class AdHocSessionDialog extends StatefulWidget {
     required this.coachId,
   });
 
-  /// 顯示對話框並返回是否成功創建
-  static Future<bool?> show(BuildContext context, String coachId) {
-    return showDialog<bool>(
+  /// ⭐ v3.1.1: 顯示對話框並返回創建結果（包含跳轉所需資訊）
+  static Future<AdHocSessionResult?> show(BuildContext context, String coachId) {
+    return showDialog<AdHocSessionResult>(
       context: context,
       builder: (context) => AdHocSessionDialog(coachId: coachId),
     );
@@ -125,7 +144,8 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
       );
       final endTime = startTime.add(Duration(minutes: _durationMinutes));
 
-      await _appointmentService.createAdHocSession(
+      // ⭐ v3.1.1: 獲取創建的 appointment ID
+      final appointmentId = await _appointmentService.createAdHocSession(
         coachId: widget.coachId,
         clientId: _selectedClient!.uid,
         startTime: startTime,
@@ -134,13 +154,15 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop(true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('臨時課程已建立'),
-            backgroundColor: Colors.green,
-          ),
+        // ⭐ v3.1.1: 返回完整資訊供跳轉使用
+        final result = AdHocSessionResult(
+          appointmentId: appointmentId,
+          clientId: _selectedClient!.uid,
+          clientName: _selectedClient!.displayName ?? _selectedClient!.email,
+          startTime: startTime,
+          endTime: endTime,
         );
+        Navigator.of(context).pop(result);
       }
     } catch (e) {
       if (mounted) {
@@ -292,7 +314,7 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
             ),
       actions: [
         TextButton(
-          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(null),
           child: const Text('取消'),
         ),
         FilledButton.icon(

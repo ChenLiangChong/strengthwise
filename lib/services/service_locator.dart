@@ -14,6 +14,27 @@ export 'locator/environment_config.dart' show Environment;
 /// 全局服務定位器，用於依賴注入和服務管理
 final GetIt serviceLocator = GetIt.instance;
 
+/// ⚡ 服務就緒事件（事件驅動，取代輪詢）
+///
+/// SplashScreen 可以 await 這個 Future 來等待服務初始化完成
+final Completer<void> _serviceReadyCompleter = Completer<void>();
+
+/// 服務是否已就緒
+bool get isServiceReady => _serviceReadyCompleter.isCompleted;
+
+/// 等待服務就緒（用於 SplashScreen）
+Future<void> waitForServiceReady() => _serviceReadyCompleter.future;
+
+/// 標記服務已就緒（由 main.dart 調用）
+void markServiceReady() {
+  if (!_serviceReadyCompleter.isCompleted) {
+    _serviceReadyCompleter.complete();
+    if (kDebugMode) {
+      print('[SERVICE_LOCATOR] ✅ 服務已就緒');
+    }
+  }
+}
+
 /// 設置當前環境（向後兼容）
 void setEnvironment(Environment env) {
   EnvironmentConfig.setEnvironment(env);

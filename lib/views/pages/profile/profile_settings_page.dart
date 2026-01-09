@@ -1,16 +1,19 @@
 // ✅ 已響應式改造 (Phase 0)
+// ⭐ v3.2: Onboarding 教練模式詢問
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:strengthwise/controllers/profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/home/main_home_page.dart';
 import 'package:strengthwise/views/pages/profile/widgets/profile_form_content.dart';
 import 'package:strengthwise/views/pages/profile/widgets/profile_delete_account_button.dart';
 import 'package:strengthwise/views/pages/profile/coach_profile_form_page.dart';
+import 'package:strengthwise/views/widgets/onboarding/coach_mode_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// 個人資料設置頁面
@@ -52,6 +55,20 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   bool _isCoach = false;
   bool _isStudent = true;
 
+  // ⭐ v3.1-B: 原始資料（用於判斷是否有變更）
+  String? _originalDisplayName;
+  String? _originalNickname;
+  String? _originalGender;
+  bool _originalGenderVisible = true;
+  String? _originalHeight;
+  String? _originalWeight;
+  String? _originalBio;
+  DateTime? _originalBirthDate;
+  String _originalUnitSystem = 'metric';
+
+  /// 是否正在保存中（避免重複保存）
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -90,7 +107,144 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
           _isCoach = userProfile.isCoach;
           _isStudent = userProfile.isStudent;
         }
+
+        // ⭐ v3.1-B: 保存原始資料
+        _originalDisplayName = _displayNameController.text;
+        _originalNickname = _nicknameController.text;
+        _originalGender = _gender;
+        _originalGenderVisible = _genderVisible;
+        _originalHeight = _heightController.text;
+        _originalWeight = _weightController.text;
+        _originalBio = _bioController.text;
+        _originalBirthDate = _birthDate;
+        _originalUnitSystem = _unitSystem;
       });
+    }
+  }
+
+  /// ⭐ v3.1-B: 檢查是否有未保存的變更
+  bool _hasUnsavedChanges() {
+    // 頭像有變更
+    if (_avatarFile != null) return true;
+
+    // 基本資料有變更
+    if (_displayNameController.text != _originalDisplayName) return true;
+    if (_nicknameController.text != _originalNickname) return true;
+    if (_gender != _originalGender) return true;
+    if (_genderVisible != _originalGenderVisible) return true;
+    if (_heightController.text != _originalHeight) return true;
+    if (_weightController.text != _originalWeight) return true;
+    if (_bioController.text != _originalBio) return true;
+    if (_birthDate != _originalBirthDate) return true;
+    if (_unitSystem != _originalUnitSystem) return true;
+
+    return false;
+  }
+
+  /// ⭐ v3.1-B: 檢查必填欄位是否完整（用於自動保存）
+  bool _canAutoSave() {
+    // 首次設置必須使用保存按鈕
+    if (widget.isFirstTimeSetup) return false;
+
+    // 必填欄位檢查
+    if (_gender == null) return false;
+    if (_heightController.text.isEmpty) return false;
+    if (_weightController.text.isEmpty) return false;
+    if (_birthDate == null) return false;
+
+    // 數值格式檢查
+    if (double.tryParse(_heightController.text) == null) return false;
+    if (double.tryParse(_weightController.text) == null) return false;
+
+    return true;
+  }
+
+  /// ⭐ v3.1-B: 返回時自動保存
+  Future<void> _autoSaveAndPop() async {
+    // 如果沒有變更，直接返回
+    if (!_hasUnsavedChanges()) {
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+
+    // 如果必填欄位不完整，提示用戶
+    if (!_canAutoSave()) {
+      if (mounted) {
+        final shouldDiscard = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('放棄變更？'),
+            content: const Text('您有未完成的資料，是否放棄變更？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('繼續編輯'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('放棄'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldDiscard == true && mounted) {
+          Navigator.of(context).pop();
+        }
+      }
+      return;
+    }
+
+    // 避免重複保存
+    if (_isSaving) return;
+    _isSaving = true;
+
+    // 自動保存
+    final success = await _controller.updateUserProfile(
+      displayName: _displayNameController.text,
+      nickname: _nicknameController.text,
+      gender: _gender,
+      genderVisible: _genderVisible,
+      height: double.parse(_heightController.text),
+      weight: double.parse(_weightController.text),
+      birthDate: _birthDate,
+      bio: _bioController.text.isNotEmpty ? _bioController.text : null,
+      unitSystem: _unitSystem,
+      isCoach: _isCoach,
+      isStudent: _isStudent,
+      avatarFile: _avatarFile,
+    );
+
+    _isSaving = false;
+
+    if (!mounted) return;
+
+    if (success) {
+      NotificationUtils.showSuccess(context, '個人資料已自動保存');
+      Navigator.of(context).pop();
+    } else {
+      // 保存失敗，詢問用戶是否放棄
+      final shouldDiscard = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('保存失敗'),
+          content: Text(_controller.errorMessage ?? '保存失敗，是否放棄變更？'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('繼續編輯'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('放棄'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldDiscard == true && mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 
@@ -154,11 +308,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     if (success) {
       NotificationUtils.showSuccess(context, '個人資料已保存');
 
-      // 首次設置完成後跳轉主頁
+      // 首次設置完成後詢問教練模式，然後跳轉主頁
       if (widget.isFirstTimeSetup) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainHomePage()),
-        );
+        await _askCoachModeAndNavigate();
       } else {
         Navigator.of(context).pop();
       }
@@ -166,6 +318,48 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
       NotificationUtils.showError(
         context,
         _controller.errorMessage ?? '保存失敗，請稍後再試',
+      );
+    }
+  }
+
+  /// ⭐ v3.2: 首次設置完成後詢問教練模式
+  Future<void> _askCoachModeAndNavigate() async {
+    if (!mounted) return;
+
+    try {
+      final onboardingService = serviceLocator<OnboardingService>();
+      await onboardingService.initialize();
+      
+      // 檢查是否已經詢問過
+      final hasAsked = await onboardingService.hasAskedCoachMode();
+      
+      if (!hasAsked && mounted) {
+        // 顯示教練模式詢問對話框
+        final enableCoach = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const CoachModeDialog(),
+        );
+        
+        // 標記已詢問
+        await onboardingService.markAskedCoachMode();
+        
+        // 如果選擇開啟教練模式
+        if (enableCoach == true && mounted) {
+          final success = await _controller.toggleCoachRole(true);
+          if (success && mounted) {
+            NotificationUtils.showSuccess(context, '已開啟教練功能');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[ProfileSettingsPage] ⚠️ 詢問教練模式失敗: $e');
+    }
+    
+    // 跳轉主頁
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const MainHomePage()),
       );
     }
   }
@@ -207,12 +401,19 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<ProfileController>.value(
       value: _controller,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.isFirstTimeSetup ? '完成您的個人資料' : '編輯個人資料'),
-          automaticallyImplyLeading: !widget.isFirstTimeSetup,
-        ),
-        body: Consumer<ProfileController>(
+      // ⭐ v3.1-B: 攔截返回操作，自動保存
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          await _autoSaveAndPop();
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(widget.isFirstTimeSetup ? '完成您的個人資料' : '編輯個人資料'),
+            automaticallyImplyLeading: !widget.isFirstTimeSetup,
+          ),
+          body: Consumer<ProfileController>(
           builder: (context, controller, child) {
             // 首次載入顯示 Loading
             if (controller.isLoading && controller.userProfile == null) {
@@ -404,8 +605,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
               ),
             );
           },
-        ),
-      ),
+        ), // Consumer
+      ), // Scaffold
+    ), // PopScope
     );
   }
 }

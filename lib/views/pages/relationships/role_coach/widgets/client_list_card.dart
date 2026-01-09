@@ -5,6 +5,7 @@ import 'package:strengthwise/models/user_model.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/widgets/client_list_item.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/widgets/empty_clients_state.dart';
+import 'package:strengthwise/common_widgets/loading/skeleton_loader.dart';
 
 /// 學員列表卡片組件
 class ClientListCard extends StatelessWidget {
@@ -33,11 +34,10 @@ class ClientListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: CircularProgressIndicator(),
-        ),
+      // ⚡ 使用骨架屏取代轉圈
+      return Padding(
+        padding: context.pagePadding,
+        child: const SkeletonClientList(itemCount: 4),
       );
     }
 

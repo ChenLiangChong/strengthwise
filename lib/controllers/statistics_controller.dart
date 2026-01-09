@@ -87,12 +87,21 @@ class StatisticsController extends ChangeNotifier implements IStatisticsControll
     }
 
     try {
-      _isLoading = true;
-      _errorMessage = null;
-      _timeRange = timeRange;
-      notifyListeners();
+      // ⚡ v3.1.1 優化：檢查快取，有快取時不顯示 loading
+      final hasCached = await _statisticsService.hasCachedStatistics(_userId!, timeRange);
 
-      // 載入統計數據
+      if (!hasCached) {
+        // 沒有快取，顯示 loading
+        _isLoading = true;
+        _errorMessage = null;
+        _timeRange = timeRange;
+        notifyListeners();
+      } else {
+        // 有快取，先更新 timeRange（不顯示 loading）
+        _timeRange = timeRange;
+      }
+
+      // 載入統計數據（有快取時會立即返回）
       _statisticsData = await _statisticsService.getStatistics(_userId!, timeRange);
 
       // 🐛 DEBUG: 輸出統計數據詳情

@@ -1,11 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/appointment_model.dart';
-import '../utils/datetime_utils.dart';
-import 'interfaces/i_appointment_service.dart';
-import 'core/error_handling_service.dart';
+import '../../models/appointment_model.dart';
+import '../../utils/datetime_utils.dart';
+import '../interfaces/i_appointment_service.dart';
+import '../core/error_handling_service.dart';
 
 /// AppointmentServiceSupabase - Phase 2 預約服務實現
-/// 
+///
 /// 實作 IAppointmentService 接口
 /// 處理所有與 Supabase appointments 表的互動
 class AppointmentServiceSupabase implements IAppointmentService {
@@ -56,8 +56,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
           .map((json) => AppointmentModel.fromSupabase(json))
           .toList();
     } catch (e) {
-      _errorService.logError('查詢教練預約失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('查詢教練預約失敗: $e', type: 'AppointmentServiceError');
       rethrow;
     }
   }
@@ -94,8 +93,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
           .map((json) => AppointmentModel.fromSupabase(json))
           .toList();
     } catch (e) {
-      _errorService.logError('查詢學員預約失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('查詢學員預約失敗: $e', type: 'AppointmentServiceError');
       rethrow;
     }
   }
@@ -116,8 +114,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
 
       return AppointmentModel.fromSupabase(response);
     } catch (e) {
-      _errorService.logError('查詢預約詳情失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('查詢預約詳情失敗: $e', type: 'AppointmentServiceError');
       return null;
     }
   }
@@ -139,8 +136,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
           .map((json) => AppointmentModel.fromSupabase(json))
           .toList();
     } catch (e) {
-      _errorService.logError('查詢待確認預約失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('查詢待確認預約失敗: $e', type: 'AppointmentServiceError');
       rethrow;
     }
   }
@@ -160,8 +156,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
               'id, coach_id, client_id, time_range, status, workout_plan_id, '
               'notes, client_notes, coach_notes, cancellation_reason, '
               'cancelled_by, cancelled_at, created_at, updated_at')
-          .gte('time_range',
-              DateTimeUtils.formatToTstzRange(now, now))
+          .gte('time_range', DateTimeUtils.formatToTstzRange(now, now))
           .lte('time_range',
               DateTimeUtils.formatToTstzRange(weekLater, weekLater));
 
@@ -220,7 +215,8 @@ class AppointmentServiceSupabase implements IAppointmentService {
   }) async {
     try {
       // 調用資料庫函數檢查衝突
-      final response = await _supabase.rpc('check_appointment_conflict', params: {
+      final response =
+          await _supabase.rpc('check_appointment_conflict', params: {
         'p_coach_id': coachId,
         'p_time_range': DateTimeUtils.formatToTstzRange(startTime, endTime),
         'p_exclude_appointment_id': excludeAppointmentId,
@@ -228,8 +224,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
 
       return response as bool;
     } catch (e) {
-      _errorService.logError('檢查時段衝突失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('檢查時段衝突失敗: $e', type: 'AppointmentServiceError');
       // 如果函數不存在，使用客戶端查詢
       return _checkConflictFallback(
         coachId: coachId,
@@ -272,8 +267,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
 
       return false; // 無衝突
     } catch (e) {
-      _errorService.logError('備用衝突檢查失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('備用衝突檢查失敗: $e', type: 'AppointmentServiceError');
       return false;
     }
   }
@@ -298,8 +292,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
 
       return response['id'] as String;
     } catch (e) {
-      _errorService.logError('創建預約失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('創建預約失敗: $e', type: 'AppointmentServiceError');
       rethrow;
     }
   }
@@ -322,8 +315,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
           .update(updateData)
           .eq('id', appointmentId);
     } catch (e) {
-      _errorService.logError('確認預約失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('確認預約失敗: $e', type: 'AppointmentServiceError');
       rethrow;
     }
   }
@@ -346,8 +338,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
           .update(updateData)
           .eq('id', appointmentId);
     } catch (e) {
-      _errorService.logError('完成預約失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('完成預約失敗: $e', type: 'AppointmentServiceError');
       rethrow;
     }
   }
@@ -367,8 +358,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
         'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       }).eq('id', appointmentId);
     } catch (e) {
-      _errorService.logError('取消預約失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('取消預約失敗: $e', type: 'AppointmentServiceError');
       rethrow;
     }
   }
@@ -380,14 +370,17 @@ class AppointmentServiceSupabase implements IAppointmentService {
     required DateTime newEndTime,
   }) async {
     try {
-      await _supabase.from('appointments').update({
-        'time_range':
-            DateTimeUtils.formatToTstzRange(newStartTime, newEndTime),
-        'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
-      }).eq('id', appointmentId).eq('status', 'requested'); // 只允許待確認的預約
+      await _supabase
+          .from('appointments')
+          .update({
+            'time_range':
+                DateTimeUtils.formatToTstzRange(newStartTime, newEndTime),
+            'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
+          })
+          .eq('id', appointmentId)
+          .eq('status', 'requested'); // 只允許待確認的預約
     } catch (e) {
-      _errorService.logError('重新安排預約失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('重新安排預約失敗: $e', type: 'AppointmentServiceError');
       rethrow;
     }
   }
@@ -403,8 +396,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
         'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       }).eq('id', appointmentId);
     } catch (e) {
-      _errorService.logError('更新學員備註失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('更新學員備註失敗: $e', type: 'AppointmentServiceError');
       rethrow;
     }
   }
@@ -420,8 +412,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
         'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       }).eq('id', appointmentId);
     } catch (e) {
-      _errorService.logError('更新教練備註失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('更新教練備註失敗: $e', type: 'AppointmentServiceError');
       rethrow;
     }
   }
@@ -437,8 +428,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
         'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
       }).eq('id', appointmentId);
     } catch (e) {
-      _errorService.logError('關聯訓練計劃失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('關聯訓練計劃失敗: $e', type: 'AppointmentServiceError');
       rethrow;
     }
   }
@@ -452,8 +442,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
           .eq('id', appointmentId)
           .eq('status', 'requested'); // 只允許刪除待確認的預約
     } catch (e) {
-      _errorService.logError('刪除預約失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('刪除預約失敗: $e', type: 'AppointmentServiceError');
       rethrow;
     }
   }
@@ -475,8 +464,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
           .eq('coach_id', coachId)
           .gte('time_range',
               DateTimeUtils.formatToTstzRange(startDate, startDate))
-          .lte('time_range',
-              DateTimeUtils.formatToTstzRange(endDate, endDate));
+          .lte('time_range', DateTimeUtils.formatToTstzRange(endDate, endDate));
 
       final appointments = response as List;
 
@@ -495,8 +483,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
 
       return stats;
     } catch (e) {
-      _errorService.logError('查詢預約統計失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('查詢預約統計失敗: $e', type: 'AppointmentServiceError');
       return {'requested': 0, 'confirmed': 0, 'completed': 0, 'cancelled': 0};
     }
   }
@@ -514,8 +501,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
           .eq('client_id', clientId)
           .gte('time_range',
               DateTimeUtils.formatToTstzRange(startDate, startDate))
-          .lte('time_range',
-              DateTimeUtils.formatToTstzRange(endDate, endDate));
+          .lte('time_range', DateTimeUtils.formatToTstzRange(endDate, endDate));
 
       final appointments = response as List;
 
@@ -532,8 +518,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
 
       return completed / total;
     } catch (e) {
-      _errorService.logError('計算出席率失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('計算出席率失敗: $e', type: 'AppointmentServiceError');
       return 0.0;
     }
   }
@@ -552,13 +537,13 @@ class AppointmentServiceSupabase implements IAppointmentService {
   }) async {
     try {
       final now = DateTime.now();
-      
+
       // 直接建立 confirmed 狀態的預約
       final appointmentData = {
         'coach_id': coachId,
         'client_id': clientId,
         'time_range': DateTimeUtils.formatToTstzRange(startTime, endTime),
-        'status': 'confirmed',  // ⭐ 跳過 requested，直接確認
+        'status': 'confirmed', // ⭐ 跳過 requested，直接確認
         'notes': notes ?? '臨時課程',
         'created_at': DateTimeUtils.formatToUtcIso(now),
         'updated_at': DateTimeUtils.formatToUtcIso(now),
@@ -576,10 +561,8 @@ class AppointmentServiceSupabase implements IAppointmentService {
 
       return response['id'] as String;
     } catch (e) {
-      _errorService.logError('創建臨時課程失敗: $e',
-          type: 'AppointmentServiceError');
+      _errorService.logError('創建臨時課程失敗: $e', type: 'AppointmentServiceError');
       rethrow;
     }
   }
 }
-

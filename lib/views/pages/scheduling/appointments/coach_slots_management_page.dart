@@ -1,7 +1,10 @@
 // ✅ 已響應式改造 (Phase 0) - SlotCalendarView 組件處理
+// ✅ v3.2: Coach Mark 引導
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/controllers/availability_slot_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/controllers/appointment_controller.dart';
@@ -14,6 +17,8 @@ import 'package:strengthwise/views/pages/scheduling/appointments/widgets/slot_fi
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/error_state_view.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/client_booking/booking_confirmation_dialog.dart';
 import 'package:strengthwise/views/pages/scheduling/availability/copy_week_slots_mixin.dart';
+import 'package:strengthwise/common_widgets/loading/skeleton_loader.dart';
+import 'package:strengthwise/views/widgets/onboarding/coach_mark_helper.dart';
 
 /// 教練時段管理頁面（Phase 2）
 ///
@@ -50,6 +55,10 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
   String? _currentUserId;
   DateTime _selectedDate = DateTime.now();
   String _selectedFilter = 'all'; // all, recurring, oneTime
+  
+  // ⭐ v3.2: Coach Mark 引導
+  final GlobalKey _fabKey = GlobalKey();
+  bool _coachMarkShown = false;
 
   @override
   void initState() {
@@ -58,6 +67,53 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
     _authController = serviceLocator<IAuthController>();
     _appointmentController = serviceLocator<AppointmentController>();
     _initializeAndLoad();
+    
+    // ⭐ v3.2: 檢查 Coach Mark 引導
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkCoachMark();
+    });
+  }
+  
+  // ⭐ v3.2: 檢查是否顯示 Coach Mark
+  Future<void> _checkCoachMark() async {
+    if (_coachMarkShown || widget.isViewMode) return;
+    
+    final onboardingService = serviceLocator<OnboardingService>();
+    final shouldShow = await onboardingService.shouldShowCoachMark(
+      OnboardingService.keyCoachSlots,
+    );
+    
+    if (shouldShow && mounted) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _showCoachMark();
+      });
+    }
+  }
+  
+  // ⭐ v3.2: 顯示 Coach Mark 引導
+  void _showCoachMark() {
+    if (_coachMarkShown) return;
+    _coachMarkShown = true;
+    
+    final targets = <TargetFocus>[];
+    
+    if (_fabKey.currentContext != null) {
+      targets.add(
+        CoachMarkHelper.createTarget(
+          key: _fabKey,
+          title: '可上課時段',
+          description: '設定你可以上課的時間\n學員可以在這些時段預約',
+          contentAlign: ContentAlign.top,
+        ),
+      );
+    }
+    
+    if (targets.isNotEmpty) {
+      CoachMarkHelper.show(
+        context: context,
+        targets: targets,
+      );
+    }
   }
 
   @override
@@ -313,6 +369,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
         floatingActionButton: widget.isViewMode
             ? null
             : FloatingActionButton.extended(
+                key: _fabKey, // ⭐ v3.2: Coach Mark 引導用
                 heroTag: 'coach_slots_fab', // ⭐ 防止 Hero tag 衝突
                 onPressed: () => _showSlotEditor(),
                 icon: const Icon(Icons.add),
@@ -324,12 +381,16 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
     );
   }
 
-  /// 建構 AppBar（已移除標題，因為 TabBar 已有標籤）
+  /// 建構 AppBar
+  /// ⭐ v3.1.1: 修復返回按鈕和標題顯示
   PreferredSizeWidget _buildAppBar() {
+    // 標題根據模式不同
+    final title = widget.isViewMode ? '教練可上課時段' : '設定可上課時段';
+
     return AppBar(
-      automaticallyImplyLeading: false,
-      title: null,
-      toolbarHeight: 48, // 縮小高度
+      // ⭐ 修復：讓系統自動顯示返回按鈕（當有 Navigator 堆疊時）
+      automaticallyImplyLeading: true,
+      title: Text(title),
       actions: [
         // 複製週時段按鈕
         if (!widget.isViewMode)
@@ -366,9 +427,9 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
   Widget _buildBody() {
     return Consumer<AvailabilitySlotController>(
       builder: (context, controller, child) {
-        // 載入中
+        // ⚡ 載入中使用骨架屏
         if (controller.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const SkeletonSlotCalendar();
         }
 
         // 錯誤狀態

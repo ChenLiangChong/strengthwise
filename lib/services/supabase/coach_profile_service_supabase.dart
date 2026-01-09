@@ -4,6 +4,15 @@ import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 教練公開檔案服務 Supabase 實作
+
+/// ⭐ 定義 coaches 表的標準查詢欄位（避免 SELECT *）
+const String _kCoachProfileSelectFields = '''
+  id, display_name, headline, bio, specialties, certifications, 
+  years_experience, languages, service_types, hourly_rate_min, 
+  hourly_rate_max, currency, offers_free_consultation, verified_status, 
+  slug, created_at, updated_at
+''';
+
 class CoachProfileServiceSupabase implements ICoachProfileService {
   final SupabaseClient _supabase;
   final ErrorHandlingService _errorService;
@@ -17,9 +26,7 @@ class CoachProfileServiceSupabase implements ICoachProfileService {
   @override
   Future<CoachProfileModel?> getProfile(String coachId) async {
     try {
-      final response = await _supabase
-          .from('coaches')
-          .select('''
+      final response = await _supabase.from('coaches').select('''
             id,
             display_name,
             headline,
@@ -37,9 +44,7 @@ class CoachProfileServiceSupabase implements ICoachProfileService {
             slug,
             created_at,
             updated_at
-          ''')
-          .eq('id', coachId)
-          .maybeSingle();
+          ''').eq('id', coachId).maybeSingle();
 
       if (response == null) {
         return null;
@@ -61,7 +66,7 @@ class CoachProfileServiceSupabase implements ICoachProfileService {
       final response = await _supabase
           .from('coaches')
           .insert(profile.toMap())
-          .select()
+          .select(_kCoachProfileSelectFields)
           .single();
 
       return CoachProfileModel.fromSupabase(response);
@@ -81,7 +86,7 @@ class CoachProfileServiceSupabase implements ICoachProfileService {
           .from('coaches')
           .update(profile.toUpdateMap())
           .eq('id', profile.id)
-          .select()
+          .select(_kCoachProfileSelectFields)
           .single();
 
       return CoachProfileModel.fromSupabase(response);
@@ -104,7 +109,7 @@ class CoachProfileServiceSupabase implements ICoachProfileService {
             profile.toMap(),
             onConflict: 'id',
           )
-          .select()
+          .select(_kCoachProfileSelectFields)
           .single();
 
       return CoachProfileModel.fromSupabase(response);
@@ -139,10 +144,7 @@ class CoachProfileServiceSupabase implements ICoachProfileService {
   @override
   Future<void> deleteProfile(String coachId) async {
     try {
-      await _supabase
-          .from('coaches')
-          .delete()
-          .eq('id', coachId);
+      await _supabase.from('coaches').delete().eq('id', coachId);
     } catch (e) {
       _errorService.logError(
         '刪除教練檔案失敗: $e',
@@ -152,4 +154,3 @@ class CoachProfileServiceSupabase implements ICoachProfileService {
     }
   }
 }
-

@@ -5,6 +5,12 @@ import '../../../utils/firestore_id_generator.dart';
 import 'note_data_parser.dart';
 
 /// 筆記資料庫操作
+
+/// ⭐ 定義 notes 表的標準查詢欄位（避免 SELECT *）
+const String _kNoteSelectFields = '''
+  id, user_id, title, text_content, drawing_points, created_at, updated_at
+''';
+
 class NoteOperations {
   final SupabaseClient _supabase;
   final Function(String) _logDebug;
@@ -20,15 +26,16 @@ class NoteOperations {
     _logDebug('從 Supabase 獲取用戶筆記');
     final response = await _supabase
         .from('notes')
-        .select()
+        .select(_kNoteSelectFields)
         .eq('user_id', userId)
         .order('updated_at', ascending: false);
-    
+
     final notesData = response as List<dynamic>;
     final notes = notesData
-        .map((data) => NoteDataParser.parseFromSupabase(data as Map<String, dynamic>))
+        .map((data) =>
+            NoteDataParser.parseFromSupabase(data as Map<String, dynamic>))
         .toList();
-    
+
     _logDebug('成功獲取 ${notes.length} 個筆記');
     return notes;
   }
@@ -38,16 +45,16 @@ class NoteOperations {
     _logDebug('從 Supabase 獲取筆記: $noteId');
     final response = await _supabase
         .from('notes')
-        .select()
+        .select(_kNoteSelectFields)
         .eq('id', noteId)
         .eq('user_id', userId)
         .maybeSingle();
-    
+
     if (response == null) {
       _logDebug('筆記不存在: $noteId');
       return null;
     }
-    
+
     final note = NoteDataParser.parseFromSupabase(response);
     _logDebug('成功獲取筆記詳情: ${note.title}');
     return note;
@@ -63,7 +70,7 @@ class NoteOperations {
     _logDebug('創建新筆記: $title');
     final now = DateTime.now();
     final noteId = generateFirestoreId();
-    
+
     final noteData = {
       'id': noteId,
       'user_id': userId,
@@ -73,9 +80,9 @@ class NoteOperations {
       'created_at': DateTimeUtils.formatToUtcIso(now),
       'updated_at': DateTimeUtils.formatToUtcIso(now),
     };
-    
+
     await _supabase.from('notes').insert(noteData);
-    
+
     final newNote = Note(
       id: noteId,
       title: title,
@@ -84,7 +91,7 @@ class NoteOperations {
       createdAt: now,
       updatedAt: now,
     );
-    
+
     _logDebug('筆記創建成功: ${newNote.id}');
     return newNote;
   }
@@ -96,7 +103,7 @@ class NoteOperations {
   }) async {
     _logDebug('更新筆記: ${note.id} - ${note.title}');
     final now = DateTime.now();
-    
+
     await _supabase
         .from('notes')
         .update({
@@ -107,7 +114,7 @@ class NoteOperations {
         })
         .eq('id', note.id)
         .eq('user_id', userId);
-    
+
     final updatedNote = Note(
       id: note.id,
       title: note.title,
@@ -116,7 +123,7 @@ class NoteOperations {
       createdAt: note.createdAt,
       updatedAt: now,
     );
-    
+
     _logDebug('筆記更新成功');
     return updatedNote;
   }
@@ -124,14 +131,13 @@ class NoteOperations {
   /// 刪除筆記
   Future<void> deleteNote(String userId, String noteId) async {
     _logDebug('刪除筆記: $noteId');
-    
+
     await _supabase
         .from('notes')
         .delete()
         .eq('id', noteId)
         .eq('user_id', userId);
-    
+
     _logDebug('筆記刪除成功');
   }
 }
-
