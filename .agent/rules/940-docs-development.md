@@ -1,4 +1,4 @@
-﻿---
+---
 description: "開發狀態文檔規範：DEVELOPMENT_STATUS.md 與 VERSION_HISTORY.md 的維護。"
 globs: docs/DEVELOPMENT_STATUS.md,docs/archived/VERSION_HISTORY.md
 alwaysApply: false
@@ -11,7 +11,7 @@ alwaysApply: false
 ```
 DEVELOPMENT_STATUS.md（主文檔）
 ├── 下一步計劃（待測試/待開發）⭐ 最先顯示
-├── 當前版本（v2.8.x 詳細說明）
+├── 當前版本（詳細說明）
 ├── 未來計劃（Phase 5+ 概述）
 └── 已完成功能（簡短列表）⭐ 最後顯示
 ```
@@ -72,5 +72,4 @@ DEVELOPMENT_STATUS.md（主文檔）
 **技術亮點**：
 - 批量查詢避免 N+1
 ```
-
 

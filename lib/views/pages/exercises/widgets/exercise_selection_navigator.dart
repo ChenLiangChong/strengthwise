@@ -301,7 +301,7 @@ class _ExerciseSelectionNavigatorState
         final trainingTypes = _getTrainingTypes();
         return SelectionList(
           title: '💡 提示',
-          subtitle: '選擇你想追蹤的動作，查看力量進步！\n你可以標記常用動作為「收藏」快速查看',
+          subtitle: '選擇你想追蹤的動作，查看訓練進度！\n你可以標記常用動作為「收藏」快速查看',
           items: trainingTypes,
           onSelect: (value) {
             setState(() {

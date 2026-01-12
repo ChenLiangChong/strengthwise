@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/custom_exercise_model.dart';
+import 'package:strengthwise/models/tracking_mode.dart';
 import 'package:strengthwise/utils/body_part_utils.dart';
 
 /// 自訂動作對話框數據
+/// v3.2+ 新增 trackingMode 欄位
 class CustomExerciseData {
   final String name;
   final String trainingType;
@@ -10,6 +12,7 @@ class CustomExerciseData {
   final String equipment;
   final String description;
   final String notes;
+  final TrackingMode trackingMode;
 
   CustomExerciseData({
     required this.name,
@@ -18,6 +21,7 @@ class CustomExerciseData {
     required this.equipment,
     required this.description,
     required this.notes,
+    this.trackingMode = TrackingMode.weightReps,
   });
 }
 
@@ -46,6 +50,7 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
   String _selectedTrainingType = '阻力訓練';
   String _selectedBodyPart = '胸部';
   String _selectedEquipment = '徒手';
+  TrackingMode _selectedTrackingMode = TrackingMode.weightReps; // v3.2+
 
   // 訓練類型選項
   static const List<String> _trainingTypeOptions = [
@@ -89,6 +94,7 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
       _selectedTrainingType = widget.exercise!.trainingType;
       _selectedBodyPart = widget.exercise!.bodyPart;
       _selectedEquipment = widget.exercise!.equipment;
+      _selectedTrackingMode = widget.exercise!.trackingMode; // v3.2+
     } else {
       _nameController = TextEditingController();
       _descriptionController = TextEditingController();
@@ -127,6 +133,8 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
                 _buildBodyPartDropdown(),
                 const SizedBox(height: 16),
                 _buildEquipmentDropdown(),
+                const SizedBox(height: 16),
+                _buildTrackingModeDropdown(), // v3.2+
                 const SizedBox(height: 16),
                 _buildDescriptionField(),
                 const SizedBox(height: 16),
@@ -242,6 +250,54 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
     );
   }
 
+  /// v3.2+ 建立追蹤模式下拉選單
+  Widget _buildTrackingModeDropdown() {
+    return DropdownButtonFormField<TrackingMode>(
+      value: _selectedTrackingMode,
+      isExpanded: true,
+      decoration: const InputDecoration(
+        labelText: '追蹤模式',
+        border: OutlineInputBorder(),
+        helperText: '選擇此動作的記錄方式',
+      ),
+      // 選中後的顯示（單行，避免溢出）
+      selectedItemBuilder: (context) {
+        return TrackingMode.values.map((mode) {
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: Text(mode.displayName),
+          );
+        }).toList();
+      },
+      // 下拉列表顯示（兩行：標題 + 說明）
+      items: TrackingMode.values.map((mode) {
+        return DropdownMenuItem(
+          value: mode,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(mode.displayName),
+              Text(
+                mode.description,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+      onChanged: (value) {
+        if (value != null) {
+          setState(() => _selectedTrackingMode = value);
+        }
+      },
+      // 調整下拉選單項目高度（72px 容納兩行文字）
+      itemHeight: 72,
+    );
+  }
+
   /// 建立動作說明輸入欄位
   Widget _buildDescriptionField() {
     return TextFormField(
@@ -317,6 +373,7 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
         equipment: _selectedEquipment,
         description: _descriptionController.text.trim(),
         notes: _notesController.text.trim(),
+        trackingMode: _selectedTrackingMode, // v3.2+
       );
 
       await widget.onSubmit(data);

@@ -1,9 +1,11 @@
 import 'package:uuid/uuid.dart';
 import '../exercise_model.dart';
+import '../tracking_mode.dart';
 
 /// 訓練動作配置模型
 ///
 /// 表示用戶訓練計劃中的一個具體動作配置，包含組數、次數和重量等信息
+/// v3.2+ 支援多元追蹤模式
 class WorkoutExercise {
   final String id;               // 唯一標識符
   final String exerciseId;       // 關聯的動作ID
@@ -18,6 +20,12 @@ class WorkoutExercise {
   final String notes;            // 備註
   final bool isCompleted;        // 是否完成
   final List<Map<String, dynamic>>? setTargets; // 每組的詳細目標（教練功能）
+  final TrackingMode trackingMode; // v3.2+ 追蹤模式
+  
+  // v3.2+ 新增欄位（用於非 weight_reps 模式）
+  final int? time;               // 時間(秒)
+  final double? distance;        // 距離(公尺)
+  final double? calories;        // 卡路里(kcal)
 
   /// 創建一個訓練動作配置實例
   WorkoutExercise({
@@ -34,6 +42,10 @@ class WorkoutExercise {
     this.notes = '',
     this.isCompleted = false,
     this.setTargets, // 可選：每組的詳細目標
+    this.trackingMode = TrackingMode.weightReps,
+    this.time,
+    this.distance,
+    this.calories,
   });
 
   /// 從標準動作模型創建訓練動作配置
@@ -52,12 +64,13 @@ class WorkoutExercise {
       reps: 10, // 預設值
       weight: 0, // 預設值
       restTime: 90, // 預設休息時間 90 秒
+      trackingMode: exercise.trackingMode, // v3.2+ 繼承動作的追蹤模式
     );
   }
 
   /// 轉換為 JSON 數據格式
   Map<String, dynamic> toJson() {
-    final json = {
+    final json = <String, dynamic>{
       'id': id,
       'exerciseId': exerciseId,
       'name': name,
@@ -70,12 +83,18 @@ class WorkoutExercise {
       'restTime': restTime,
       'notes': notes,
       'isCompleted': isCompleted,
+      'trackingMode': trackingMode.toJson(),
     };
     
     // 如果有每組的詳細目標，則包含它
     if (setTargets != null && setTargets!.isNotEmpty) {
       json['setTargets'] = setTargets;
     }
+    
+    // v3.2+ 新增欄位（只有非 null 才加入）
+    if (time != null) json['time'] = time;
+    if (distance != null) json['distance'] = distance;
+    if (calories != null) json['calories'] = calories;
     
     return json;
   }
@@ -98,6 +117,11 @@ class WorkoutExercise {
       setTargets: json['setTargets'] != null 
           ? List<Map<String, dynamic>>.from(json['setTargets'])
           : null,
+      // v3.2+ 追蹤模式
+      trackingMode: TrackingModeExtension.fromJson(json['trackingMode'] as String?),
+      time: json['time'] as int?,
+      distance: (json['distance'] as num?)?.toDouble(),
+      calories: (json['calories'] as num?)?.toDouble(),
     );
   }
 
@@ -119,6 +143,11 @@ class WorkoutExercise {
       setTargets: data['setTargets'] != null 
           ? List<Map<String, dynamic>>.from(data['setTargets'])
           : null,
+      // v3.2+ 追蹤模式
+      trackingMode: TrackingModeExtension.fromJson(data['trackingMode'] as String?),
+      time: data['time'] as int?,
+      distance: (data['distance'] as num?)?.toDouble(),
+      calories: (data['calories'] as num?)?.toDouble(),
     );
   }
   
@@ -142,6 +171,10 @@ class WorkoutExercise {
     String? notes,
     bool? isCompleted,
     List<Map<String, dynamic>>? setTargets,
+    TrackingMode? trackingMode,
+    int? time,
+    double? distance,
+    double? calories,
   }) {
     return WorkoutExercise(
       id: id ?? this.id,
@@ -157,6 +190,10 @@ class WorkoutExercise {
       notes: notes ?? this.notes,
       isCompleted: isCompleted ?? this.isCompleted,
       setTargets: setTargets ?? this.setTargets,
+      trackingMode: trackingMode ?? this.trackingMode,
+      time: time ?? this.time,
+      distance: distance ?? this.distance,
+      calories: calories ?? this.calories,
     );
   }
   

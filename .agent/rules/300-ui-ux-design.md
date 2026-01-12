@@ -1,4 +1,4 @@
-﻿---
+---
 description: "UI/UX 設計規範：Kinetic 設計系統、色彩方案、Material 3。適用於 views 和 themes。"
 globs: lib/views/**/*.dart,lib/themes/**/*.dart
 alwaysApply: false
@@ -58,5 +58,4 @@ padding: const EdgeInsets.all(13)  // 不是 8 的倍數
 | 標題、按鈕 | Inter |
 | 數據（重量、次數）| JetBrains Mono |
 
-詳見：`@docs/UI_UX_GUIDELINES.md`
-
+詳見：`@docs/UI_DEVELOPER_GUIDE.md`

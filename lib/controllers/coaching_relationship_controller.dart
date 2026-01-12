@@ -484,16 +484,32 @@ class CoachingRelationshipController extends ChangeNotifier {
   // 邀請碼功能（遠端綁定）
   // ============================================================================
 
-  /// 生成邀請碼（教練專用）
+  /// 邀請碼快取（記憶體中暫存，避免重複生成）
+  InviteCodeModel? _cachedInviteCode;
+
+  /// 生成或獲取邀請碼（教練專用）
+  ///
+  /// - 如果快取中有未過期的邀請碼，直接返回
+  /// - 否則生成新的邀請碼並快取
   ///
   /// [coachId] - 教練 ID
   /// 返回邀請碼模型（包含 code 和 expiresAt）
   Future<InviteCodeModel?> generateInviteCode(String coachId) async {
+    // ⭐ 檢查快取：如果有未過期的邀請碼，直接返回
+    if (_cachedInviteCode != null &&
+        _cachedInviteCode!.coachId == coachId &&
+        _cachedInviteCode!.isValid) {
+      return _cachedInviteCode;
+    }
+
     try {
       _setLoading(true);
       _clearError();
 
       final inviteCode = await _inviteCodeService.generateInviteCode(coachId);
+
+      // ⭐ 快取新生成的邀請碼
+      _cachedInviteCode = inviteCode;
 
       _setLoading(false);
       return inviteCode;
@@ -502,6 +518,11 @@ class CoachingRelationshipController extends ChangeNotifier {
       _setLoading(false);
       return null;
     }
+  }
+
+  /// 清除邀請碼快取（強制下次生成新的）
+  void clearInviteCodeCache() {
+    _cachedInviteCode = null;
   }
 
   /// 使用邀請碼綁定教練（學員專用）

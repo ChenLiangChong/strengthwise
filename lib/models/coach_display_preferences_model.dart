@@ -1,12 +1,12 @@
 /// 教練顯示偏好模型
-/// 
+///
 /// 用於儲存教練在學員詳情頁的顯示偏好設定
 class CoachDisplayPreferencesModel {
   /// 教練 ID
   final String coachId;
-  
+
   /// 健康評估顯示欄位
-  /// 
+  ///
   /// 可選值：
   /// - 'safety_screening': 安全篩檢（PAR-Q+）
   /// - 'injuries': 傷病史
@@ -20,7 +20,7 @@ class CoachDisplayPreferencesModel {
   /// - 'training_goals': 訓練目標
   /// - 'emergency_contact': 緊急聯絡人
   final List<String> healthAssessmentFields;
-  
+
   /// 更新時間
   final DateTime updatedAt;
 
@@ -39,14 +39,14 @@ class CoachDisplayPreferencesModel {
     'training_goals',
   ];
 
-  /// 所有可用欄位
+  /// 所有可用欄位（⭐ v3.3: 對應 PAR-Q+ 問題）
   static const Map<String, String> availableFields = {
-    'safety_screening': '安全篩檢（PAR-Q+）',
+    'safety_screening': '安全篩檢（風險評估）',
     'injuries': '傷病史',
+    'cardiovascular': '心血管系統（心臟/胸痛/頭暈）',
+    'bone_joint': '骨骼關節問題', // ⭐ v3.3: 新增
     'medications': '用藥記錄',
-    'cardiovascular': '心血管系統',
-    'metabolic': '代謝系統',
-    'respiratory': '呼吸系統',
+    'other_health_issues': '其他健康問題', // ⭐ v3.3: 新增
     'training_experience': '訓練經驗',
     'occupation_activity': '職業活動度',
     'equipment_access': '可用器材',
@@ -58,7 +58,9 @@ class CoachDisplayPreferencesModel {
   factory CoachDisplayPreferencesModel.fromSupabase(Map<String, dynamic> json) {
     return CoachDisplayPreferencesModel(
       coachId: json['coach_id'] as String,
-      healthAssessmentFields: (json['health_assessment_fields'] as List?)?.cast<String>() ?? defaultFields,
+      healthAssessmentFields:
+          (json['health_assessment_fields'] as List?)?.cast<String>() ??
+              defaultFields,
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
   }
@@ -94,7 +96,8 @@ class CoachDisplayPreferencesModel {
   }) {
     return CoachDisplayPreferencesModel(
       coachId: coachId ?? this.coachId,
-      healthAssessmentFields: healthAssessmentFields ?? this.healthAssessmentFields,
+      healthAssessmentFields:
+          healthAssessmentFields ?? this.healthAssessmentFields,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
@@ -104,4 +107,3 @@ class CoachDisplayPreferencesModel {
     return 'CoachDisplayPreferencesModel(coachId: $coachId, fields: ${healthAssessmentFields.length})';
   }
 }
-

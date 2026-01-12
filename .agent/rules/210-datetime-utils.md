@@ -1,4 +1,4 @@
-﻿---
+---
 description: "時間處理統一規範：DateTimeUtils 工具類使用指南。適用於所有涉及時間的代碼。"
 globs: **/*.dart
 alwaysApply: false
@@ -46,4 +46,3 @@ Text('${model.createdAt.toLocal().hour}')  // Model 已是本地時間
 ```
 
 詳見：`@docs/DATETIME_UTILS_GUIDE.md`
-

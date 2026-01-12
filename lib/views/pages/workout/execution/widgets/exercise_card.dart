@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:strengthwise/models/tracking_mode.dart';
 import 'package:strengthwise/themes/app_theme.dart';
 
 /// 動作卡片數據模型
+/// v3.2+ 新增 trackingMode 支援不同追蹤模式
 class ExerciseCardData {
   final String exerciseId;
   final String exerciseName;
@@ -11,6 +13,7 @@ class ExerciseCardData {
   final int? targetSets;
   final int? targetReps;
   final double? targetWeight;
+  final TrackingMode trackingMode; // v3.2+
 
   ExerciseCardData({
     required this.exerciseId,
@@ -19,14 +22,19 @@ class ExerciseCardData {
     this.targetSets,
     this.targetReps,
     this.targetWeight,
+    this.trackingMode = TrackingMode.weightReps, // v3.2+
   });
 }
 
 /// 組數數據模型
+/// v3.2+ 新增 time, distance, calories 欄位
 class SetData {
   final int setNumber;
   final double? weight;
   final int? reps;
+  final int? time;        // v3.2+ 秒
+  final double? distance; // v3.2+ 公尺
+  final double? calories; // v3.2+ 大卡
   final bool isCompleted;
   final String? previousData; // 上一組參考數據（如 "60x10"）
 
@@ -34,6 +42,9 @@ class SetData {
     required this.setNumber,
     this.weight,
     this.reps,
+    this.time,
+    this.distance,
+    this.calories,
     this.isCompleted = false,
     this.previousData,
   });
@@ -42,6 +53,9 @@ class SetData {
     int? setNumber,
     double? weight,
     int? reps,
+    int? time,
+    double? distance,
+    double? calories,
     bool? isCompleted,
     String? previousData,
   }) {
@@ -49,6 +63,9 @@ class SetData {
       setNumber: setNumber ?? this.setNumber,
       weight: weight ?? this.weight,
       reps: reps ?? this.reps,
+      time: time ?? this.time,
+      distance: distance ?? this.distance,
+      calories: calories ?? this.calories,
       isCompleted: isCompleted ?? this.isCompleted,
       previousData: previousData ?? this.previousData,
     );
@@ -70,7 +87,14 @@ class ExerciseCard extends StatelessWidget {
   final int? activeSetNumber;
 
   /// 組數數據更新回調
-  final Function(int setNumber, double? weight, int? reps) onSetUpdate;
+  /// v3.2+ 支援所有追蹤模式欄位
+  final Function(int setNumber, {
+    double? weight,
+    int? reps,
+    int? time,
+    double? distance,
+    double? calories,
+  }) onSetUpdate;
 
   /// 組數完成狀態切換回調
   final Function(int setNumber) onSetComplete;
@@ -165,12 +189,23 @@ class ExerciseCard extends StatelessWidget {
                   setNumber: set.setNumber,
                   weight: set.weight,
                   reps: set.reps,
+                  time: set.time,           // v3.2+
+                  distance: set.distance,   // v3.2+
+                  calories: set.calories,   // v3.2+
+                  trackingMode: data.trackingMode, // v3.2+
                   previousData: set.previousData,
                   isCompleted: set.isCompleted,
                   isActive: set.setNumber == activeSetNumber,
                   isEditable: isEditable,
-                  onUpdate: (weight, reps) {
-                    onSetUpdate(set.setNumber, weight, reps);
+                  onUpdate: ({double? weight, int? reps, int? time, double? distance, double? calories}) {
+                    onSetUpdate(
+                      set.setNumber,
+                      weight: weight,
+                      reps: reps,
+                      time: time,
+                      distance: distance,
+                      calories: calories,
+                    );
                   },
                   onComplete: () {
                     onSetComplete(set.setNumber);
@@ -291,6 +326,7 @@ class ExerciseCard extends StatelessWidget {
   }
 
   /// 構建表頭
+  /// v3.2+ 根據 trackingMode 顯示不同表頭
   Widget _buildTableHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -303,14 +339,59 @@ class ExerciseCard extends StatelessWidget {
           const SizedBox(width: AppTheme.spacingSm),
           _buildHeaderCell(context, 'PREV', width: 60),
           const SizedBox(width: AppTheme.spacingSm),
-          _buildHeaderCell(context, 'KG', flex: 3),
-          const SizedBox(width: AppTheme.spacingSm),
-          _buildHeaderCell(context, 'REPS', flex: 3),
+          // v3.2+ 根據 trackingMode 顯示不同欄位
+          ..._buildTrackingModeHeaders(context),
           const SizedBox(width: AppTheme.spacingSm),
           const SizedBox(width: 40), // Checkmark 空位
         ],
       ),
     );
+  }
+
+  /// v3.2+ 根據追蹤模式構建表頭欄位
+  List<Widget> _buildTrackingModeHeaders(BuildContext context) {
+    switch (data.trackingMode) {
+      case TrackingMode.weightReps:
+        return [
+          _buildHeaderCell(context, 'KG', flex: 3),
+          const SizedBox(width: AppTheme.spacingSm),
+          _buildHeaderCell(context, 'REPS', flex: 3),
+        ];
+      case TrackingMode.weightTime:
+        return [
+          _buildHeaderCell(context, 'KG', flex: 3),
+          const SizedBox(width: AppTheme.spacingSm),
+          _buildHeaderCell(context, 'TIME', flex: 3),
+        ];
+      case TrackingMode.repsOnly:
+        return [
+          _buildHeaderCell(context, 'REPS', flex: 6),
+        ];
+      case TrackingMode.timeOnly:
+        return [
+          _buildHeaderCell(context, 'TIME', flex: 6),
+        ];
+      case TrackingMode.repsTime:
+        return [
+          _buildHeaderCell(context, 'REPS', flex: 3),
+          const SizedBox(width: AppTheme.spacingSm),
+          _buildHeaderCell(context, 'TIME', flex: 3),
+        ];
+      case TrackingMode.distanceTime:
+        return [
+          _buildHeaderCell(context, 'DIST', flex: 3),
+          const SizedBox(width: AppTheme.spacingSm),
+          _buildHeaderCell(context, 'TIME', flex: 3),
+        ];
+      case TrackingMode.distanceOnly:
+        return [
+          _buildHeaderCell(context, 'DIST', flex: 6),
+        ];
+      case TrackingMode.calories:
+        return [
+          _buildHeaderCell(context, 'KCAL', flex: 6),
+        ];
+    }
   }
 
   /// 構建表頭單元格
@@ -527,6 +608,7 @@ class _NoteInputFieldState extends State<_NoteInputField> {
 ///
 /// 用於輸入每組的重量和次數，並標記完成狀態
 /// 整合 JetBrains Mono 字體以確保數字對齊
+/// v3.2+ 支援多元追蹤模式
 class SetInputRow extends StatefulWidget {
   /// 組數序號（1, 2, 3...）
   final int setNumber;
@@ -536,6 +618,18 @@ class SetInputRow extends StatefulWidget {
 
   /// 當前次數值
   final int? reps;
+
+  /// v3.2+ 當前時間值（秒）
+  final int? time;
+
+  /// v3.2+ 當前距離值（公尺）
+  final double? distance;
+
+  /// v3.2+ 當前卡路里值（大卡）
+  final double? calories;
+
+  /// v3.2+ 追蹤模式
+  final TrackingMode trackingMode;
 
   /// 上一組的參考數據（用於顯示）
   final String? previousData;
@@ -549,8 +643,8 @@ class SetInputRow extends StatefulWidget {
   /// 是否可編輯（過去的訓練不可編輯）
   final bool isEditable;
 
-  /// 數據更新回調
-  final Function(double? weight, int? reps) onUpdate;
+  /// 數據更新回調（v3.2+ 支援所有欄位）
+  final Function({double? weight, int? reps, int? time, double? distance, double? calories}) onUpdate;
 
   /// 完成狀態切換回調
   final VoidCallback onComplete;
@@ -559,6 +653,10 @@ class SetInputRow extends StatefulWidget {
     required this.setNumber,
     this.weight,
     this.reps,
+    this.time,
+    this.distance,
+    this.calories,
+    this.trackingMode = TrackingMode.weightReps,
     this.previousData,
     this.isCompleted = false,
     this.isActive = false,
@@ -573,26 +671,81 @@ class SetInputRow extends StatefulWidget {
 }
 
 class _SetInputRowState extends State<SetInputRow> {
-  late TextEditingController _weightController;
-  late TextEditingController _repsController;
-  late FocusNode _weightFocusNode;
-  late FocusNode _repsFocusNode;
+  // 通用控制器：根據 trackingMode 可能使用不同欄位
+  late TextEditingController _field1Controller; // weight, reps, time, distance, calories
+  late TextEditingController _field2Controller; // reps, time（雙欄位模式）
+  late FocusNode _field1FocusNode;
+  late FocusNode _field2FocusNode;
 
   @override
   void initState() {
     super.initState();
+    _initControllers();
+  }
 
-    // 初始化控制器
-    _weightController = TextEditingController(
-      text: widget.weight != null ? _formatNumber(widget.weight!) : '',
-    );
-    _repsController = TextEditingController(
-      text: widget.reps?.toString() ?? '',
-    );
+  /// v3.2+ 根據追蹤模式初始化控制器
+  void _initControllers() {
+    _field1FocusNode = FocusNode();
+    _field2FocusNode = FocusNode();
 
-    // 初始化焦點節點
-    _weightFocusNode = FocusNode();
-    _repsFocusNode = FocusNode();
+    switch (widget.trackingMode) {
+      case TrackingMode.weightReps:
+        _field1Controller = TextEditingController(
+          text: widget.weight != null ? _formatNumber(widget.weight!) : '',
+        );
+        _field2Controller = TextEditingController(
+          text: widget.reps?.toString() ?? '',
+        );
+        break;
+      case TrackingMode.weightTime:
+        _field1Controller = TextEditingController(
+          text: widget.weight != null ? _formatNumber(widget.weight!) : '',
+        );
+        _field2Controller = TextEditingController(
+          text: widget.time?.toString() ?? '',
+        );
+        break;
+      case TrackingMode.repsOnly:
+        _field1Controller = TextEditingController(
+          text: widget.reps?.toString() ?? '',
+        );
+        _field2Controller = TextEditingController();
+        break;
+      case TrackingMode.timeOnly:
+        _field1Controller = TextEditingController(
+          text: widget.time?.toString() ?? '',
+        );
+        _field2Controller = TextEditingController();
+        break;
+      case TrackingMode.repsTime:
+        _field1Controller = TextEditingController(
+          text: widget.reps?.toString() ?? '',
+        );
+        _field2Controller = TextEditingController(
+          text: widget.time?.toString() ?? '',
+        );
+        break;
+      case TrackingMode.distanceTime:
+        _field1Controller = TextEditingController(
+          text: widget.distance != null ? _formatNumber(widget.distance!) : '',
+        );
+        _field2Controller = TextEditingController(
+          text: widget.time?.toString() ?? '',
+        );
+        break;
+      case TrackingMode.distanceOnly:
+        _field1Controller = TextEditingController(
+          text: widget.distance != null ? _formatNumber(widget.distance!) : '',
+        );
+        _field2Controller = TextEditingController();
+        break;
+      case TrackingMode.calories:
+        _field1Controller = TextEditingController(
+          text: widget.calories != null ? _formatNumber(widget.calories!) : '',
+        );
+        _field2Controller = TextEditingController();
+        break;
+    }
   }
 
   @override
@@ -601,12 +754,59 @@ class _SetInputRowState extends State<SetInputRow> {
 
     // 當外部數據更新時，同步更新控制器
     // 只有當值真的改變且當前輸入框沒有焦點時才更新
-    if (widget.weight != oldWidget.weight && !_weightFocusNode.hasFocus) {
-      _weightController.text =
-          widget.weight != null ? _formatNumber(widget.weight!) : '';
-    }
-    if (widget.reps != oldWidget.reps && !_repsFocusNode.hasFocus) {
-      _repsController.text = widget.reps?.toString() ?? '';
+    switch (widget.trackingMode) {
+      case TrackingMode.weightReps:
+        if (widget.weight != oldWidget.weight && !_field1FocusNode.hasFocus) {
+          _field1Controller.text = widget.weight != null ? _formatNumber(widget.weight!) : '';
+        }
+        if (widget.reps != oldWidget.reps && !_field2FocusNode.hasFocus) {
+          _field2Controller.text = widget.reps?.toString() ?? '';
+        }
+        break;
+      case TrackingMode.weightTime:
+        if (widget.weight != oldWidget.weight && !_field1FocusNode.hasFocus) {
+          _field1Controller.text = widget.weight != null ? _formatNumber(widget.weight!) : '';
+        }
+        if (widget.time != oldWidget.time && !_field2FocusNode.hasFocus) {
+          _field2Controller.text = widget.time?.toString() ?? '';
+        }
+        break;
+      case TrackingMode.repsOnly:
+        if (widget.reps != oldWidget.reps && !_field1FocusNode.hasFocus) {
+          _field1Controller.text = widget.reps?.toString() ?? '';
+        }
+        break;
+      case TrackingMode.timeOnly:
+        if (widget.time != oldWidget.time && !_field1FocusNode.hasFocus) {
+          _field1Controller.text = widget.time?.toString() ?? '';
+        }
+        break;
+      case TrackingMode.repsTime:
+        if (widget.reps != oldWidget.reps && !_field1FocusNode.hasFocus) {
+          _field1Controller.text = widget.reps?.toString() ?? '';
+        }
+        if (widget.time != oldWidget.time && !_field2FocusNode.hasFocus) {
+          _field2Controller.text = widget.time?.toString() ?? '';
+        }
+        break;
+      case TrackingMode.distanceTime:
+        if (widget.distance != oldWidget.distance && !_field1FocusNode.hasFocus) {
+          _field1Controller.text = widget.distance != null ? _formatNumber(widget.distance!) : '';
+        }
+        if (widget.time != oldWidget.time && !_field2FocusNode.hasFocus) {
+          _field2Controller.text = widget.time?.toString() ?? '';
+        }
+        break;
+      case TrackingMode.distanceOnly:
+        if (widget.distance != oldWidget.distance && !_field1FocusNode.hasFocus) {
+          _field1Controller.text = widget.distance != null ? _formatNumber(widget.distance!) : '';
+        }
+        break;
+      case TrackingMode.calories:
+        if (widget.calories != oldWidget.calories && !_field1FocusNode.hasFocus) {
+          _field1Controller.text = widget.calories != null ? _formatNumber(widget.calories!) : '';
+        }
+        break;
     }
   }
 
@@ -622,10 +822,10 @@ class _SetInputRowState extends State<SetInputRow> {
 
   @override
   void dispose() {
-    _weightController.dispose();
-    _repsController.dispose();
-    _weightFocusNode.dispose();
-    _repsFocusNode.dispose();
+    _field1Controller.dispose();
+    _field2Controller.dispose();
+    _field1FocusNode.dispose();
+    _field2FocusNode.dispose();
     super.dispose();
   }
 
@@ -679,77 +879,36 @@ class _SetInputRowState extends State<SetInputRow> {
           const SizedBox(width: AppTheme.spacingSm),
 
           // ========================================
-          // 上一組參考數據（佔 20%）
+          // 上一組參考數據（固定寬度，保持對齊）
           // ========================================
-          if (widget.previousData != null) ...[
-            SizedBox(
-              width: 60,
-              child: Center(
-                child: Text(
-                  widget.previousData!,
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 12,
-                    color: colorScheme.onSurface.withOpacity(0.4),
-                    fontStyle: FontStyle.italic,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-            const SizedBox(width: AppTheme.spacingSm),
-          ],
-
-          // ========================================
-          // 重量輸入框（佔 25%）
-          // ========================================
-          Expanded(
-            flex: 3,
-            child: _buildNumberInput(
-              controller: _weightController,
-              focusNode: _weightFocusNode,
-              hintText: 'kg',
-              enabled: isEditable,
-              isCompleted: widget.isCompleted,
-              onChanged: (value) {
-                widget.onUpdate(
-                  double.tryParse(value),
-                  int.tryParse(_repsController.text),
-                );
-              },
-              onSubmitted: (_) {
-                // 按下 Enter 後跳到次數輸入框
-                FocusScope.of(context).requestFocus(_repsFocusNode);
-              },
-              textInputAction: TextInputAction.next,
+          SizedBox(
+            width: 60,
+            child: Center(
+              child: widget.previousData != null
+                  ? Text(
+                      widget.previousData!,
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withOpacity(0.4),
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.center,
+                    )
+                  : Text(
+                      '-',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withOpacity(0.2),
+                      ),
+                    ),
             ),
           ),
-
           const SizedBox(width: AppTheme.spacingSm),
 
           // ========================================
-          // 次數輸入框（佔 25%）
+          // v3.2+ 根據追蹤模式顯示輸入欄位
           // ========================================
-          Expanded(
-            flex: 3,
-            child: _buildNumberInput(
-              controller: _repsController,
-              focusNode: _repsFocusNode,
-              hintText: 'reps',
-              enabled: isEditable,
-              isCompleted: widget.isCompleted,
-              onChanged: (value) {
-                widget.onUpdate(
-                  double.tryParse(_weightController.text),
-                  int.tryParse(value),
-                );
-              },
-              onSubmitted: (_) {
-                // 按下 Enter 後收起鍵盤
-                FocusScope.of(context).unfocus();
-              },
-              textInputAction: TextInputAction.done,
-            ),
-          ),
+          ..._buildTrackingModeInputs(context, isEditable),
 
           const SizedBox(width: AppTheme.spacingSm),
 
@@ -797,6 +956,244 @@ class _SetInputRowState extends State<SetInputRow> {
         ],
       ),
     );
+  }
+
+  /// v3.2+ 根據追蹤模式構建輸入欄位
+  List<Widget> _buildTrackingModeInputs(BuildContext context, bool isEditable) {
+    switch (widget.trackingMode) {
+      case TrackingMode.weightReps:
+        return [
+          Expanded(
+            flex: 3,
+            child: _buildNumberInput(
+              controller: _field1Controller,
+              focusNode: _field1FocusNode,
+              hintText: 'kg',
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              onChanged: (value) {
+                widget.onUpdate(
+                  weight: double.tryParse(value),
+                  reps: int.tryParse(_field2Controller.text),
+                );
+              },
+              onSubmitted: (_) => FocusScope.of(context).requestFocus(_field2FocusNode),
+              textInputAction: TextInputAction.next,
+            ),
+          ),
+          const SizedBox(width: AppTheme.spacingSm),
+          Expanded(
+            flex: 3,
+            child: _buildNumberInput(
+              controller: _field2Controller,
+              focusNode: _field2FocusNode,
+              hintText: 'reps',
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              onChanged: (value) {
+                widget.onUpdate(
+                  weight: double.tryParse(_field1Controller.text),
+                  reps: int.tryParse(value),
+                );
+              },
+              onSubmitted: (_) => FocusScope.of(context).unfocus(),
+              textInputAction: TextInputAction.done,
+            ),
+          ),
+        ];
+      case TrackingMode.weightTime:
+        return [
+          Expanded(
+            flex: 3,
+            child: _buildNumberInput(
+              controller: _field1Controller,
+              focusNode: _field1FocusNode,
+              hintText: 'kg',
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              onChanged: (value) {
+                widget.onUpdate(
+                  weight: double.tryParse(value),
+                  time: int.tryParse(_field2Controller.text),
+                );
+              },
+              onSubmitted: (_) => FocusScope.of(context).requestFocus(_field2FocusNode),
+              textInputAction: TextInputAction.next,
+            ),
+          ),
+          const SizedBox(width: AppTheme.spacingSm),
+          Expanded(
+            flex: 3,
+            child: _buildNumberInput(
+              controller: _field2Controller,
+              focusNode: _field2FocusNode,
+              hintText: 'sec',
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              onChanged: (value) {
+                widget.onUpdate(
+                  weight: double.tryParse(_field1Controller.text),
+                  time: int.tryParse(value),
+                );
+              },
+              onSubmitted: (_) => FocusScope.of(context).unfocus(),
+              textInputAction: TextInputAction.done,
+            ),
+          ),
+        ];
+      case TrackingMode.repsOnly:
+        return [
+          Expanded(
+            flex: 6,
+            child: _buildNumberInput(
+              controller: _field1Controller,
+              focusNode: _field1FocusNode,
+              hintText: 'reps',
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              onChanged: (value) {
+                widget.onUpdate(reps: int.tryParse(value));
+              },
+              onSubmitted: (_) => FocusScope.of(context).unfocus(),
+              textInputAction: TextInputAction.done,
+            ),
+          ),
+        ];
+      case TrackingMode.timeOnly:
+        return [
+          Expanded(
+            flex: 6,
+            child: _buildNumberInput(
+              controller: _field1Controller,
+              focusNode: _field1FocusNode,
+              hintText: 'sec',
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              onChanged: (value) {
+                widget.onUpdate(time: int.tryParse(value));
+              },
+              onSubmitted: (_) => FocusScope.of(context).unfocus(),
+              textInputAction: TextInputAction.done,
+            ),
+          ),
+        ];
+      case TrackingMode.repsTime:
+        return [
+          Expanded(
+            flex: 3,
+            child: _buildNumberInput(
+              controller: _field1Controller,
+              focusNode: _field1FocusNode,
+              hintText: 'reps',
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              onChanged: (value) {
+                widget.onUpdate(
+                  reps: int.tryParse(value),
+                  time: int.tryParse(_field2Controller.text),
+                );
+              },
+              onSubmitted: (_) => FocusScope.of(context).requestFocus(_field2FocusNode),
+              textInputAction: TextInputAction.next,
+            ),
+          ),
+          const SizedBox(width: AppTheme.spacingSm),
+          Expanded(
+            flex: 3,
+            child: _buildNumberInput(
+              controller: _field2Controller,
+              focusNode: _field2FocusNode,
+              hintText: 'sec',
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              onChanged: (value) {
+                widget.onUpdate(
+                  reps: int.tryParse(_field1Controller.text),
+                  time: int.tryParse(value),
+                );
+              },
+              onSubmitted: (_) => FocusScope.of(context).unfocus(),
+              textInputAction: TextInputAction.done,
+            ),
+          ),
+        ];
+      case TrackingMode.distanceTime:
+        return [
+          Expanded(
+            flex: 3,
+            child: _buildNumberInput(
+              controller: _field1Controller,
+              focusNode: _field1FocusNode,
+              hintText: 'm',
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              onChanged: (value) {
+                widget.onUpdate(
+                  distance: double.tryParse(value),
+                  time: int.tryParse(_field2Controller.text),
+                );
+              },
+              onSubmitted: (_) => FocusScope.of(context).requestFocus(_field2FocusNode),
+              textInputAction: TextInputAction.next,
+            ),
+          ),
+          const SizedBox(width: AppTheme.spacingSm),
+          Expanded(
+            flex: 3,
+            child: _buildNumberInput(
+              controller: _field2Controller,
+              focusNode: _field2FocusNode,
+              hintText: 'sec',
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              onChanged: (value) {
+                widget.onUpdate(
+                  distance: double.tryParse(_field1Controller.text),
+                  time: int.tryParse(value),
+                );
+              },
+              onSubmitted: (_) => FocusScope.of(context).unfocus(),
+              textInputAction: TextInputAction.done,
+            ),
+          ),
+        ];
+      case TrackingMode.distanceOnly:
+        return [
+          Expanded(
+            flex: 6,
+            child: _buildNumberInput(
+              controller: _field1Controller,
+              focusNode: _field1FocusNode,
+              hintText: 'm',
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              onChanged: (value) {
+                widget.onUpdate(distance: double.tryParse(value));
+              },
+              onSubmitted: (_) => FocusScope.of(context).unfocus(),
+              textInputAction: TextInputAction.done,
+            ),
+          ),
+        ];
+      case TrackingMode.calories:
+        return [
+          Expanded(
+            flex: 6,
+            child: _buildNumberInput(
+              controller: _field1Controller,
+              focusNode: _field1FocusNode,
+              hintText: 'kcal',
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              onChanged: (value) {
+                widget.onUpdate(calories: double.tryParse(value));
+              },
+              onSubmitted: (_) => FocusScope.of(context).unfocus(),
+              textInputAction: TextInputAction.done,
+            ),
+          ),
+        ];
+    }
   }
 
   /// 構建數字輸入框

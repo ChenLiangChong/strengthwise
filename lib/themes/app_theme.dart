@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 /// 基於設計團隊最終決策的 Titanium Blue 配色方案
 /// 體現「打熬」精神的專屬色票系統
 ///
-/// 設計文檔：docs/UI_UX_GUIDELINES.md
+/// 設計文檔：docs/UI_DEVELOPER_GUIDE.md
 /// 設計決策：docs/COLOR_SPEC_ANALYSIS.md
 class AppTheme {
   // ---------------------------------------------------------------------------

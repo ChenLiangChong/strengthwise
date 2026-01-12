@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,7 @@ import 'package:strengthwise/utils/notification_utils.dart';
 /// 掃描 QR Code Tab（共用 Widget）
 ///
 /// 用於掃描對方的 QR Code 並建立綁定關係
+/// Web 平台不支援 QR 掃描，顯示邀請碼使用提示
 class ScanQRCodeTab extends StatefulWidget {
   final String myRole; // 'coach' 或 'client'
 
@@ -147,6 +149,11 @@ class _ScanQRCodeTabState extends State<ScanQRCodeTab> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    // ⚡ Web 平台不支援 QR 掃描，顯示邀請碼使用提示
+    if (kIsWeb) {
+      return _buildWebFallback(context, colorScheme);
+    }
+
     if (!_hasPermission) {
       return Center(
         child: Column(
@@ -270,6 +277,80 @@ class _ScanQRCodeTabState extends State<ScanQRCodeTab> {
             ),
           ),
       ],
+    );
+  }
+
+  /// Web 平台不支援 QR 掃描，顯示邀請碼使用提示
+  Widget _buildWebFallback(BuildContext context, ColorScheme colorScheme) {
+    final isCoach = widget.myRole == 'coach';
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 圖示
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.phone_android,
+                size: 64,
+                color: colorScheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // 標題
+            Text(
+              'Web 版暫不支援掃描',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+
+            // 說明
+            Text(
+              isCoach
+                  ? '請使用「我的碼」分頁讓學員掃描您的 QR Code\n或請學員提供邀請碼給您'
+                  : '請使用「我的碼」分頁讓教練掃描您的 QR Code\n或請教練提供邀請碼給您',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+
+            // 提示卡片
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.lightbulb_outline,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '使用手機 App 可體驗完整的 QR 掃描功能',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

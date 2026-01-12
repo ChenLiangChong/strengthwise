@@ -24,6 +24,7 @@ import '../interfaces/i_coach_assessment_note_service.dart';
 import '../interfaces/i_coach_profile_service.dart';
 import '../interfaces/i_readiness_service.dart';
 import '../interfaces/i_notification_service.dart';
+import '../interfaces/i_injury_coach_note_service.dart';
 
 import '../supabase/auth_service_supabase.dart';
 import '../supabase/booking_service_supabase.dart';
@@ -46,6 +47,7 @@ import '../supabase/session_note_service_supabase.dart';
 import '../supabase/client_availability_service_supabase.dart';
 import '../supabase/drawing_service_supabase.dart';
 import '../supabase/invite_code_service_supabase.dart';
+import '../supabase/injury_coach_note_service_supabase.dart';
 
 import '../cache/favorites_service.dart';
 import '../cache/statistics_local_cache_service.dart';
@@ -58,14 +60,14 @@ import '../realtime/session_realtime_service.dart';
 import '../core/onboarding_service.dart';
 
 /// 服務註冊器
-/// 
+///
 /// 負責將所有服務註冊到服務定位器
 class ServiceRegistry {
   /// 註冊所有服務層（懶加載單例）
   static void registerServices(GetIt serviceLocator) {
     // ⚡ Phase 2：先註冊快取服務（其他服務依賴）
     _registerLocalCacheServices(serviceLocator);
-    
+
     _registerAuthService(serviceLocator);
     _registerBookingService(serviceLocator);
     _registerCustomExerciseService(serviceLocator);
@@ -186,7 +188,8 @@ class ServiceRegistry {
         () => UserServiceSupabase(
           errorService: serviceLocator<ErrorHandlingService>(),
           authService: serviceLocator<IAuthService>(),
-          localCacheService: serviceLocator<UserLocalCacheService>(),  // ⚡ 注入 Hive 快取
+          localCacheService:
+              serviceLocator<UserLocalCacheService>(), // ⚡ 注入 Hive 快取
         ),
       );
     }
@@ -199,8 +202,10 @@ class ServiceRegistry {
         () {
           final service = WorkoutServiceSupabase(
             errorService: serviceLocator<ErrorHandlingService>(),
-            localCacheService: serviceLocator<WorkoutPlanLocalCacheService>(),  // ⚡ 注入 Hive 快取
-            statisticsCacheService: serviceLocator<StatisticsLocalCacheService>(),  // ⚡ 統計快取聯動
+            localCacheService:
+                serviceLocator<WorkoutPlanLocalCacheService>(), // ⚡ 注入 Hive 快取
+            statisticsCacheService:
+                serviceLocator<StatisticsLocalCacheService>(), // ⚡ 統計快取聯動
           );
           // 立即初始化，避免警告
           service.initialize();
@@ -218,7 +223,8 @@ class ServiceRegistry {
           supabase: Supabase.instance.client,
           errorService: serviceLocator<ErrorHandlingService>(),
           exerciseService: serviceLocator<IExerciseService>(),
-          localCacheService: serviceLocator<StatisticsLocalCacheService>(),  // ⚡ 注入 Hive 快取
+          localCacheService:
+              serviceLocator<StatisticsLocalCacheService>(), // ⚡ 注入 Hive 快取
         ),
       );
     }
@@ -253,7 +259,8 @@ class ServiceRegistry {
         () => CoachingRelationshipServiceSupabase(
           Supabase.instance.client,
           serviceLocator<ErrorHandlingService>(),
-          localCacheService: serviceLocator<RelationshipLocalCacheService>(),  // ⚡ 注入 Hive 快取
+          localCacheService:
+              serviceLocator<RelationshipLocalCacheService>(), // ⚡ 注入 Hive 快取
         ),
       );
     }
@@ -337,7 +344,7 @@ class ServiceRegistry {
         ),
       );
     }
-    
+
     // 教練顯示偏好服務
     if (!serviceLocator.isRegistered<ICoachDisplayPreferencesService>()) {
       serviceLocator.registerLazySingleton<ICoachDisplayPreferencesService>(
@@ -362,6 +369,16 @@ class ServiceRegistry {
     if (!serviceLocator.isRegistered<ICoachProfileService>()) {
       serviceLocator.registerLazySingleton<ICoachProfileService>(
         () => CoachProfileServiceSupabase(
+          supabase: Supabase.instance.client,
+          errorService: serviceLocator<ErrorHandlingService>(),
+        ),
+      );
+    }
+
+    // ⭐ v3.3: 傷病教練備註服務
+    if (!serviceLocator.isRegistered<IInjuryCoachNoteService>()) {
+      serviceLocator.registerLazySingleton<IInjuryCoachNoteService>(
+        () => InjuryCoachNoteServiceSupabase(
           supabase: Supabase.instance.client,
           errorService: serviceLocator<ErrorHandlingService>(),
         ),
@@ -412,4 +429,3 @@ class ServiceRegistry {
     }
   }
 }
-

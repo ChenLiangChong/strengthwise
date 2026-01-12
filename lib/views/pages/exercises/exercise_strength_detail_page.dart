@@ -1,6 +1,9 @@
 // ✅ 已響應式改造 (Phase 0) - 統計詳情頁
+// v3.3+ 支援多元追蹤模式 + 傳遞數據方案
 import 'package:flutter/material.dart';
 import '../../../models/statistics_model.dart';
+import '../../../models/tracking_mode.dart';
+import '../../../models/favorite_exercise_model.dart';
 import '../../../services/interfaces/i_statistics_service.dart';
 import '../../../services/interfaces/i_favorites_service.dart';
 import '../../../services/service_locator.dart';
@@ -10,14 +13,21 @@ import 'widgets/strength_chart.dart';
 import 'widgets/pr_records_card.dart';
 import 'widgets/training_history_card.dart';
 
-/// 動作力量進步詳情頁面
+/// 動作訓練詳情頁面
+/// v3.3+ 支援多元追蹤模式 + 傳遞數據方案
 ///
-/// 顯示單個動作的完整力量進步曲線、PR 記錄、歷史訓練
+/// 顯示單個動作的完整訓練曲線、PR 記錄、歷史訓練
+/// 非重訓模式只顯示歷史記錄
+/// 
+/// **v3.3+ 傳遞數據方案**：
+/// 優先使用從選擇頁面傳入的 exerciseData，避免重複查詢
+/// 如果查詢詳細歷史失敗，至少顯示基本統計信息
 class ExerciseStrengthDetailPage extends StatefulWidget {
   final String userId;
   final String exerciseId;
   final String exerciseName;
   final TimeRange timeRange;
+  final ExerciseWithRecord? exerciseData; // v3.3+ 從選擇頁面傳入的基本數據
 
   const ExerciseStrengthDetailPage({
     Key? key,
@@ -25,6 +35,7 @@ class ExerciseStrengthDetailPage extends StatefulWidget {
     required this.exerciseId,
     required this.exerciseName,
     required this.timeRange,
+    this.exerciseData, // v3.3+ 可選
   }) : super(key: key);
 
   @override
@@ -50,6 +61,9 @@ class _ExerciseStrengthDetailPageState
     _loadData();
   }
 
+  bool _hasRetried = false; // v3.3+ 避免無限重試
+  bool _hasDetailedHistory = true; // v3.3+ 是否有詳細歷史記錄
+
   /// 載入數據
   Future<void> _loadData() async {
     setState(() {
@@ -58,19 +72,36 @@ class _ExerciseStrengthDetailPageState
     });
 
     try {
-      // ✅ 載入更多力量進步數據（增加 limit 確保包含目標動作）
-      // 或者直接載入所有動作的數據
+      // v3.3+ 修正：恢復使用用戶選擇的時間範圍
+      // 根本問題已在 statistics_data_loader.dart 修復（統一時間判斷邏輯）
       final progressList = await _statisticsService.getStrengthProgress(
         widget.userId,
         widget.timeRange,
-        limit: 1000, // ← 增加 limit 以包含所有動作
+        limit: 1000,
       );
 
       // 找到目標動作
-      final progress = progressList.firstWhere(
-        (p) => p.exerciseId == widget.exerciseId,
-        orElse: () => throw Exception('找不到該動作的訓練記錄\n請確認在選定的時間範圍內有訓練記錄'),
-      );
+      ExerciseStrengthProgress? progress;
+      try {
+        progress = progressList.firstWhere(
+          (p) => p.exerciseId == widget.exerciseId,
+        );
+      } catch (_) {
+        // v3.3+ 找不到時，清除快取重試一次
+        if (!_hasRetried) {
+          _hasRetried = true;
+          _statisticsService.clearCache();
+          return _loadData();
+        }
+        
+        // v3.3+ 如果有傳入的基本數據，使用簡化視圖
+        if (widget.exerciseData != null) {
+          progress = _createBasicProgress(widget.exerciseData!);
+          _hasDetailedHistory = false;
+        } else {
+          throw Exception('找不到該動作的訓練記錄\n請確認有完成過該動作的訓練');
+        }
+      }
 
       // 檢查是否已收藏
       final isFavorite = await _favoritesService.isFavorite(
@@ -84,11 +115,40 @@ class _ExerciseStrengthDetailPageState
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      // v3.3+ 如果有傳入的基本數據，顯示簡化視圖而不是錯誤
+      if (widget.exerciseData != null) {
+        final basicProgress = _createBasicProgress(widget.exerciseData!);
+        final isFavorite = widget.exerciseData!.isFavorite;
+        
+        setState(() {
+          _progress = basicProgress;
+          _isFavorite = isFavorite;
+          _hasDetailedHistory = false;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
+  }
+  
+  /// v3.3+ 從 ExerciseWithRecord 創建基本的進度數據（無歷史記錄）
+  ExerciseStrengthProgress _createBasicProgress(ExerciseWithRecord data) {
+    return ExerciseStrengthProgress(
+      exerciseId: data.exerciseId,
+      exerciseName: data.exerciseName,
+      bodyPart: data.bodyPart,
+      history: [], // 無詳細歷史
+      currentMax: data.maxWeight,
+      previousMax: 0,
+      progressPercentage: 0,
+      totalSets: data.totalSets,
+      averageWeight: data.maxWeight,
+      trackingMode: TrackingMode.weightReps, // 預設
+    );
   }
 
   /// 切換收藏狀態
@@ -182,29 +242,185 @@ class _ExerciseStrengthDetailPageState
       return const Center(child: Text('沒有數據'));
     }
 
+    // v3.3+ 根據追蹤模式決定顯示內容
+    final isWeightBased = _progress!.isWeightBasedMode;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 統計卡片
-          StatisticsCard(progress: _progress!),
-          const SizedBox(height: 16),
+          // v3.3+ 非重訓模式顯示提示訊息
+          if (!isWeightBased) ...[
+            _buildNonWeightModeHeader(),
+            const SizedBox(height: 16),
+          ],
+          
+          // v3.3+ 重訓模式才顯示統計卡片
+          if (isWeightBased) ...[
+            StatisticsCard(progress: _progress!),
+            const SizedBox(height: 16),
 
-          // 力量進步曲線
-          StrengthChart(history: _progress!.history),
-          const SizedBox(height: 16),
+            // v3.3+ 有詳細歷史記錄才顯示圖表和 PR
+            if (_hasDetailedHistory && _progress!.history.isNotEmpty) ...[
+              // 力量進步曲線
+              StrengthChart(history: _progress!.history),
+              const SizedBox(height: 16),
 
-          // PR 記錄
-          PRRecordsCard(
-            prRecords: _progress!.history.where((p) => p.isPR).toList(),
-          ),
-          const SizedBox(height: 16),
+              // PR 記錄
+              PRRecordsCard(
+                prRecords: _progress!.history.where((p) => p.isPR).toList(),
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            // v3.3+ 無詳細歷史記錄時顯示提示
+            if (!_hasDetailedHistory) ...[
+              _buildNoHistoryHint(),
+              const SizedBox(height: 16),
+            ],
+          ],
 
-          // 歷史記錄
-          TrainingHistoryCard(history: _progress!.history),
+          // 歷史記錄（有記錄才顯示）
+          if (_hasDetailedHistory && _progress!.history.isNotEmpty)
+            TrainingHistoryCard(history: _progress!.history)
+          else if (!_hasDetailedHistory)
+            _buildBasicInfoCard(),
         ],
       ),
     );
+  }
+  
+  /// v3.3+ 無詳細歷史記錄時的提示卡片
+  Widget _buildNoHistoryHint() {
+    return Card(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '詳細訓練歷史記錄載入中，或暫無完整記錄',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  /// v3.3+ 基本信息卡片（當無詳細歷史時顯示）
+  Widget _buildBasicInfoCard() {
+    final data = widget.exerciseData;
+    if (data == null) return const SizedBox();
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '基本統計',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildStatRow('最大重量', data.formattedMaxWeight),
+            _buildStatRow('訓練組數', '${data.totalSets} 組'),
+            _buildStatRow('最後訓練', data.formattedLastTrainingDate),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildStatRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// v3.3+ 非重訓模式的標題提示
+  Widget _buildNonWeightModeHeader() {
+    final trackingMode = _progress!.trackingMode;
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(
+              _getTrackingModeIcon(trackingMode),
+              size: 32,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    trackingMode.displayName,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '此動作不追蹤重量進步，僅顯示訓練歷史記錄',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  /// v3.3+ 根據追蹤模式取得圖示
+  IconData _getTrackingModeIcon(TrackingMode mode) {
+    switch (mode) {
+      case TrackingMode.weightReps:
+      case TrackingMode.weightTime:
+        return Icons.fitness_center;
+      case TrackingMode.repsOnly:
+        return Icons.repeat;
+      case TrackingMode.timeOnly:
+      case TrackingMode.repsTime:
+        return Icons.timer;
+      case TrackingMode.distanceTime:
+      case TrackingMode.distanceOnly:
+        return Icons.straighten;
+      case TrackingMode.calories:
+        return Icons.local_fire_department;
+    }
   }
 }

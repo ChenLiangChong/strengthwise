@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
@@ -8,8 +9,8 @@ import 'package:strengthwise/services/service_locator.dart';
 /// 生成邀請碼對話框（教練專用）
 ///
 /// 功能：
-/// - 生成 6 位邀請碼
-/// - 顯示倒計時（5 分鐘）
+/// - 生成 6 位邀請碼（快取 5 分鐘內有效的邀請碼）
+/// - 顯示即時倒計時（每秒更新）
 /// - 複製功能
 /// - 用完即刪，無需管理
 class GenerateInviteCodeDialog extends StatefulWidget {
@@ -30,11 +31,24 @@ class _GenerateInviteCodeDialogState extends State<GenerateInviteCodeDialog> {
   bool _isGenerating = false;
   late final CoachingRelationshipController _controller;
 
+  /// ⭐ 倒數計時器
+  Timer? _countdownTimer;
+
+  /// ⭐ 剩餘時間文字（每秒更新）
+  String _remainingTimeText = '';
+
   @override
   void initState() {
     super.initState();
     _controller = serviceLocator<CoachingRelationshipController>();
     _generateCode();
+  }
+
+  @override
+  void dispose() {
+    // ⭐ 清理 Timer
+    _countdownTimer?.cancel();
+    super.dispose();
   }
 
   /// 生成邀請碼
@@ -49,7 +63,11 @@ class _GenerateInviteCodeDialogState extends State<GenerateInviteCodeDialog> {
       setState(() {
         _inviteCode = inviteCode;
         _isGenerating = false;
+        _remainingTimeText = inviteCode.remainingTimeText;
       });
+
+      // ⭐ 啟動倒數計時器
+      _startCountdown();
     } else {
       if (mounted) {
         NotificationUtils.showError(
@@ -59,6 +77,32 @@ class _GenerateInviteCodeDialogState extends State<GenerateInviteCodeDialog> {
         Navigator.of(context).pop();
       }
     }
+  }
+
+  /// ⭐ 啟動倒數計時器（每秒更新）
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      if (_inviteCode == null || !_inviteCode!.isValid) {
+        // 邀請碼已過期，清除快取並關閉對話框
+        timer.cancel();
+        _controller.clearInviteCodeCache();
+        if (mounted) {
+          NotificationUtils.showWarning(context, '邀請碼已過期，請重新生成');
+          Navigator.of(context).pop();
+        }
+        return;
+      }
+
+      setState(() {
+        _remainingTimeText = _inviteCode!.remainingTimeText;
+      });
+    });
   }
 
   /// 複製邀請碼
@@ -123,7 +167,7 @@ class _GenerateInviteCodeDialogState extends State<GenerateInviteCodeDialog> {
                       ),
                       const SizedBox(height: 16),
 
-                      // 剩餘時間
+                      // 剩餘時間（每秒更新）
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -131,14 +175,14 @@ class _GenerateInviteCodeDialogState extends State<GenerateInviteCodeDialog> {
                             Icons.timer_outlined,
                             size: 16,
                             color: colorScheme.onPrimaryContainer
-                                .withOpacity(0.7),
+                                .withValues(alpha: 0.7),
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '剩餘：${_inviteCode?.remainingTimeText ?? ''}',
+                            '剩餘：$_remainingTimeText',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: colorScheme.onPrimaryContainer
-                                  .withOpacity(0.7),
+                                  .withValues(alpha: 0.7),
                             ),
                           ),
                         ],

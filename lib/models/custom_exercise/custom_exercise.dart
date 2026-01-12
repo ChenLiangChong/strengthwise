@@ -1,4 +1,5 @@
 import 'custom_exercise_mapper.dart';
+import '../tracking_mode.dart';
 
 /// 用戶自定義訓練動作模型
 ///
@@ -10,6 +11,7 @@ import 'custom_exercise_mapper.dart';
 /// - 可設定器材類型
 /// - 可選擇訓練類型（心肺適能訓練/活動度與伸展/阻力訓練）
 /// - 支援雙語系統（中文/英文）
+/// - v3.2+ 支援多元追蹤模式
 class CustomExercise {
   final String id;          // Firestore 相容 ID
   final String name;        // 動作名稱
@@ -24,6 +26,7 @@ class CustomExercise {
   final String notes;       // 個人筆記（選填）
   final DateTime createdAt;
   final DateTime updatedAt;
+  final TrackingMode trackingMode; // v3.2+ 追蹤模式
 
   /// 創建一個自定義訓練動作實例
   CustomExercise({
@@ -40,6 +43,7 @@ class CustomExercise {
     this.notes = '',
     required this.createdAt,
     DateTime? updatedAt,
+    this.trackingMode = TrackingMode.weightReps,
   }) : updatedAt = updatedAt ?? createdAt;
 
   /// 從 Supabase 數據創建對象（snake_case 欄位）
@@ -67,6 +71,7 @@ class CustomExercise {
     String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
+    TrackingMode? trackingMode,
   }) {
     return CustomExercise(
       id: id ?? this.id,
@@ -82,6 +87,7 @@ class CustomExercise {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      trackingMode: trackingMode ?? this.trackingMode,
     );
   }
   

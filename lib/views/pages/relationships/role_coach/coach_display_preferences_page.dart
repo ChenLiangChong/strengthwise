@@ -180,21 +180,23 @@ class _CoachDisplayPreferencesPageState
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                  const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                  // 欄位列表
-                  ...CoachDisplayPreferencesModel.availableFields.entries.map(
-                    (entry) => _buildFieldTile(theme, entry.key, entry.value),
-                  ),
+                      // 欄位列表
+                      ...CoachDisplayPreferencesModel.availableFields.entries
+                          .map(
+                        (entry) =>
+                            _buildFieldTile(theme, entry.key, entry.value),
+                      ),
 
-                  const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
                       // 選中計數
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color:
-                              theme.colorScheme.primaryContainer.withOpacity(0.3),
+                          color: theme.colorScheme.primaryContainer
+                              .withOpacity(0.3),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -275,14 +277,14 @@ class _CoachDisplayPreferencesPageState
         return Icons.health_and_safety;
       case 'injuries':
         return Icons.healing;
-      case 'medications':
-        return Icons.medication;
       case 'cardiovascular':
         return Icons.favorite;
-      case 'metabolic':
-        return Icons.biotech;
-      case 'respiratory':
-        return Icons.air;
+      case 'bone_joint': // ⭐ v3.3: 新增
+        return Icons.accessibility_new;
+      case 'medications':
+        return Icons.medication;
+      case 'other_health_issues': // ⭐ v3.3: 新增
+        return Icons.info_outline;
       case 'training_experience':
         return Icons.fitness_center;
       case 'occupation_activity':

@@ -8,11 +8,56 @@
 
 ## 📋 目錄
 
-1. [Release APK 構建](#release-apk-構建)
-2. [Google Play 上架](#google-play-上架)
-3. [Google Sign-In 配置](#google-sign-in-配置)
-4. [Email Deep Link 配置](#email-deep-link-配置)
-5. [發布檢查清單](#發布檢查清單)
+1. [Web PWA 部署](#web-pwa-部署)
+2. [Release APK 構建](#release-apk-構建)
+3. [Google Play 上架](#google-play-上架)
+4. [Google Sign-In 配置](#google-sign-in-配置)
+5. [Email Deep Link 配置](#email-deep-link-配置)
+6. [發布檢查清單](#發布檢查清單)
+
+---
+
+## 🌐 Web PWA 部署
+
+> iOS 暫未上架，透過 PWA 讓用戶體驗接近原生 App
+
+### Google OAuth Web 設定
+
+**已完成配置**（2026-01-11）：
+
+| 項目 | 值 |
+|------|-----|
+| Web Client ID | `254965941837-19m8q4n7snie04mph7g1nbdf345dldpc.apps.googleusercontent.com` |
+| Redirect URI | `https://fihkhoogvkccgpbgjhpw.supabase.co/auth/v1/callback` |
+
+**Supabase Client IDs 配置**：
+```
+254965941837-bp00e1l33hbvss4tpb94t9i16g8729e6.apps.googleusercontent.com,254965941837-4bv8622d876egpa9mdvpjveubavqr3hp.apps.googleusercontent.com,254965941837-19m8q4n7snie04mph7g1nbdf345dldpc.apps.googleusercontent.com
+```
+
+### 建構 Web 版本
+
+```bash
+# 建構 Web
+flutter build web --release
+
+# 輸出位置
+build/web/
+```
+
+### Vercel 部署（待完成）
+
+1. 安裝 Vercel CLI：`npm i -g vercel`
+2. 切換到 build/web：`cd build/web`
+3. 部署：`vercel --prod`
+4. 更新 Google OAuth JavaScript Origins
+
+### PWA 安裝引導
+
+| 平台 | 安裝方式 |
+|------|----------|
+| Android Chrome | 自動彈出「加到主畫面」提示 |
+| iOS Safari | 手動「分享 → 加到主畫面」|
 
 ---
 

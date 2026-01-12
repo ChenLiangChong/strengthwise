@@ -1,4 +1,4 @@
-﻿---
+---
 description: "UI 文檔更新規範：UI_DESIGN_SYSTEM.md 與 UI_DEVELOPER_GUIDE.md 的維護。"
 globs: docs/UI*.md
 alwaysApply: false
@@ -91,6 +91,5 @@ UI_DEVELOPER_GUIDE.md
 □ UI_DESIGN_SYSTEM.md - 更新設計理由（如有）
 □ UI_DEVELOPER_GUIDE.md - 更新數值表
 □ app_theme.dart - 更新代碼
-□ 130-flutter-ui-widgets.md - 只有「規則變更」時才更新
+□ 130-flutter-ui-widgets.mdc - 只有「規則變更」時才更新
 ```
-

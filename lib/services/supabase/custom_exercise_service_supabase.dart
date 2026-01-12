@@ -111,6 +111,7 @@ class CustomExerciseServiceSupabase implements ICustomExerciseService {
     String equipment = '徒手',
     String description = '',
     String notes = '',
+    String trackingMode = 'weight_reps', // v3.2+
   }) async {
     _ensureInitialized();
 
@@ -128,6 +129,7 @@ class CustomExerciseServiceSupabase implements ICustomExerciseService {
         equipment: equipment,
         description: description,
         notes: notes,
+        trackingMode: trackingMode, // v3.2+
       );
 
       // 更新緩存
@@ -215,6 +217,7 @@ class CustomExerciseServiceSupabase implements ICustomExerciseService {
     String? equipment,
     String? description,
     String? notes,
+    String? trackingMode, // v3.2+
   }) async {
     _ensureInitialized();
 
@@ -233,6 +236,7 @@ class CustomExerciseServiceSupabase implements ICustomExerciseService {
         equipment: equipment,
         description: description,
         notes: notes,
+        trackingMode: trackingMode, // v3.2+
       );
 
       // 清除緩存

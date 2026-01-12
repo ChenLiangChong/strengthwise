@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -11,7 +12,7 @@ class NotificationHelpers {
   }) {
     if (forceBottom) return false;
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-    return Platform.isIOS || isKeyboardOpen;
+    return (!kIsWeb && Platform.isIOS) || isKeyboardOpen;
   }
 
   /// 判斷是否為深色模式
@@ -78,4 +79,3 @@ class NotificationHelpers {
     });
   }
 }
-

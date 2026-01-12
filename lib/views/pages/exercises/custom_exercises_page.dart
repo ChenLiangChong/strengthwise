@@ -1,6 +1,7 @@
 // ✅ 已響應式改造 (Phase 0) - 列表頁
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/custom_exercise_model.dart';
+import 'package:strengthwise/models/tracking_mode.dart'; // v3.2+
 import 'package:strengthwise/controllers/interfaces/i_custom_exercise_controller.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
@@ -72,6 +73,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
                 equipment: data.equipment,
                 description: data.description,
                 notes: data.notes,
+                trackingMode: data.trackingMode.toJson(), // v3.2+
               );
 
               if (!mounted) return;
@@ -108,6 +110,7 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
                 equipment: data.equipment,
                 description: data.description,
                 notes: data.notes,
+                trackingMode: data.trackingMode.toJson(), // v3.2+
               );
 
               if (!mounted) return;

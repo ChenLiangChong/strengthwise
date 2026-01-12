@@ -11,7 +11,7 @@ import 'package:strengthwise/views/pages/relationships/role_coach/widgets/health
 import 'package:strengthwise/views/pages/relationships/role_client/widgets/empty_my_health_assessment_card.dart';
 
 /// 學員健康評估頁面（學員自己查看/填寫）
-/// 
+///
 /// 功能：
 /// 1. 查看自己的健康評估報告
 /// 2. 首次填寫健康評估（提前為教練課程做準備）
@@ -90,6 +90,26 @@ class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
     }
   }
 
+  /// ⭐ v3.3: 快速編輯特定步驟
+  Future<void> _showQuickEdit(int step) async {
+    final result = await Navigator.push<HealthAssessmentModel>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HealthAssessmentPage(
+          clientId: widget.userId,
+          clientName: '我',
+          existingAssessment: _healthAssessment,
+          isClientSelfFilling: true,
+          quickEditStep: step, // ⭐ 快速編輯模式
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      await _loadHealthAssessment();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -127,6 +147,7 @@ class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
                     },
                     onEdit: _showHealthAssessmentEditor,
                     isClientView: true, // 【學員視角（隱藏教練備註、設定按鈕）】
+                    onQuickEdit: _showQuickEdit, // ⭐ v3.3: 快速編輯
                   )
                 else
                   EmptyMyHealthAssessmentCard(
@@ -143,7 +164,7 @@ class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
   /// 資訊橫幅
   Widget _buildInfoBanner(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(

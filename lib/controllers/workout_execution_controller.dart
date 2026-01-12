@@ -546,10 +546,11 @@ class WorkoutExecutionController extends ChangeNotifier
   }
 
   /// 更新組數數據
+  /// v3.2+ 支援多元追蹤模式的所有欄位
   @override
   Future<void> updateSetData(
       int exerciseIndex, int setIndex, int reps, double weight,
-      {BuildContext? context}) async {
+      {int? time, double? distance, double? calories, BuildContext? context}) async {
     if (!canModify()) {
       if (context != null) {
         NotificationUtils.showWarning(
@@ -560,13 +561,16 @@ class WorkoutExecutionController extends ChangeNotifier
 
     if (exerciseIndex >= _dataManager.exerciseRecords.length) return;
 
-    // 使用子模組更新組數數據
+    // 使用子模組更新組數數據（v3.2+ 包含所有追蹤模式欄位）
     _dataManager.exerciseRecords[exerciseIndex] =
         WorkoutExecutionSetOperations.updateSetData(
       _dataManager.exerciseRecords[exerciseIndex],
       setIndex,
       reps,
       weight,
+      time: time,
+      distance: distance,
+      calories: calories,
     );
 
     _isDataChanged = true;
@@ -605,10 +609,11 @@ class WorkoutExecutionController extends ChangeNotifier
   }
 
   /// 添加新訓練動作
+  /// v3.2+ 支援多元追蹤模式欄位
   @override
   Future<void> addNewExercise(
       Exercise exercise, int sets, int reps, double weight, int restTime,
-      {BuildContext? context}) async {
+      {int? time, double? distance, double? calories, BuildContext? context}) async {
     // ⚡ 使用統一的權限檢查（支援教練編輯學員訓練）
     if (!canEdit()) {
       if (context != null) {
@@ -618,13 +623,16 @@ class WorkoutExecutionController extends ChangeNotifier
     }
 
     try {
-      // 使用子模組創建運動記錄
+      // 使用子模組創建運動記錄（v3.2+ 傳遞新欄位）
       final newExercise = WorkoutExecutionExerciseBuilder.createExerciseRecord(
         exercise,
         sets,
         reps,
         weight,
         restTime,
+        time: time,
+        distance: distance,
+        calories: calories,
       );
 
       // 添加新運動到列表

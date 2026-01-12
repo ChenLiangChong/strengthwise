@@ -1,5 +1,6 @@
 import 'custom_exercise.dart';
 import 'package:strengthwise/utils/datetime_utils.dart';  // ⭐ 新增
+import '../tracking_mode.dart';
 
 /// 自訂動作數據映射器
 ///
@@ -25,6 +26,8 @@ class CustomExerciseMapper {
       updatedAt: json['updated_at'] != null
           ? DateTimeUtils.parseIsoTimestamp(json['updated_at'] as String)  // ⭐ 統一工具類
           : null,
+      // v3.2+ 追蹤模式
+      trackingMode: TrackingModeExtension.fromJson(json['tracking_mode'] as String?),
     );
   }
 
@@ -48,6 +51,8 @@ class CustomExerciseMapper {
       updatedAt: json['updatedAt'] != null
           ? DateTime.fromMillisecondsSinceEpoch(json['updatedAt'] as int)
           : null,
+      // v3.2+ 追蹤模式
+      trackingMode: TrackingModeExtension.fromJson(json['trackingMode'] as String?),
     );
   }
 
@@ -67,6 +72,8 @@ class CustomExerciseMapper {
       'notes': exercise.notes,
       'created_at': DateTimeUtils.formatToUtcIso(exercise.createdAt),
       'updated_at': DateTimeUtils.formatToUtcIso(exercise.updatedAt),
+      // v3.2+ 追蹤模式
+      'tracking_mode': exercise.trackingMode.toJson(),
     };
   }
 
@@ -86,6 +93,8 @@ class CustomExerciseMapper {
       'notes': exercise.notes,
       'createdAt': exercise.createdAt.millisecondsSinceEpoch,
       'updatedAt': exercise.updatedAt.millisecondsSinceEpoch,
+      // v3.2+ 追蹤模式
+      'trackingMode': exercise.trackingMode.toJson(),
     };
   }
 }

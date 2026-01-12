@@ -4,6 +4,7 @@ import 'dart:async';
 import '../../models/workout_template_model.dart';
 import '../../models/workout_record_model.dart';
 import '../../models/exercise_history_record.dart';
+import '../../models/tracking_mode.dart';
 import '../../utils/datetime_utils.dart';  // ⭐ 使用時間工具
 import '../interfaces/i_workout_service.dart';
 import '../core/error_handling_service.dart';
@@ -627,6 +628,10 @@ class WorkoutServiceSupabase implements IWorkoutService {
                 weight: (target['weight'] as num?)?.toDouble() ?? 0,
                 restTime: (target['rest_time'] as num?)?.toInt() ?? 90,
                 completed: target['completed'] as bool? ?? true,
+                // v3.2+ 新增欄位
+                time: (target['time'] as num?)?.toInt(),
+                distance: (target['distance'] as num?)?.toDouble(),
+                calories: (target['calories'] as num?)?.toDouble(),
               ));
             }
             
@@ -653,6 +658,10 @@ class WorkoutServiceSupabase implements IWorkoutService {
               exerciseName: exercise['name'] as String? ?? '未知動作',
               trainingDate: DateTimeUtils.parseIsoTimestamp(data['scheduled_date']),
               sets: sets,
+              // v3.2+ 追蹤模式
+              trackingMode: TrackingModeExtension.fromJson(
+                exercise['trackingMode'] as String?,
+              ),
             ));
             
             break;  // 每個訓練計畫只取一個該動作

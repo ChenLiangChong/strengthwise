@@ -346,7 +346,7 @@ strengthwise/
 | 文檔 | 說明 |
 |------|------|
 | **[docs/DATETIME_UTILS_GUIDE.md](docs/DATETIME_UTILS_GUIDE.md)** | 時間轉換工具指南（v2.2 完整） |
-| **[docs/UI_UX_GUIDELINES.md](docs/UI_UX_GUIDELINES.md)** | UI/UX 設計規範 |
+| **[docs/UI_DEVELOPER_GUIDE.md](docs/UI_DEVELOPER_GUIDE.md)** | UI/UX 設計規範 |
 | **[docs/DATABASE_OPTIMIZATION_GUIDE.md](docs/DATABASE_OPTIMIZATION_GUIDE.md)** | 資料庫優化指南 |
 | **[docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)** | 部署指南 |
 

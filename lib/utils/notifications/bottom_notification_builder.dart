@@ -10,8 +10,6 @@ class BottomNotificationBuilder {
     BuildContext context,
     String message, {
     Duration? duration,
-    VoidCallback? onAction,
-    String? actionLabel,
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -52,19 +50,11 @@ class BottomNotificationBuilder {
           right: NotificationConfig.horizontalPadding,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(NotificationConfig.defaultBorderRadius),
+          borderRadius:
+              BorderRadius.circular(NotificationConfig.defaultBorderRadius),
         ),
         elevation: 4,
-        action: onAction != null
-            ? SnackBarAction(
-                label: actionLabel ?? '查看',
-                textColor: Colors.white,
-                onPressed: () {
-                  NotificationHelpers.lightHaptic();
-                  onAction();
-                },
-              )
-            : null,
+        // 不顯示操作按鈕，保持通知簡潔
       ),
     );
   }
@@ -74,8 +64,6 @@ class BottomNotificationBuilder {
     BuildContext context,
     String message, {
     Duration? duration,
-    VoidCallback? onAction,
-    String? actionLabel,
   }) {
     final isDark = NotificationHelpers.isDarkMode(context);
 
@@ -109,19 +97,11 @@ class BottomNotificationBuilder {
           right: NotificationConfig.horizontalPadding,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(NotificationConfig.defaultBorderRadius),
+          borderRadius:
+              BorderRadius.circular(NotificationConfig.defaultBorderRadius),
         ),
         elevation: 4,
-        action: onAction != null
-            ? SnackBarAction(
-                label: actionLabel ?? '確定',
-                textColor: isDark ? const Color(0xFF0F172A) : Colors.white,
-                onPressed: () {
-                  NotificationHelpers.lightHaptic();
-                  onAction();
-                },
-              )
-            : null,
+        // 不顯示操作按鈕，保持通知簡潔
       ),
     );
   }
@@ -163,7 +143,8 @@ class BottomNotificationBuilder {
           right: NotificationConfig.horizontalPadding,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(NotificationConfig.defaultBorderRadius),
+          borderRadius:
+              BorderRadius.circular(NotificationConfig.defaultBorderRadius),
         ),
         elevation: 4,
         action: SnackBarAction(
@@ -178,4 +159,3 @@ class BottomNotificationBuilder {
     );
   }
 }
-

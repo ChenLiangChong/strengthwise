@@ -7,8 +7,9 @@ import '../core/error_handling_service.dart';
 
 /// ⭐ 定義 coach_display_preferences 表的標準查詢欄位
 const String _kDisplayPrefsSelectFields = '''
-  coach_id, show_all_exercises, enable_superset_mode, 
-  default_rest_between_sets, display_mode, created_at, updated_at
+  coach_id, health_assessment_fields,
+  client_list_sort_by, client_list_sort_order,
+  updated_at
 ''';
 
 class CoachDisplayPreferencesServiceSupabase

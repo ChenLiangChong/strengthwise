@@ -1,5 +1,6 @@
 import 'exercise_type_enum.dart';
 import 'exercise_mapper.dart';
+import '../tracking_mode.dart';
 
 /// 訓練動作模型
 ///
@@ -38,6 +39,9 @@ class Exercise {
   final String videoUrl;      // 視頻URL
   final List<String> apps;    // 適用的應用列表
   final DateTime createdAt;   // 創建時間
+  
+  // v3.2+ 追蹤模式
+  final TrackingMode trackingMode;    // 追蹤模式（weight_reps/time_only/distance_time 等）
 
   /// 創建一個訓練動作實例
   Exercise({
@@ -71,6 +75,8 @@ class Exercise {
     required this.videoUrl,
     required this.apps,
     required this.createdAt,
+    // v3.2+ 追蹤模式
+    this.trackingMode = TrackingMode.weightReps,
   });
 
   /// 從 Supabase 資料創建對象
@@ -120,6 +126,7 @@ class Exercise {
     String? videoUrl,
     List<String>? apps,
     DateTime? createdAt,
+    TrackingMode? trackingMode,
   }) {
     return Exercise(
       id: id ?? this.id,
@@ -150,6 +157,7 @@ class Exercise {
       videoUrl: videoUrl ?? this.videoUrl,
       apps: apps ?? this.apps,
       createdAt: createdAt ?? this.createdAt,
+      trackingMode: trackingMode ?? this.trackingMode,
     );
   }
   

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/favorite_exercise_model.dart';
 import 'package:strengthwise/models/statistics_model.dart';
+import 'package:strengthwise/models/tracking_mode.dart'; // v3.3+
 import 'package:strengthwise/utils/body_part_utils.dart';
 import 'package:strengthwise/utils/date_format_utils.dart';
 import 'package:strengthwise/common_widgets/common/mini_line_chart.dart';
 
 /// 收藏動作卡片組件
+/// v3.3+ 支援多元追蹤模式
 class FavoriteExerciseCard extends StatelessWidget {
   final FavoriteExercise favorite;
   final ExerciseStrengthProgress? progress;
@@ -22,6 +24,9 @@ class FavoriteExerciseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // v3.3+ 判斷是否為重訓模式
+    final isWeightBased = progress?.isWeightBasedMode ?? false;
+    
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: InkWell(
@@ -33,9 +38,14 @@ class FavoriteExerciseCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildCardHeader(context),
-              progress != null
-                  ? _buildProgressSection(context, progress!)
-                  : _buildNoDataSection(context),
+              // v3.3+ 只有重訓模式才顯示進度區塊
+              if (progress != null && isWeightBased)
+                _buildProgressSection(context, progress!)
+              else if (progress == null)
+                _buildNoDataSection(context)
+              // v3.3+ 非重訓模式只顯示訓練次數
+              else if (!isWeightBased)
+                _buildNonWeightModeSection(context, progress!),
             ],
           ),
         ),
@@ -187,6 +197,49 @@ class FavoriteExerciseCard extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontStyle: FontStyle.italic,
           ),
+        ),
+      ],
+    );
+  }
+  
+  /// v3.3+ 非重訓模式的顯示區塊
+  /// 只顯示訓練次數，不顯示進度百分比和迷你圖表
+  Widget _buildNonWeightModeSection(
+      BuildContext context, ExerciseStrengthProgress progress) {
+    return Column(
+      children: [
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Icon(
+              Icons.fitness_center,
+              size: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '共 ${progress.totalSets} 組訓練記錄',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                progress.trackingMode.displayName,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

@@ -6,8 +6,9 @@ import '../../models/invite_code_model.dart';
 /// 邀請碼服務實作（Supabase）- 簡化版
 
 /// ⭐ 定義 invite_codes 表的標準查詢欄位（避免 SELECT *）
+/// 注意：invite_codes 表以 code 為主鍵，沒有 id 欄位
 const String _kInviteCodeSelectFields = '''
-  id, code, coach_id, created_at, expires_at
+  code, coach_id, created_at, expires_at
 ''';
 
 class InviteCodeServiceSupabase implements IInviteCodeService {

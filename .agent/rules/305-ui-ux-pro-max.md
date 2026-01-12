@@ -1,4 +1,4 @@
-﻿---
+---
 description: "UI/UX Pro Max 技能整合：AI 設計智慧資料庫的使用規範。"
 globs: lib/views/**/*.dart
 alwaysApply: false
@@ -6,13 +6,13 @@ alwaysApply: false
 
 # UI/UX Pro Max 整合規範
 
-> 本規則與現有 `300-ui-ux-design.md` 分層運作
+> 本規則與現有 `300-ui-ux-design.mdc` 分層運作
 
 ## 🎯 優先級說明
 
 ```
 優先級順序：
-1. .cursor/rules/*.md        → 硬性規定（禁止、必須）⭐⭐⭐
+1. .cursor/rules/*.mdc        → 硬性規定（禁止、必須）⭐⭐⭐
 2. docs/UI_DEVELOPER_GUIDE.md → StrengthWise 設計規範 ⭐⭐
 3. ui-ux-pro-max 搜尋結果     → 設計建議與靈感 ⭐
 ```
@@ -85,4 +85,3 @@ python .shared/ui-ux-pro-max/scripts/search.py "cards theming" --stack flutter
 - `docs/UI_DEVELOPER_GUIDE.md` - StrengthWise 色彩/字體/間距速查
 - `docs/UI_DESIGN_SYSTEM.md` - 設計理念說明
 - `.shared/ui-ux-pro-max/data/stacks/flutter.csv` - Flutter 最佳實踐
-

@@ -15,6 +15,7 @@ import 'muscle_group_balance.dart';
 import 'training_calendar.dart';
 import 'completion_rate.dart';
 import 'statistics_data.dart';
+import '../tracking_mode.dart'; // v3.3+
 
 // ==================== TimeRange ====================
 
@@ -176,13 +177,21 @@ extension PersonalRecordJson on PersonalRecord {
 // ==================== StrengthProgressPoint ====================
 
 extension StrengthProgressPointJson on StrengthProgressPoint {
-  Map<String, dynamic> toJson() => {
-        'date': date.toIso8601String(),
-        'weight': weight,
-        'reps': reps,
-        'estimatedOneRM': estimatedOneRM,
-        'isPR': isPR,
-      };
+  Map<String, dynamic> toJson() {
+    final json = <String, dynamic>{
+      'date': date.toIso8601String(),
+      'weight': weight,
+      'reps': reps,
+      'estimatedOneRM': estimatedOneRM,
+      'isPR': isPR,
+      'trackingMode': trackingMode.toJson(), // v3.3+
+    };
+    // v3.3+ 只有非 null 的欄位才加入
+    if (time != null) json['time'] = time;
+    if (distance != null) json['distance'] = distance;
+    if (calories != null) json['calories'] = calories;
+    return json;
+  }
 
   static StrengthProgressPoint fromJson(Map<String, dynamic> json) =>
       StrengthProgressPoint(
@@ -191,6 +200,11 @@ extension StrengthProgressPointJson on StrengthProgressPoint {
         reps: json['reps'] ?? 0,
         estimatedOneRM: (json['estimatedOneRM'] ?? 0).toDouble(),
         isPR: json['isPR'] ?? false,
+        // v3.3+ 新增欄位
+        time: json['time'] as int?,
+        distance: (json['distance'] as num?)?.toDouble(),
+        calories: (json['calories'] as num?)?.toDouble(),
+        trackingMode: TrackingModeExtension.fromJson(json['trackingMode'] as String?),
       );
 }
 
@@ -207,6 +221,7 @@ extension ExerciseStrengthProgressJson on ExerciseStrengthProgress {
         'progressPercentage': progressPercentage,
         'totalSets': totalSets,
         'averageWeight': averageWeight,
+        'trackingMode': trackingMode.toJson(), // v3.3+
       };
 
   static ExerciseStrengthProgress fromJson(Map<String, dynamic> json) =>
@@ -224,6 +239,8 @@ extension ExerciseStrengthProgressJson on ExerciseStrengthProgress {
         progressPercentage: (json['progressPercentage'] ?? 0).toDouble(),
         totalSets: json['totalSets'] ?? 0,
         averageWeight: (json['averageWeight'] ?? 0).toDouble(),
+        // v3.3+
+        trackingMode: TrackingModeExtension.fromJson(json['trackingMode'] as String?),
       );
 }
 

@@ -2,7 +2,47 @@
 
 > 已完成並測試的版本詳細記錄
 
-**最後更新**：2026-01-09
+**最後更新**：2026-01-12
+
+---
+
+## v3.3: TrackingMode 統計適配 + PR 修復（2026-01-12 完成）
+
+**功能**：
+- 力量進步頁面適配：非重訓動作只顯示歷史記錄列表（不顯示趨勢圖表）
+- PR DELETE 觸發器：刪除訓練計劃時重新計算 personal_records
+- exerciseId 格式修復：修正異常 UUID 格式為 Firestore ID
+- Migrations 整理：48 個檔案 → 32 個檔案（22 演進版 + 10 精簡版）
+- Python 腳本清理：刪除 9 個一次性腳本
+
+**技術決策**：
+- `handle_workout_plan_delete()`：AFTER DELETE 觸發器重新掃描歷史找出真正 PR
+- Migrations 整合：按功能模組合併，保留演進歷史
+
+**Migration**：046-047（合併為 22_v3_pr_final_fixes.sql）
+
+---
+
+## v3.2: Coach Mark + TrackingMode + Web PWA（2026-01-12 完成）
+
+**功能**：
+- Coach Mark 情境式 Onboarding：11 個頁面引導（首頁、行事曆、訓練、教練/學員中心等）
+- TrackingMode 擴充：8 種追蹤模式（weight_reps、time_only、distance_time 等）
+- Web PWA 部署：Vercel 部署、Google OAuth Web、kIsWeb 相容處理
+- setTargets 修復：訓練計畫個別組數設定正確保存
+
+**技術決策**：
+- `CurrentPageProvider`：解決 IndexedStack 頁面可見性問題
+- `OnboardingService`：追蹤各功能點完成狀態（Hive 持久化）
+- `CoachMarkHelper`：封裝 tutorial_coach_mark 套件
+- 本地快取版本升級 v3：自動重下載含 tracking_mode 的動作資料
+- pgroonga 搜尋函數更新：返回 tracking_mode 欄位
+
+**Migration**：042-045（4 個檔案）
+- 042: 傷病教練備註
+- 043: 睡眠時數範圍
+- 044/044b: TrackingMode 欄位 + 手動設定
+- 045: 搜尋函數更新
 
 ---
 

@@ -1,4 +1,4 @@
-﻿---
+---
 description: "Clean Architecture 分層規則、依賴注入與目錄結構強制執行。適用於 lib/ 下所有檔案。"
 globs: lib/**/*.dart
 alwaysApply: false
@@ -54,4 +54,3 @@ Model → Interface → Service → 註冊 → Controller → UI → 測試
 ```
 
 詳見：`@docs/PROJECT_OVERVIEW.md`
-

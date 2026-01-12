@@ -1,11 +1,11 @@
 {
-    "name": "strengthwise",
-    "short_name": "strengthwise",
+    "name": "StrengthWise - 健身教練管理系統",
+    "short_name": "StrengthWise",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0F172A",
+    "theme_color": "#0F172A",
+    "description": "專為健身教練與學員打造的智慧訓練管理平台",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

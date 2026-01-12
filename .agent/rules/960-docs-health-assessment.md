@@ -1,4 +1,4 @@
-﻿---
+---
 description: "健康評估系統文檔規範：HEALTH_ASSESSMENT_SYSTEM.md 的結構與維護。"
 globs: docs/HEALTH_ASSESSMENT_SYSTEM.md
 alwaysApply: false
@@ -49,4 +49,3 @@ HEALTH_ASSESSMENT_SYSTEM.md
 | 新增問卷題目 | PAR-Q+ 問卷區塊 |
 | RLS 政策變更 | 權限控制區塊 |
 | 流程變更 | 使用流程區塊 |
-

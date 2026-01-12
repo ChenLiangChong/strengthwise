@@ -1,4 +1,4 @@
-﻿---
+---
 description: "規劃文檔規範：docs/planning/ 目錄下的功能規劃文檔維護。"
 globs: "docs/planning/**"
 ---
@@ -9,13 +9,23 @@ globs: "docs/planning/**"
 
 ```
 docs/planning/
-├── BOOKING_SYSTEM_OPTIMIZATION.md  ← v3.0 預約系統優化
-├── SESSION_MODE_SPEC.md            ← v3.0 教練上課模式
-├── COACH_PROFILE_SPEC.md           ← v2.9 教練公開檔案
-└── [功能名稱]_SPEC.md              ← 未來功能規劃
+├── HOME_BOOKING_UX_SPEC.md         ← v3.1-B 首頁+行事曆 UX 🔄 開發中
+├── BETA_RECRUITMENT_DESIGN.md      ← v3.4 Beta 招募設計 🔄 活躍
+├── TESTING_STRATEGY.md             ← v3.1 測試策略 🔄 活躍
+├── PRODUCTION_LAUNCH_GUIDE.md      ← v3.1 生產環境發布 🔄 活躍
+├── [功能名稱]_SPEC.md              ← 未來功能規劃
+└── archived/                       ← 📦 已完成的規格書
+    ├── TRACKING_MODE_SPEC.md       ← v3.3 TrackingMode 適配 ✅
+    ├── DATA_FLOW_ANALYSIS.md       ← v3.1-E 性能優化 ✅
+    ├── SESSION_MODE_SPEC.md        ← v3.1-SM 教練上課模式 ✅
+    ├── TRAINING_PERMISSION_MATRIX.md ← v3.1 訓練權限矩陣 ✅
+    ├── LOCAL_CACHE_STRATEGY.md     ← v3.1 快取策略 ✅
+    ├── BOOKING_SYSTEM_OPTIMIZATION.md ← v3.0 預約系統優化 ✅
+    ├── RESPONSIVE_ARCHITECTURE_DESIGN.md ← v3.0 響應式架構 ✅
+    └── COACH_PROFILE_SPEC.md       ← v2.9 教練公開檔案 ✅
 ```
 
-**定位**：功能規劃階段的詳細規格書，類似 SAAS_PLATFORM_ROADMAP.md
+**定位**：功能規劃階段的詳細規格書，完成後移至 `archived/`
 
 ---
 
@@ -96,4 +106,3 @@ docs/planning/
 3. 開發完成後，規劃文檔可保留作為設計參考
 4. 不要在規劃文檔寫代碼實作細節（那是 commit 的工作）
 </critical>
-

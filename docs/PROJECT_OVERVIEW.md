@@ -2,7 +2,7 @@
 
 > 專案架構、技術棧、目錄結構
 
-**最後更新**：2026-01-09
+**最後更新**：2026-01-12
 
 ---
 
@@ -12,18 +12,18 @@
 
 | 項目 | 內容 |
 |------|------|
-| 當前版本 | v3.2（開發中 - Coach Mark Onboarding）|
-| 上一版本 | v3.1（Session Mode + 性能優化 + UX 打磨）|
+| 當前版本 | v3.3（完成 - TrackingMode 適配 + PR 修復）|
+| 上一版本 | v3.2（Coach Mark + TrackingMode + Web PWA）|
 | 主要功能 | 個人健身記錄 + 教練學員管理平台 |
-| 目標平台 | Android / iOS / Windows |
+| 目標平台 | Android / iOS / Windows / Web |
 
 ### 專案規模
 
 ```
 總代碼量：~68,000 行
 ├── Flutter/Dart：~64,000 行
-├── SQL/Migrations：~4,200 行（41 個檔案）
-└── Python 腳本：~2,200 行
+├── SQL/Migrations：~4,200 行（32 個檔案）
+└── Python 腳本：~1,800 行
 
 核心組件：
 ├── Pages：65+

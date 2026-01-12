@@ -1,4 +1,4 @@
-﻿---
+---
 description: "健康評估系統業務邏輯：PAR-Q+ 問卷、風險評估、教練備註。適用於健康評估相關代碼。"
 globs: lib/**/health_assessment/**/*.dart,lib/views/pages/relationships/role_coach/health_assessment_page.dart
 alwaysApply: false
@@ -39,4 +39,3 @@ alwaysApply: false
 ```
 
 詳見：`@docs/HEALTH_ASSESSMENT_SYSTEM.md`
-

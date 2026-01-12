@@ -1,4 +1,4 @@
-﻿---
+---
 description: "SaaS 路線圖文檔規範：SAAS_PLATFORM_ROADMAP.md 與 SAAS_HISTORY.md 的維護。"
 globs: docs/SAAS*.md,docs/archived/SAAS*.md
 alwaysApply: false
@@ -66,4 +66,3 @@ SAAS_HISTORY.md（歸檔）
 **技術亮點**：
 - 創新做法
 ```
-

@@ -38,7 +38,8 @@ class AdHocSessionDialog extends StatefulWidget {
   });
 
   /// ⭐ v3.1.1: 顯示對話框並返回創建結果（包含跳轉所需資訊）
-  static Future<AdHocSessionResult?> show(BuildContext context, String coachId) {
+  static Future<AdHocSessionResult?> show(
+      BuildContext context, String coachId) {
     return showDialog<AdHocSessionResult>(
       context: context,
       builder: (context) => AdHocSessionDialog(coachId: coachId),
@@ -65,6 +66,7 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
 
   bool _isLoading = true;
   bool _isSubmitting = false;
+  bool _repeatWeekly = false;
 
   @override
   void initState() {
@@ -117,6 +119,13 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
     final picked = await showTimePicker(
       context: context,
       initialTime: _selectedTime,
+      builder: (context, child) {
+        // 強制使用 12 小時制（AM/PM）
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+          child: child!,
+        );
+      },
     );
     if (picked != null && mounted) {
       setState(() => _selectedTime = picked);
@@ -135,32 +144,53 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
     setState(() => _isSubmitting = true);
 
     try {
-      final startTime = DateTime(
-        _selectedDate.year,
-        _selectedDate.month,
-        _selectedDate.day,
-        _selectedTime.hour,
-        _selectedTime.minute,
-      );
-      final endTime = startTime.add(Duration(minutes: _durationMinutes));
+      String? firstAppointmentId;
+      DateTime? firstStartTime;
+      DateTime? firstEndTime;
 
-      // ⭐ v3.1.1: 獲取創建的 appointment ID
-      final appointmentId = await _appointmentService.createAdHocSession(
-        coachId: widget.coachId,
-        clientId: _selectedClient!.uid,
-        startTime: startTime,
-        endTime: endTime,
-        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-      );
+      final count = _repeatWeekly ? 4 : 1;
 
-      if (mounted) {
-        // ⭐ v3.1.1: 返回完整資訊供跳轉使用
-        final result = AdHocSessionResult(
-          appointmentId: appointmentId,
+      for (var i = 0; i < count; i++) {
+        final currentStartDate = _selectedDate.add(Duration(days: i * 7));
+
+        final startTime = DateTime(
+          currentStartDate.year,
+          currentStartDate.month,
+          currentStartDate.day,
+          _selectedTime.hour,
+          _selectedTime.minute,
+        );
+        final endTime = startTime.add(Duration(minutes: _durationMinutes));
+
+        // ⭐ v3.1.1: 獲取創建的 appointment ID
+        final appointmentId = await _appointmentService.createAdHocSession(
+          coachId: widget.coachId,
           clientId: _selectedClient!.uid,
-          clientName: _selectedClient!.displayName ?? _selectedClient!.email,
           startTime: startTime,
           endTime: endTime,
+          notes:
+              _notesController.text.isNotEmpty ? _notesController.text : null,
+        );
+
+        // 記錄第一筆課程資訊（用於跳轉）
+        if (i == 0) {
+          firstAppointmentId = appointmentId;
+          firstStartTime = startTime;
+          firstEndTime = endTime;
+        }
+      }
+
+      if (mounted &&
+          firstAppointmentId != null &&
+          firstStartTime != null &&
+          firstEndTime != null) {
+        // ⭐ v3.1.1: 返回完整資訊供跳轉使用
+        final result = AdHocSessionResult(
+          appointmentId: firstAppointmentId,
+          clientId: _selectedClient!.uid,
+          clientName: _selectedClient!.displayName ?? _selectedClient!.email,
+          startTime: firstStartTime,
+          endTime: firstEndTime,
         );
         Navigator.of(context).pop(result);
       }
@@ -201,7 +231,8 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+                        color:
+                            colorScheme.primaryContainer.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -308,13 +339,35 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
                       ),
                       maxLines: 2,
                     ),
+
+                    const SizedBox(height: 16),
+
+                    // 重複課程選項
+                    Container(
+                      decoration: BoxDecoration(
+                        border:
+                            Border.all(color: theme.colorScheme.outlineVariant),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: SwitchListTile(
+                        title: const Text('快速新增一個月'),
+                        subtitle: const Text('每週重複，共 4 堂課'),
+                        secondary: Icon(Icons.repeat,
+                            color: theme.colorScheme.primary),
+                        value: _repeatWeekly,
+                        onChanged: (value) {
+                          setState(() => _repeatWeekly = value);
+                        },
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
       actions: [
         TextButton(
-          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(null),
+          onPressed:
+              _isSubmitting ? null : () => Navigator.of(context).pop(null),
           child: const Text('取消'),
         ),
         FilledButton.icon(
@@ -348,4 +401,3 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
     return names[weekday - 1];
   }
 }
-

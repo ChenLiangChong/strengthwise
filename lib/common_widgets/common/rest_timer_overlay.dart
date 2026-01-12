@@ -8,7 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 /// 模仿 iOS Dynamic Island，顯示在螢幕頂部
 /// 支援最小化/展開，讓使用者在瀏覽其他頁面時也能看到剩餘時間
 ///
-/// 設計文檔：docs/UI_UX_GUIDELINES.md
+/// 設計文檔：docs/UI_DEVELOPER_GUIDE.md
 /// 靈感來源：iOS Live Activity
 class RestTimerOverlay {
   static OverlayEntry? _overlayEntry;

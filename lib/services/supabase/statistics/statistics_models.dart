@@ -18,6 +18,7 @@ class UnifiedWorkoutData {
 }
 
 /// 統一的動作數據
+/// v3.3+ 支援多元追蹤模式
 class UnifiedExerciseData {
   final String exerciseId;
   final String exerciseName;
@@ -25,6 +26,11 @@ class UnifiedExerciseData {
   final int reps;
   final int sets;
   final bool isCompleted;
+  
+  // v3.3+ 新增欄位
+  final int? time;          // 時間（秒）
+  final double? distance;   // 距離（公尺）
+  final double? calories;   // 卡路里（kcal）
 
   UnifiedExerciseData({
     required this.exerciseId,
@@ -33,6 +39,10 @@ class UnifiedExerciseData {
     required this.reps,
     required this.sets,
     required this.isCompleted,
+    // v3.3+ 新增
+    this.time,
+    this.distance,
+    this.calories,
   });
 }
 

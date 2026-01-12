@@ -8,20 +8,20 @@ import 'profile_delete_account_button.dart';
 import 'oauth_password_section.dart';
 
 /// 個人資料表單內容
-/// 
+///
 /// 純 UI 元件，所有狀態透過回調傳遞
 class ProfileFormContent extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final bool isFirstTimeSetup;
   final bool isOAuthUser;
-  
+
   // 控制器
   final TextEditingController displayNameController;
   final TextEditingController nicknameController;
   final TextEditingController heightController;
   final TextEditingController weightController;
   final TextEditingController bioController;
-  
+
   // 狀態
   final String? photoURL;
   final File? avatarFile;
@@ -30,7 +30,7 @@ class ProfileFormContent extends StatelessWidget {
   final DateTime? birthDate;
   final String unitSystem;
   final bool isSaving;
-  
+
   // 回調
   final VoidCallback onPickImage;
   final ValueChanged<String?> onGenderChanged;
@@ -38,7 +38,7 @@ class ProfileFormContent extends StatelessWidget {
   final ValueChanged<DateTime?> onBirthDateChanged;
   final ValueChanged<String> onUnitSystemChanged;
   final VoidCallback onSave;
-  
+
   // 控制是否顯示刪除帳號（改由外層控制位置）
   final bool showDeleteAccount;
 
@@ -65,7 +65,7 @@ class ProfileFormContent extends StatelessWidget {
     required this.onBirthDateChanged,
     required this.onUnitSystemChanged,
     required this.onSave,
-    this.showDeleteAccount = true,  // 預設顯示
+    this.showDeleteAccount = true, // 預設顯示
   });
 
   @override
@@ -103,6 +103,7 @@ class ProfileFormContent extends StatelessWidget {
               labelText: '顯示名稱',
               border: OutlineInputBorder(),
               helperText: '這將顯示在您的個人資料頁面',
+              floatingLabelBehavior: FloatingLabelBehavior.always,
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -121,6 +122,7 @@ class ProfileFormContent extends StatelessWidget {
               labelText: '昵稱',
               border: OutlineInputBorder(),
               helperText: '這將顯示在應用內的社交互動中',
+              floatingLabelBehavior: FloatingLabelBehavior.always,
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -163,6 +165,7 @@ class ProfileFormContent extends StatelessWidget {
               labelText: '身高 (cm) *',
               border: OutlineInputBorder(),
               helperText: '必填',
+              floatingLabelBehavior: FloatingLabelBehavior.always,
             ),
             keyboardType: TextInputType.number,
             validator: (value) {
@@ -190,6 +193,7 @@ class ProfileFormContent extends StatelessWidget {
               labelText: '體重 (kg) *',
               border: OutlineInputBorder(),
               helperText: '必填',
+              floatingLabelBehavior: FloatingLabelBehavior.always,
             ),
             keyboardType: TextInputType.number,
             validator: (value) {
@@ -227,6 +231,7 @@ class ProfileFormContent extends StatelessWidget {
               border: OutlineInputBorder(),
               helperText: '可選 - 介紹您自己，讓其他人更了解您',
               alignLabelWithHint: true,
+              floatingLabelBehavior: FloatingLabelBehavior.always,
             ),
             maxLines: 4,
             maxLength: 200,
@@ -298,4 +303,3 @@ class ProfileFormContent extends StatelessWidget {
     );
   }
 }
-

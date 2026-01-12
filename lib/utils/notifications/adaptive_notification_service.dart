@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'notification_helpers.dart';
 import 'top_notification_builder.dart';
@@ -12,7 +13,7 @@ import 'bottom_notification_builder.dart';
 /// 3. 操作類型（高頻/撤銷/成就/系統）
 /// 4. 深淺色模式適配
 ///
-/// 設計文檔：docs/UI_UX_GUIDELINES.md
+/// 設計文檔：docs/UI_DEVELOPER_GUIDE.md
 /// 最佳實踐：2025 年行動應用程式通知佈局研究報告
 ///
 /// 架構：
@@ -26,15 +27,11 @@ class AdaptiveNotificationService {
   /// [context] 構建上下文
   /// [message] 通知訊息
   /// [duration] 顯示時長（預設 3 秒）
-  /// [onAction] 操作回調（例如「查看」按鈕）
-  /// [actionLabel] 操作按鈕文字
   /// [forceBottom] 強制使用底部 Snackbar（用於可撤銷操作）
   static void showSuccess(
     BuildContext context,
     String message, {
     Duration? duration,
-    VoidCallback? onAction,
-    String? actionLabel,
     bool forceBottom = false,
   }) {
     NotificationHelpers.lightHaptic();
@@ -53,8 +50,6 @@ class AdaptiveNotificationService {
         context,
         message,
         duration: duration,
-        onAction: onAction,
-        actionLabel: actionLabel,
       );
     }
   }
@@ -74,22 +69,19 @@ class AdaptiveNotificationService {
     BuildContext context,
     String message, {
     Duration? duration,
-    VoidCallback? onAction,
-    String? actionLabel,
   }) {
     NotificationHelpers.lightHaptic();
 
-    if (Platform.isIOS || MediaQuery.of(context).viewInsets.bottom > 0) {
+    if ((!kIsWeb && Platform.isIOS) ||
+        MediaQuery.of(context).viewInsets.bottom > 0) {
       // iOS 或鍵盤開啟：使用頂部通知
       TopNotificationBuilder.showInfo(context, message, duration: duration);
     } else {
-      // Android：使用底部 Snackbar
+      // Android / Web：使用底部 Snackbar
       BottomNotificationBuilder.showInfo(
         context,
         message,
         duration: duration,
-        onAction: onAction,
-        actionLabel: actionLabel,
       );
     }
   }
@@ -161,4 +153,3 @@ class AdaptiveNotificationService {
     );
   }
 }
-

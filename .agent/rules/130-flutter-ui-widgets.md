@@ -1,4 +1,4 @@
-﻿---
+---
 description: "Flutter UI 組件設計規範、Widget 使用準則與主題系統。適用於 views 目錄。"
 globs: lib/views/**/*.dart
 alwaysApply: false
@@ -64,5 +64,4 @@ Card(
 )
 ```
 
-詳見：`@docs/UI_UX_GUIDELINES.md`
-
+詳見：`@docs/UI_DEVELOPER_GUIDE.md`

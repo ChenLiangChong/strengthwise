@@ -2,7 +2,7 @@
 
 > 專案文檔索引
 
-**最後更新**：2026-01-09
+**最後更新**：2026-01-12
 
 ---
 
@@ -42,7 +42,7 @@
 
 | 文檔 | 說明 |
 |------|------|
-| [planning/HOME_BOOKING_UX_SPEC.md](planning/HOME_BOOKING_UX_SPEC.md) | v3.1-B 首頁 + 行事曆 UX ⭐ |
+| [planning/HOME_BOOKING_UX_SPEC.md](planning/HOME_BOOKING_UX_SPEC.md) | v3.1-B 首頁 + 行事曆 UX |
 | [planning/TESTING_STRATEGY.md](planning/TESTING_STRATEGY.md) | 測試策略（564 個通過）|
 | [planning/PRODUCTION_LAUNCH_GUIDE.md](planning/PRODUCTION_LAUNCH_GUIDE.md) | 生產環境發布指南 |
 
@@ -50,6 +50,7 @@
 
 | 文檔 | 說明 |
 |------|------|
+| [planning/archived/TRACKING_MODE_SPEC.md](planning/archived/TRACKING_MODE_SPEC.md) | v3.2-v3.3 TrackingMode 擴充 ✅ |
 | [planning/archived/DATA_FLOW_ANALYSIS.md](planning/archived/DATA_FLOW_ANALYSIS.md) | v3.1-E 數據流分析 + 快取策略 ✅ |
 | [planning/archived/SESSION_MODE_SPEC.md](planning/archived/SESSION_MODE_SPEC.md) | v3.1-SM 教練上課模式 ✅ |
 | [planning/archived/TRAINING_PERMISSION_MATRIX.md](planning/archived/TRAINING_PERMISSION_MATRIX.md) | v3.1 訓練權限矩陣 ✅ |

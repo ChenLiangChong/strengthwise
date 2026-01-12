@@ -1,4 +1,4 @@
-﻿---
+---
 description: "狀態管理規範：Provider、ChangeNotifier、GetIt 使用指南。適用於 Controller 和 Service 層。"
 globs: lib/controllers/**/*.dart,lib/services/**/*.dart
 alwaysApply: false
@@ -66,4 +66,3 @@ Widget build(BuildContext context) {
 |------|------|------|
 | Service | `LazySingleton` | 全局共享 |
 | Controller | `Factory` | 每次新實例 |
-

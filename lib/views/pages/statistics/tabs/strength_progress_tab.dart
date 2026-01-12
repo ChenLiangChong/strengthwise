@@ -6,9 +6,9 @@ import 'package:strengthwise/views/pages/profile/widgets/favorite_exercises_list
 import 'package:strengthwise/views/pages/exercises/widgets/exercise_selection_navigator.dart';
 import 'package:strengthwise/views/pages/exercises/exercise_strength_detail_page.dart';
 
-/// 力量進步 Tab 頁面
+/// 動作追蹤 Tab 頁面
 ///
-/// 顯示動作的力量進步記錄（整合收藏功能）
+/// 顯示動作的訓練進度記錄（整合收藏功能）
 class StrengthProgressTab extends StatefulWidget {
   /// 用戶 ID
   final String userId;
@@ -129,7 +129,7 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
             userId: widget.userId,
             timeRange: widget.timeRange, // 傳入時間範圍
             onExerciseSelected: (exercise) {
-              // 導航到動作詳情頁面
+              // 導航到動作詳情頁面（v3.3+ 傳遞基本數據）
               Navigator.of(context)
                   .pushReplacement(
                 MaterialPageRoute(
@@ -138,6 +138,7 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
                     exerciseId: exercise.exerciseId,
                     exerciseName: exercise.exerciseName,
                     timeRange: widget.timeRange,
+                    exerciseData: exercise, // v3.3+ 傳遞基本數據
                   ),
                 ),
               )
@@ -191,7 +192,7 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  '選擇動作，查看完整的力量進步曲線和訓練記錄',
+                  '選擇動作，查看完整的訓練進度曲線和歷史記錄',
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -212,7 +213,7 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
             userId: widget.userId,
             timeRange: widget.timeRange, // 傳入時間範圍
             onExerciseSelected: (exercise) {
-              // 導航到動作詳情頁面（查看力量進步記錄）
+              // 導航到動作詳情頁面（v3.3+ 傳遞基本數據）
               Navigator.of(context)
                   .push(
                 MaterialPageRoute(
@@ -221,6 +222,7 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
                     exerciseId: exercise.exerciseId,
                     exerciseName: exercise.exerciseName,
                     timeRange: widget.timeRange,
+                    exerciseData: exercise, // v3.3+ 傳遞基本數據
                   ),
                 ),
               )

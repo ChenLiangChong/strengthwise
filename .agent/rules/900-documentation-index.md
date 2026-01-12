@@ -1,4 +1,4 @@
-﻿---
+---
 description: "專案文檔索引與查閱指南。指導 AI 根據需求主動查找相關文檔。"
 globs: 
 alwaysApply: true
@@ -28,11 +28,17 @@ alwaysApply: true
 
 | 主題 | 檔案路徑 | 何時使用 |
 |---|----|----|
-| **Session Mode** | `docs/planning/SESSION_MODE_SPEC.md` | 教練上課模式、Realtime 同步 |
+| **首頁 + 行事曆** | `docs/planning/HOME_BOOKING_UX_SPEC.md` | 首頁改造、行事曆 Tab、快捷按鈕 |
+| **Beta 招募** | `docs/planning/BETA_RECRUITMENT_DESIGN.md` | Beta 測試招募設計 |
 | **健康評估** | `docs/HEALTH_ASSESSMENT_SYSTEM.md` | PAR-Q+ 問卷、風險評估 |
-| **訓練權限** | `docs/planning/TRAINING_PERMISSION_MATRIX.md` | 訓練權限矩陣 |
 | **SaaS 路線圖** | `docs/SAAS_PLATFORM_ROADMAP.md` | 未來計劃 |
-| **功能規劃** | `docs/planning/*.md` | 新功能詳細規格書 |
+| **功能規劃（活躍）** | `docs/planning/*.md` | 開發中的功能規格書 |
+| **功能規劃（歸檔）** | `docs/planning/archived/*.md` | 已完成的功能規格書 |
+| **TrackingMode** | `docs/planning/archived/TRACKING_MODE_SPEC.md` | 多追蹤模式適配 ✅ |
+| **Session Mode** | `docs/planning/archived/SESSION_MODE_SPEC.md` | 教練上課模式 ✅ |
+| **訓練權限** | `docs/planning/archived/TRAINING_PERMISSION_MATRIX.md` | 訓練權限矩陣 ✅ |
+| **性能優化** | `docs/planning/archived/DATA_FLOW_ANALYSIS.md` | 快取策略、Isolate ✅ |
+| **快取策略** | `docs/planning/archived/LOCAL_CACHE_STRATEGY.md` | 本地快取設計 ✅ |
 
 ### UI/UX 文檔
 
@@ -59,15 +65,17 @@ alwaysApply: true
 | 資料庫設計 | `DATABASE_SUPABASE.md` |
 | 時間處理方式 | `DATETIME_UTILS_GUIDE.md` |
 | UI 設計規範 | `UI_DEVELOPER_GUIDE.md` |
-| Session Mode（上課模式） | `docs/planning/SESSION_MODE_SPEC.md` |
-| Realtime 同步機制 | `docs/planning/SESSION_MODE_SPEC.md` |
-| 訓練權限邏輯 | `docs/planning/TRAINING_PERMISSION_MATRIX.md` |
+| 首頁 + 行事曆 UX | `docs/planning/HOME_BOOKING_UX_SPEC.md` |
 | 部署流程 | `DEPLOYMENT_GUIDE.md` |
 | 推播通知配置 | `FCM_SETUP_GUIDE.md` |
 | Python 工具 | `scripts/README.md` |
 | Migration 順序 | `migrations/README.md` |
 | 健康評估系統 | `HEALTH_ASSESSMENT_SYSTEM.md` |
-| 功能規劃詳情 | `docs/planning/*.md` |
+| TrackingMode 規格 | `docs/planning/archived/TRACKING_MODE_SPEC.md` |
+| Session Mode（上課模式） | `docs/planning/archived/SESSION_MODE_SPEC.md` |
+| 訓練權限邏輯 | `docs/planning/archived/TRAINING_PERMISSION_MATRIX.md` |
+| 性能優化/快取策略 | `docs/planning/archived/DATA_FLOW_ANALYSIS.md` |
+| 本地快取設計 | `docs/planning/archived/LOCAL_CACHE_STRATEGY.md` |
 
 ---
 

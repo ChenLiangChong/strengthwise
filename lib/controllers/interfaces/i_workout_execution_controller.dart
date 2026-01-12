@@ -95,13 +95,17 @@ abstract class IWorkoutExecutionController {
   void toggleSetCompletion(int exerciseIndex, int setIndex, {BuildContext? context});
   
   /// 更新組數數據
+  /// v3.2+ 支援多元追蹤模式的所有欄位
   Future<void> updateSetData(
-    int exerciseIndex, 
-    int setIndex, 
-    int reps, 
-    double weight,
-    {BuildContext? context}
-  );
+    int exerciseIndex,
+    int setIndex,
+    int reps,
+    double weight, {
+    int? time,
+    double? distance,
+    double? calories,
+    BuildContext? context,
+  });
   
   /// 添加運動備註
   Future<void> addExerciseNote(
@@ -111,7 +115,18 @@ abstract class IWorkoutExecutionController {
   );
   
   /// 添加新訓練動作
-  Future<void> addNewExercise(Exercise exercise, int sets, int reps, double weight, int restTime, {BuildContext? context});
+  /// v3.2+ 支援多元追蹤模式欄位
+  Future<void> addNewExercise(
+    Exercise exercise,
+    int sets,
+    int reps,
+    double weight,
+    int restTime, {
+    int? time,
+    double? distance,
+    double? calories,
+    BuildContext? context,
+  });
   
   /// 新增組數到指定運動
   Future<void> addSetToExercise(int exerciseIndex, {BuildContext? context});

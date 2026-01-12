@@ -1,4 +1,4 @@
-﻿---
+---
 description: "專案總覽文檔規範：PROJECT_OVERVIEW.md 的結構與維護。"
 globs: docs/PROJECT_OVERVIEW.md
 alwaysApply: false
@@ -45,4 +45,3 @@ PROJECT_OVERVIEW.md
 | 目錄結構變更 | 更新目錄結構區塊 |
 | 架構變更 | 更新架構設計區塊 |
 | 版本號更新 | 更新專案簡介表格 |
-

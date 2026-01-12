@@ -1,4 +1,4 @@
-﻿---
+---
 description: "StrengthWise 專案的核心 AI 人格、認知立場與溝通協議。適用於所有 Agent 交互。"
 globs: *
 alwaysApply: true
@@ -59,5 +59,4 @@ alwaysApply: true
 - 開發狀態：`@docs/DEVELOPMENT_STATUS.md`
 - 資料庫設計：`@docs/DATABASE_SUPABASE.md`
 - 時間處理：`@docs/DATETIME_UTILS_GUIDE.md`
-- UI 規範：`@docs/UI_UX_GUIDELINES.md`
-
+- UI 規範：`@docs/UI_DEVELOPER_GUIDE.md`

@@ -2,7 +2,7 @@
 
 > AI 程式碼助手開發規範索引
 
-**最後更新**：2026年1月9日 - v3.2（開發中 - Coach Mark Onboarding）
+**最後更新**：2026年1月12日 - v3.3（完成 - TrackingMode 適配 + PR 修復）
 
 ---
 
@@ -139,7 +139,7 @@
 
 ## 🎯 當前開發狀態
 
-**版本**：v3.2 🚧 開發中（Coach Mark Onboarding ✅）
+**版本**：v3.3 ✅ 完成（TrackingMode 適配 + PR 修復）
 
 詳細進度請查看：**[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)**
 

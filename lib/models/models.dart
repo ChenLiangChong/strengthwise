@@ -17,6 +17,9 @@ export 'user/user_model.dart';
 export 'exercise/exercise.dart';
 export 'exercise/exercise_type_enum.dart';
 
+/// 追蹤模式（v3.2+）
+export 'tracking_mode.dart';
+
 /// 自訂動作模型
 export 'custom_exercise/custom_exercise.dart';
 

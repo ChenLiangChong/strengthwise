@@ -4,12 +4,14 @@ import 'package:strengthwise/models/coaching_relationship_model.dart';
 import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
 import 'package:strengthwise/models/coach_display_preferences_model.dart';
 import 'package:strengthwise/models/coach_assessment_note_model.dart';
+import 'package:strengthwise/models/injury_coach_note_model.dart'; // ⭐ v3.3
 import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/interfaces/i_coaching_relationship_service.dart';
 import 'package:strengthwise/services/interfaces/i_health_assessment_service.dart';
 import 'package:strengthwise/services/interfaces/i_coach_display_preferences_service.dart';
 import 'package:strengthwise/services/interfaces/i_coach_assessment_note_service.dart';
+import 'package:strengthwise/services/interfaces/i_injury_coach_note_service.dart'; // ⭐ v3.3
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/profile/health_assessment_detail_page.dart';
@@ -48,6 +50,8 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
 
   CoachDisplayPreferencesModel? _displayPreferences;
   CoachAssessmentNoteModel? _coachNote; // ⭐ 新增
+  Map<String, List<InjuryCoachNoteModel>>? _injuryCoachNotes; // ⭐ v3.3
+  late final IInjuryCoachNoteService _injuryNoteService; // ⭐ v3.3
 
   @override
   void initState() {
@@ -58,6 +62,7 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
     _preferencesService = serviceLocator<ICoachDisplayPreferencesService>();
     _assessmentNoteService =
         serviceLocator<ICoachAssessmentNoteService>(); // ⭐ 新增
+    _injuryNoteService = serviceLocator<IInjuryCoachNoteService>(); // ⭐ v3.3
     _loadRelationship();
     _loadHealthAssessment();
     _loadDisplayPreferences();
@@ -104,6 +109,7 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
 
       // ⭐ 如果有評估，載入當前教練的備註
       CoachAssessmentNoteModel? coachNote;
+      Map<String, List<InjuryCoachNoteModel>>? injuryNotes;
       if (assessment != null) {
         final coachId = _authController.user?.uid;
         if (coachId != null) {
@@ -112,12 +118,17 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
             assessmentId: assessment.id,
           );
         }
+        // ⭐ v3.3: 載入傷病教練備註
+        injuryNotes = await _injuryNoteService.getNotesForClient(
+          clientId: widget.client.uid,
+        );
       }
 
       if (mounted) {
         setState(() {
           _healthAssessment = assessment;
-          _coachNote = coachNote; // ⭐ 儲存備註
+          _coachNote = coachNote;
+          _injuryCoachNotes = injuryNotes; // ⭐ v3.3: 儲存傷病備註
           _isLoadingHealthAssessment = false;
         });
       }
@@ -203,6 +214,24 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
     );
   }
 
+  /// ⭐ v3.3: 快速編輯特定步驟
+  Future<void> _showQuickEdit(int step) async {
+    final result = await Navigator.of(context).push<HealthAssessmentModel>(
+      MaterialPageRoute(
+        builder: (context) => HealthAssessmentPage(
+          clientId: widget.client.uid,
+          clientName: widget.client.displayName ?? widget.client.email,
+          existingAssessment: _healthAssessment,
+          quickEditStep: step, // ⭐ 快速編輯模式
+        ),
+      ),
+    );
+
+    if (result != null) {
+      await _loadHealthAssessment();
+    }
+  }
+
   /// ⭐ 儲存教練備註
   Future<void> _saveCoachNote(String notes) async {
     if (_healthAssessment == null) return;
@@ -254,10 +283,12 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
               assessment: _healthAssessment!,
               preferences: _displayPreferences,
               coachNote: _coachNote,
+              injuryCoachNotes: _injuryCoachNotes, // ⭐ v3.3: 傷病教練備註
               onViewFull: _showHealthAssessmentFull,
               onEdit: _showHealthAssessmentEditor,
               onConfigurePreferences: _showPreferencesEditor,
-              onCoachNoteChanged: _saveCoachNote, // ⭐ 新增：儲存備註回調
+              onCoachNoteChanged: _saveCoachNote,
+              onQuickEdit: _showQuickEdit, // ⭐ v3.3: 快速編輯
             )
           else
             EmptyHealthAssessmentCard(

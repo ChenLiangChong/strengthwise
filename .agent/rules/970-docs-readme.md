@@ -1,4 +1,4 @@
-﻿---
+---
 description: "文檔索引規範：docs/README.md 的結構與維護。"
 globs: docs/README.md
 alwaysApply: false
@@ -43,4 +43,3 @@ docs/README.md
 | 新增文檔 | 添加連結到對應區塊 |
 | 刪除文檔 | 移除連結 |
 | 文檔改名 | 更新連結路徑 |
-

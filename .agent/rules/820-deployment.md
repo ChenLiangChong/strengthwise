@@ -1,4 +1,4 @@
-﻿---
+---
 description: "部署流程規範：Android APK、iOS、Google Sign-In、Supabase 配置。"
 globs: android/**/*,ios/**/*,pubspec.yaml
 alwaysApply: false
@@ -60,4 +60,3 @@ DEPLOYMENT_GUIDE.md
 - 過時的配置步驟
 - 重複的命令說明
 </critical>
-

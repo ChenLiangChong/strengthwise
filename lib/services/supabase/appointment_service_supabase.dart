@@ -544,7 +544,7 @@ class AppointmentServiceSupabase implements IAppointmentService {
         'client_id': clientId,
         'time_range': DateTimeUtils.formatToTstzRange(startTime, endTime),
         'status': 'confirmed', // ⭐ 跳過 requested，直接確認
-        'notes': notes ?? '臨時課程',
+        'notes': notes,
         'created_at': DateTimeUtils.formatToUtcIso(now),
         'updated_at': DateTimeUtils.formatToUtcIso(now),
       };

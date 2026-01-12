@@ -1,14 +1,18 @@
 import 'set_record.dart';
+import '../tracking_mode.dart';
 
 /// 運動記錄模型
 ///
 /// 表示一個特定運動的詳細記錄，包含多個組的數據
+/// 
+/// v3.2+ 支援多種追蹤模式（trackingMode）
 class ExerciseRecord {
   final String exerciseId;           // 關聯的運動ID
   final String exerciseName;         // 運動名稱
   final List<SetRecord> sets;        // 組數記錄
   final String notes;                // 備註
   final bool completed;              // 是否完成
+  final TrackingMode trackingMode;   // v3.2+ 追蹤模式
 
   /// 創建一個運動記錄實例
   ExerciseRecord({
@@ -17,6 +21,7 @@ class ExerciseRecord {
     required this.sets,
     this.notes = '',
     this.completed = false,
+    this.trackingMode = TrackingMode.weightReps,
   });
 
   /// 轉換為 JSON 數據格式
@@ -27,6 +32,7 @@ class ExerciseRecord {
       'sets': sets.map((set) => set.toJson()).toList(),
       'notes': notes,
       'completed': completed,
+      'trackingMode': trackingMode.toJson(),
     };
   }
 
@@ -40,6 +46,7 @@ class ExerciseRecord {
           .toList(),
       notes: json['notes'] ?? '',
       completed: json['completed'] ?? false,
+      trackingMode: TrackingModeExtension.fromJson(json['trackingMode'] as String?),
     );
   }
 
@@ -53,6 +60,7 @@ class ExerciseRecord {
           .toList(),
       notes: data['notes'] ?? '',
       completed: data['completed'] ?? false,
+      trackingMode: TrackingModeExtension.fromJson(data['trackingMode'] as String?),
     );
   }
 
@@ -61,6 +69,11 @@ class ExerciseRecord {
     final sets = <SetRecord>[];
     final targetSets = exerciseData['sets'] as int? ?? 3;
     
+    // v3.2+ 解析 trackingMode
+    final trackingMode = TrackingModeExtension.fromJson(
+      exerciseData['trackingMode'] as String?,
+    );
+    
     // 為每個目標組數創建一個SetRecord
     for (int i = 0; i < targetSets; i++) {
       sets.add(SetRecord(
@@ -68,6 +81,10 @@ class ExerciseRecord {
         reps: exerciseData['reps'] as int? ?? 10,
         weight: (exerciseData['weight'] as num?)?.toDouble() ?? 0.0,
         restTime: exerciseData['restTime'] as int? ?? 60,
+        // v3.2+ 新增欄位
+        time: exerciseData['time'] as int?,
+        distance: (exerciseData['distance'] as num?)?.toDouble(),
+        calories: (exerciseData['calories'] as num?)?.toDouble(),
       ));
     }
     
@@ -83,6 +100,7 @@ class ExerciseRecord {
       sets: sets,
       notes: exerciseData['notes'] ?? '',
       completed: false,
+      trackingMode: trackingMode,
     );
   }
 
@@ -93,6 +111,7 @@ class ExerciseRecord {
     List<SetRecord>? sets,
     String? notes,
     bool? completed,
+    TrackingMode? trackingMode,
   }) {
     return ExerciseRecord(
       exerciseId: exerciseId ?? this.exerciseId,
@@ -100,6 +119,7 @@ class ExerciseRecord {
       sets: sets ?? this.sets,
       notes: notes ?? this.notes,
       completed: completed ?? this.completed,
+      trackingMode: trackingMode ?? this.trackingMode,
     );
   }
   

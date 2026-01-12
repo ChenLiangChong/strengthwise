@@ -6,6 +6,7 @@ import 'package:strengthwise/models/workout_exercise_model.dart'
     as exercise_models;
 import 'package:strengthwise/models/workout_record_model.dart';
 import 'package:strengthwise/models/exercise_model.dart';
+import 'package:strengthwise/models/tracking_mode.dart'; // v3.2+
 import 'package:strengthwise/services/interfaces/i_workout_service.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
@@ -19,6 +20,7 @@ import 'widgets/plan_date_header.dart';
 import 'widgets/plan_basic_info_form.dart';
 import 'widgets/plan_exercise_card.dart';
 import 'widgets/set_edit_dialog.dart';
+import 'widgets/exercise_settings_dialog.dart'; // v3.2+ 添加動作設定對話框
 
 class PlanEditorPage extends StatefulWidget {
   final DateTime selectedDate;
@@ -52,6 +54,15 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  
+  // v3.2+ 新增動作設定對話框控制器
+  final TextEditingController _newExerciseSetsController = TextEditingController();
+  final TextEditingController _newExerciseRepsController = TextEditingController();
+  final TextEditingController _newExerciseWeightController = TextEditingController();
+  final TextEditingController _newExerciseRestController = TextEditingController();
+  final TextEditingController _newExerciseTimeController = TextEditingController();
+  final TextEditingController _newExerciseDistanceController = TextEditingController();
+  final TextEditingController _newExerciseCaloriesController = TextEditingController();
 
   List<exercise_models.WorkoutExercise> _exercises = [];
   bool _isLoading = false;
@@ -236,19 +247,43 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       print('[PlanEditor] 準備保存訓練計畫，動作數量: ${_exercises.length}');
 
       // 從 WorkoutExercise 轉換為 ExerciseRecord
+      // v3.2+ 支援多元追蹤模式 + 修復：正確使用 setTargets
       final exerciseRecords = _exercises.map((exercise) {
         return ExerciseRecord(
           exerciseId: exercise.exerciseId, // 修復：使用 exerciseId 而非 id
           exerciseName: exercise.name,
+          trackingMode: exercise.trackingMode, // v3.2+
           sets: List.generate(
             exercise.sets,
-            (index) => SetRecord(
-              setNumber: index + 1,
-              reps: exercise.reps,
-              weight: exercise.weight,
-              restTime: exercise.restTime,
-              completed: false,
-            ),
+            (index) {
+              // ✅ 優先使用 setTargets 中的個別設定
+              if (exercise.setTargets != null && 
+                  index < exercise.setTargets!.length) {
+                final target = exercise.setTargets![index];
+                return SetRecord(
+                  setNumber: index + 1,
+                  reps: (target['reps'] as num?)?.toInt() ?? exercise.reps,
+                  weight: (target['weight'] as num?)?.toDouble() ?? exercise.weight,
+                  restTime: (target['restTime'] as num?)?.toInt() ?? exercise.restTime,
+                  completed: false,
+                  // v3.2+ 新增欄位
+                  time: (target['time'] as num?)?.toInt() ?? exercise.time,
+                  distance: (target['distance'] as num?)?.toDouble() ?? exercise.distance,
+                  calories: (target['calories'] as num?)?.toDouble() ?? exercise.calories,
+                );
+              }
+              // 沒有 setTargets 時使用預設值
+              return SetRecord(
+                setNumber: index + 1,
+                reps: exercise.reps,
+                weight: exercise.weight,
+                restTime: exercise.restTime,
+                completed: false,
+                time: exercise.time,
+                distance: exercise.distance,
+                calories: exercise.calories,
+              );
+            },
           ),
           notes: '',
           completed: false,
@@ -485,6 +520,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   }
 
   // 添加訓練動作
+  // v3.2+ 根據 trackingMode 顯示不同的設定對話框
   void _addExercise() async {
     final result = await Navigator.push<Exercise>(
       context,
@@ -494,27 +530,98 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     );
 
     if (result != null) {
+      _showExerciseSettingsDialog(result);
+    }
+  }
+
+  /// v3.2+ 顯示動作設定對話框
+  void _showExerciseSettingsDialog(Exercise exercise) async {
+    final trackingMode = exercise.trackingMode;
+
+    // 重置控制器預設值
+    _newExerciseSetsController.text = '4';
+    _newExerciseRepsController.text = '10';
+    _newExerciseWeightController.text = '0';
+    _newExerciseRestController.text = '90';
+    // v3.2+ 新欄位預設值
+    _newExerciseTimeController.text = '30';
+    _newExerciseDistanceController.text = '0';
+    _newExerciseCaloriesController.text = '0';
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => ExerciseSettingsDialog(
+        exerciseName: exercise.name,
+        setsController: _newExerciseSetsController,
+        repsController: _newExerciseRepsController,
+        weightController: _newExerciseWeightController,
+        restController: _newExerciseRestController,
+        // v3.2+ 傳遞新參數
+        timeController: _newExerciseTimeController,
+        distanceController: _newExerciseDistanceController,
+        caloriesController: _newExerciseCaloriesController,
+        trackingMode: trackingMode,
+      ),
+    );
+
+    if (result == true && mounted) {
+      final sets = int.tryParse(_newExerciseSetsController.text) ?? 4;
+      final reps = int.tryParse(_newExerciseRepsController.text) ?? 10;
+      final weight = double.tryParse(_newExerciseWeightController.text) ?? 0.0;
+      final restTime = int.tryParse(_newExerciseRestController.text) ?? 90;
+      // v3.2+ 解析新欄位
+      final time = int.tryParse(_newExerciseTimeController.text);
+      final distance = double.tryParse(_newExerciseDistanceController.text);
+      final calories = double.tryParse(_newExerciseCaloriesController.text);
+
       setState(() {
-        _exercises.add(exercise_models.WorkoutExercise.fromExercise(result));
+        _exercises.add(exercise_models.WorkoutExercise(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          exerciseId: exercise.id,
+          name: exercise.name,
+          actionName: exercise.actionName,
+          equipment: exercise.equipment,
+          bodyParts: exercise.bodyParts,
+          sets: sets,
+          reps: reps,
+          weight: weight,
+          restTime: restTime,
+          trackingMode: trackingMode,
+          time: time,
+          distance: distance,
+          calories: calories,
+        ));
       });
     }
   }
 
   // 編輯單組設定
+  // v3.2+ 支援多元追蹤模式
   Future<void> _editSet(int exerciseIndex, int setIndex) async {
     final exercise = _exercises[exerciseIndex];
+    final trackingMode = exercise.trackingMode;
 
     // 獲取當前組的目標值
     int currentReps;
     double currentWeight;
+    int? currentTime;
+    double? currentDistance;
+    double? currentCalories;
 
     if (exercise.setTargets != null && setIndex < exercise.setTargets!.length) {
       final target = exercise.setTargets![setIndex];
       currentReps = target['reps'] as int? ?? exercise.reps;
       currentWeight = (target['weight'] as num?)?.toDouble() ?? exercise.weight;
+      currentTime = target['time'] as int? ?? exercise.time;
+      currentDistance = (target['distance'] as num?)?.toDouble() ?? exercise.distance;
+      currentCalories = (target['calories'] as num?)?.toDouble() ?? exercise.calories;
     } else {
       currentReps = exercise.reps;
       currentWeight = exercise.weight;
+      currentTime = exercise.time;
+      currentDistance = exercise.distance;
+      currentCalories = exercise.calories;
     }
 
     final result = await showDialog<Map<String, dynamic>>(
@@ -524,19 +631,20 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         setNumber: setIndex + 1,
         initialReps: currentReps,
         initialWeight: currentWeight,
+        initialTime: currentTime,
+        initialDistance: currentDistance,
+        initialCalories: currentCalories,
+        trackingMode: trackingMode, // v3.2+
       ),
     );
 
     if (result != null) {
-      final reps = result['reps'] as int;
-      final weight = result['weight'] as double;
-
       setState(() {
         // 確保 setTargets 存在
         if (exercise.setTargets == null || exercise.setTargets!.isEmpty) {
           final newSetTargets = List.generate(
             exercise.sets,
-            (i) => {'reps': exercise.reps, 'weight': exercise.weight},
+            (i) => _buildSetTarget(exercise),
           );
           _exercises[exerciseIndex] =
               exercise.copyWith(setTargets: newSetTargets);
@@ -545,15 +653,32 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         // 更新單組目標值
         final updatedSetTargets = List<Map<String, dynamic>>.from(
             _exercises[exerciseIndex].setTargets!);
-        updatedSetTargets[setIndex] = {'reps': reps, 'weight': weight};
+        updatedSetTargets[setIndex] = result;
 
         _exercises[exerciseIndex] = _exercises[exerciseIndex].copyWith(
           setTargets: updatedSetTargets,
-          reps: updatedSetTargets.first['reps'] as int,
-          weight: (updatedSetTargets.first['weight'] as num).toDouble(),
+          reps: result['reps'] as int? ?? exercise.reps,
+          weight: (result['weight'] as num?)?.toDouble() ?? exercise.weight,
+          time: result['time'] as int?,
+          distance: (result['distance'] as num?)?.toDouble(),
+          calories: (result['calories'] as num?)?.toDouble(),
         );
       });
     }
+  }
+
+  /// v3.2+ 根據 exercise 建立 setTarget
+  Map<String, dynamic> _buildSetTarget(exercise_models.WorkoutExercise exercise) {
+    final target = <String, dynamic>{};
+    final mode = exercise.trackingMode;
+    
+    if (mode.needsReps) target['reps'] = exercise.reps;
+    if (mode.needsWeight) target['weight'] = exercise.weight;
+    if (mode.needsTime) target['time'] = exercise.time ?? 0;
+    if (mode.needsDistance) target['distance'] = exercise.distance ?? 0.0;
+    if (mode.needsCalories) target['calories'] = exercise.calories ?? 0.0;
+    
+    return target;
   }
 
   // 調整組數
@@ -595,8 +720,10 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   }
 
   // 批量編輯所有組
+  // v3.2+ 支援多元追蹤模式
   Future<void> _batchEditSets(int exerciseIndex) async {
     final exercise = _exercises[exerciseIndex];
+    final trackingMode = exercise.trackingMode;
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -604,23 +731,27 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       builder: (context) => BatchSetEditDialog(
         initialReps: exercise.reps,
         initialWeight: exercise.weight,
+        initialTime: exercise.time,
+        initialDistance: exercise.distance,
+        initialCalories: exercise.calories,
+        trackingMode: trackingMode, // v3.2+
       ),
     );
 
     if (result != null) {
-      final reps = result['reps'] as int;
-      final weight = result['weight'] as double;
-
       setState(() {
         final newSetTargets = List.generate(
           exercise.sets,
-          (i) => {'reps': reps, 'weight': weight},
+          (i) => Map<String, dynamic>.from(result),
         );
 
         _exercises[exerciseIndex] = exercise.copyWith(
           sets: exercise.sets,
-          reps: reps,
-          weight: weight,
+          reps: result['reps'] as int? ?? exercise.reps,
+          weight: (result['weight'] as num?)?.toDouble() ?? exercise.weight,
+          time: result['time'] as int?,
+          distance: (result['distance'] as num?)?.toDouble(),
+          calories: (result['calories'] as num?)?.toDouble(),
           setTargets: newSetTargets,
         );
       });
@@ -808,6 +939,14 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    // v3.2+ 清理新增動作對話框控制器
+    _newExerciseSetsController.dispose();
+    _newExerciseRepsController.dispose();
+    _newExerciseWeightController.dispose();
+    _newExerciseRestController.dispose();
+    _newExerciseTimeController.dispose();
+    _newExerciseDistanceController.dispose();
+    _newExerciseCaloriesController.dispose();
     super.dispose();
   }
 }

@@ -2,7 +2,7 @@
 
 > Supabase PostgreSQL 資料庫架構與最佳實踐
 
-**最後更新**：2026-01-09（v3.2）
+**最後更新**：2026-01-12（v3.3）
 
 ---
 
@@ -101,6 +101,7 @@ CREATE TABLE public.exercises (
   equipment_subcategory TEXT,       -- 器材子類別
   action_name TEXT,
   action_name_en TEXT,
+  tracking_mode TEXT DEFAULT 'weight_reps',  -- v3.2+ 追蹤模式
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -112,6 +113,18 @@ CREATE INDEX idx_exercises_body_part ON exercises(body_part);
 ```
 
 **資料統計**：794 個動作（阻力 744、活動度 30、心肺 20）
+
+**tracking_mode 可用值**（v3.2+）：
+| 模式 | 說明 | 適用動作 |
+|------|------|----------|
+| `weight_reps` | 重量 × 次數（預設）| 深蹲、臥推 |
+| `weight_time` | 重量 × 時間 | 農夫走路 |
+| `reps_only` | 僅次數 | 波比跳、跳箱 |
+| `time_only` | 僅時間 | 棒式、靜態支撐 |
+| `reps_time` | 次數 × 時間 | 動態伸展 |
+| `distance_time` | 距離 + 時間 | 跑步機、划船機 |
+| `distance_only` | 僅距離 | 立定跳遠 |
+| `calories` | 卡路里 | 風扇車 |
 
 ---
 
@@ -126,6 +139,7 @@ CREATE TABLE public.custom_exercises (
   equipment TEXT DEFAULT '徒手',
   description TEXT DEFAULT '',
   notes TEXT DEFAULT '',
+  tracking_mode TEXT DEFAULT 'weight_reps',  -- v3.2+ 追蹤模式
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -785,6 +799,13 @@ CREATE TABLE public.personal_records (
 
 > ✅ v2.9 修正：只有創建者可以刪除訓練計畫（Migration 026）
 
+**觸發器**（v3.3）：
+
+| 觸發器 | 事件 | 說明 |
+|--------|------|------|
+| `trg_update_pr` | AFTER INSERT/UPDATE | 更新 personal_records（最大重量、最大次數）|
+| `trg_workout_plan_delete` | AFTER DELETE | 重新計算該動作的 PR ⭐ v3.3 |
+
 #### workout_templates（訓練模板）
 
 | 操作 | 策略名稱 | 條件 |
@@ -920,18 +941,23 @@ try {
 
 **執行順序與詳細說明**：[migrations/README.md](../migrations/README.md)
 
+### 文件結構（v3.3 整理後）
+
+```
+migrations/
+├── consolidated/     # 精簡版（新部署推薦）- 10 個文件
+└── 001-22.sql       # 演進版 - 22 個文件
+```
+
 ### 快速參考
 
 | 檔案 | 版本 | 說明 |
 |-----|------|------|
 | 001-004 | v1.0 | 核心表格 + 系統資料 + 優化 |
-| 005-007 | v2.0 | 教練學員 + 預約 + 筆記 |
-| 008-010 | v2.x | 修復 + 增強 |
-| 016-021 | v2.8 | 健康評估系統 |
-| 025-027 | v2.9 | 教練公開檔案 + 訓練狀態 |
-| 028-031, 033 | v3.0 | 預約設定 + 課前問卷 + Session Mode + FCM |
-| 034-037 | v3.1 | Session Mode 修復 + RLS 修復 |
-| 040-041 | v3.1.1 | 教練創建預約 RLS + 預約取消清理觸發器 |
+| 005-008 | v2.0 | 教練學員 + 預約 + 筆記 |
+| 09-15 | v2.2-v2.9 | 修復 + 健康評估 + 教練系統 |
+| 16-19 | v3.0-v3.1 | 預約優化 + Session Mode + RLS |
+| 20-22 | v3.2-v3.3 | TrackingMode + PR 觸發器修復 ⭐
 
 ---
 

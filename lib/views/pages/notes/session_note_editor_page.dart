@@ -1,5 +1,6 @@
 // ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -32,10 +33,10 @@ import 'dart:io';
 class SessionNoteEditorPage extends StatefulWidget {
   /// 筆記 ID（編輯模式）
   final String? noteId;
-  
+
   /// 學員 ID（創建模式必填）
   final String? clientId;
-  
+
   /// 關聯預約 ID
   final String? appointmentId;
 
@@ -53,19 +54,19 @@ class SessionNoteEditorPage extends StatefulWidget {
 class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
   late final SessionNoteController _controller;
   late final IAuthController _authController;
-  
+
   // 標題控制器
   final _titleController = TextEditingController();
-  
+
   // SOAP 欄位控制器
   final _subjectiveController = TextEditingController();
   final _objectiveController = TextEditingController();
   final _assessmentController = TextEditingController();
   final _planController = TextEditingController();
-  
+
   // 隱私設定
   String _visibility = 'private';
-  
+
   // 快速標籤
   final List<String> _selectedTags = [];
   final List<String> _availableTags = [
@@ -76,20 +77,20 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
     '需要追蹤',
     '特殊狀況',
   ];
-  
+
   // 載入狀態
   bool _isLoading = false;
   bool _isSaving = false;
-  
+
   // 照片列表
   final List<File> _photos = [];
   final List<String> _uploadedPhotoUrls = [];
   bool _isUploadingPhotos = false;
   double _uploadProgress = 0.0;
-  
+
   // 【手繪板】臨時 Session ID 列表（新建模式下支援多次繪圖）
   final List<String> _tempSessionNoteIds = [];
-  
+
   // 【每個模板對應臨時 ID（避免重複創建）】
   final Map<String, String> _tempIdsByTemplate = {};
 
@@ -98,7 +99,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
     super.initState();
     _controller = serviceLocator<SessionNoteController>();
     _authController = serviceLocator<IAuthController>();
-    
+
     // 編輯模式：載入現有筆記
     if (widget.noteId != null) {
       _loadNote();
@@ -118,16 +119,16 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
   /// 載入現有筆記
   Future<void> _loadNote() async {
     setState(() => _isLoading = true);
-    
+
     try {
       await _controller.loadNoteById(widget.noteId!);
       final note = _controller.selectedNote;
-      
+
       if (note != null) {
         setState(() {
           // 填充標題
           _titleController.text = note.title;
-          
+
           // 填充 SOAP 欄位
           if (note.soap != null) {
             _subjectiveController.text = note.soap!.subjective ?? '';
@@ -135,23 +136,23 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
             _assessmentController.text = note.soap!.assessment ?? '';
             _planController.text = note.soap!.plan ?? '';
           }
-          
+
           // 設定隱私
           _visibility = note.visibility;
-          
+
           // 設定標籤
           _selectedTags.clear();
           _selectedTags.addAll(note.quickTags);
-          
+
           // 【載入照片 URL】
           debugPrint('[NOTE_EDITOR] 📷 開始載入照片');
           debugPrint('[NOTE_EDITOR] 📊 視覺元素總數: ${note.visualElements.length}');
-          
+
           _uploadedPhotoUrls.clear();
           for (int i = 0; i < note.visualElements.length; i++) {
             final element = note.visualElements[i];
             debugPrint('[NOTE_EDITOR] 📊 元素 $i: 類型=${element.runtimeType}');
-            
+
             if (element is PhotoElementModel) {
               debugPrint('[NOTE_EDITOR] 🖼️ 照片元素，路徑: ${element.storagePath}');
               _uploadedPhotoUrls.add(element.storagePath);
@@ -178,15 +179,15 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
   /// 添加照片
   Future<void> _addPhoto() async {
     debugPrint('[NOTE_EDITOR] 📷 開始添加照片流程');
-    
+
     // 顯示選擇器並獲取返回的 ImageSource
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       builder: (context) => const PhotoPickerSheet(),
     );
-    
+
     debugPrint('[NOTE_EDITOR] 📷 用戶選擇結果: $source');
-    
+
     // 如果用戶選擇了來源，開始選擇照片
     if (source != null) {
       debugPrint('[NOTE_EDITOR] 📷 準備調用 _pickImage，mounted=$mounted');
@@ -197,32 +198,34 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       debugPrint('[NOTE_EDITOR] ⏭️ 用戶取消了照片選擇器');
     }
   }
-  
+
   /// 選擇照片
   Future<void> _pickImage(ImageSource source) async {
     debugPrint('[NOTE_EDITOR] 📷 _pickImage 開始執行');
     debugPrint('[NOTE_EDITOR] 📷 來源: $source');
     debugPrint('[NOTE_EDITOR] 📷 平台: ${Platform.operatingSystem}');
     debugPrint('[NOTE_EDITOR] 📷 mounted: $mounted');
-    
+
     try {
-      // Windows 平台且選擇相簿時，使用 file_picker
-      if (Platform.isWindows && source == ImageSource.gallery) {
+      // Windows 平台且選擇相簿時，使用 file_picker（Web 不支援）
+      if (!kIsWeb && Platform.isWindows && source == ImageSource.gallery) {
         debugPrint('[NOTE_EDITOR] 🪟 使用 file_picker（Windows 平台）');
         await _pickImageWithFilePicker();
         return;
       }
-      
+
       // 其他平台使用 image_picker
       debugPrint('[NOTE_EDITOR] 📷 使用 image_picker');
       final picker = ImagePicker();
-      
-      final pickedFile = await picker.pickImage(
+
+      final pickedFile = await picker
+          .pickImage(
         source: source,
         maxWidth: 1920,
         maxHeight: 1920,
         imageQuality: 85,
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 60),
         onTimeout: () {
           debugPrint('[NOTE_EDITOR] ⏰ 選擇照片超時（60秒）');
@@ -230,13 +233,14 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
         },
       );
 
-      debugPrint('[NOTE_EDITOR] 📷 pickImage 完成，結果: ${pickedFile != null ? "有照片" : "null"}');
+      debugPrint(
+          '[NOTE_EDITOR] 📷 pickImage 完成，結果: ${pickedFile != null ? "有照片" : "null"}');
 
       if (pickedFile != null) {
         final file = File(pickedFile.path);
         debugPrint('[NOTE_EDITOR] ✅ 選擇了照片: ${file.path}');
         debugPrint('[NOTE_EDITOR] 📊 檔案大小: ${await file.length()} bytes');
-        
+
         if (mounted) {
           setState(() {
             _photos.add(file);
@@ -249,28 +253,29 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
     } catch (e, stackTrace) {
       debugPrint('[NOTE_EDITOR] ❌ 選擇照片異常: $e');
       debugPrint('[NOTE_EDITOR] 📋 Stack trace: $stackTrace');
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('選擇照片失敗: $e')),
         );
       }
     }
-    
+
     debugPrint('[NOTE_EDITOR] 📷 _pickImage 執行結束');
   }
-  
+
   /// 使用 file_picker 選擇照片（Windows 平台專用）
   Future<void> _pickImageWithFilePicker() async {
     debugPrint('[NOTE_EDITOR] 🪟 開始使用 file_picker...');
-    
+
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.image,
         allowMultiple: false,
       );
 
-      debugPrint('[NOTE_EDITOR] 🪟 file_picker 完成，結果: ${result != null ? "有結果" : "null"}');
+      debugPrint(
+          '[NOTE_EDITOR] 🪟 file_picker 完成，結果: ${result != null ? "有結果" : "null"}');
 
       if (result != null && result.files.isNotEmpty) {
         final path = result.files.first.path;
@@ -278,7 +283,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
           final file = File(path);
           debugPrint('[NOTE_EDITOR] ✅ 選擇了照片: $path');
           debugPrint('[NOTE_EDITOR] 📊 檔案大小: ${await file.length()} bytes');
-          
+
           if (mounted) {
             setState(() {
               _photos.add(file);
@@ -294,7 +299,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
     } catch (e, stackTrace) {
       debugPrint('[NOTE_EDITOR] ❌ file_picker 異常: $e');
       debugPrint('[NOTE_EDITOR] 📋 Stack trace: $stackTrace');
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('選擇照片失敗: $e')),
@@ -313,53 +318,53 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
   /// 上傳照片到 Storage
   Future<void> _uploadPhotos() async {
     if (_photos.isEmpty) return;
-    
+
     setState(() {
       _isUploadingPhotos = true;
       _uploadProgress = 0.0;
     });
-    
+
     try {
       final currentUser = _authController.user;
       if (currentUser == null) return;
-      
+
       // 確保 clientId 存在（編輯模式從 selectedNote 取得）
       String? clientId = widget.clientId;
       if (clientId == null && _controller.selectedNote != null) {
         clientId = _controller.selectedNote!.clientId;
         debugPrint('[NOTE_EDITOR] 📋 從現有筆記獲得學員 ID: $clientId');
       }
-      
+
       if (clientId == null) {
         throw Exception('clientId is required for uploading photos');
       }
-      
+
       // 【不清空已有照片 URL，只添加新的】
       debugPrint('[NOTE_EDITOR] 📷 現有照片數量: ${_uploadedPhotoUrls.length}');
-      
+
       for (int i = 0; i < _photos.length; i++) {
         final photo = _photos[i];
-        
+
         // 上傳到 Supabase Storage（使用 clientId 作為路徑）
         final url = await _controller.uploadPhoto(
           coachId: currentUser.uid,
           clientId: clientId,
           file: photo,
         );
-        
+
         if (url != null) {
           _uploadedPhotoUrls.add(url);
           debugPrint('[NOTE_EDITOR] ✅ 照片上傳成功: $url');
         }
-        
+
         // 更新進度
         setState(() {
           _uploadProgress = (i + 1) / _photos.length;
         });
       }
-      
+
       debugPrint('[NOTE_EDITOR] 📷 上傳後照片總數: ${_uploadedPhotoUrls.length}');
-      
+
       // 【清空待上傳列表，因為已經上傳完成】
       _photos.clear();
       debugPrint('[NOTE_EDITOR] 🗑️ 已清空待上傳照片列表');
@@ -380,7 +385,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
   /// 儲存筆記
   Future<void> _saveNote() async {
     debugPrint('[NOTE_EDITOR] 📝 開始保存筆記');
-    
+
     final currentUser = _authController.user;
     if (currentUser == null) {
       debugPrint('[NOTE_EDITOR] ❌ 用戶未登入');
@@ -389,11 +394,11 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       );
       return;
     }
-    
+
     debugPrint('[NOTE_EDITOR] 👤 當前用戶: ${currentUser.uid}');
     debugPrint('[NOTE_EDITOR] 📋 模式: ${widget.noteId != null ? "編輯" : "創建"}');
     debugPrint('[NOTE_EDITOR] 👥 學員 ID: ${widget.clientId}');
-    
+
     // 驗證：標題必填
     if (_titleController.text.trim().isEmpty) {
       debugPrint('[NOTE_EDITOR] ⚠️ 標題為空');
@@ -405,14 +410,14 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       );
       return;
     }
-    
+
     // 驗證：至少填寫一個欄位（排除預設提示文字）
-    final hasSubjective = _subjectiveController.text.trim().isNotEmpty && 
+    final hasSubjective = _subjectiveController.text.trim().isNotEmpty &&
         !_subjectiveController.text.contains('（手繪板註記筆記請填在主觀描述）');
     final hasObjective = _objectiveController.text.trim().isNotEmpty;
     final hasAssessment = _assessmentController.text.trim().isNotEmpty;
     final hasPlan = _planController.text.trim().isNotEmpty;
-    
+
     if (!hasSubjective && !hasObjective && !hasAssessment && !hasPlan) {
       debugPrint('[NOTE_EDITOR] ⚠️ 沒有填寫任何欄位');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -423,7 +428,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       );
       return;
     }
-    
+
     // 驗證：創建模式必須有 clientId
     if (widget.noteId == null && widget.clientId == null) {
       debugPrint('[NOTE_EDITOR] ❌ 創建模式缺少學員 ID');
@@ -432,22 +437,23 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       );
       return;
     }
-    
+
     setState(() => _isSaving = true);
-    
+
     try {
       // 先上傳照片
       if (_photos.isNotEmpty) {
         debugPrint('[NOTE_EDITOR] 📷 開始上傳 ${_photos.length} 張照片');
         await _uploadPhotos();
-        debugPrint('[NOTE_EDITOR] ✅ 照片上傳完成，URL 數量: ${_uploadedPhotoUrls.length}');
+        debugPrint(
+            '[NOTE_EDITOR] ✅ 照片上傳完成，URL 數量: ${_uploadedPhotoUrls.length}');
       } else {
         debugPrint('[NOTE_EDITOR] ⏭️ 沒有照片需要上傳');
       }
       // 建立 SOAP 筆記（過濾預設提示文字）
       final soap = SoapNoteModel(
-        subjective: _subjectiveController.text.trim().isNotEmpty && 
-            !_subjectiveController.text.contains('（手繪板註記筆記請填在主觀描述）')
+        subjective: _subjectiveController.text.trim().isNotEmpty &&
+                !_subjectiveController.text.contains('（手繪板註記筆記請填在主觀描述）')
             ? _subjectiveController.text.trim()
             : null,
         objective: _objectiveController.text.trim().isNotEmpty
@@ -460,37 +466,38 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
             ? _planController.text.trim()
             : null,
       );
-      
+
       // 將已上傳照片 URL 轉換為 PhotoElementModel
       final photoElements = _uploadedPhotoUrls.map((url) {
         debugPrint('[NOTE_EDITOR] 📷 照片 URL: $url');
         return PhotoElementModel(storagePath: url);
       }).toList();
-      
+
       debugPrint('[NOTE_EDITOR] 📊 視覺元素數量: ${photoElements.length}');
-      
+
       // 【_uploadedPhotoUrls 已經反映用戶的刪除操作（UI 層刪除照片時已從列表移除）】
       // 所以這裡直接使用 _uploadedPhotoUrls 構建照片元素
       final currentPhotoElements = _uploadedPhotoUrls.map((storagePath) {
         debugPrint('[NOTE_EDITOR] 📷 照片: $storagePath');
         return PhotoElementModel(storagePath: storagePath);
       }).toList();
-      
+
       debugPrint('[NOTE_EDITOR] 📊 照片元素: ${currentPhotoElements.length}');
-      
+
       // 【從暫存中取出繪圖（新建和編輯模式統一邏輯）】
       final allVisualElements = <VisualElementModel>[...currentPhotoElements];
-      
+
       if (_tempSessionNoteIds.isNotEmpty) {
-        debugPrint('[NOTE_EDITOR] 🎨 檢查暫存繪圖，共 ${_tempSessionNoteIds.length} 個臨時 ID');
-        
+        debugPrint(
+            '[NOTE_EDITOR] 🎨 檢查暫存繪圖，共 ${_tempSessionNoteIds.length} 個臨時 ID');
+
         for (final tempId in _tempSessionNoteIds) {
           final tempDrawing = DrawingController.getTemporaryDrawing(tempId);
           if (tempDrawing != null) {
             debugPrint('[NOTE_EDITOR] ✅ 找到暫存繪圖: ${tempDrawing.id}');
             debugPrint('[NOTE_EDITOR] 📊 圖層數量: ${tempDrawing.layers.length}');
             debugPrint('[NOTE_EDITOR] 📋 模板類型: ${tempDrawing.templateType}');
-            
+
             // 將繪圖轉換為 DrawingElementModel
             allVisualElements.add(
               DrawingElementModel(
@@ -502,18 +509,19 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
             debugPrint('[NOTE_EDITOR] ⏭️ 未找到暫存繪圖: $tempId');
           }
         }
-        
+
         debugPrint('[NOTE_EDITOR] 🎨 總共加入 ${_tempSessionNoteIds.length} 個繪圖');
       } else {
         debugPrint('[NOTE_EDITOR] ⏭️ 無暫存繪圖');
       }
-      
-      debugPrint('[NOTE_EDITOR] 📊 總視覺元素數量: ${allVisualElements.length}（照片: ${currentPhotoElements.length}, 繪圖: ${_tempSessionNoteIds.length}）');
-      
+
+      debugPrint(
+          '[NOTE_EDITOR] 📊 總視覺元素數量: ${allVisualElements.length}（照片: ${currentPhotoElements.length}, 繪圖: ${_tempSessionNoteIds.length}）');
+
       if (widget.noteId != null) {
         // 編輯模式：更新現有筆記
         debugPrint('[NOTE_EDITOR] 📝 編輯模式：更新現有筆記');
-        
+
         final existingNote = _controller.selectedNote;
         if (existingNote != null) {
           final updatedNote = existingNote.copyWith(
@@ -522,20 +530,21 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
             quickTags: _selectedTags,
             visualElements: allVisualElements,
           );
-          
+
           await _controller.updateNote(updatedNote);
           debugPrint('[NOTE_EDITOR] ✅ 筆記更新成功');
-          
+
           // 【清除所有暫存繪圖】
           for (final tempId in _tempSessionNoteIds) {
             DrawingController.clearTemporaryDrawing(tempId);
           }
-          debugPrint('[NOTE_EDITOR] 🗑️ 已清除 ${_tempSessionNoteIds.length} 個暫存繪圖');
+          debugPrint(
+              '[NOTE_EDITOR] 🗑️ 已清除 ${_tempSessionNoteIds.length} 個暫存繪圖');
         }
       } else {
         // 創建模式：新增筆記
         debugPrint('[NOTE_EDITOR] ➕ 創建模式：新增筆記');
-        
+
         final newNote = SessionNoteModel(
           id: '', // 讓資料庫自動生成 UUID
           title: _titleController.text.trim(),
@@ -549,18 +558,18 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
-        
+
         debugPrint('[NOTE_EDITOR] 📋 筆記資料: ${newNote.toString()}');
         await _controller.createNote(newNote);
         debugPrint('[NOTE_EDITOR] ✅ 筆記創建成功');
-        
+
         // 【清除所有暫存繪圖】
         for (final tempId in _tempSessionNoteIds) {
           DrawingController.clearTemporaryDrawing(tempId);
         }
         debugPrint('[NOTE_EDITOR] 🗑️ 已清除 ${_tempSessionNoteIds.length} 個暫存繪圖');
       }
-      
+
       if (mounted) {
         debugPrint('[NOTE_EDITOR] ✅ 保存完成，返回上一頁');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -623,19 +632,19 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
                       children: [
                         // 標題輸入
                         TextField(
-                      controller: _titleController,
-                      decoration: InputDecoration(
-                        labelText: '筆記標題 *',
-                        hintText: '例如：深蹲姿勢調整、右肩活動度',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          controller: _titleController,
+                          decoration: InputDecoration(
+                            labelText: '筆記標題 *',
+                            hintText: '例如：深蹲姿勢調整、右肩活動度',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            prefixIcon: const Icon(Icons.title),
+                          ),
+                          maxLength: 50,
                         ),
-                        filled: true,
-                        prefixIcon: const Icon(Icons.title),
-                      ),
-                      maxLength: 50,
-                    ),
-                    
+
                         SizedBox(height: context.spacing.md),
 
                         // SOAP 說明卡片
@@ -785,7 +794,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
   /// 隱私控制
   Widget _buildPrivacyControl() {
     final theme = Theme.of(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -827,7 +836,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
   /// 手繪板區域（Phase 4A）
   Widget _buildDrawingSection() {
     final theme = Theme.of(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -838,7 +847,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
           ),
         ),
         const SizedBox(height: 8),
-        
+
         // 說明卡片
         Card(
           color: Colors.orange.shade50,
@@ -859,7 +868,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
           ),
         ),
         const SizedBox(height: 12),
-        
+
         // 模板按鈕列表（4 個選項）
         GridView.count(
           shrinkWrap: true,
@@ -932,8 +941,9 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
   Future<void> _openDrawingCanvas(TemplateType templateType) async {
     debugPrint('[NOTE_EDITOR] 🎨 開啟繪圖模式');
     debugPrint('[NOTE_EDITOR] 📋 模板類型: ${templateType.name}');
-    debugPrint('[NOTE_EDITOR] 📋 模式: ${widget.noteId != null ? "編輯" : "創建（暫存）"}');
-    
+    debugPrint(
+        '[NOTE_EDITOR] 📋 模式: ${widget.noteId != null ? "編輯" : "創建（暫存）"}');
+
     // 驗證必要資料（新建模式）
     if (widget.noteId == null) {
       final currentUser = _authController.user;
@@ -943,7 +953,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
         );
         return;
       }
-      
+
       if (widget.clientId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('缺少學員資料')),
@@ -951,11 +961,11 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
         return;
       }
     }
-    
+
     // 【新版邏輯：使用臨時 ID，不創建資料庫筆記】
     String sessionNoteId;
     final String templateKey = templateType.name; // 安全轉換
-    
+
     // 【創建和編輯模式都使用臨時 ID（避免自動保存到資料庫）】
     if (_tempIdsByTemplate.containsKey(templateKey)) {
       // 重複使用已有的臨時 ID
@@ -967,8 +977,9 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       _tempIdsByTemplate[templateKey] = sessionNoteId;
       _tempSessionNoteIds.add(sessionNoteId);
       debugPrint('[NOTE_EDITOR] 🆕 創建新臨時 ID（模板: ${templateType.name}）');
-      debugPrint('[NOTE_EDITOR] 📋 記錄臨時 ID，目前總數: ${_tempSessionNoteIds.length} 個');
-      
+      debugPrint(
+          '[NOTE_EDITOR] 📋 記錄臨時 ID，目前總數: ${_tempSessionNoteIds.length} 個');
+
       // 【編輯模式：嘗試從資料庫中載入現有繪圖，複製並存到暫存】
       if (widget.noteId != null) {
         debugPrint('[NOTE_EDITOR] 📂 編輯模式：嘗試載入現有繪圖到暫存');
@@ -979,16 +990,21 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
               .whereType<DrawingElementModel>()
               .where((element) => element.templateType == templateType.name)
               .firstOrNull;
-          
+
           if (existingDrawing != null && existingDrawing.drawingData != null) {
-            debugPrint('[NOTE_EDITOR] ✅ 找到現有繪圖，複製到暫存（模板: ${templateType.name}）');
+            debugPrint(
+                '[NOTE_EDITOR] ✅ 找到現有繪圖，複製到暫存（模板: ${templateType.name}）');
             // 將繪圖資料轉換為 DrawingNoteModel 並保存到暫存
             try {
-              final drawingModel = DrawingNoteModel.fromJson(existingDrawing.drawingData!);
+              final drawingModel =
+                  DrawingNoteModel.fromJson(existingDrawing.drawingData!);
               // 修改 sessionNoteId 為臨時 ID
-              final tempDrawingModel = drawingModel.copyWith(sessionNoteId: sessionNoteId);
-              DrawingController.setTemporaryDrawing(sessionNoteId, tempDrawingModel);
-              debugPrint('[NOTE_EDITOR] ✅ 現有繪圖已複製到暫存（Session ID: $sessionNoteId）');
+              final tempDrawingModel =
+                  drawingModel.copyWith(sessionNoteId: sessionNoteId);
+              DrawingController.setTemporaryDrawing(
+                  sessionNoteId, tempDrawingModel);
+              debugPrint(
+                  '[NOTE_EDITOR] ✅ 現有繪圖已複製到暫存（Session ID: $sessionNoteId）');
             } catch (e) {
               debugPrint('[NOTE_EDITOR] ⚠️ 載入現有繪圖失敗: $e');
             }
@@ -998,9 +1014,9 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
         }
       }
     }
-    
+
     debugPrint('[NOTE_EDITOR] 🆔 使用臨時 Session ID: $sessionNoteId');
-    
+
     // 【提示用戶這是暫存（新建和編輯模式都適用）】
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1011,10 +1027,10 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
         ),
       );
     }
-    
+
     // 進入手繪畫布
     if (!mounted) return;
-    
+
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -1027,17 +1043,18 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
         ),
       ),
     );
-    
+
     // 【返回後：新建和編輯模式都用暫存】
     if (!mounted) return;
-    
+
     debugPrint('[NOTE_EDITOR] 🔙 繪圖已暫存（Session ID: $sessionNoteId）');
     debugPrint('[NOTE_EDITOR] 💡 用戶需點擊「儲存筆記」統一上傳');
   }
+
   /// 照片上傳區域
   Widget _buildPhotoSection() {
     final theme = Theme.of(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1068,7 +1085,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
           ],
         ),
         const SizedBox(height: 8),
-        
+
         // 【已上傳照片列表（編輯模式）- 復用公用元件】
         if (_uploadedPhotoUrls.isNotEmpty) ...[
           UploadedPhotoGrid(
@@ -1081,7 +1098,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
           ),
           const SizedBox(height: 8),
         ],
-        
+
         // 待上傳照片列表（新增模式）
         if (_photos.isNotEmpty) ...[
           GridView.builder(
@@ -1104,7 +1121,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
           ),
           const SizedBox(height: 8),
         ],
-        
+
         // 添加照片按鈕
         OutlinedButton.icon(
           onPressed: _isUploadingPhotos ? null : _addPhoto,

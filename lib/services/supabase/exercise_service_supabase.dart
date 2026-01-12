@@ -18,17 +18,20 @@ import 'exercise/exercise_preload_manager.dart';
 /// 與緩存服務協同工作，支援環境配置和統一錯誤處理
 
 /// ⭐ 定義 exercises 表的標準查詢欄位（避免 SELECT *）
+/// v3.2+ 新增 tracking_mode 欄位
 const String _kExerciseSelectFields = '''
-  id, name, name_en, body_parts, training_type, equipment, 
-  level1, level2, level3, level4, level5, action_name, 
-  description, image_url, video_url, body_part, 
-  specific_muscle, equipment_category, equipment_subcategory, created_at
+  id, name, name_en, body_parts, training_type, equipment,
+  level1, level2, level3, level4, level5, action_name,
+  description, image_url, video_url, body_part,
+  specific_muscle, equipment_category, equipment_subcategory, created_at,
+  tracking_mode
 ''';
 
 /// ⭐ 定義 custom_exercises 表的標準查詢欄位
+/// v3.2+ 新增 tracking_mode 欄位
 const String _kCustomExerciseSelectFields = '''
-  id, name, body_part, training_type, equipment, description, 
-  user_id, created_at, updated_at
+  id, name, body_part, training_type, equipment, description,
+  user_id, created_at, updated_at, tracking_mode
 ''';
 
 class ExerciseServiceSupabase implements IExerciseService {

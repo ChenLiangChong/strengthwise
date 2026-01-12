@@ -7,9 +7,10 @@ import 'custom_exercise_id_generator.dart';
 /// 自訂動作資料庫操作
 
 /// ⭐ 定義 custom_exercises 表的標準查詢欄位（避免 SELECT *）
+/// v3.2+ 新增 tracking_mode 欄位
 const String _kCustomExerciseSelectFields = '''
   id, user_id, name, training_type, training_type_en, body_part, body_part_en, 
-  equipment, equipment_en, description, notes, created_at, updated_at
+  equipment, equipment_en, description, notes, created_at, updated_at, tracking_mode
 ''';
 
 class CustomExerciseOperations {
@@ -26,6 +27,7 @@ class CustomExerciseOperations {
         _queryTimeout = queryTimeout;
 
   /// 創建自訂動作
+  /// v3.2+ 新增 trackingMode 參數
   Future<CustomExercise> createCustomExercise({
     required String userId,
     required String name,
@@ -34,9 +36,10 @@ class CustomExerciseOperations {
     String equipment = '徒手',
     String description = '',
     String notes = '',
+    String trackingMode = 'weight_reps',
   }) async {
     _logDebug(
-        '創建新的自定義動作: $name (類型: $trainingType, 部位: $bodyPart, 器材: $equipment)');
+        '創建新的自定義動作: $name (類型: $trainingType, 部位: $bodyPart, 器材: $equipment, 追蹤模式: $trackingMode)');
 
     final id = CustomExerciseIdGenerator.generate();
 
@@ -59,6 +62,7 @@ class CustomExerciseOperations {
           'equipment_en': equipmentEn,
           'description': description,
           'notes': notes,
+          'tracking_mode': trackingMode, // v3.2+
         })
         .select(_kCustomExerciseSelectFields)
         .single()
@@ -95,6 +99,7 @@ class CustomExerciseOperations {
   }
 
   /// 更新自訂動作
+  /// v3.2+ 新增 trackingMode 參數
   Future<void> updateCustomExercise({
     required String userId,
     required String exerciseId,
@@ -104,6 +109,7 @@ class CustomExerciseOperations {
     String? equipment,
     String? description,
     String? notes,
+    String? trackingMode,
   }) async {
     _logDebug('更新自定義動作: $exerciseId');
 
@@ -125,6 +131,7 @@ class CustomExerciseOperations {
     }
     if (description != null) updateData['description'] = description;
     if (notes != null) updateData['notes'] = notes;
+    if (trackingMode != null) updateData['tracking_mode'] = trackingMode; // v3.2+
 
     if (updateData.isEmpty) {
       _logDebug('沒有需要更新的欄位');

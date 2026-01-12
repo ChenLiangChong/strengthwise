@@ -1,5 +1,5 @@
-﻿---
-description: "Python 工具腳本使用指南：資料庫管理、測試資料生成、統計重置。"
+---
+description: "Python 工具腳本使用指南：資料庫管理、測試資料生成、統計重置、Schema 導出。"
 globs: scripts/**/*.py
 alwaysApply: false
 ---
@@ -20,6 +20,8 @@ alwaysApply: false
 | `clear_summary_tables.py` | 清空統計表 |
 | `reset_statistics.py` | 重置統計資料 |
 | `download_complete_database.py` | 下載完整資料庫 |
+| `export_db_schema.py` | 導出完整 Schema（表、函數、觸發器）|
+| `verify_daily_summary.py` | 驗證統計資料一致性 |
 
 ## 📊 常用流程
 
@@ -42,4 +44,3 @@ python scripts/tools/reset_statistics.py <uuid>
 | 測試 | `87e64969-90f6-4c8c-b8bc-8828dfa8429a` |
 
 詳見：`@scripts/README.md`
-

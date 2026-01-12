@@ -2,7 +2,55 @@
 
 > 資料庫遷移、修復、架構變更的歷史記錄
 
-**最後更新**：2026-01-07
+**最後更新**：2026-01-12
+
+---
+
+## 🔧 v3.3 修復記錄
+
+### v3.3: PR DELETE 觸發器（2026-01-12）
+
+**問題**：刪除訓練計劃時，personal_records 不會更新
+- `trigger_update_pr` 只處理 INSERT/UPDATE，沒有處理 DELETE
+- 導致已刪除的訓練記錄仍然顯示在 PR 列表中
+
+**解決方案**：
+- 新增 `handle_workout_plan_delete()` 觸發函數
+- 新增 `trg_workout_plan_delete` 觸發器（AFTER DELETE）
+- 邏輯：重新掃描該用戶該動作的所有歷史記錄，找出真正的 PR
+
+**Migration**：`22_v3_pr_final_fixes.sql`（原 046）
+
+---
+
+### v3.3: exerciseId 格式修復（2026-01-12）
+
+**問題**：部分 workout_plans 的 exerciseId 為異常 UUID 格式
+- 例：`4bf29c4f-5c0f-40e6-8c97-e003c4d89bb1`
+- 正常應為 Firestore 風格 ID：`zMjWbVFdJCTVBYqYjpj1`
+
+**原因分析**：
+- 可能是舊版程式碼錯誤生成的 UUID
+
+**解決方案**：
+- 根據 `exerciseName` 在 exercises 表中查詢正確的 ID
+- 更新 workout_plans.exercises JSONB 中的 exerciseId
+
+**Migration**：`22_v3_pr_final_fixes.sql`（原 047）
+
+**影響**：修復約 50 筆異常記錄
+
+---
+
+### v3.3: Migrations 整理（2026-01-12）
+
+**變更**：48 個檔案 → 32 個檔案（22 演進版 + 10 精簡版）
+
+**整合策略**：
+- 核心基礎（001-008）：保留原結構
+- 修復增強（09-22）：按功能模組合併
+
+**詳細說明**：[migrations/README.md](../../migrations/README.md)
 
 ---
 

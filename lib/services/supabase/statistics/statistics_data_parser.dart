@@ -40,6 +40,10 @@ class StatisticsDataParser {
               reps: setData['reps'] as int? ?? 0,
               sets: 1, // 每個 SetRecord 算一組
               isCompleted: true,
+              // v3.3+ 新增欄位
+              time: setData['time'] as int?,
+              distance: (setData['distance'] as num?)?.toDouble(),
+              calories: (setData['calories'] as num?)?.toDouble(),
             ));
           }
         } else {
@@ -158,6 +162,10 @@ UnifiedWorkoutData _parseWorkoutDataIsolate(String id, Map<String, dynamic> data
             reps: setData['reps'] as int? ?? 0,
             sets: 1,
             isCompleted: true,
+            // v3.3+ 新增欄位
+            time: setData['time'] as int?,
+            distance: (setData['distance'] as num?)?.toDouble(),
+            calories: (setData['calories'] as num?)?.toDouble(),
           ));
         }
       } else {

@@ -101,6 +101,13 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
       TextEditingController(text: '0');
   final TextEditingController _newExerciseRestController =
       TextEditingController(text: '60');
+  // v3.2+ 新增欄位控制器
+  final TextEditingController _newExerciseTimeController =
+      TextEditingController(text: '30');
+  final TextEditingController _newExerciseDistanceController =
+      TextEditingController(text: '0');
+  final TextEditingController _newExerciseCaloriesController =
+      TextEditingController(text: '0');
 
   // 訓練備註控制器
   final TextEditingController _workoutNotesController = TextEditingController();
@@ -301,6 +308,10 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
     _newExerciseRepsController.dispose();
     _newExerciseWeightController.dispose();
     _newExerciseRestController.dispose();
+    // v3.2+ dispose 新欄位控制器
+    _newExerciseTimeController.dispose();
+    _newExerciseDistanceController.dispose();
+    _newExerciseCaloriesController.dispose();
     _workoutNotesController.dispose();
     super.dispose();
   }
@@ -504,6 +515,7 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
     HapticFeedback.mediumImpact();
     await _executionController.startTraining();
     setState(() {});
+    widget.onDataChanged?.call(); // ⭐ 通知父頁面刷新 FAB
     if (mounted) {
       NotificationUtils.showSuccess(context, '訓練開始！加油！💪');
     }
@@ -513,6 +525,7 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
   Future<void> resumeTraining() async {
     await _executionController.resumeTraining();
     setState(() {});
+    widget.onDataChanged?.call(); // ⭐ 通知父頁面刷新 FAB
     if (mounted) {
       NotificationUtils.showInfo(context, '訓練已恢復，計時繼續');
     }
@@ -560,10 +573,20 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
   }
 
   void _showExerciseSettingsDialog(Exercise exercise) async {
+    final trackingMode = exercise.trackingMode;
+    
+    // 🔍 DEBUG: 確認傳入的 trackingMode
+    print('[DEBUG] 添加動作: ${exercise.name}, trackingMode: $trackingMode');
+    
+    // 重置控制器預設值
     _newExerciseSetsController.text = '3';
     _newExerciseRepsController.text = '10';
     _newExerciseWeightController.text = '0';
     _newExerciseRestController.text = '60';
+    // v3.2+ 新欄位預設值
+    _newExerciseTimeController.text = '30';
+    _newExerciseDistanceController.text = '0';
+    _newExerciseCaloriesController.text = '0';
 
     final result = await showDialog<bool>(
       context: context,
@@ -574,6 +597,11 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
         repsController: _newExerciseRepsController,
         weightController: _newExerciseWeightController,
         restController: _newExerciseRestController,
+        // v3.2+ 傳遞新參數
+        timeController: _newExerciseTimeController,
+        distanceController: _newExerciseDistanceController,
+        caloriesController: _newExerciseCaloriesController,
+        trackingMode: trackingMode,
       ),
     );
 
@@ -582,6 +610,10 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
       final reps = int.tryParse(_newExerciseRepsController.text) ?? 10;
       final weight = double.tryParse(_newExerciseWeightController.text) ?? 0.0;
       final restTime = int.tryParse(_newExerciseRestController.text) ?? 60;
+      // v3.2+ 解析新欄位
+      final time = int.tryParse(_newExerciseTimeController.text);
+      final distance = double.tryParse(_newExerciseDistanceController.text);
+      final calories = double.tryParse(_newExerciseCaloriesController.text);
 
       _markLocalSave(); // ⭐ 防止 Realtime 閃爍
       await _executionController.addNewExercise(
@@ -590,6 +622,9 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
         reps,
         weight,
         restTime,
+        time: time,         // v3.2+
+        distance: distance, // v3.2+
+        calories: calories, // v3.2+
         context: context,
       );
 
@@ -652,6 +687,9 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
         setNumber: set.setNumber,
         weight: set.weight,
         reps: set.reps,
+        time: set.time,           // v3.2+
+        distance: set.distance,   // v3.2+
+        calories: set.calories,   // v3.2+
         isCompleted: set.completed,
         previousData: null,
       );
@@ -664,6 +702,7 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
       targetSets: exercise.sets.length,
       targetReps: null,
       targetWeight: null,
+      trackingMode: exercise.trackingMode, // v3.2+
     );
   }
 
@@ -725,7 +764,7 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
             data: _convertToCardData(index),
             isEditable: _canEdit,
             activeSetNumber: null,
-            onSetUpdate: (setNumber, weight, reps) {
+            onSetUpdate: (setNumber, {double? weight, int? reps, int? time, double? distance, double? calories}) {
               if (!_canEdit) {
                 _showCannotEditMessage();
                 return;
@@ -740,6 +779,9 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
                   setIndex,
                   reps ?? 0,
                   weight ?? 0.0,
+                  time: time,       // v3.2+
+                  distance: distance, // v3.2+
+                  calories: calories, // v3.2+
                   context: context,
                 );
                 widget.onDataChanged?.call();
@@ -886,6 +928,28 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
     );
   }
 
+  /// ⭐ 固定在頂部的「繼續訓練」按鈕
+  Widget _buildResumeTrainingBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.spacingMd,
+        vertical: 8,
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: FilledButton.icon(
+          onPressed: resumeTraining,
+          icon: const Icon(Icons.play_arrow, size: 24),
+          label: const Text(
+            '繼續訓練',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildInlineAddButton() {
     if (!_canEdit) return const SizedBox.shrink();
 
@@ -930,6 +994,9 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
             onComplete: _onRestTimerComplete,
             onSkip: _onRestTimerSkip,
           ),
+
+        // ⭐ 固定在頂部的「繼續訓練」按鈕（暫停狀態時顯示）
+        if (showTimerUI && isPaused && !isCompleted) _buildResumeTrainingBar(),
 
         // 主要內容區
         Expanded(

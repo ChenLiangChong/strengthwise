@@ -8,15 +8,13 @@ import 'package:flutter/services.dart';
 ///
 /// 相關文檔：
 /// - lib/utils/adaptive_notification_service.dart（進階版）
-/// - docs/UI_UX_GUIDELINES.md
+/// - docs/UI_DEVELOPER_GUIDE.md
 class NotificationUtils {
   /// 顯示成功通知（浮動，不遮擋底部）
   static void showSuccess(
     BuildContext context,
     String message, {
     Duration? duration,
-    VoidCallback? onAction,
-    String? actionLabel,
   }) {
     // 添加觸覺回饋
     HapticFeedback.lightImpact();
@@ -57,16 +55,7 @@ class NotificationUtils {
           borderRadius: BorderRadius.circular(24),
         ),
         elevation: 4,
-        action: onAction != null
-            ? SnackBarAction(
-                label: actionLabel ?? '查看',
-                textColor: Colors.white,
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  onAction();
-                },
-              )
-            : null,
+        // 不顯示操作按鈕，保持通知簡潔
       ),
     );
   }
@@ -124,8 +113,6 @@ class NotificationUtils {
     BuildContext context,
     String message, {
     Duration? duration,
-    VoidCallback? onAction,
-    String? actionLabel,
   }) {
     // 添加觸覺回饋
     HapticFeedback.lightImpact();
@@ -164,16 +151,7 @@ class NotificationUtils {
           borderRadius: BorderRadius.circular(24),
         ),
         elevation: 4,
-        action: onAction != null
-            ? SnackBarAction(
-                label: actionLabel ?? '確定',
-                textColor: Colors.white,
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  onAction();
-                },
-              )
-            : null,
+        // 不顯示操作按鈕，保持通知簡潔
       ),
     );
   }

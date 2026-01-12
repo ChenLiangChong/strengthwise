@@ -1,4 +1,4 @@
-﻿---
+---
 description: "資料庫文檔更新規範：DATABASE_SUPABASE.md 與 DATABASE_HISTORY.md 的結構與維護。"
 globs: docs/DATABASE*.md,docs/archived/DATABASE*.md
 alwaysApply: false
@@ -75,4 +75,3 @@ DATABASE_HISTORY.md
 
 **影響**：受影響的表格/功能
 ```
-

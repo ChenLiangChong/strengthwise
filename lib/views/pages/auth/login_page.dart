@@ -1,4 +1,5 @@
 // ✅ 已響應式改造 (Phase 0)
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
@@ -119,6 +120,19 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleGoogleSignIn() async {
+    // Web 平台：OAuth 會重定向整個頁面到 Google
+    // 不需要處理返回值，只需顯示 Loading 並等待重定向
+    if (kIsWeb) {
+      setState(() {
+        _isLoading = true;
+      });
+      await _authController.signInWithGoogle();
+      // 頁面會重定向到 Google，這行之後的代碼可能不會執行
+      // 當用戶從 Google 返回時，App 會重新載入，Auth State 會自動處理
+      return;
+    }
+
+    // 非 Web 平台：使用原本的結果處理邏輯
     await _handleAuthResult(
       () => _authController.signInWithGoogle(),
       customErrorHandler: (errorMsg) {

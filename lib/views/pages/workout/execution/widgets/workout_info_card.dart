@@ -131,9 +131,8 @@ class WorkoutInfoCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            // ⭐ v2.9.1: 根據狀態顯示不同按鈕
+            // ⭐ v2.9.1: 只顯示完成狀態提示（繼續訓練按鈕移到頂部固定位置）
             if (isCompleted) ...[
-              // 完成狀態：顯示完成提示
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -160,22 +159,8 @@ class WorkoutInfoCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-            ] else if (isPaused && onResume != null) ...[
-              // 暫停狀態：顯示繼續按鈕
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: onResume,
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('繼續訓練'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
             ],
+            // 注意：「繼續訓練」按鈕已移至頁面頂部固定位置
             // 備註輸入框
             TextField(
               controller: notesController,

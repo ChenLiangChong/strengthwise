@@ -28,10 +28,11 @@ class StatisticsDataLoader {
     final queryStartDate = startDate.subtract(Duration(days: 1));
     final queryEndDate = endDate.add(Duration(days: 2));
 
+    // v3.3+ 修正：加入 scheduled_date 以統一時間判斷邏輯
     final response = await _supabase
         .from('workout_plans')
         .select(
-            'id, completed_date, updated_at, exercises, total_volume, completed')
+            'id, completed_date, scheduled_date, updated_at, exercises, total_volume, completed')
         .eq('trainee_id', userId)
         .gte('updated_at', DateTimeUtils.formatToUtcIso(queryStartDate))
         .lte('updated_at', DateTimeUtils.formatToUtcIso(queryEndDate))
@@ -41,17 +42,23 @@ class StatisticsDataLoader {
         .map((doc) => doc as Map<String, dynamic>)
         .toList();
 
-    // 在客戶端精確過濾：使用 COALESCE(completed_date, updated_at) 邏輯
+    // v3.3+ 修正：使用 COALESCE(completed_date, scheduled_date, updated_at) 邏輯
+    // 與 getExercisesWithRecords 保持一致
     final filtered = allWorkouts.where((doc) {
       final completedDateStr = doc['completed_date'] as String?;
+      final scheduledDateStr = doc['scheduled_date'] as String?;
       final updatedAtStr = doc['updated_at'] as String;
 
-      // 使用 completed_date 如果存在，否則使用 updated_at
+      // v3.3+ 優先順序：completed_date > scheduled_date > updated_at
       DateTime trainingDate;
       try {
-        trainingDate = completedDateStr != null && completedDateStr.isNotEmpty
-            ? DateTimeUtils.parseIsoTimestamp(completedDateStr)
-            : DateTimeUtils.parseIsoTimestamp(updatedAtStr);
+        if (completedDateStr != null && completedDateStr.isNotEmpty) {
+          trainingDate = DateTimeUtils.parseIsoTimestamp(completedDateStr);
+        } else if (scheduledDateStr != null && scheduledDateStr.isNotEmpty) {
+          trainingDate = DateTimeUtils.parseIsoTimestamp(scheduledDateStr);
+        } else {
+          trainingDate = DateTimeUtils.parseIsoTimestamp(updatedAtStr);
+        }
       } catch (e) {
         print('[STATISTICS_LOADER] ❌ 解析日期失敗：$e');
         return false;

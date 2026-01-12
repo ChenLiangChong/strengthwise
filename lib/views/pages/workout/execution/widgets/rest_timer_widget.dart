@@ -103,8 +103,16 @@ class _RestTimerWidgetState extends State<RestTimerWidget>
   
   void _onTimerComplete() {
     _stopTimer();
-    HapticFeedback.heavyImpact(); // 震動提醒
+    _vibrateForOneSecond(); // ⭐ 震動 1 秒鐘
     widget.onComplete?.call();
+  }
+
+  /// ⭐ 震動 1 秒鐘（連續震動 5 次，每次間隔 200ms）
+  Future<void> _vibrateForOneSecond() async {
+    for (int i = 0; i < 5; i++) {
+      HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
   }
   
   void _skipRest() {

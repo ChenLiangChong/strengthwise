@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:strengthwise/utils/datetime_utils.dart';
 import '../../models/exercise_model.dart';
+import '../../models/tracking_mode.dart';  // v3 新增
 
 /// 動作本地快取服務
 /// 
@@ -26,7 +27,8 @@ class ExerciseLocalCacheService {
   
   /// 當前快取版本（更新此版本號會觸發重新下載）
   /// v2: 修復 body_part 欄位序列化問題 (2024-12-27)
-  static const int currentCacheVersion = 2;
+  /// v3: 新增 tracking_mode 欄位支援 (2026-01-12)
+  static const int currentCacheVersion = 3;
   
   Box? _box;
   
@@ -136,6 +138,7 @@ class ExerciseLocalCacheService {
           'joint_type': e.jointType,
           'action_name': e.actionName,
           'description': e.description,
+          'tracking_mode': e.trackingMode.toJson(),  // v3 新增
         };
       }).toList();
       

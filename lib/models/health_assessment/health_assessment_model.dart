@@ -99,8 +99,14 @@ class HealthAssessmentModel {
   /// 每週訓練次數
   final int? weeklySessions;
 
-  /// 平均睡眠時數
+  /// 平均睡眠時數（舊欄位，向後相容）
   final double? sleepHours;
+
+  /// 平均睡眠時數 - 最少
+  final double? sleepHoursMin;
+
+  /// 平均睡眠時數 - 最多
+  final double? sleepHoursMax;
 
   // =========================================
   // 訓練目標
@@ -155,6 +161,8 @@ class HealthAssessmentModel {
     required this.equipmentAccess,
     this.weeklySessions,
     this.sleepHours,
+    this.sleepHoursMin,
+    this.sleepHoursMax,
     this.trainingGoals,
     required this.version,
     required this.isCurrent,
@@ -209,6 +217,12 @@ class HealthAssessmentModel {
       sleepHours: json['sleep_hours'] != null
           ? (json['sleep_hours'] as num).toDouble()
           : null,
+      sleepHoursMin: json['sleep_hours_min'] != null
+          ? (json['sleep_hours_min'] as num).toDouble()
+          : null,
+      sleepHoursMax: json['sleep_hours_max'] != null
+          ? (json['sleep_hours_max'] as num).toDouble()
+          : null,
 
       // 訓練目標
       trainingGoals: json['training_goals'] != null
@@ -258,6 +272,8 @@ class HealthAssessmentModel {
       'equipment_access': equipmentAccess,
       'weekly_sessions': weeklySessions,
       'sleep_hours': sleepHours,
+      'sleep_hours_min': sleepHoursMin,
+      'sleep_hours_max': sleepHoursMax,
 
       // 訓練目標
       'training_goals': trainingGoals?.toJson(),
@@ -333,6 +349,8 @@ class HealthAssessmentModel {
     List<String>? equipmentAccess,
     int? weeklySessions,
     double? sleepHours,
+    double? sleepHoursMin,
+    double? sleepHoursMax,
     TrainingGoals? trainingGoals,
     int? version,
     bool? isCurrent,
@@ -368,6 +386,8 @@ class HealthAssessmentModel {
       equipmentAccess: equipmentAccess ?? this.equipmentAccess,
       weeklySessions: weeklySessions ?? this.weeklySessions,
       sleepHours: sleepHours ?? this.sleepHours,
+      sleepHoursMin: sleepHoursMin ?? this.sleepHoursMin,
+      sleepHoursMax: sleepHoursMax ?? this.sleepHoursMax,
       trainingGoals: trainingGoals ?? this.trainingGoals,
       version: version ?? this.version,
       isCurrent: isCurrent ?? this.isCurrent,

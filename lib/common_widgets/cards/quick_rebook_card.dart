@@ -75,7 +75,7 @@ class QuickRebookCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch, // 確保子元素填滿寬度
             children: [
               // 標題列
               Row(
@@ -123,15 +123,18 @@ class QuickRebookCard extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // 操作按鈕
-              Row(
+              // 操作按鈕 - 使用 Wrap 避免 unconstrained 約束問題
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   if (onViewMore != null)
                     TextButton(
                       onPressed: onViewMore,
                       child: const Text('查看更多時段'),
                     ),
-                  const Spacer(),
                   FilledButton.icon(
                     onPressed: () {
                       HapticFeedback.mediumImpact();

@@ -139,7 +139,7 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
           isScrollable: true,
           tabs: const [
             Tab(text: '概覽', icon: Icon(Icons.dashboard, size: 20)),
-            Tab(text: '力量進步', icon: Icon(Icons.trending_up, size: 20)),
+            Tab(text: '動作追蹤', icon: Icon(Icons.trending_up, size: 20)),
             Tab(text: '肌群平衡', icon: Icon(Icons.pie_chart, size: 20)),
             Tab(text: '訓練日曆', icon: Icon(Icons.calendar_month, size: 20)),
             Tab(text: '完成率', icon: Icon(Icons.check_circle, size: 20)),

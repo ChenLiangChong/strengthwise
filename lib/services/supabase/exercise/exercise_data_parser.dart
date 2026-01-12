@@ -63,6 +63,8 @@ class ExerciseDataParser {
         'specific_muscle': '',
         'equipment_category': data['equipment'] ?? '徒手',
         'equipment_subcategory': '',
+        // v3.2+ 追蹤模式
+        'tracking_mode': data['tracking_mode'] ?? 'weight_reps',
       };
 
       return Exercise.fromSupabase(customExercise);

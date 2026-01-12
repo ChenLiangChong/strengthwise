@@ -17,6 +17,7 @@ abstract class ICustomExerciseService {
   /// [equipment] 器材（選填）：徒手/啞鈴/槓鈴/機械/Cable/其他
   /// [description] 動作說明（選填）
   /// [notes] 個人筆記（選填）
+  /// [trackingMode] v3.2+ 追蹤模式（選填）
   ///
   /// 返回新創建的自定義動作
   Future<CustomExercise> addCustomExercise({
@@ -26,6 +27,7 @@ abstract class ICustomExerciseService {
     String equipment = '徒手',
     String description = '',
     String notes = '',
+    String trackingMode = 'weight_reps',
   });
 
   /// 更新現有自定義動作
@@ -37,6 +39,7 @@ abstract class ICustomExerciseService {
   /// [equipment] 新的器材（選填）
   /// [description] 新的動作說明（選填）
   /// [notes] 新的個人筆記（選填）
+  /// [trackingMode] v3.2+ 追蹤模式（選填）
   Future<void> updateCustomExercise({
     required String exerciseId,
     String? name,
@@ -45,6 +48,7 @@ abstract class ICustomExerciseService {
     String? equipment,
     String? description,
     String? notes,
+    String? trackingMode,
   });
 
   /// 刪除自定義動作

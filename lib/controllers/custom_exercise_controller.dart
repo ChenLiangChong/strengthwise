@@ -142,6 +142,7 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
     String equipment = '徒手',
     String description = '',
     String notes = '',
+    String trackingMode = 'weight_reps', // v3.2+
   }) async {
     if (!_isInitialized) await _initialize();
     
@@ -167,6 +168,7 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
         equipment: equipment,
         description: description,
         notes: notes,
+        trackingMode: trackingMode, // v3.2+
       );
       
       // 使用緩存管理器更新緩存
@@ -189,6 +191,7 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
     String? equipment,
     String? description,
     String? notes,
+    String? trackingMode, // v3.2+
   }) async {
     if (!_isInitialized) await _initialize();
     
@@ -212,6 +215,7 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
         name: name,
         trainingType: trainingType,
         bodyPart: bodyPart,
+        trackingMode: trackingMode, // v3.2+
         equipment: equipment,
         description: description,
         notes: notes,

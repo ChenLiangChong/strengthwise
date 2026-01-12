@@ -16,7 +16,9 @@ class StatisticsLocalCacheService {
   static const String _dataPrefix = 'data_';
 
   /// 快取版本（更新此版本號會觸發清除舊快取）
-  static const int currentCacheVersion = 1;
+  /// v3.3: 升級至 v2，支援多元追蹤模式欄位
+  /// v3.3+: 升級至 v3，修正時間過濾邏輯（加入 scheduled_date）
+  static const int currentCacheVersion = 3;
 
   /// 快取有效期（24 小時）
   static const Duration cacheValidDuration = Duration(hours: 24);

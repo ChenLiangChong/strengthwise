@@ -43,7 +43,7 @@ class _TrainingPageState extends State<TrainingPage> {
 
   List<WorkoutTemplate> _templates = [];
   bool _isLoading = true;
-  
+
   // ⭐ v3.2: Coach Mark 引導
   final GlobalKey _fabKey = GlobalKey();
   bool _coachMarkShown = false;
@@ -57,7 +57,7 @@ class _TrainingPageState extends State<TrainingPage> {
     _errorService = serviceLocator<ErrorHandlingService>();
     _loadTemplates();
   }
-  
+
   // ⭐ v3.2: 當頁面變為可見時檢查 Coach Mark
   @override
   void didChangeDependencies() {
@@ -67,19 +67,19 @@ class _TrainingPageState extends State<TrainingPage> {
       _checkCoachMark();
     }
   }
-  
+
   // ⭐ v3.2: 檢查是否顯示 Coach Mark
   Future<void> _checkCoachMark() async {
     if (_coachMarkShown) return;
-    
+
     // ⭐ 檢查是否是當前頁面（TrainingPage 是 index 2）
     if (!CurrentPageProvider.isCurrentPage(context, 2)) return;
-    
+
     final onboardingService = serviceLocator<OnboardingService>();
     final shouldShow = await onboardingService.shouldShowCoachMark(
       OnboardingService.keyTrainingPage,
     );
-    
+
     if (shouldShow && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && CurrentPageProvider.isCurrentPage(context, 2)) {
@@ -88,14 +88,14 @@ class _TrainingPageState extends State<TrainingPage> {
       });
     }
   }
-  
+
   // ⭐ v3.2: 顯示 Coach Mark 引導
   void _showCoachMark() {
     if (_coachMarkShown) return;
     _coachMarkShown = true;
-    
+
     final targets = <TargetFocus>[];
-    
+
     // FAB 引導
     if (_fabKey.currentContext != null) {
       targets.add(
@@ -107,7 +107,7 @@ class _TrainingPageState extends State<TrainingPage> {
         ),
       );
     }
-    
+
     if (targets.isNotEmpty) {
       CoachMarkHelper.show(
         context: context,
@@ -135,7 +135,7 @@ class _TrainingPageState extends State<TrainingPage> {
           _templates = templates;
           _isLoading = false;
         });
-        
+
         // ⭐ v3.2: 檢查 Coach Mark 引導
         _checkCoachMark();
       }
@@ -211,11 +211,6 @@ class _TrainingPageState extends State<TrainingPage> {
         NotificationUtils.showSuccess(
           context,
           '已創建今日訓練：${template.title}',
-          onAction: () {
-            // 切換到行事曆頁面
-            DefaultTabController.of(context).animateTo(1); // 假設行事曆是第2個 tab
-          },
-          actionLabel: '查看',
         );
 
         // 可選：短暫延遲後自動跳轉到行事曆

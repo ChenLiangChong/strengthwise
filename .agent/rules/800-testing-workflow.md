@@ -1,4 +1,4 @@
-﻿---
+---
 description: "測試策略與工作流程：單元測試、Widget 測試、驗收標準。適用於 test 目錄。"
 globs: test/**/*.dart
 alwaysApply: false
@@ -53,4 +53,3 @@ test('Controller 應該載入訓練記錄', () async {
 | 95% 查詢 | < 50ms |
 
 詳見：`@docs/DEVELOPMENT_STATUS.md`
-

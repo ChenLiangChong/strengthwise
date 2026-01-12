@@ -102,7 +102,8 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
       // ⚡ 2. 檢查本地持久化快取（24 小時內有效）
       if (_localCacheService != null) {
-        final localValid = await _localCacheService!.isCacheValidAsync(userId, timeRange);
+        final localValid =
+            await _localCacheService!.isCacheValidAsync(userId, timeRange);
         if (localValid) {
           final localCached =
               _localCacheService!.getCachedStatistics(userId, timeRange);
@@ -359,6 +360,12 @@ class StatisticsServiceSupabase implements IStatisticsService {
   void clearCache() {
     _exerciseCache.clear();
     _cacheManager.clearAll();
+    // v3.3+ 同時清除 getExercisesWithRecords 的快取
+    _cachedExercisesWithRecords = null;
+    _cachedExercisesUserId = null;
+    _cachedExercisesTimestamp = null;
+    // v3.3+ 同時清除本地 Hive 快取
+    _localCacheService?.clearAllCache();
   }
 
   /// ⚡ 檢查指定時間範圍的快取是否有效
@@ -371,7 +378,8 @@ class StatisticsServiceSupabase implements IStatisticsService {
     }
     // 再檢查本地快取（異步，確保初始化）
     if (_localCacheService != null) {
-      final localValid = await _localCacheService!.isCacheValidAsync(userId, timeRange);
+      final localValid =
+          await _localCacheService!.isCacheValidAsync(userId, timeRange);
       if (localValid) {
         return true;
       }
@@ -400,22 +408,23 @@ class StatisticsServiceSupabase implements IStatisticsService {
     final rangesToPreload = <TimeRange>[];
     for (final range in allTimeRanges) {
       if (range == currentTimeRange) continue;
-      
+
       // 檢查記憶體快取
       if (_cacheManager.isStatisticsCacheValid(userId, range)) {
         _logDebug('⏭️ 跳過已快取（記憶體）：${range.displayName}');
         continue;
       }
-      
+
       // 檢查本地快取
       if (_localCacheService != null) {
-        final localValid = await _localCacheService!.isCacheValidAsync(userId, range);
+        final localValid =
+            await _localCacheService!.isCacheValidAsync(userId, range);
         if (localValid) {
           _logDebug('⏭️ 跳過已快取（本地）：${range.displayName}');
           continue;
         }
       }
-      
+
       rangesToPreload.add(range);
     }
 
@@ -479,9 +488,10 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
     try {
       _logDebug('🔥 開始從本地快取預熱統計資料...');
-      
-      final cachedData = await _localCacheService!.getAllCachedStatistics(userId);
-      
+
+      final cachedData =
+          await _localCacheService!.getAllCachedStatistics(userId);
+
       if (cachedData.isEmpty) {
         _logDebug('📭 本地沒有快取資料');
         return;
@@ -521,7 +531,8 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
     // 純計算方法
     final bodyPartStats = _calculator.calculateBodyPartStats(filteredWorkouts);
-    final equipmentStats = _calculator.calculateEquipmentStats(filteredWorkouts);
+    final equipmentStats =
+        _calculator.calculateEquipmentStats(filteredWorkouts);
 
     final muscleDetails = <String, List<SpecificMuscleStats>>{};
     for (var stat in bodyPartStats) {
@@ -532,13 +543,12 @@ class StatisticsServiceSupabase implements IStatisticsService {
       }
     }
 
-    final strengthProgress = _strengthProgressCalculator.calculateProgress(
-        filteredWorkouts, startDate, timeRange,
-        limit: 10);
+    final strengthProgress = _strengthProgressCalculator
+        .calculateProgress(filteredWorkouts, startDate, timeRange, limit: 10);
     final muscleGroupBalance =
         _muscleBalanceAnalyzer.calculateBalance(filteredWorkouts);
-    final calendarData =
-        _calendarGenerator.generateCalendar(filteredWorkouts, startDate, endDate);
+    final calendarData = _calendarGenerator.generateCalendar(
+        filteredWorkouts, startDate, endDate);
     final completionRate =
         _completionRateCalculator.calculateCompletionRate(filteredWorkouts);
 
@@ -818,7 +828,8 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
       if (_kStatisticsDebugLog) {
         print('[GET_EXERCISES] 返回 ${filtered.length} 個動作');
-        if (timeRange != null) print('   過濾條件 - 時間範圍: ${timeRange.displayName}');
+        if (timeRange != null)
+          print('   過濾條件 - 時間範圍: ${timeRange.displayName}');
         if (trainingType != null) print('   過濾條件 - 訓練類型: $trainingType');
         if (bodyPart != null) print('   過濾條件 - 身體部位: $bodyPart');
       }
@@ -980,7 +991,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
     final rawWorkouts =
         await _dataLoader.getCompletedWorkouts(userId, startDate, endDate);
-    
+
     // ⚡ 使用 Isolate 解析大型列表（避免阻塞主執行緒）
     final workouts = await _dataParser.parseWorkoutDataListAsync(rawWorkouts);
 

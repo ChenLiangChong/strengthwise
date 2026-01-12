@@ -1,4 +1,4 @@
-﻿---
+---
 description: "StrengthWise 專案的全域上下文、技術棧與版本狀態。適用於所有開發任務。"
 globs: *
 alwaysApply: true
@@ -11,9 +11,9 @@ alwaysApply: true
 | 項目 | 內容 |
 |------|------|
 | **專案名稱** | StrengthWise |
-| **當前版本** | v3.1（2026-01-07 已完成）|
+| **當前版本** | v3.3（2026-01-12 完成 - TrackingMode 適配 + PR 修復）|
 | **專案類型** | 跨平台健身訓練追蹤應用 |
-| **目標平台** | Android / iOS / Windows |
+| **目標平台** | Android / iOS / Windows / Web |
 
 ## 🛠️ 技術棧
 
@@ -30,7 +30,6 @@ Backend:
 ├── Authentication：Supabase Auth + Google Sign-In
 ├── Storage：Supabase Storage
 ├── 安全性：Row Level Security (RLS)
-├── Realtime：即時訂閱
 └── 時間類型：TIMESTAMPTZ / TSTZRANGE
 ```
 
@@ -67,25 +66,25 @@ Model Layer              → lib/models/
 - v2.8.1-v2.8.4：教練評估備註、文檔重構、PR 修復、角色修復
 - v2.9：教練公開檔案 + 訓練權限系統
 - v2.9.1：訓練 UX 優化（狀態機、休息計時器、權限阻止）
-
-### v3.0-v3.1 Session Mode + Realtime
 - v3.0：預約系統優化 + Session Mode + 響應式 UI ✅
 - v3.1：Session Mode 完善 + Realtime 同步 ✅
+- v3.2：Coach Mark + TrackingMode + Web PWA ✅
+- v3.3：TrackingMode 統計適配 + PR 修復 ✅
 
 ## 📊 專案規模
 
 ```
 總代碼量：~68,000 行
 ├── Flutter/Dart：~65,000 行
-├── SQL/Migrations：~3,500 行（35 個檔案）
-└── Python 腳本：~2,200 行
+├── SQL/Migrations：~4,200 行（32 個檔案）
+└── Python 腳本：~1,800 行
 
 核心組件：
 ├── Pages：65+
 ├── Controllers：22+（含 70 子模組）
-├── Services：55+（含 Realtime）
+├── Services：56+（含 Realtime、Onboarding）
 ├── Models：67+
-└── Widgets：200+
+└── Widgets：202+（含 Coach Mark）
 ```
 
 ## 🔗 關鍵文檔

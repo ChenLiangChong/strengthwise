@@ -1,8 +1,8 @@
 # Scripts - Python 工具腳本
 
-> 資料庫管理與測試資料生成工具
+> 資料庫管理、測試資料生成、圖片處理工具
 
-**最後更新**：2026-01-05（v3.0）
+**最後更新**：2026-01-12（v3.3 整理完成）
 
 ---
 
@@ -10,13 +10,18 @@
 
 ```
 scripts/
-├── tools/
-│   ├── download_complete_database.py   # 下載完整資料庫（23 表格）
-│   ├── delete_all_workouts.py          # 刪除訓練記錄
-│   ├── clear_summary_tables.py         # 清空統計表
-│   ├── reset_statistics.py             # 重置統計（清空+重算）
-│   └── generate_training_data_with_timezone.py  # 生成假資料
-└── README.md
+├── crop_status_bar.py                    # 裁剪截圖狀態欄
+├── crop_white_border.py                  # 填充圖片白邊
+├── resize_store_images.py                # 調整商店圖片尺寸
+├── README.md
+└── tools/
+    ├── download_complete_database.py     # 下載完整資料庫（24 表格）
+    ├── delete_all_workouts.py            # 刪除訓練記錄
+    ├── clear_summary_tables.py           # 清空統計表
+    ├── reset_statistics.py               # 重置統計（清空+重算）
+    ├── generate_training_data_with_timezone.py  # 生成假資料
+    ├── export_db_schema.py               # 導出資料庫 Schema
+    └── verify_daily_summary.py           # 驗證統計正確性
 ```
 
 ---
@@ -26,7 +31,7 @@ scripts/
 ### 環境設置
 
 ```bash
-pip install supabase-py python-dotenv pytz
+pip install supabase python-dotenv pytz psycopg2-binary
 ```
 
 `.env` 配置：
@@ -39,32 +44,31 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 ## 🛠️ 工具說明
 
-### 1. 下載完整資料庫
+### 圖片處理工具（scripts/ 根目錄）
+
+| 腳本 | 用途 |
+|------|------|
+| `crop_status_bar.py` | 裁剪截圖頂部狀態欄（53px）|
+| `crop_white_border.py` | 從邊緣填充淺色區域（flood fill）|
+| `resize_store_images.py` | 調整應用商店截圖尺寸 |
+
+### 資料庫工具（scripts/tools/）
+
+#### 1. 下載完整資料庫
 
 ```bash
 python scripts/tools/download_complete_database.py
 ```
 
-輸出：`database_export/YYYYMMDD_HHMMSS/`（23 個表格 JSON）
+輸出：`database_export/YYYYMMDD_HHMMSS/`（24 個表格 JSON）
 
-**表格分類**：
-- v1.0 Core: 7 表格（users, exercises, workout_plans 等）
-- v2.0 Phase 1-3: 5 表格（coaching, appointments, session_notes 等）
-- v2.8 Health Assessment: 3 表格
-- v2.9 Coach Profile: 1 表格（coaches）
-- v3.0 Booking Optimization: 2 表格（coach_booking_settings, daily_readiness）
-
----
-
-### 2. 刪除訓練記錄
+#### 2. 刪除訓練記錄
 
 ```bash
 python scripts/tools/delete_all_workouts.py <user_uuid> -y
 ```
 
----
-
-### 3. 清空統計表
+#### 3. 清空統計表
 
 ```bash
 python scripts/tools/clear_summary_tables.py <user_uuid>
@@ -72,9 +76,7 @@ python scripts/tools/clear_summary_tables.py <user_uuid>
 
 清空 `daily_workout_summary` 和 `personal_records`
 
----
-
-### 4. 重置統計資料
+#### 4. 重置統計資料
 
 ```bash
 python scripts/tools/reset_statistics.py <user_uuid>
@@ -82,15 +84,29 @@ python scripts/tools/reset_statistics.py <user_uuid>
 
 完整流程：清空統計表 → 觸發重新計算 → 驗證結果
 
----
-
-### 5. 生成假訓練資料
+#### 5. 生成假訓練資料
 
 ```bash
 python scripts/tools/generate_training_data_with_timezone.py <user_uuid>
 ```
 
 生成過去一個月 PPL 訓練記錄（時區正確處理）
+
+#### 6. 導出資料庫 Schema
+
+```bash
+python scripts/tools/export_db_schema.py
+```
+
+導出完整 Schema（Tables、Triggers、Functions、RLS、Views、Indexes）
+
+#### 7. 驗證統計正確性
+
+```bash
+python scripts/tools/verify_daily_summary.py <user_uuid>
+```
+
+檢查 daily_workout_summary 與實際資料是否一致
 
 ---
 

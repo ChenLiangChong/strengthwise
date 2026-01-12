@@ -13,6 +13,7 @@ import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/shared/calendar/calendar_widgets.dart';
 import 'package:strengthwise/views/pages/workout/execution/plan_editor_page.dart';
 import 'package:strengthwise/views/pages/workout/execution/workout_execution_page.dart';
+import 'package:strengthwise/views/pages/session/session_mode_page.dart'; // ⭐ v3.1: Session Mode
 
 /// 學員訓練行事曆 Tab（教練端）
 ///
@@ -170,25 +171,10 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
     }
   }
 
-  /// 查看/編輯訓練計畫
-  void _viewWorkout(WorkoutRecord workout) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => WorkoutExecutionPage(
-          workoutRecordId: workout.id,
-        ),
-      ),
-    ).then((_) {
-      // 返回時重新載入數據
-      _loadMonthData(_focusedDay);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Consumer<ClientManagementController>(
       builder: (context, controller, child) {
         if (controller.isLoading) {
@@ -206,7 +192,7 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
             MarkerLayer(
               markerProvider: (day) {
                 final markers = <CalendarMarker>[];
-                
+
                 // 訓練計畫（🔵 藍色）
                 final workouts = controller.getWorkoutsForDate(day);
                 for (var w in workouts) {
@@ -216,18 +202,19 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
                     data: {'type': 'workout', 'workout': w},
                   ));
                 }
-                
+
                 // 學員偏好時段（🟢 綠色 = 首選，🟠 橘色 = 可訓練）
                 final prefs = controller.getAvailabilityForDate(day);
                 for (var p in prefs) {
-                  final isPreferred = p.priority == AvailabilityPriority.preferred;
+                  final isPreferred =
+                      p.priority == AvailabilityPriority.preferred;
                   markers.add(CalendarMarker(
                     color: isPreferred ? Colors.green : Colors.orange,
                     tooltip: isPreferred ? '首選時段' : '可訓練時段',
                     data: {'type': 'availability', 'slot': p},
                   ));
                 }
-                
+
                 // 排序：藍 → 綠 → 橘
                 markers.sort((a, b) {
                   int colorOrder(Color c) {
@@ -236,9 +223,10 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
                     if (c == Colors.orange) return 2;
                     return 3;
                   }
+
                   return colorOrder(a.color).compareTo(colorOrder(b.color));
                 });
-                
+
                 return markers;
               },
               maxMarkers: 5,
@@ -400,9 +388,10 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
                       children: [
                         Text(
                           timeStr,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                         const SizedBox(width: 8),
                         // 優先級標籤
@@ -466,9 +455,10 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
     final colorScheme = Theme.of(context).colorScheme;
     final authController = serviceLocator<IAuthController>();
     final currentUserId = authController.user?.uid;
-    
+
     // ⭐ 判斷是否可以刪除（只有創建者可以刪除，且不能是過去的訓練）
-    final isPast = workout.date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+    final isPast =
+        workout.date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
     final isCreator = workout.creatorId == currentUserId;
     final canDelete = isCreator && !isPast;
 
@@ -519,6 +509,7 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
         ),
         subtitle: Text(
           '$timeInfo' // ⭐ v2.1: 顯示時間範圍
+          '${workout.appointmentId != null ? '教練課程 · ' : ''}' // ⭐ v3.1: 顯示課程類型
           '${workout.exerciseRecords.length} 個動作 · '
           '${workout.completed ? '已完成' : '待執行'}',
         ),
@@ -569,9 +560,9 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
   Future<void> _deleteWorkout(WorkoutRecord workout) async {
     try {
       final workoutService = serviceLocator<IWorkoutService>();
-      
+
       await workoutService.deleteRecord(workout.id);
-      
+
       if (mounted) {
         NotificationUtils.showSuccess(context, '訓練計畫已刪除');
         // 重新載入數據
@@ -581,6 +572,44 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
       if (mounted) {
         NotificationUtils.showError(context, '刪除失敗: $e');
       }
+    }
+  }
+
+  /// 查看/編輯訓練計畫
+  void _viewWorkout(WorkoutRecord workout) {
+    if (workout.appointmentId != null) {
+      // ⭐ v3.1: 如果是課程，跳轉到 Session Mode
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SessionModePage(
+            appointmentId: workout.appointmentId!,
+            clientId: widget.clientId,
+            clientName: widget.client.displayName ?? widget.client.email,
+            sessionStartTime: workout.trainingTime ?? workout.date,
+            sessionEndTime: workout.trainingEndTime ??
+                workout.date.add(const Duration(hours: 1)),
+            workoutPlanId: workout.workoutPlanId,
+            isCoachMode: true,
+          ),
+        ),
+      ).then((_) {
+        // 返回時重新載入數據
+        _loadMonthData(_focusedDay);
+      });
+    } else {
+      // 一般訓練：跳轉到執行頁面
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WorkoutExecutionPage(
+            workoutRecordId: workout.id,
+          ),
+        ),
+      ).then((_) {
+        // 返回時重新載入數據
+        _loadMonthData(_focusedDay);
+      });
     }
   }
 }

@@ -4,7 +4,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 /// Google 登入提供者
-/// 
+///
 /// 負責處理 Google OAuth 登入流程
 class AuthGoogleProvider {
   final SupabaseClient _supabase;
@@ -26,6 +26,30 @@ class AuthGoogleProvider {
   Future<Map<String, dynamic>?> signInWithGoogle() async {
     try {
       _logDebug('開始 Google 登入流程');
+
+      // Web 平台：使用 Supabase OAuth 重定向流程
+      if (kIsWeb) {
+        _logDebug('Web 平台：使用 Supabase OAuth 流程');
+
+        final response = await _supabase.auth.signInWithOAuth(
+          OAuthProvider.google,
+          redirectTo:
+              kIsWeb ? null : 'io.supabase.strengthwise://login-callback',
+        );
+
+        if (!response) {
+          _logDebug('用戶取消 Google 登入或登入失敗');
+          return null;
+        }
+
+        // OAuth 流程會重定向，這裡不會立即返回用戶資訊
+        // 實際的用戶資訊會在重定向後透過 Auth State 監聽器獲取
+        _logDebug('OAuth 流程已啟動');
+        return null;
+      }
+
+      // 非 Web 平台：使用 google_sign_in 套件流程
+      _logDebug('移動平台：使用 google_sign_in 流程');
 
       // 步驟 1：使用 google_sign_in 套件獲取 Google 帳號
       final googleUser = await _googleSignIn.signIn();
@@ -68,8 +92,11 @@ class AuthGoogleProvider {
       return {
         'uid': user.id,
         'email': user.email ?? '',
-        'displayName': user.userMetadata?['full_name'] ?? user.userMetadata?['name'] ?? '',
-        'photoURL': user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'] ?? '',
+        'displayName':
+            user.userMetadata?['full_name'] ?? user.userMetadata?['name'] ?? '',
+        'photoURL': user.userMetadata?['avatar_url'] ??
+            user.userMetadata?['picture'] ??
+            '',
       };
     } catch (e) {
       _logError('Google 登入失敗: $e');
@@ -83,7 +110,7 @@ class AuthGoogleProvider {
     if (!kIsWeb && Platform.isWindows) {
       return false;
     }
-    
+
     return await _googleSignIn.isSignedIn();
   }
 
@@ -94,11 +121,10 @@ class AuthGoogleProvider {
       _logDebug('Windows 平台跳過 Google 登出');
       return;
     }
-    
+
     if (await _googleSignIn.isSignedIn()) {
       await _googleSignIn.signOut();
       _logDebug('Google 登出成功');
     }
   }
 }
-

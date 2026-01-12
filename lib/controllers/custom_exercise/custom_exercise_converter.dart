@@ -4,6 +4,7 @@ import '../../models/exercise_model.dart';
 /// 自定義動作轉換器
 class CustomExerciseConverter {
   /// 將自定義動作轉換為標準 Exercise 對象
+  /// v3.2+ 包含 trackingMode
   static Exercise toExercise(CustomExercise customExercise) {
     return Exercise(
       id: customExercise.id,
@@ -27,6 +28,8 @@ class CustomExerciseConverter {
       createdAt: customExercise.createdAt,
       bodyPart: customExercise.bodyPart,
       equipmentCategory: customExercise.equipment,
+      // v3.2+ 追蹤模式
+      trackingMode: customExercise.trackingMode,
     );
   }
 }

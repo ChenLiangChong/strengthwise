@@ -21,11 +21,10 @@ import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/workout/execution/workout_execution_page.dart';
 import 'package:strengthwise/views/pages/statistics/statistics_page_v2.dart';
 import 'package:strengthwise/views/pages/dev/notification_test_page.dart'; // 通知測試頁面
-import 'package:strengthwise/common_widgets/cards/quick_rebook_card.dart';
-import 'package:strengthwise/views/pages/scheduling/appointments/client_booking_page.dart';
 import 'package:strengthwise/views/pages/scheduling/booking/widgets/training_plan_card.dart';
 import 'package:strengthwise/views/pages/session/session_mode_page.dart';
 import 'package:strengthwise/views/pages/readiness/readiness_form_page.dart';
+import 'package:strengthwise/utils/notification_utils.dart'; // ⭐ v2.9.1: 通知工具
 import 'package:strengthwise/utils/responsive/responsive.dart'; // ⭐ 響應式框架
 // ⭐ Phase 3.1-B: 快捷按鈕和可折疊區塊
 import 'package:strengthwise/views/widgets/quick_action_bar.dart';
@@ -41,6 +40,7 @@ import 'package:strengthwise/views/pages/scheduling/appointments/widgets/adhoc_s
 import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/views/widgets/onboarding/coach_mark_helper.dart';
 import 'package:strengthwise/views/widgets/current_page_provider.dart';
+import 'package:strengthwise/controllers/profile_controller.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -55,16 +55,12 @@ class _HomePageState extends State<HomePage> {
   late final IUserService _userService;
   late final IAppointmentService _appointmentService;
   late final ICoachingRelationshipService _coachingService;
+  late final ProfileController _profileController; // ⭐ v3.2: 監聽身份變更
 
   // ⭐ Phase 3.1-B: 使用 WorkoutRecord 取代 Map
   List<WorkoutRecord> _todayPlans = [];
   bool _isLoadingPlans = true;
   UserModel? _userProfile; // ⭐ 完整的用戶資料
-
-  // ⭐ v3.0 一鍵續約相關
-  AppointmentModel? _lastAppointment;
-  UserModel? _lastCoach;
-  bool _isLoadingRebook = true;
 
   // ⭐ Phase 3.1-B: 教練視角 - 我的學員今日課程
   List<AppointmentModel> _todayCoachSessions = [];
@@ -95,6 +91,10 @@ class _HomePageState extends State<HomePage> {
     _userService = serviceLocator<IUserService>();
     _coachingService = serviceLocator<ICoachingRelationshipService>();
     _appointmentService = serviceLocator<IAppointmentService>();
+    _profileController = serviceLocator<ProfileController>();
+
+    // ⭐ v3.2: 監聽 ProfileController 變化（教練模式切換時刷新）
+    _profileController.addListener(_onProfileChanged);
 
     // ⚡ 優先載入首頁關鍵數據，完成後才預載入其他
     _initializeHomePage();
@@ -146,7 +146,6 @@ class _HomePageState extends State<HomePage> {
     await Future.wait([
       _loadUserProfile(), // ⭐ 載入用戶資料
       _loadTodayPlans(), // ⭐ 今日行程（作為學員）
-      _loadQuickRebookData(), // ⭐ v3.0 一鍵續約資料
       _checkHasCoach(), // ⭐ Phase 3.1-B: 檢查是否有綁定教練
     ], eagerError: false);
 
@@ -172,33 +171,87 @@ class _HomePageState extends State<HomePage> {
     if (kDebugMode) {
       print('[HomePage] ✅ 首頁關鍵數據載入完成');
     }
-    
+
     // ⭐ v3.2: 檢查 Coach Mark 引導
     _checkCoachMark();
   }
-  
-  // ⭐ v3.2: 當頁面變為可見時檢查 Coach Mark
+
+  // ⭐ v3.2: 當頁面變為可見時檢查 Coach Mark 和刷新資料
+  bool _wasVisible = false; // 追蹤頁面可見狀態
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final isVisible = CurrentPageProvider.isCurrentPage(context, 0);
+
+    // ⭐ v3.2: 頁面從不可見變為可見時，刷新用戶資料和教練關係
+    if (isVisible && !_wasVisible) {
+      _refreshUserDataIfNeeded();
+    }
+    _wasVisible = isVisible;
+
     // 當頁面變為當前頁面時，檢查 Coach Mark
-    if (CurrentPageProvider.isCurrentPage(context, 0) && !_coachMarkShown) {
+    if (isVisible && !_coachMarkShown) {
       _checkCoachMark();
     }
   }
-  
+
+  /// ⭐ v3.2: ProfileController 變化時刷新首頁
+  /// 只有當 isCoach 狀態真的變化時才刷新
+  bool? _lastIsCoach; // 記錄上次的教練狀態
+
+  void _onProfileChanged() {
+    if (!mounted) return;
+
+    // 取得當前的教練狀態
+    final currentIsCoach = _profileController.userProfile?.isCoach;
+
+    // 只有當 isCoach 狀態真的變化時才刷新
+    if (_lastIsCoach != currentIsCoach) {
+      debugPrint(
+          '[HomePage] 🔄 教練狀態變化：$_lastIsCoach → $currentIsCoach，刷新快捷操作...');
+      _lastIsCoach = currentIsCoach;
+      _refreshUserDataIfNeeded();
+    }
+  }
+
+  /// ⭐ v3.2: 刷新用戶資料和教練關係
+  Future<void> _refreshUserDataIfNeeded() async {
+    if (!mounted) return;
+
+    // 重新載入用戶資料和教練關係
+    await Future.wait([
+      _loadUserProfile(),
+      _checkHasCoach(),
+    ], eagerError: false);
+
+    // 如果用戶是教練，載入教練相關資料
+    if (_userProfile?.isCoach == true) {
+      await Future.wait([
+        _loadTodayCoachSessions(),
+        _loadPendingAppointments(),
+      ], eagerError: false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _profileController.removeListener(_onProfileChanged);
+    super.dispose();
+  }
+
   // ⭐ v3.2: 檢查是否顯示 Coach Mark
   Future<void> _checkCoachMark() async {
     if (_coachMarkShown) return;
-    
+
     // ⭐ 檢查是否是當前頁面（HomePage 是 index 0）
     if (!CurrentPageProvider.isCurrentPage(context, 0)) return;
-    
+
     final onboardingService = serviceLocator<OnboardingService>();
     final shouldShow = await onboardingService.shouldShowCoachMark(
       OnboardingService.keyHomePage,
     );
-    
+
     if (shouldShow && mounted) {
       // 延遲顯示，確保 UI 已渲染
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -208,14 +261,14 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
-  
+
   // ⭐ v3.2: 顯示 Coach Mark 引導
   void _showCoachMark() {
     if (_coachMarkShown) return;
     _coachMarkShown = true;
-    
+
     final targets = <TargetFocus>[];
-    
+
     // 快捷操作按鈕引導
     if (_quickActionsKey.currentContext != null) {
       targets.add(
@@ -227,7 +280,7 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     }
-    
+
     // 統計入口引導
     if (_statisticsKey.currentContext != null) {
       targets.add(
@@ -239,7 +292,7 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     }
-    
+
     if (targets.isNotEmpty) {
       CoachMarkHelper.show(
         context: context,
@@ -340,61 +393,6 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       if (!mounted) return;
       print('[HomePage] 載入用戶資料失敗: $e');
-    }
-  }
-
-  /// ⭐ v3.0 載入一鍵續約資料
-  ///
-  /// 檢查學員是否有最近的已完成預約，用於顯示一鍵續約卡片
-  Future<void> _loadQuickRebookData() async {
-    if (!mounted) return;
-
-    setState(() => _isLoadingRebook = true);
-
-    try {
-      final userId = _authController.user?.uid;
-      if (userId == null) {
-        setState(() => _isLoadingRebook = false);
-        return;
-      }
-
-      // 1. 檢查用戶是否為學員
-      final profile = await _userService.getUserProfile(userId);
-      if (profile == null || !profile.isStudent) {
-        setState(() => _isLoadingRebook = false);
-        return;
-      }
-
-      // 2. 查詢最近一次已完成的預約
-      final lastAppointment =
-          await _appointmentService.getLastCompletedAppointment(userId);
-
-      if (lastAppointment == null) {
-        setState(() => _isLoadingRebook = false);
-        return;
-      }
-
-      // 3. 查詢教練資訊
-      final coachProfile =
-          await _userService.getUserProfile(lastAppointment.coachId);
-
-      if (!mounted) return;
-
-      setState(() {
-        _lastAppointment = lastAppointment;
-        _lastCoach = coachProfile;
-        _isLoadingRebook = false;
-      });
-
-      if (kDebugMode) {
-        print('[HomePage] ✅ 一鍵續約資料載入完成：教練=${coachProfile?.displayName}');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoadingRebook = false);
-      if (kDebugMode) {
-        print('[HomePage] ⚠️ 載入一鍵續約資料失敗: $e');
-      }
     }
   }
 
@@ -804,11 +802,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            // ⭐ v3.0 一鍵續約卡片（學員專用）
-            if (_shouldShowQuickRebook())
-              SliverToBoxAdapter(
-                child: _buildQuickRebookCard(),
-              ),
             // ⭐ Phase 3.1-B: 快捷操作按鈕列
             SliverToBoxAdapter(
               child: _buildQuickActions(),
@@ -958,8 +951,7 @@ class _HomePageState extends State<HomePage> {
         // ⭐ v3.1.1: 移除轉圈，載入中不顯示數量
         trailing: !_isLoadingPlans && totalCount > 0
             ? Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
@@ -1021,8 +1013,7 @@ class _HomePageState extends State<HomePage> {
         // ⭐ v3.1.1: 移除轉圈，載入中不顯示數量
         trailing: !_isLoadingCoachSessions && totalCount > 0
             ? Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(12),
@@ -1259,9 +1250,58 @@ class _HomePageState extends State<HomePage> {
         // TODO: 編輯訓練計畫
       },
       onDelete: (planId, title) {
-        // TODO: 刪除訓練計畫
+        _confirmDeleteWorkout(planId, title);
       },
     );
+  }
+
+  /// 確認刪除訓練計畫
+  void _confirmDeleteWorkout(String planId, String title) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('刪除訓練'),
+        content: Text('確定要刪除「$title」嗎？此操作不能撤銷。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deleteWorkout(planId);
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('刪除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 執行刪除訓練計畫
+  Future<void> _deleteWorkout(String planId) async {
+    try {
+      await _workoutService.deleteRecord(planId);
+
+      if (mounted) {
+        // 清除快取並重新載入
+        final userId = _authController.user?.uid;
+        if (userId != null) {
+          _workoutService.clearUserPlansCache(userId);
+        }
+
+        NotificationUtils.showSuccess(context, '訓練計畫已刪除');
+        _loadTodayPlans();
+      }
+    } catch (e) {
+      if (mounted) {
+        NotificationUtils.showError(context, '刪除失敗: $e');
+      }
+    }
   }
 
   /// ⭐ Phase 3.1-B: 我的學員區塊（教練視角）
@@ -1442,7 +1482,7 @@ class _HomePageState extends State<HomePage> {
   /// ⭐ v3.1.1: 必須填寫拒絕原因
   Future<void> _rejectAppointment(AppointmentModel appointment) async {
     final reasonController = TextEditingController();
-    
+
     final reason = await showDialog<String>(
       context: context,
       barrierDismissible: false,
@@ -1477,7 +1517,8 @@ class _HomePageState extends State<HomePage> {
                 FilledButton(
                   onPressed: reasonController.text.trim().isEmpty
                       ? null
-                      : () => Navigator.pop(context, reasonController.text.trim()),
+                      : () =>
+                          Navigator.pop(context, reasonController.text.trim()),
                   style: FilledButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.error,
                   ),
@@ -1724,9 +1765,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-        )
-            .animate(onPlay: (c) => c.repeat())
-            .shimmer(
+        ).animate(onPlay: (c) => c.repeat()).shimmer(
               duration: 1200.ms,
               color: Theme.of(context)
                   .colorScheme
@@ -1734,74 +1773,6 @@ class _HomePageState extends State<HomePage> {
                   .withOpacity(0.08),
             );
       }),
-    );
-  }
-
-  /// ⭐ v3.0 是否應該顯示一鍵續約卡片
-  bool _shouldShowQuickRebook() {
-    // 載入中不顯示
-    if (_isLoadingRebook) return false;
-    // 沒有最近預約不顯示
-    if (_lastAppointment == null) return false;
-    // 沒有教練資訊不顯示
-    if (_lastCoach == null) return false;
-    // 用戶必須是學員
-    if (_userProfile == null) return false;
-    if (!_userProfile!.isStudent) return false;
-    return true;
-  }
-
-  /// ⭐ v3.0 構建一鍵續約卡片
-  Widget _buildQuickRebookCard() {
-    if (_lastAppointment == null || _lastCoach == null) {
-      return const SizedBox.shrink();
-    }
-
-    // 從最近預約中提取偏好時段
-    final startTime = _lastAppointment!.startTime;
-    final preferredTime = TimeOfDay.fromDateTime(startTime);
-    final dayOfWeek = startTime.weekday;
-
-    final lastBooking = LastBookingInfo(
-      coachId: _lastAppointment!.coachId,
-      coachName: _lastCoach!.displayName ?? _lastCoach!.email,
-      coachPhotoUrl: _lastCoach!.photoURL,
-      preferredTime: preferredTime,
-      durationMinutes: _lastAppointment!.endTime
-          .difference(_lastAppointment!.startTime)
-          .inMinutes,
-      dayOfWeek: dayOfWeek,
-    );
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        context.spacing.md,
-        context.spacing.md,
-        context.spacing.md,
-        0,
-      ),
-      child: QuickRebookCard(
-        lastBooking: lastBooking,
-        onRebook: (suggestedDate, time) {
-          // 跳轉到預約頁面
-          // TODO: 未來可擴展 ClientBookingPage 支援預選教練和時段
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ClientBookingPage(),
-            ),
-          );
-        },
-        onViewMore: () {
-          // 跳轉到預約頁面
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ClientBookingPage(),
-            ),
-          );
-        },
-      ),
     );
   }
 
