@@ -1,5 +1,7 @@
+import 'package:uuid/uuid.dart';
 import 'set_record.dart';
 import '../tracking_mode.dart';
+import '../workout_template/workout_exercise.dart';
 
 /// 運動記錄模型
 ///
@@ -126,6 +128,33 @@ class ExerciseRecord {
   /// 標記為已完成
   ExerciseRecord markAsCompleted() {
     return copyWith(completed: true);
+  }
+
+  /// 轉換為 WorkoutExercise（用於儲存為模板）
+  ///
+  /// 從訓練記錄轉換為模板格式，使用第一組的數據作為預設值。
+  /// 注意：equipment 和 bodyParts 需要從外部補充。
+  WorkoutExercise toWorkoutExercise({
+    String equipment = '',
+    List<String> bodyParts = const [],
+  }) {
+    final firstSet = sets.isNotEmpty ? sets.first : null;
+    return WorkoutExercise(
+      id: const Uuid().v4(),
+      exerciseId: exerciseId,
+      name: exerciseName,
+      equipment: equipment,
+      bodyParts: bodyParts,
+      sets: sets.length,
+      reps: firstSet?.reps ?? 10,
+      weight: firstSet?.weight ?? 0,
+      restTime: firstSet?.restTime ?? 60,
+      notes: notes,
+      trackingMode: trackingMode,
+      time: firstSet?.time,
+      distance: firstSet?.distance,
+      calories: firstSet?.calories,
+    );
   }
   
   /// 添加一個新組

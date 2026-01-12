@@ -264,4 +264,86 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
     // 使用轉換器將自定義動作轉換為標準 Exercise 對象
     return CustomExerciseConverter.toExercise(customExercise);
   }
+
+  // ========================================
+  // v3.4+ 教練自訂動作複製功能
+  // ========================================
+
+  @override
+  Future<bool> isCoachCustomExercise(String exerciseId) async {
+    if (!_isInitialized) await _initialize();
+
+    try {
+      return await _service.isCoachCustomExercise(exerciseId);
+    } catch (e) {
+      _errorService.logError(
+        '檢查是否為教練自訂動作失敗: $e',
+        type: 'CustomExerciseControllerError',
+      );
+      return false;
+    }
+  }
+
+  @override
+  Future<CustomExercise> copyToMyExercises({
+    required String name,
+    required String trainingType,
+    required String bodyPart,
+    String equipment = '徒手',
+    String trackingMode = 'weight_reps',
+    String description = '',
+    String notes = '',
+  }) async {
+    if (!_isInitialized) await _initialize();
+
+    // 使用驗證器進行輸入驗證
+    try {
+      CustomExerciseValidator.validateCreateParams(
+        name: name,
+        bodyPart: bodyPart,
+      );
+    } catch (e) {
+      _handleError(e.toString());
+      rethrow;
+    }
+
+    try {
+      _setLoading(true);
+      clearError();
+
+      final exercise = await _service.copyToMyExercises(
+        name: name,
+        trainingType: trainingType,
+        bodyPart: bodyPart,
+        equipment: equipment,
+        trackingMode: trackingMode,
+        description: description,
+        notes: notes,
+      );
+
+      // 更新緩存
+      _cacheManager.addToCache(exercise);
+
+      _setLoading(false);
+      return exercise;
+    } catch (e) {
+      _handleError('複製動作到我的動作庫失敗', e);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<int> getTrainingRecordCount(String exerciseId) async {
+    if (!_isInitialized) await _initialize();
+
+    try {
+      return await _service.getTrainingRecordCount(exerciseId);
+    } catch (e) {
+      _errorService.logError(
+        '查詢訓練記錄數量失敗: $e',
+        type: 'CustomExerciseControllerError',
+      );
+      return 0;
+    }
+  }
 } 

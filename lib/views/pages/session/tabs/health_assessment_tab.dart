@@ -4,9 +4,11 @@ import 'package:strengthwise/controllers/session_mode_controller.dart';
 import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
 import 'package:strengthwise/models/coach_display_preferences_model.dart';
 import 'package:strengthwise/models/coach_assessment_note_model.dart';
+import 'package:strengthwise/models/injury_coach_note_model.dart'; // ⭐ v3.4
 import 'package:strengthwise/services/interfaces/i_health_assessment_service.dart';
 import 'package:strengthwise/services/interfaces/i_coach_display_preferences_service.dart';
 import 'package:strengthwise/services/interfaces/i_coach_assessment_note_service.dart';
+import 'package:strengthwise/services/interfaces/i_injury_coach_note_service.dart'; // ⭐ v3.4
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/profile/health_assessment_detail_page.dart';
@@ -31,11 +33,13 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
   late final IHealthAssessmentService _healthAssessmentService;
   late final ICoachDisplayPreferencesService _preferencesService;
   late final ICoachAssessmentNoteService _assessmentNoteService;
+  late final IInjuryCoachNoteService _injuryNoteService; // ⭐ v3.4
   late final IAuthController _authController;
 
   HealthAssessmentModel? _healthAssessment;
   CoachDisplayPreferencesModel? _displayPreferences;
   CoachAssessmentNoteModel? _coachNote;
+  Map<String, List<InjuryCoachNoteModel>> _injuryCoachNotes = {}; // ⭐ v3.4
   bool _isLoading = true;
 
   /// 取得當前用戶 ID（教練 ID）
@@ -47,6 +51,7 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
     _healthAssessmentService = serviceLocator<IHealthAssessmentService>();
     _preferencesService = serviceLocator<ICoachDisplayPreferencesService>();
     _assessmentNoteService = serviceLocator<ICoachAssessmentNoteService>();
+    _injuryNoteService = serviceLocator<IInjuryCoachNoteService>(); // ⭐ v3.4
     _authController = serviceLocator<IAuthController>();
 
     // 延遲載入，等待 context 可用
@@ -104,11 +109,25 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
         await Future.wait(futures);
       }
 
+      // ⭐ v3.4: 載入傷病教練備註（教練和學員都載入）
+      Map<String, List<InjuryCoachNoteModel>> injuryNotes = {};
+      if (assessment != null) {
+        try {
+          injuryNotes = await _injuryNoteService.getNotesForClient(
+            clientId: assessment.userId,
+          );
+          debugPrint('   💬 Loaded injury notes: ${injuryNotes.length} sites');
+        } catch (e) {
+          debugPrint('   ⚠️ Failed to load injury notes: $e');
+        }
+      }
+
       if (mounted) {
         setState(() {
           _healthAssessment = assessment;
           _displayPreferences = preferences;
           _coachNote = note;
+          _injuryCoachNotes = injuryNotes; // ⭐ v3.4
           _isLoading = false;
         });
       }
@@ -154,6 +173,7 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
               assessment: _healthAssessment!,
               preferences: _displayPreferences,
               coachNote: _coachNote,
+              injuryCoachNotes: _injuryCoachNotes, // ⭐ v3.4: 傷病教練備註
               onViewFull: () => _navigateToDetail(),
               // 教練可編輯，學員只能查看
               onEdit: isCoachMode ? () => _navigateToEdit(controller) : null,

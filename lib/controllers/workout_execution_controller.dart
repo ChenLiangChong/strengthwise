@@ -131,8 +131,9 @@ class WorkoutExecutionController extends ChangeNotifier
       _dataManager.appointmentId = record.appointmentId;
 
       // 設置計劃標題和類型
-      _dataManager.planTitle = '訓練記錄';
-      _dataManager.planType = '一般訓練';
+      _dataManager.planTitle = record.title.isNotEmpty ? record.title : '訓練記錄';
+      // ⭐ v3.4: 從資料庫讀取訓練計畫類型
+      _dataManager.planType = record.planType ?? '自定義';
 
       if (record.notes.isNotEmpty) {
         _dataManager.notesController.text = record.notes;

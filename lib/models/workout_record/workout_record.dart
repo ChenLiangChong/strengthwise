@@ -29,6 +29,9 @@ class WorkoutRecord {
   // ⭐ v3.1: Session Mode 關聯預約 ID
   final String? appointmentId; // 關聯的預約 ID（上課訓練計畫）
 
+  // ⭐ v3.4: 訓練計畫類型
+  final String? planType; // 訓練計畫類型（力量訓練、增肌訓練等）
+
   /// 創建一個訓練記錄實例
   WorkoutRecord({
     required this.id,
@@ -51,6 +54,8 @@ class WorkoutRecord {
     this.trainingStatus = 'pending',
     // ⭐ v3.1: Session Mode
     this.appointmentId,
+    // ⭐ v3.4: 訓練計畫類型
+    this.planType,
   });
 
   /// 轉換為 JSON 數據格式
@@ -99,6 +104,8 @@ class WorkoutRecord {
     String? trainingStatus,
     // ⭐ v3.1: Session Mode
     String? appointmentId,
+    // ⭐ v3.4: 訓練計畫類型
+    String? planType,
   }) {
     return WorkoutRecord(
       id: id ?? this.id,
@@ -119,6 +126,7 @@ class WorkoutRecord {
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
       trainingStatus: trainingStatus ?? this.trainingStatus,
       appointmentId: appointmentId ?? this.appointmentId,
+      planType: planType ?? this.planType,
     );
   }
 

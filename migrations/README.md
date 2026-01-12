@@ -94,13 +94,14 @@ psql -U postgres -d strengthwise -f 002_v1_initial_data.sql
 | `20_v3_injury_tracking.sql` | 042, 043, 044_injury | v3.3 | 傷病備註、睡眠範圍 |
 | `21_v3_tracking_mode.sql` | 044, 044b, 045 | v3.2+ | TrackingMode 欄位與搜尋 |
 | `22_v3_pr_final_fixes.sql` | 046, 047 | v3.3 | PR DELETE 觸發器、ID 格式修復 |
+| `23_fix_pr_weight_time.sql` | - | v3.3.1 | 修復 weight_time 模式被錯誤納入 PR |
 
 ---
 
 ## 🔄 執行順序
 
 ```
-演進版：001 → 002 → ... → 008 → 09 → 10 → ... → 22
+演進版：001 → 002 → ... → 008 → 09 → 10 → ... → 23
 
 精簡版：01 → 02 → ... → 10
 ```

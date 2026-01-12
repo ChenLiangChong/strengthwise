@@ -1,10 +1,15 @@
 // ✅ 已響應式改造 (Phase 0) - 訓練執行內容，子組件處理
 // ✅ v3.1: 從 WorkoutExecutionPage 抽取的可內嵌訓練執行內容
+// ✅ v3.4+: 教練自訂動作複製功能
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:strengthwise/models/exercise_model.dart';
+import 'package:strengthwise/models/tracking_mode.dart';
+import 'package:strengthwise/models/workout_record/exercise_record.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_execution_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_custom_exercise_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/services/realtime/session_realtime_service.dart';
 import 'package:strengthwise/themes/app_theme.dart';
@@ -15,6 +20,8 @@ import 'widgets/workout_info_card.dart';
 import 'widgets/empty_exercise_state.dart';
 import 'widgets/exercise_settings_dialog.dart';
 import 'widgets/rest_timer_widget.dart';
+import 'widgets/add_to_my_exercises_dialog.dart';
+import 'package:strengthwise/models/workout_template/plan_type_enum.dart'; // v3.4+
 
 /// 訓練執行內容 Widget
 ///
@@ -27,6 +34,20 @@ import 'widgets/rest_timer_widget.dart';
 /// 可用於：
 /// - WorkoutExecutionPage（獨立頁面）
 /// - SessionExecutionTab（內嵌在 Session Mode）
+
+/// 儲存模板對話框的數據
+class _SaveTemplateData {
+  final String name;
+  final String planType;
+  final String description;
+
+  _SaveTemplateData({
+    required this.name,
+    required this.planType,
+    this.description = '',
+  });
+}
+
 class WorkoutExecutionContent extends StatefulWidget {
   /// 訓練記錄 ID
   final String workoutRecordId;
@@ -88,9 +109,14 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
     with WidgetsBindingObserver {
   late final IWorkoutExecutionController _executionController;
   late final SessionRealtimeService _realtimeService;
+  late final ICustomExerciseController _customExerciseController; // ⭐ v3.4+
+  late final IWorkoutController _workoutController; // ⭐ v3.4+ 儲存為模板
 
   // ⭐ v3.1: Realtime 訂閱 ID（用於取消訂閱）
   String? _realtimeSubscriptionId;
+
+  // ⭐ v3.4+: 教練自訂動作快取（exerciseId -> isCoachCustom）
+  final Map<String, bool> _coachCustomExerciseCache = {};
 
   // 新增動作的控制器
   final TextEditingController _newExerciseSetsController =
@@ -134,6 +160,8 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
     WidgetsBinding.instance.addObserver(this);
     _executionController = serviceLocator<IWorkoutExecutionController>();
     _realtimeService = serviceLocator<SessionRealtimeService>();
+    _customExerciseController = serviceLocator<ICustomExerciseController>(); // ⭐ v3.4+
+    _workoutController = serviceLocator<IWorkoutController>(); // ⭐ v3.4+ 儲存為模板
     _loadWorkoutPlan();
     _startTimerLoop();
     // ⭐ v3.1: 延遲訂閱 Realtime，等載入完成後根據條件決定
@@ -285,6 +313,9 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
 
     // ⭐ v3.1: 載入完成後根據條件決定是否訂閱 Realtime
     _subscribeToRealtimeIfNeeded();
+
+    // ⭐ v3.4+: 預載入教練自訂動作狀態（異步，不阻塞）
+    _preloadCoachCustomExerciseStatus();
 
     setState(() {});
     widget.onLoaded?.call();
@@ -675,8 +706,349 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
   }
 
   // ========================================
+  // 儲存為模板
+  // ========================================
+
+  /// 儲存當前訓練為模板（公開方法）
+  ///
+  /// v3.4+ 功能：
+  /// 1. 檢查是否有教練自訂動作，如有則提示用戶先加入動作庫
+  /// 2. 顯示模板名稱輸入框
+  /// 3. 調用 Controller 儲存模板
+  Future<bool> saveAsTemplate() async {
+    var exerciseRecords = _executionController.getExerciseRecords();
+
+    if (exerciseRecords.isEmpty) {
+      if (mounted) {
+        NotificationUtils.showWarning(context, '請至少添加一個訓練動作');
+      }
+      return false;
+    }
+
+    // 1. 檢查是否有教練自訂動作
+    final coachExercises = <ExerciseRecord>[];
+    for (final exercise in exerciseRecords) {
+      final isCoachCustom = await _customExerciseController.isCoachCustomExercise(exercise.exerciseId);
+      if (isCoachCustom) {
+        coachExercises.add(exercise);
+      }
+    }
+
+    // 2. 如果有教練自訂動作，先顯示確認對話框
+    // ⭐ v3.4: 記錄動作映射（舊 ID → {新 ID, 新 trackingMode}）
+    final Map<String, ({String newId, TrackingMode trackingMode})> exerciseMapping = {};
+    
+    if (coachExercises.isNotEmpty && mounted) {
+      // Step 2a: 顯示簡單確認對話框
+      final shouldImport = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('需要加入動作庫'),
+          content: Text(
+            '此訓練包含 ${coachExercises.length} 個教練自訂動作，需要先加入你的動作庫才能儲存為模板。\n\n是否繼續？',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('繼續'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldImport != true || !mounted) {
+        return false; // 用戶取消
+      }
+
+      // Step 2b: 逐一顯示 AddToMyExercisesDialog（複用動作卡片上的對話框）
+      for (int i = 0; i < coachExercises.length; i++) {
+        if (!mounted) return false;
+        
+        final exercise = coachExercises[i];
+        final isLast = i == coachExercises.length - 1;
+        final oldExerciseId = exercise.exerciseId;
+        
+        final result = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => AddToMyExercisesDialog(
+            originalName: exercise.exerciseName,
+            originalBodyPart: '核心', // 預設值
+            originalEquipment: '徒手', // 預設值
+            originalTrackingMode: exercise.trackingMode,
+            // 顯示進度提示
+            titleSuffix: ' (${i + 1}/${coachExercises.length})',
+            onConfirm: (data) async {
+              // ⭐ v3.4: 獲取新創建的動作並記錄映射（包含新的 trackingMode）
+              final newExercise = await _customExerciseController.copyToMyExercises(
+                name: data.name,
+                trainingType: data.trainingType,
+                bodyPart: data.bodyPart,
+                equipment: data.equipment,
+                trackingMode: data.trackingMode.toJson(),
+              );
+              exerciseMapping[oldExerciseId] = (
+                newId: newExercise.id,
+                trackingMode: data.trackingMode,
+              );
+            },
+          ),
+        );
+
+        if (result != true) {
+          // 用戶取消，詢問是否繼續
+          if (!mounted) return false;
+          if (!isLast) {
+            final continueImport = await showDialog<bool>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('確認取消'),
+                content: Text('還有 ${coachExercises.length - i - 1} 個動作未加入，確定要取消嗎？'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: const Text('繼續加入'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    child: const Text('取消儲存'),
+                  ),
+                ],
+              ),
+            );
+            if (continueImport == true) {
+              return false; // 用戶確認取消
+            }
+            // 繼續處理下一個（用戶選擇繼續）
+          } else {
+            return false; // 最後一個被取消
+          }
+        }
+      }
+    }
+    
+    // ⭐ v3.4: 用新 ID 和 trackingMode 替換 exerciseRecords 中的舊資料
+    if (exerciseMapping.isNotEmpty) {
+      exerciseRecords = exerciseRecords.map((record) {
+        final mapping = exerciseMapping[record.exerciseId];
+        if (mapping != null) {
+          return ExerciseRecord(
+            exerciseId: mapping.newId,
+            exerciseName: record.exerciseName,
+            sets: record.sets,
+            notes: record.notes,
+            completed: record.completed,
+            trackingMode: mapping.trackingMode, // ⭐ 使用用戶選擇的新 trackingMode
+          );
+        }
+        return record;
+      }).toList();
+    }
+
+    // 3. 顯示模板資訊輸入對話框
+    if (!mounted) return false;
+    
+    final templateData = await _showSaveTemplateDialog();
+    
+    if (templateData == null) {
+      return false;
+    }
+
+    // 4. 調用 Controller 儲存模板
+    try {
+      await _workoutController.saveRecordAsTemplate(
+        exerciseRecords: exerciseRecords,
+        templateName: templateData.name.trim(),
+        planType: templateData.planType,
+        description: templateData.description,
+      );
+
+      if (mounted) {
+        NotificationUtils.showSuccess(context, '已儲存為模板「${templateData.name}」');
+      }
+      return true;
+    } catch (e) {
+      if (mounted) {
+        NotificationUtils.showError(context, '儲存失敗: $e');
+      }
+      return false;
+    }
+  }
+
+  /// 顯示儲存模板對話框
+  Future<_SaveTemplateData?> _showSaveTemplateDialog() async {
+    final nameController = TextEditingController(
+      text: _executionController.getPlanTitle(),
+    );
+    final descriptionController = TextEditingController();
+    String selectedPlanType = _executionController.getPlanType();
+    
+    // ⭐ v3.4: 使用統一的訓練計畫類型列表
+    final planTypeOptions = PlanTypeExtension.uiOptions;
+    
+    // 確保當前類型在選項中
+    if (!planTypeOptions.contains(selectedPlanType)) {
+      selectedPlanType = '自定義';
+    }
+
+    final result = await showDialog<_SaveTemplateData>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('儲存為模板'),
+              content: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.8,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 模板名稱
+                      TextField(
+                        controller: nameController,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          labelText: '模板名稱 *',
+                          hintText: '輸入模板名稱',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // 訓練計畫類型
+                      DropdownButtonFormField<String>(
+                        value: selectedPlanType,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: '訓練計畫類型',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: planTypeOptions.map((type) {
+                          return DropdownMenuItem(
+                            value: type,
+                            child: Text(type),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setDialogState(() => selectedPlanType = value);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // 備註
+                      TextField(
+                        controller: descriptionController,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: '備註（選填）',
+                          hintText: '輸入模板備註',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('取消'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (nameController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('請輸入模板名稱')),
+                      );
+                      return;
+                    }
+                    Navigator.pop(
+                      dialogContext,
+                      _SaveTemplateData(
+                        name: nameController.text.trim(),
+                        planType: selectedPlanType,
+                        description: descriptionController.text.trim(),
+                      ),
+                    );
+                  },
+                  child: const Text('儲存'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    nameController.dispose();
+    descriptionController.dispose();
+    
+    return result;
+  }
+  // ========================================
   // UI 構建
   // ========================================
+
+  // ⭐ v3.4+: 獲取快取的教練自訂動作狀態（同步）
+  bool _getCachedIsCoachCustomExercise(String exerciseId) {
+    return _coachCustomExerciseCache[exerciseId] ?? false;
+  }
+
+  // ⭐ v3.4+: 預載入所有動作的教練自訂動作狀態
+  Future<void> _preloadCoachCustomExerciseStatus() async {
+    final exerciseRecords = _executionController.getExerciseRecords();
+    for (final exercise in exerciseRecords) {
+      if (!_coachCustomExerciseCache.containsKey(exercise.exerciseId)) {
+        _coachCustomExerciseCache[exercise.exerciseId] =
+            await _customExerciseController.isCoachCustomExercise(exercise.exerciseId);
+      }
+    }
+    // 刷新 UI
+    if (mounted) setState(() {});
+  }
+
+  // ⭐ v3.4+: 顯示「加入我的動作庫」對話框
+  Future<void> _showAddToMyExercisesDialog(int exerciseIndex) async {
+    final exerciseRecords = _executionController.getExerciseRecords();
+    if (exerciseIndex >= exerciseRecords.length) return;
+
+    final exercise = exerciseRecords[exerciseIndex];
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AddToMyExercisesDialog(
+        originalName: exercise.exerciseName,
+        originalBodyPart: '核心', // 預設值，因為 ExerciseRecord 沒有 bodyPart
+        originalEquipment: '徒手', // 預設值
+        originalTrackingMode: exercise.trackingMode,
+        onConfirm: (data) async {
+          await _customExerciseController.copyToMyExercises(
+            name: data.name,
+            trainingType: data.trainingType,
+            bodyPart: data.bodyPart,
+            equipment: data.equipment,
+            trackingMode: data.trackingMode.toJson(),
+          );
+        },
+      ),
+    );
+
+    if (result == true && mounted) {
+      // 清除快取，因為用戶現在有這個動作了
+      _coachCustomExerciseCache[exercise.exerciseId] = false;
+      setState(() {});
+      NotificationUtils.showSuccess(context, '已加入你的動作庫');
+    }
+  }
 
   ExerciseCardData _convertToCardData(int index) {
     final exerciseRecords = _executionController.getExerciseRecords();
@@ -848,6 +1220,11 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
                     setState(() {});
                     widget.onDataChanged?.call();
                   }
+                : null,
+            // ⭐ v3.4+: 教練自訂動作複製功能
+            isCoachCustomExercise: _getCachedIsCoachCustomExercise(exercise.exerciseId),
+            onAddToMyExercises: _getCachedIsCoachCustomExercise(exercise.exerciseId)
+                ? () => _showAddToMyExercisesDialog(index)
                 : null,
           ),
         ],

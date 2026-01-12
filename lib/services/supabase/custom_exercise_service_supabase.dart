@@ -249,6 +249,113 @@ class CustomExerciseServiceSupabase implements ICustomExerciseService {
     }
   }
 
+  // ========================================
+  // v3.4+ 教練自訂動作複製功能
+  // ========================================
+
+  @override
+  Future<bool> isCoachCustomExercise(String exerciseId) async {
+    _ensureInitialized();
+
+    if (currentUserId == null) {
+      return false;
+    }
+
+    try {
+      // 1. 檢查是否在系統動作庫
+      final systemExercise = await _supabase
+          .from('exercises')
+          .select('id')
+          .eq('id', exerciseId)
+          .maybeSingle()
+          .timeout(Duration(seconds: _queryTimeout));
+
+      if (systemExercise != null) {
+        // 是系統動作，不是教練自訂
+        return false;
+      }
+
+      // 2. 檢查是否在當前用戶的自訂動作中
+      final myCustomExercise = await _supabase
+          .from('custom_exercises')
+          .select('id')
+          .eq('id', exerciseId)
+          .eq('user_id', currentUserId!)
+          .maybeSingle()
+          .timeout(Duration(seconds: _queryTimeout));
+
+      if (myCustomExercise != null) {
+        // 是我的自訂動作，不需要複製
+        return false;
+      }
+
+      // 不在系統庫，也不在我的自訂動作中 = 是教練的自訂動作
+      _logDebug('動作 $exerciseId 識別為教練自訂動作');
+      return true;
+    } catch (e) {
+      _logError('檢查是否為教練自訂動作失敗: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<CustomExercise> copyToMyExercises({
+    required String name,
+    required String trainingType,
+    required String bodyPart,
+    String equipment = '徒手',
+    String trackingMode = 'weight_reps',
+    String description = '',
+    String notes = '',
+  }) async {
+    _ensureInitialized();
+
+    if (currentUserId == null) {
+      throw Exception('用戶未登入');
+    }
+
+    _logDebug('複製動作到我的動作庫: $name');
+
+    // 直接調用 addCustomExercise，因為邏輯相同
+    return await addCustomExercise(
+      name: name,
+      trainingType: trainingType,
+      bodyPart: bodyPart,
+      equipment: equipment,
+      trackingMode: trackingMode,
+      description: description,
+      notes: notes,
+    );
+  }
+
+  @override
+  Future<int> getTrainingRecordCount(String exerciseId) async {
+    _ensureInitialized();
+
+    if (currentUserId == null) {
+      return 0;
+    }
+
+    try {
+      // 使用 JSONB 包含查詢，檢查 exercises 陣列中是否有 exerciseId
+      // PostgreSQL: exercises @> '[{"exerciseId": "xxx"}]'::jsonb
+      final response = await _supabase
+          .from('workout_plans')
+          .select('id')
+          .contains('exercises', [{'exerciseId': exerciseId}])
+          .eq('completed', true)
+          .or('trainee_id.eq.${currentUserId!},creator_id.eq.${currentUserId!}')
+          .timeout(Duration(seconds: _queryTimeout));
+
+      final count = (response as List).length;
+      _logDebug('動作 $exerciseId 有 $count 筆訓練記錄');
+      return count;
+    } catch (e) {
+      _logError('查詢訓練記錄數量失敗: $e');
+      return 0;
+    }
+  }
+
   /// 確保服務已初始化
   void _ensureInitialized() {
     if (!_isInitialized) {

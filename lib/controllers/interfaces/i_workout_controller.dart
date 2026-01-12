@@ -1,5 +1,6 @@
 import '../../models/workout_template_model.dart';
 import '../../models/workout_record_model.dart';
+import '../../models/workout_record/exercise_record.dart';
 
 /// 訓練計畫控制器接口
 /// 
@@ -40,4 +41,19 @@ abstract class IWorkoutController {
   
   /// 從模板創建記錄
   Future<WorkoutRecord> createRecordFromTemplate(String templateId);
+
+  /// 將訓練記錄儲存為模板
+  ///
+  /// [exerciseRecords] 訓練記錄中的動作列表
+  /// [templateName] 模板名稱
+  /// [planType] 訓練類型
+  /// [description] 描述（選填）
+  ///
+  /// 返回創建的模板
+  Future<WorkoutTemplate> saveRecordAsTemplate({
+    required List<ExerciseRecord> exerciseRecords,
+    required String templateName,
+    required String planType,
+    String description = '',
+  });
 } 

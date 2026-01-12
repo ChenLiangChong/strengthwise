@@ -48,7 +48,7 @@ class WorkoutInfoCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        '訓練類型:',
+                        '訓練計畫類型:',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,

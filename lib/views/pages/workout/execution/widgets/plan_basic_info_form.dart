@@ -31,7 +31,7 @@ class PlanBasicInfoForm extends StatelessWidget {
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
           decoration: const InputDecoration(
-            labelText: '訓練類型',
+            labelText: '訓練計畫類型',
             border: OutlineInputBorder(),
           ),
           value: selectedPlanType,

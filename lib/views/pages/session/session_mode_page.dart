@@ -141,6 +141,32 @@ class _SessionModeContentState extends State<_SessionModeContent>
                     foregroundColor: colorScheme.error,
                   ),
                 ),
+              // ⭐ v3.4+: 更多選項（儲存為模板）
+              if (controller.hasWorkoutPlan)
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  tooltip: '更多選項',
+                  onSelected: (value) async {
+                    if (value == 'save_as_template') {
+                      final state = _workoutContentKey.currentState;
+                      if (state != null) {
+                        await state.saveAsTemplate();
+                      }
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem<String>(
+                      value: 'save_as_template',
+                      child: Row(
+                        children: [
+                          Icon(Icons.bookmark_add_outlined),
+                          SizedBox(width: 12),
+                          Text('儲存為模板'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
             ],
             bottom: TabBar(
               controller: _tabController,

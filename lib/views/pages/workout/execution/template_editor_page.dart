@@ -5,6 +5,7 @@ import 'package:strengthwise/models/workout_exercise_model.dart'
     as exercise_models;
 import 'package:strengthwise/models/exercise_model.dart';
 import 'package:strengthwise/models/tracking_mode.dart'; // v3.2+
+import 'package:strengthwise/models/workout_template/plan_type_enum.dart'; // v3.4+
 import 'package:strengthwise/services/interfaces/i_workout_service.dart';
 import 'package:strengthwise/services/interfaces/i_auth_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
@@ -47,19 +48,8 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
   late final IWorkoutService _workoutService;
   late final IAuthService _authService;
 
-  // 共用訓練類型列舉（PlanType 列舉一致 - 專業健身分類）
-  final List<String> _planTypes = [
-    '力量訓練', // 🏋️ 1-5RM，提升最大力量
-    '增肌訓練', // 💪 6-12RM，提升肌肉量
-    '減脂訓練', // 🔥 高強度循環訓練，塑形
-    '有氧訓練', // ❤️ 有氧運動，提升心肺
-    '全身訓練', // 🌟 全身協調練習，多關節
-    '上半身', // ⬆️ 上半身專項訓練
-    '下半身', // ⬇️ 下半身專項訓練
-    '核心訓練', // 🎯 核心穩定性訓練
-    '伸展恢復', // 🧘 伸展運動，促進恢復
-    '自訂', // 📝 自訂訓練計劃
-  ];
+  // ⭐ v3.4: 使用統一的訓練計畫類型列表
+  List<String> get _planTypes => PlanTypeExtension.uiOptions;
 
   @override
   void initState() {
@@ -466,6 +456,58 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
     });
   }
 
+  /// ⭐ v3.4: 根據 trackingMode 構建動作摘要顯示
+  String _buildExerciseSummary(exercise_models.WorkoutExercise exercise) {
+    final sets = exercise.sets;
+    final restTime = exercise.restTime;
+    final trackingMode = exercise.trackingMode;
+
+    String mainInfo;
+    switch (trackingMode) {
+      case TrackingMode.weightReps:
+        mainInfo = '$sets 組 × ${exercise.reps} 次 @ ${exercise.weight} kg';
+        break;
+      case TrackingMode.weightTime:
+        mainInfo = '$sets 組 × ${exercise.weight} kg × ${exercise.time ?? 30} 秒';
+        break;
+      case TrackingMode.repsOnly:
+        mainInfo = '$sets 組 × ${exercise.reps} 次';
+        break;
+      case TrackingMode.timeOnly:
+        mainInfo = '$sets 組 × ${exercise.time ?? 30} 秒';
+        break;
+      case TrackingMode.repsTime:
+        mainInfo = '$sets 組 × ${exercise.reps} 次 × ${exercise.time ?? 5} 秒';
+        break;
+      case TrackingMode.distanceTime:
+        final distance = exercise.distance ?? 0;
+        final distanceStr = distance >= 1000 
+            ? '${(distance / 1000).toStringAsFixed(1)} km' 
+            : '${distance.toInt()} m';
+        mainInfo = '$sets 組 × $distanceStr / ${_formatTime(exercise.time ?? 0)}';
+        break;
+      case TrackingMode.distanceOnly:
+        final distance = exercise.distance ?? 0;
+        final distanceStr = distance >= 1000 
+            ? '${(distance / 1000).toStringAsFixed(1)} km' 
+            : '${distance.toStringAsFixed(1)} m';
+        mainInfo = '$sets 組 × $distanceStr';
+        break;
+      case TrackingMode.calories:
+        mainInfo = '$sets 組 × ${exercise.calories?.toInt() ?? 0} 卡';
+        break;
+    }
+
+    return '$mainInfo | 休息 ${restTime}s';
+  }
+
+  /// 格式化時間（秒 → mm:ss）
+  String _formatTime(int seconds) {
+    final mins = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  }
+
   /// 重新排序訓練動作
   void _reorderExercises(int oldIndex, int newIndex) {
     setState(() {
@@ -518,9 +560,9 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // 訓練類型
+                  // 訓練計畫類型
                   const Text(
-                    '訓練類型 *',
+                    '訓練計畫類型 *',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -617,7 +659,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                                   const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             subtitle: Text(
-                              '${exercise.sets} 組 × ${exercise.reps} 次 @ ${exercise.weight} kg | 休息 ${exercise.restTime}s',
+                              _buildExerciseSummary(exercise),
                             ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,

@@ -117,6 +117,12 @@ class ExerciseCard extends StatelessWidget {
   /// ⭐ v2.9.1: 備註變更回調
   final Function(String)? onNoteChanged;
 
+  /// ⭐ v3.4+: 是否為教練自訂動作（用於顯示「加入我的動作庫」按鈕）
+  final bool isCoachCustomExercise;
+
+  /// ⭐ v3.4+: 加入我的動作庫回調
+  final VoidCallback? onAddToMyExercises;
+
   const ExerciseCard({
     required this.data,
     required this.isEditable,
@@ -129,6 +135,8 @@ class ExerciseCard extends StatelessWidget {
     this.canDelete = false,
     this.note,
     this.onNoteChanged,
+    this.isCoachCustomExercise = false, // v3.4+
+    this.onAddToMyExercises, // v3.4+
     super.key,
   });
 
@@ -292,6 +300,18 @@ class ExerciseCard extends StatelessWidget {
               ],
             ),
           ),
+
+          // ⭐ v3.4+: 加入我的動作庫按鈕（教練自訂動作顯示）
+          if (isCoachCustomExercise && onAddToMyExercises != null)
+            IconButton(
+              icon: Icon(
+                Icons.add_circle_outline,
+                color: colorScheme.primary.withOpacity(0.8),
+              ),
+              onPressed: onAddToMyExercises,
+              tooltip: '加入我的動作庫',
+              iconSize: 22,
+            ),
 
           // ⭐ v2.9.1: 刪除按鈕（只有創建者可見，直接調用回調，確認由外層處理）
           if (canDelete && onDelete != null)

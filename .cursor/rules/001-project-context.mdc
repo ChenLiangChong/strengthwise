@@ -11,7 +11,7 @@ alwaysApply: true
 | 項目 | 內容 |
 |------|------|
 | **專案名稱** | StrengthWise |
-| **當前版本** | v3.3（2026-01-12 完成 - TrackingMode 適配 + PR 修復）|
+| **當前版本** | v3.4（2026-01-12 完成 - 傷病教練備註顯示 + 模板儲存優化）|
 | **專案類型** | 跨平台健身訓練追蹤應用 |
 | **目標平台** | Android / iOS / Windows / Web |
 
@@ -70,6 +70,7 @@ Model Layer              → lib/models/
 - v3.1：Session Mode 完善 + Realtime 同步 ✅
 - v3.2：Coach Mark + TrackingMode + Web PWA ✅
 - v3.3：TrackingMode 統計適配 + PR 修復 ✅
+- v3.4：傷病教練備註顯示 + 模板儲存優化 ✅
 
 ## 📊 專案規模
 

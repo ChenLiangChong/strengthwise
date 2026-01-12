@@ -12,8 +12,8 @@
 
 | 項目 | 內容 |
 |------|------|
-| 當前版本 | v3.3（完成 - TrackingMode 適配 + PR 修復）|
-| 上一版本 | v3.2（Coach Mark + TrackingMode + Web PWA）|
+| 當前版本 | v3.4（完成 - 傷病教練備註顯示 + 模板儲存優化）|
+| 上一版本 | v3.3（TrackingMode 適配 + PR 修復）|
 | 主要功能 | 個人健身記錄 + 教練學員管理平台 |
 | 目標平台 | Android / iOS / Windows / Web |
 

@@ -53,7 +53,7 @@ class WorkoutRecordOperations {
       var queryBuilder = _supabase
           .from('workout_plans')
           .select(
-              'id, title, scheduled_date, completed_date, completed, total_volume, total_exercises, total_sets, plan_type, trainee_id, creator_id, user_id, exercises, note, created_at, updated_at, appointment_id')
+              'id, title, scheduled_date, completed_date, completed, total_volume, total_exercises, total_sets, plan_type, ui_plan_type, trainee_id, creator_id, user_id, exercises, note, created_at, updated_at, appointment_id')
           .eq('trainee_id', userId)
           .eq('completed', true);
 
@@ -169,7 +169,7 @@ class WorkoutRecordOperations {
       var queryBuilder = _supabase
           .from('workout_plans')
           .select(
-              'id, title, scheduled_date, completed, completed_date, total_volume, total_exercises, total_sets, plan_type, trainee_id, creator_id, user_id, note, training_time, updated_at, created_at, exercises, appointment_id')
+              'id, title, scheduled_date, completed, completed_date, total_volume, total_exercises, total_sets, plan_type, ui_plan_type, trainee_id, creator_id, user_id, note, training_time, updated_at, created_at, exercises, appointment_id')
           .eq('trainee_id', userId);
 
       // 篩選完成狀態
@@ -247,7 +247,7 @@ class WorkoutRecordOperations {
           .from('workout_plans')
           .select(
               'id, user_id, trainee_id, creator_id, title, scheduled_date, completed_date, completed, '
-              'total_volume, total_exercises, total_sets, plan_type, exercises, note, training_time, '
+              'total_volume, total_exercises, total_sets, plan_type, ui_plan_type, exercises, note, training_time, '
               'actual_start_time, actual_end_time, elapsed_seconds, training_status, appointment_id, '
               'created_at, updated_at')
           .eq('id', recordId)
@@ -276,7 +276,7 @@ class WorkoutRecordOperations {
           .from('workout_plans')
           .select(
               'id, user_id, trainee_id, creator_id, title, scheduled_date, completed_date, completed, '
-              'total_volume, total_exercises, total_sets, plan_type, exercises, note, training_time, '
+              'total_volume, total_exercises, total_sets, plan_type, ui_plan_type, exercises, note, training_time, '
               'actual_start_time, actual_end_time, elapsed_seconds, training_status, appointment_id, '
               'created_at, updated_at')
           .eq('appointment_id', appointmentId)
@@ -316,6 +316,7 @@ class WorkoutRecordOperations {
         'creator_id': record.creatorId ?? userId,
         'title': record.title,
         'plan_type': 'self',
+        'ui_plan_type': record.planType, // ⭐ v3.4: 訓練計畫類型（UI 顯示用）
         'scheduled_date': DateTimeUtils.formatToUtcIso(record.date), // ⭐ 統一工具類
         'completed_date': record.completed
             ? DateTimeUtils.formatToUtcIso(DateTime.now()) // ⭐ 統一工具類
@@ -374,7 +375,7 @@ class WorkoutRecordOperations {
           .insert(recordData)
           .select(
               'id, user_id, trainee_id, creator_id, title, scheduled_date, completed_date, completed, '
-              'total_volume, total_exercises, total_sets, plan_type, exercises, note, training_time, '
+              'total_volume, total_exercises, total_sets, plan_type, ui_plan_type, exercises, note, training_time, '
               'actual_start_time, actual_end_time, elapsed_seconds, training_status, appointment_id, '
               'created_at, updated_at')
           .single();
@@ -525,7 +526,7 @@ class WorkoutRecordOperations {
       final response = await _supabase
           .from('workout_plans')
           .select(
-              'id, title, scheduled_date, completed, completed_date, total_volume, total_exercises, total_sets, plan_type, trainee_id, creator_id, user_id, note, training_time, updated_at, created_at, exercises, appointment_id')
+              'id, title, scheduled_date, completed, completed_date, total_volume, total_exercises, total_sets, plan_type, ui_plan_type, trainee_id, creator_id, user_id, note, training_time, updated_at, created_at, exercises, appointment_id')
           .eq('trainee_id', userId)
           .order('scheduled_date', ascending: false)
           .limit(100); // 預載入最近 100 筆

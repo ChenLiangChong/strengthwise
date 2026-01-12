@@ -7,6 +7,7 @@ import 'package:strengthwise/models/workout_exercise_model.dart'
 import 'package:strengthwise/models/workout_record_model.dart';
 import 'package:strengthwise/models/exercise_model.dart';
 import 'package:strengthwise/models/tracking_mode.dart'; // v3.2+
+import 'package:strengthwise/models/workout_template/plan_type_enum.dart'; // v3.4+
 import 'package:strengthwise/services/interfaces/i_workout_service.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
@@ -78,19 +79,8 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   // ⭐ v2.1: 訓練結束時間
   late DateTime _trainingEndTime;
 
-  // 訓練計畫類型（使用 PlanType 列舉 - 專業健身分類）
-  final List<String> _planTypes = [
-    '力量訓練', // 🏋️ 1-5RM，提升最大力量
-    '增肌訓練', // 💪 6-12RM，提升肌肉量
-    '減脂訓練', // 🔥 高強度循環訓練，塑形
-    '有氧訓練', // ❤️ 有氧運動，提升心肺
-    '全身訓練', // 🌟 全身協調練習，多關節
-    '上半身', // ⬆️ 上半身專項訓練
-    '下半身', // ⬇️ 下半身專項訓練
-    '核心訓練', // 🎯 核心穩定性訓練
-    '伸展恢復', // 🧘 伸展運動，促進恢復
-    '自訂', // 📝 自訂訓練計劃
-  ];
+  // ⭐ v3.4: 使用統一的訓練計畫類型列表
+  List<String> get _planTypes => PlanTypeExtension.uiOptions;
 
   @override
   void initState() {
@@ -341,6 +331,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           createdAt: DateTime.now(),
           trainingEndTime: _trainingEndTime, // ⭐ v2.1: 訓練結束時間
           appointmentId: widget.appointmentId, // ⭐ v3.1: Session Mode 關聯預約 ID
+          planType: _selectedPlanType, // ⭐ v3.4: 訓練計畫類型
         );
 
         await _workoutService.createRecord(newRecord);

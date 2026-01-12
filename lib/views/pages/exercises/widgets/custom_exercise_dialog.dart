@@ -178,7 +178,7 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
       value: _selectedTrainingType,
       isExpanded: true, // ⭐ v3.1.1: 展開以避免文字截斷
       decoration: const InputDecoration(
-        labelText: '訓練類型 *',
+        labelText: '動作類型 *',
         border: OutlineInputBorder(),
         helperText: '用於分類和篩選',
       ),

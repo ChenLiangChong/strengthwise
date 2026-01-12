@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/models/health_assessment/injury_record.dart';
+import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/services/interfaces/i_injury_coach_note_service.dart';
+import 'package:strengthwise/models/injury_coach_note_model.dart';
 
 /// 健康評估完整詳情頁面
 ///
 /// 顯示健康評估的所有欄位詳細資訊
 /// 共用於教練端和學員端
-class HealthAssessmentDetailPage extends StatelessWidget {
+class HealthAssessmentDetailPage extends StatefulWidget {
   final HealthAssessmentModel assessment;
   final String? userName; // 顯示用（可選）
 
@@ -17,6 +20,57 @@ class HealthAssessmentDetailPage extends StatelessWidget {
     required this.assessment,
     this.userName,
   });
+
+  @override
+  State<HealthAssessmentDetailPage> createState() =>
+      _HealthAssessmentDetailPageState();
+}
+
+class _HealthAssessmentDetailPageState
+    extends State<HealthAssessmentDetailPage> {
+  late final IInjuryCoachNoteService _injuryNoteService;
+
+  // ⭐ v3.4: 傷病教練備註快取（Map<injurySite, List<InjuryCoachNoteModel>>）
+  Map<String, List<InjuryCoachNoteModel>> _injuryCoachNotes = {};
+  bool _isLoadingNotes = true;
+
+  HealthAssessmentModel get assessment => widget.assessment;
+  String? get userName => widget.userName;
+
+  @override
+  void initState() {
+    super.initState();
+    _injuryNoteService = serviceLocator<IInjuryCoachNoteService>();
+    _loadInjuryCoachNotes();
+  }
+
+  /// ⭐ v3.4: 載入傷病教練備註
+  Future<void> _loadInjuryCoachNotes() async {
+    debugPrint('[HealthAssessmentDetail] 開始載入教練備註');
+    debugPrint('[HealthAssessmentDetail] assessment.userId = ${assessment.userId}');
+    debugPrint('[HealthAssessmentDetail] injuries = ${assessment.injuries.map((e) => e.site).toList()}');
+    
+    try {
+      final notes = await _injuryNoteService.getNotesForClient(
+        clientId: assessment.userId,
+      );
+      debugPrint('[HealthAssessmentDetail] 載入完成，共 ${notes.length} 個部位有備註');
+      for (final entry in notes.entries) {
+        debugPrint('[HealthAssessmentDetail]   - ${entry.key}: ${entry.value.length} 個備註');
+      }
+      if (mounted) {
+        setState(() {
+          _injuryCoachNotes = notes;
+          _isLoadingNotes = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('[HealthAssessmentDetail] 載入教練備註失敗: $e');
+      if (mounted) {
+        setState(() => _isLoadingNotes = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -284,63 +338,134 @@ class HealthAssessmentDetailPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: assessment.injuries.map((injury) {
+            // ⭐ v3.4: 獲取該傷病的教練備註
+            final coachNotes = _injuryCoachNotes[injury.site] ?? [];
+
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getInjuryStatusColor(injury.status, theme)
-                          .withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      injury.status.label,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: _getInjuryStatusColor(injury.status, theme),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          injury.site,
-                          style: theme.textTheme.bodyMedium?.copyWith(
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getInjuryStatusColor(injury.status, theme)
+                              .withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          injury.status.label,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: _getInjuryStatusColor(injury.status, theme),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (injury.diagnosis != null &&
-                            injury.diagnosis!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            injury.diagnosis!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              injury.site,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
+                            if (injury.diagnosis != null &&
+                                injury.diagnosis!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                injury.diagnosis!,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                            if (injury.limitations != null &&
+                                injury.limitations!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                '限制：${injury.limitations!}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  // ⭐ v3.4: 顯示教練備註
+                  if (coachNotes.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.note_alt,
+                                size: 16,
+                                color: theme.colorScheme.primary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '教練備註',
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 8),
+                          ...coachNotes.map((note) => Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Text(
+                                  note.note,
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              )),
                         ],
-                        if (injury.limitations != null &&
-                            injury.limitations!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            '限制：${injury.limitations!}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.error,
-                            ),
+                      ),
+                    ),
+                  ] else if (_isLoadingNotes) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: theme.colorScheme.outline,
                           ),
-                        ],
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '載入教練備註...',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
                       ],
                     ),
-                  ),
+                  ],
                 ],
               ),
             );

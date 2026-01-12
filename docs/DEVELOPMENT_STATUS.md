@@ -2,33 +2,42 @@
 
 > 下一步計劃、當前版本、未來規劃
 
-**當前版本**：v3.3（2026-01-12 完成）  
-**上一版本**：v3.2（2026-01-12 完成）  
+**當前版本**：v3.4（2026-01-12 完成）  
+**上一版本**：v3.3（2026-01-12 完成）  
 **維護者**：StrengthWise 開發團隊
 
 ---
 
 ## 📋 目錄
 
-- [v3.3 已完成](#v33-已完成)
+- [v3.4 已完成](#v34-已完成)
 - [未來計劃](#未來計劃)
 - [已完成功能](#已完成功能)
 
 ---
 
-## v3.3 已完成
+## v3.4 已完成
 
-> TrackingMode 統計適配 + PR 修復 + Migrations 整理
+> 傷病教練備註顯示修復 + 模板儲存優化
 
 ### 完成項目
 
 | 項目 | 說明 |
 |------|------|
-| ✅ 力量進步頁面適配 | 非重訓動作只顯示歷史記錄列表 |
-| ✅ PR DELETE 觸發器 | 刪除訓練計劃時重新計算 PR |
-| ✅ exerciseId 格式修復 | 修正異常的 UUID 格式為 Firestore ID |
-| ✅ Migrations 整理 | 48 → 32 文件（22 演進版 + 10 精簡版）|
-| ✅ Python 腳本清理 | 刪除 9 個一次性工具腳本 |
+| ✅ 傷病教練備註顯示 | 學員端健康評估摘要卡片正確顯示教練備註 |
+| ✅ 訓練計畫類型統一 | 新增「綜合訓練」，統一 11 種計畫類型 |
+| ✅ 模板儲存 TrackingMode | 儲存模板時保留動作的 TrackingMode |
+| ✅ 教練動作匯入 | 儲存模板時自動替換為用戶自建動作 ID |
+
+### 修改檔案
+
+| 檔案 | 說明 |
+|------|------|
+| `health_assessment_tab.dart` | Session Mode 健康評估 Tab 載入傷病備註 |
+| `my_health_assessment_page.dart` | 學員健康評估頁面載入傷病備註 |
+| `workout_execution_content.dart` | 儲存模板時保留 TrackingMode |
+| `plan_type_enum.dart` | 新增 `mixed` 類型，統一 uiOptions |
+| `template_editor_page.dart` | 動態顯示各 TrackingMode 動作摘要 |
 
 ---
 
@@ -69,7 +78,8 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 | v3.0 | 預約系統優化、Session Mode、響應式 UI、FCM 推播 |
 | v3.1 | Session Mode 完善、性能優化、首頁 UX、離線提示 |
 | v3.2 | Coach Mark Onboarding、TrackingMode 擴充、Web PWA |
-| **v3.3** | **TrackingMode 統計適配、PR 修復、Migrations 整理** |
+| v3.3 | TrackingMode 統計適配、PR 修復、Migrations 整理 |
+| **v3.4** | **傷病教練備註顯示、模板儲存優化** |
 
 **詳細版本歷史**：[archived/VERSION_HISTORY.md](archived/VERSION_HISTORY.md)  
 **技術架構**：[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)  
@@ -81,7 +91,7 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 
 | 項目 | 狀態 |
 |------|------|
-| v1.0-v3.3 | ✅ 100% |
+| v1.0-v3.4 | ✅ 100% |
 | 代碼品質 | ✅ 0 linter errors |
 
 **下一步重點**：
@@ -90,7 +100,7 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 
 ---
 
-> ✅ **v3.3 完成**（2026-01-12）：TrackingMode 適配 + PR 修復 + Migrations 整理
+> ✅ **v3.4 完成**（2026-01-12）：傷病教練備註顯示 + 模板儲存優化
 >
 > 📱 **Google Play**：內部測試已發布（v1.0.0），等待 Google 審核
 >

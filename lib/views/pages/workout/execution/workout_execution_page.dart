@@ -102,13 +102,42 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                   return const SizedBox.shrink();
                 }
 
-                return IconButton(
-                  icon: Icon(isCompleted ? Icons.check : Icons.save),
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    _completeTraining();
-                  },
-                  tooltip: isCompleted ? '完成' : '保存並離開',
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 完成/保存按鈕
+                    IconButton(
+                      icon: Icon(isCompleted ? Icons.check : Icons.save),
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        _completeTraining();
+                      },
+                      tooltip: isCompleted ? '完成' : '保存並離開',
+                    ),
+                    // 更多選項
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert),
+                      tooltip: '更多選項',
+                      onSelected: (value) async {
+                        if (value == 'save_as_template') {
+                          HapticFeedback.lightImpact();
+                          await contentState.saveAsTemplate();
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem<String>(
+                          value: 'save_as_template',
+                          child: Row(
+                            children: [
+                              Icon(Icons.bookmark_add_outlined),
+                              SizedBox(width: 12),
+                              Text('儲存為模板'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 );
               },
             ),

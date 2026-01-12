@@ -95,7 +95,20 @@ class WorkoutRecordFactory {
       trainingStatus: json['training_status'] as String? ?? 'pending',
       // ⭐ v3.1: Session Mode 關聯預約 ID
       appointmentId: json['appointment_id'] as String?,
+      // ⭐ v3.4: 訓練計畫類型（優先使用 ui_plan_type）
+      planType: json['ui_plan_type'] as String? ?? _mapPlanTypeToUiType(json['plan_type'] as String?),
     );
+  }
+
+  /// 將舊的 plan_type 值映射到 UI 顯示類型
+  static String? _mapPlanTypeToUiType(String? planType) {
+    if (planType == null) return null;
+    // 舊值是來源類型，不是訓練類型，返回 null 讓 controller 使用預設值
+    if (planType == 'self' || planType == 'personal' || planType == 'trainer') {
+      return null;
+    }
+    // 如果是有效的訓練類型，直接返回
+    return planType;
   }
 
   /// 從訓練計畫創建新的訓練記錄
@@ -134,6 +147,8 @@ class WorkoutRecordFactory {
       completed: false,
       createdAt: DateTime.now(),
       trainingTime: trainingTime,
+      // ⭐ v3.4: 訓練計畫類型
+      planType: planData['planType'] as String? ?? planData['plan_type'] as String?,
     );
   }
 
@@ -156,6 +171,8 @@ class WorkoutRecordFactory {
       'actualEndTime': record.actualEndTime?.millisecondsSinceEpoch,
       'elapsedSeconds': record.elapsedSeconds,
       'trainingStatus': record.trainingStatus,
+      // ⭐ v3.4: 訓練計畫類型
+      'planType': record.planType,
     };
   }
 }

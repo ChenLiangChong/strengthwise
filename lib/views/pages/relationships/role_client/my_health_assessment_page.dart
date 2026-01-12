@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
+import 'package:strengthwise/models/injury_coach_note_model.dart'; // ⭐ v3.4
 import 'package:strengthwise/services/interfaces/i_health_assessment_service.dart';
+import 'package:strengthwise/services/interfaces/i_injury_coach_note_service.dart'; // ⭐ v3.4
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/profile/health_assessment_detail_page.dart';
@@ -30,14 +32,17 @@ class MyHealthAssessmentPage extends StatefulWidget {
 
 class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
   late final IHealthAssessmentService _healthAssessmentService;
+  late final IInjuryCoachNoteService _injuryNoteService; // ⭐ v3.4
 
   HealthAssessmentModel? _healthAssessment;
+  Map<String, List<InjuryCoachNoteModel>> _injuryCoachNotes = {}; // ⭐ v3.4
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _healthAssessmentService = serviceLocator<IHealthAssessmentService>();
+    _injuryNoteService = serviceLocator<IInjuryCoachNoteService>(); // ⭐ v3.4
     _loadHealthAssessment();
   }
 
@@ -54,9 +59,22 @@ class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
         widget.userId,
       );
 
+      // ⭐ v3.4: 載入傷病教練備註
+      Map<String, List<InjuryCoachNoteModel>> injuryNotes = {};
+      if (assessment != null) {
+        try {
+          injuryNotes = await _injuryNoteService.getNotesForClient(
+            clientId: assessment.userId,
+          );
+        } catch (e) {
+          debugPrint('載入傷病備註失敗: $e');
+        }
+      }
+
       if (mounted) {
         setState(() {
           _healthAssessment = assessment;
+          _injuryCoachNotes = injuryNotes; // ⭐ v3.4
           _isLoading = false;
         });
       }
@@ -135,6 +153,7 @@ class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
                 if (_healthAssessment != null)
                   HealthAssessmentSummaryCard(
                     assessment: _healthAssessment!,
+                    injuryCoachNotes: _injuryCoachNotes, // ⭐ v3.4: 傷病教練備註
                     onViewFull: () {
                       Navigator.push(
                         context,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:strengthwise/models/injury_coach_note_model.dart';
 import 'package:strengthwise/services/interfaces/i_injury_coach_note_service.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
@@ -26,6 +27,9 @@ class InjuryCoachNoteServiceSupabase implements IInjuryCoachNoteService {
   Future<Map<String, List<InjuryCoachNoteModel>>> getNotesForClient({
     required String clientId,
   }) async {
+    debugPrint('[InjuryCoachNoteService] getNotesForClient: clientId=$clientId');
+    debugPrint('[InjuryCoachNoteService] 當前用戶: ${_supabase.auth.currentUser?.id}');
+    
     try {
       final response = await _supabase
           .from('injury_coach_notes')
@@ -33,6 +37,8 @@ class InjuryCoachNoteServiceSupabase implements IInjuryCoachNoteService {
           .eq('client_id', clientId)
           .order('injury_site')
           .order('updated_at', ascending: false);
+
+      debugPrint('[InjuryCoachNoteService] 查詢結果: ${(response as List).length} 筆');
 
       final notes = (response as List)
           .map((json) => InjuryCoachNoteModel.fromSupabase(json))
@@ -46,6 +52,7 @@ class InjuryCoachNoteServiceSupabase implements IInjuryCoachNoteService {
 
       return grouped;
     } catch (e) {
+      debugPrint('[InjuryCoachNoteService] 查詢失敗: $e');
       _errorService.logError(
         '取得學員傷病備註失敗: $e',
         type: 'InjuryCoachNoteServiceError',

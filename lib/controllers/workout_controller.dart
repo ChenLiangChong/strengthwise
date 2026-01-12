@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/workout_template_model.dart';
 import '../models/workout_record_model.dart';
+import '../models/workout_record/exercise_record.dart';
 import '../services/interfaces/i_workout_service.dart';
 import '../services/core/error_handling_service.dart';
 import '../services/service_locator.dart' show serviceLocator;
@@ -184,6 +185,57 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
       return result;
     } catch (e) {
       _handleError('創建訓練模板失敗', e);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<WorkoutTemplate> saveRecordAsTemplate({
+    required List<ExerciseRecord> exerciseRecords,
+    required String templateName,
+    required String planType,
+    String description = '',
+  }) async {
+    if (!_isInitialized) await _initialize();
+
+    // 輸入驗證
+    if (templateName.trim().isEmpty) {
+      throw ArgumentError('模板名稱不能為空');
+    }
+    if (exerciseRecords.isEmpty) {
+      throw ArgumentError('至少需要一個訓練動作');
+    }
+
+    try {
+      _setLoading(true);
+      clearError();
+
+      // 轉換 ExerciseRecord 為 WorkoutExercise
+      final exercises = exerciseRecords
+          .map((record) => record.toWorkoutExercise())
+          .toList();
+
+      // 創建模板
+      final template = WorkoutTemplate(
+        id: '', // 由 Service 層生成
+        userId: '', // 由 Service 層填入當前用戶 ID
+        title: templateName.trim(),
+        description: description,
+        planType: planType,
+        exercises: exercises,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      final result = await _workoutService.createTemplate(template);
+
+      // 更新緩存
+      _cacheManager.addTemplateToCache(result);
+
+      _setLoading(false);
+      return result;
+    } catch (e) {
+      _handleError('儲存為模板失敗', e);
       rethrow;
     }
   }
