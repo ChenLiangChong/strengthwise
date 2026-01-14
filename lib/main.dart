@@ -309,18 +309,25 @@ class MyApp extends StatelessWidget {
         builder: (context, themeController, child) {
           // ⚡ 優化：不等待主題載入，使用默認主題先渲染 UI
           // 主題載入完成後會自動更新
+
+          // 獲取系統亮度以支援 system 模式
+          final platformBrightness = MediaQuery.platformBrightnessOf(context);
+
+          // 根據 AppThemeMode 獲取對應的 ThemeData
+          final currentTheme = themeController.isInitialized
+              ? themeController.getThemeData(platformBrightness)
+              : _buildLightTheme();
+
           return MaterialApp(
             title: 'StrengthWise',
             debugShowCheckedModeBanner: false,
 
             // ========================================
-            // Kinetic 設計系統主題
+            // Kinetic 設計系統主題（支援粉色主題 🌸）
             // ========================================
-            theme: _buildLightTheme(),
-            darkTheme: _buildDarkTheme(),
-            themeMode: themeController.isInitialized
-                ? themeController.themeMode
-                : ThemeMode.light, // 默認使用淺色主題
+            // 使用單一 theme 屬性，由 ThemeController 決定主題
+            theme: _applyGoogleFonts(currentTheme),
+            // 不使用 themeMode，因為我們有自訂的 AppThemeMode
 
             // ========================================
             // 無障礙字體縮放限制 + 全局離線提示
@@ -395,6 +402,52 @@ class MyApp extends StatelessWidget {
           color: baseTheme.colorScheme.onSurface,
         ),
         // Label Large - 用於按鈕文字
+        labelLarge: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 1.25,
+          color: baseTheme.colorScheme.onSurface,
+        ),
+      ),
+    );
+  }
+
+  /// 應用 Google Fonts 到任意主題
+  ///
+  /// 通用方法，可用於 Light、Dark、Rose 等任何主題
+  ThemeData _applyGoogleFonts(ThemeData baseTheme) {
+    return baseTheme.copyWith(
+      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme).copyWith(
+        displayLarge: GoogleFonts.inter(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          letterSpacing: -1.0,
+          color: baseTheme.colorScheme.onSurface,
+        ),
+        headlineMedium: GoogleFonts.inter(
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.5,
+          color: baseTheme.colorScheme.onSurface,
+        ),
+        titleMedium: GoogleFonts.inter(
+          fontSize: 18,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.15,
+          color: baseTheme.colorScheme.onSurface,
+        ),
+        bodyLarge: GoogleFonts.inter(
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 0.5,
+          color: baseTheme.colorScheme.onSurface,
+        ),
+        bodyMedium: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 0.25,
+          color: baseTheme.colorScheme.onSurface,
+        ),
         labelLarge: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w500,

@@ -44,6 +44,35 @@ class AppTheme {
       Color(0xFFEF4444); // [決策] Tailwind Red-500 - 激情警示
 
   // ---------------------------------------------------------------------------
+  // Rose Theme Colors (UI/UX Pro Max 推薦配色)
+  // ---------------------------------------------------------------------------
+  // 基於 Beauty/Spa/Wellness 產品類型：Soft pastels + Cream + Gold accents
+
+  /// Rose 主色 - 快捷按鈕背景（primaryContainer，略深於背景）
+  static const Color rosePrimary = Color(0xFFFCE7F3);
+
+  /// Rose 輔助色 - 與主色相同（按鈕、選擇日期等）
+  static const Color roseSecondary = Color(0xFFF472B6);
+
+  /// Rose 背景色 - 淡玫瑰奶油
+  static const Color roseBackground = Color(0xFFFFF5F7);
+
+  /// Rose 主要文字 - Deep Rose Brown
+  static const Color roseOnSurface = Color(0xFF4A1A2A);
+
+  /// Rose 次要文字 - Muted Rose
+  static const Color roseOnSurfaceVariant = Color(0xFF9D4E6E);
+
+  /// Rose 邊框 - Blush Pink
+  static const Color roseOutline = Color(0xFFFED7E2);
+
+  /// Rose 點綴色 - Gold/Cream accent
+  static const Color roseAccent = Color(0xFFD4A574);
+
+  /// Rose Primary Container - 柔和粉紅（Banner 背景）
+  static const Color rosePrimaryDark = Color(0xFFF472B6);
+
+  // ---------------------------------------------------------------------------
   // 2. 8 點網格間距系統 (8-Point Grid)
   // ---------------------------------------------------------------------------
 
@@ -399,7 +428,173 @@ class AppTheme {
   }
 
   // ---------------------------------------------------------------------------
-  // 5. 輔助方法
+  // 5. 粉色主題 (Rose Theme) 🌸
+  // ---------------------------------------------------------------------------
+
+  /// 粉色模式主題
+  ///
+  /// 基於 UI/UX Pro Max 推薦的 Beauty/Spa/Wellness 配色
+  /// Soft pastels (Pink) + Cream + Gold accents
+  /// 適合女性用戶的柔和視覺體驗
+  static ThemeData get roseTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: roseBackground,
+
+      colorScheme: const ColorScheme(
+        brightness: Brightness.light,
+
+        // Primary - Light Pink
+        primary: rosePrimaryDark, // 使用較深的粉紅作為主色以確保對比度
+        onPrimary: Colors.white,
+        primaryContainer: rosePrimary,
+        onPrimaryContainer: roseOnSurface,
+
+        // Secondary - Warm Pink
+        secondary: roseSecondary,
+        onSecondary: roseOnSurface,
+        secondaryContainer: Color(0xFFFCE7F3), // Pink-100
+        onSecondaryContainer: roseOnSurface,
+
+        // Tertiary - Gold accent
+        tertiary: roseAccent,
+        onTertiary: Colors.white,
+        tertiaryContainer: Color(0xFFFEF3C7), // Amber-100
+        onTertiaryContainer: Color(0xFF78350F), // Amber-900
+
+        // Error - 保持紅色
+        error: errorRed,
+        onError: Colors.white,
+        errorContainer: Color(0xFFFEE2E2),
+        onErrorContainer: Color(0xFF991B1B),
+
+        // Surface & Background
+        surface: Colors.white,
+        onSurface: roseOnSurface,
+        onSurfaceVariant: roseOnSurfaceVariant,
+        outline: roseOutline,
+        outlineVariant: Color(0xFFFDF2F8), // Pink-50
+        surfaceContainerHighest: Color(0xFFFDF2F8),
+      ),
+
+      // ---------------------------------------------------------------------------
+      // 元件樣式覆寫 (Component Overrides)
+      // ---------------------------------------------------------------------------
+
+      // 卡片主題
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        elevation: 2,
+        shadowColor: const Color(0x0FEC4899), // 粉紅色陰影
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(color: roseOutline, width: 1),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        margin: const EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: spacingMd,
+        ),
+      ),
+
+      // AppBar 主題
+      appBarTheme: const AppBarTheme(
+        backgroundColor: roseBackground,
+        foregroundColor: roseOnSurface,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          color: roseOnSurface,
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
+          letterSpacing: -0.5,
+        ),
+      ),
+
+      // 輸入框主題
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(inputBorderRadius),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(inputBorderRadius),
+          borderSide: const BorderSide(color: roseOutline, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(inputBorderRadius),
+          borderSide: const BorderSide(color: rosePrimaryDark, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(inputBorderRadius),
+          borderSide: const BorderSide(color: errorRed, width: 1),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: spacingMd,
+        ),
+      ),
+
+      // 按鈕主題
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size.fromHeight(minTouchTarget),
+          padding: const EdgeInsets.symmetric(
+            horizontal: spacingMd,
+            vertical: 12,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(buttonBorderRadius),
+          ),
+          elevation: 0,
+        ),
+      ),
+
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          minimumSize: const Size.fromHeight(minTouchTarget),
+          padding: const EdgeInsets.symmetric(
+            horizontal: spacingMd,
+            vertical: 12,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(buttonBorderRadius),
+          ),
+        ),
+      ),
+
+      // FloatingActionButton 主題
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+
+      // 底部導航欄主題
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        selectedItemColor: rosePrimaryDark,
+        unselectedItemColor: roseOnSurfaceVariant,
+        type: BottomNavigationBarType.fixed,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+      ),
+
+      // Divider 主題
+      dividerTheme: const DividerThemeData(
+        color: roseOutline,
+        thickness: 1,
+        space: 1,
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // 6. 輔助方法
   // ---------------------------------------------------------------------------
 
   /// 根據亮度獲取對應主題

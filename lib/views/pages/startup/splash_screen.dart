@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/services/interfaces/i_user_service.dart'; // ⭐ v3.4
 import 'package:strengthwise/views/pages/auth/login_page.dart';
 import 'package:strengthwise/views/pages/home/main_home_page.dart';
+import 'package:strengthwise/views/pages/profile/profile_settings_page.dart'; // ⭐ v3.4
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -32,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     // ⚡ 第一次嘗試：立即導航（如果 Auth 已就緒）
-    if (_tryNavigate()) {
+    if (await _tryNavigate()) {
       debugPrint('[SPLASH] ⚡ 立即導航成功');
       return;
     }
@@ -53,7 +55,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     // ⚡ 第二次嘗試：服務應該已就緒
-    if (_tryNavigate()) {
+    if (await _tryNavigate()) {
       debugPrint('[SPLASH] ✅ 服務就緒後導航成功');
       return;
     }
@@ -78,12 +80,30 @@ class _SplashScreenState extends State<SplashScreen> {
   /// 嘗試導航到下一個畫面
   ///
   /// 返回 true 表示成功導航，false 表示需要重試
-  bool _tryNavigate() {
+  /// ⭐ v3.4: 改為異步，加入 isProfileCompleted 檢查（修復 Web 首次登入跳過設定問題）
+  Future<bool> _tryNavigate() async {
     try {
       final authController = serviceLocator<IAuthController>();
-      final targetPage = authController.isLoggedIn
-          ? const MainHomePage()
-          : const LoginPage();
+      
+      Widget targetPage;
+      
+      if (authController.isLoggedIn) {
+        // ⭐ v3.4: 檢查是否完成個人資料設置
+        final userService = serviceLocator<IUserService>();
+        final isProfileCompleted = await userService.isProfileCompleted();
+        
+        if (!isProfileCompleted) {
+          // 首次登入，跳轉到個人資料設定頁面
+          targetPage = const ProfileSettingsPage(isFirstTimeSetup: true);
+          debugPrint('[SPLASH] 📝 首次登入，導向個人資料設定');
+        } else {
+          targetPage = const MainHomePage();
+        }
+      } else {
+        targetPage = const LoginPage();
+      }
+
+      if (!mounted) return false;
 
       // ⚡ v3.1.1: 使用淡入淡出動畫，避免卡頓感
       Navigator.of(context).pushReplacement(

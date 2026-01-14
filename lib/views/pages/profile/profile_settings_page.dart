@@ -402,10 +402,23 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     return ChangeNotifierProvider<ProfileController>.value(
       value: _controller,
       // ⭐ v3.1-B: 攔截返回操作，自動保存
+      // ⭐ v3.4: 首次設定時禁止返回（避免黑屏）
       child: PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
+          
+          // 首次設定時，提示用戶必須完成
+          if (widget.isFirstTimeSetup) {
+            if (mounted) {
+              NotificationUtils.showWarning(
+                context,
+                '請先完成個人資料設定',
+              );
+            }
+            return;
+          }
+          
           await _autoSaveAndPop();
         },
         child: Scaffold(

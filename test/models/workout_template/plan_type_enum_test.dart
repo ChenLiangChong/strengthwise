@@ -20,11 +20,12 @@ void main() {
         expect(PlanType.values, contains(PlanType.lowerBody));
         expect(PlanType.values, contains(PlanType.core));
         expect(PlanType.values, contains(PlanType.flexibility));
+        expect(PlanType.values, contains(PlanType.mixed));
         expect(PlanType.values, contains(PlanType.custom));
       });
 
-      test('共有 10 種類型', () {
-        expect(PlanType.values.length, 10);
+      test('共有 11 種類型', () {
+        expect(PlanType.values.length, 11);
       });
     });
 
