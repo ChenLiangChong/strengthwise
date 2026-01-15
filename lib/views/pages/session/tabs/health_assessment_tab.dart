@@ -1,14 +1,13 @@
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/session_mode_controller.dart';
+import 'package:strengthwise/controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/coach_profile_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
 import 'package:strengthwise/models/coach_display_preferences_model.dart';
 import 'package:strengthwise/models/coach_assessment_note_model.dart';
 import 'package:strengthwise/models/injury_coach_note_model.dart'; // ⭐ v3.4
-import 'package:strengthwise/services/interfaces/i_health_assessment_service.dart';
-import 'package:strengthwise/services/interfaces/i_coach_display_preferences_service.dart';
-import 'package:strengthwise/services/interfaces/i_coach_assessment_note_service.dart';
-import 'package:strengthwise/services/interfaces/i_injury_coach_note_service.dart'; // ⭐ v3.4
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/profile/health_assessment_detail_page.dart';
@@ -30,10 +29,9 @@ class HealthAssessmentTab extends StatefulWidget {
 }
 
 class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
-  late final IHealthAssessmentService _healthAssessmentService;
-  late final ICoachDisplayPreferencesService _preferencesService;
-  late final ICoachAssessmentNoteService _assessmentNoteService;
-  late final IInjuryCoachNoteService _injuryNoteService; // ⭐ v3.4
+  // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
+  late final ProfileController _profileController;
+  late final CoachProfileController _coachProfileController;
   late final IAuthController _authController;
 
   HealthAssessmentModel? _healthAssessment;
@@ -48,10 +46,8 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
   @override
   void initState() {
     super.initState();
-    _healthAssessmentService = serviceLocator<IHealthAssessmentService>();
-    _preferencesService = serviceLocator<ICoachDisplayPreferencesService>();
-    _assessmentNoteService = serviceLocator<ICoachAssessmentNoteService>();
-    _injuryNoteService = serviceLocator<IInjuryCoachNoteService>(); // ⭐ v3.4
+    _profileController = serviceLocator<ProfileController>(); // ⭐ v3.6: MVVM
+    _coachProfileController = serviceLocator<CoachProfileController>(); // ⭐ v3.6: MVVM
     _authController = serviceLocator<IAuthController>();
 
     // 延遲載入，等待 context 可用
@@ -80,12 +76,13 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
     setState(() => _isLoading = true);
 
     try {
+      // ⭐ v3.6: 全部透過 Controller 查詢
       // 學員模式：取自己的評估；教練模式：取學員的評估
       final targetUserId = isCoachMode ? clientId : currentUserId;
       debugPrint('   📥 Loading health assessment for: $targetUserId');
 
       final assessment =
-          await _healthAssessmentService.getCurrentAssessment(targetUserId);
+          await _profileController.getCurrentHealthAssessment(targetUserId);
       debugPrint('   📊 Assessment result: ${assessment?.id ?? "null"}');
 
       // 教練模式才載入偏好和備註
@@ -94,13 +91,13 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
 
       if (isCoachMode) {
         final futures = <Future>[];
-        futures.add(_preferencesService.getPreferences(currentUserId).then((p) {
+        futures.add(_coachProfileController.getDisplayPreferences(currentUserId).then((p) {
           preferences = p;
         }));
 
         if (assessment != null) {
-          futures.add(_assessmentNoteService
-              .getNote(coachId: currentUserId, assessmentId: assessment.id)
+          futures.add(_profileController
+              .getCoachAssessmentNote(coachId: currentUserId, assessmentId: assessment.id)
               .then((n) {
             note = n;
           }));
@@ -113,8 +110,8 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
       Map<String, List<InjuryCoachNoteModel>> injuryNotes = {};
       if (assessment != null) {
         try {
-          injuryNotes = await _injuryNoteService.getNotesForClient(
-            clientId: assessment.userId,
+          injuryNotes = await _profileController.getInjuryCoachNotes(
+            assessment.userId,
           );
           debugPrint('   💬 Loaded injury notes: ${injuryNotes.length} sites');
         } catch (e) {
@@ -295,12 +292,13 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
   }
 
   /// 儲存教練備註
+  /// ⭐ v3.6: 透過 Controller 操作
   Future<void> _saveCoachNote(String note) async {
     final coachId = _coachId;
     if (coachId == null || _healthAssessment == null) return;
 
     try {
-      await _assessmentNoteService.upsertNote(
+      await _profileController.upsertCoachAssessmentNote(
         coachId: coachId,
         assessmentId: _healthAssessment!.id,
         notes: note,

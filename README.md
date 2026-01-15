@@ -8,7 +8,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Latest-3ECF8E?logo=supabase)](https://supabase.com/)
 [![Dart](https://img.shields.io/badge/Dart-3.1+-0175C2?logo=dart)](https://dart.dev/)
 
-**最新版本**：v3.1（2026-01-08）✅  
+**最新版本**：v3.6（2026-01-15）✅  
 **專案狀態**：🚀 生產就緒 (Production Ready)
 
 ---
@@ -367,6 +367,37 @@ strengthwise/
 ---
 
 ## 🗺️ 版本歷程
+
+### 🎉 v3.6 - MVVM 純架構重構（2026-01-15）✅
+
+- ✅ View 層完全透過 Controller 操作（CUD + Query）
+- ✅ 60+ 個 View 檔案重構，移除直接 Service 調用
+- ✅ Controller 介面擴展，新增純查詢方法
+- ✅ MVVM 架構 100% 合規
+
+### 🎉 v3.5 - MVVM CUD 事件修復（2026-01-15）✅
+
+- ✅ View 層 CUD 操作改為透過 Controller
+- ✅ 事件由 Controller 統一發布（AppEventBus）
+- ✅ 13 個 View 檔案的 Service 調用修復
+
+### 🎉 v3.4 - 傷病教練備註顯示 + 模板儲存優化（2026-01-12）✅
+
+- ✅ 學員端健康評估摘要卡片正確顯示教練備註
+- ✅ 新增「綜合訓練」計畫類型，統一 11 種計畫類型
+- ✅ 儲存模板時保留動作的 TrackingMode
+
+### 🎉 v3.3 - TrackingMode 統計適配 + PR 修復（2026-01-12）✅
+
+- ✅ 力量進步頁面適配：非重訓動作只顯示歷史記錄列表
+- ✅ PR DELETE 觸發器修復
+- ✅ Migrations 整理：48 → 32 個檔案
+
+### 🎉 v3.2 - Coach Mark + TrackingMode + Web PWA（2026-01-12）✅
+
+- ✅ Coach Mark 情境式 Onboarding（11 個頁面引導）
+- ✅ TrackingMode 擴充（8 種追蹤模式）
+- ✅ Web PWA 支援（manifest.json + serviceWorker）
 
 ### 🎉 v3.1 - Session Mode 完善 + 首頁行事曆 UX（2026-01-08）✅
 

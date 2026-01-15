@@ -8,6 +8,7 @@ import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/controllers/availability_slot_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/controllers/appointment_controller.dart';
+import 'package:strengthwise/controllers/event_bus_controller.dart'; // ⭐ v3.5
 import 'package:strengthwise/models/availability_slot_model.dart';
 import 'package:strengthwise/models/appointment_model.dart';
 import 'package:strengthwise/services/interfaces/i_availability_slot_service.dart';
@@ -51,6 +52,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
   late final AvailabilitySlotController _slotController;
   late final IAuthController _authController;
   late final AppointmentController _appointmentController;
+  late final EventBusController _eventBusController; // ⭐ v3.5
 
   String? _currentUserId;
   DateTime _selectedDate = DateTime.now();
@@ -66,6 +68,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
     _slotController = serviceLocator<AvailabilitySlotController>();
     _authController = serviceLocator<IAuthController>();
     _appointmentController = serviceLocator<AppointmentController>();
+    _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.5
     _initializeAndLoad();
     
     // ⭐ v3.2: 檢查 Coach Mark 引導
@@ -231,6 +234,12 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
 
       if (mounted) {
         if (success) {
+          // ⭐ v3.5: 發布預約創建事件（觸發首頁、行事曆自動刷新）
+          _eventBusController.publishAppointmentCreated(
+            appointmentId: '', // 實際 ID 由後端生成
+            coachId: widget.coachId!,
+            clientId: _currentUserId!,
+          );
           _showSuccess('預約成功！等待教練確認');
           await _loadSlots();
         } else {

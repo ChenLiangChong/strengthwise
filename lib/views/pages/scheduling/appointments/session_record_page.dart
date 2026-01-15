@@ -1,4 +1,5 @@
 // ✅ 已響應式改造 (Phase 0)
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/models/appointment_model.dart';
@@ -6,9 +7,9 @@ import 'package:strengthwise/models/workout_record/workout_record.dart';
 import 'package:strengthwise/models/session_note/session_note_model.dart';
 import 'package:strengthwise/models/readiness/daily_readiness_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/services/interfaces/i_workout_service.dart';
-import 'package:strengthwise/services/interfaces/i_session_note_service.dart';
-import 'package:strengthwise/services/interfaces/i_readiness_service.dart';
+import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/session_note_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/appointment_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/views/pages/session/widgets/readiness_card.dart';
 
@@ -32,9 +33,10 @@ class SessionRecordPage extends StatefulWidget {
 }
 
 class _SessionRecordPageState extends State<SessionRecordPage> {
-  late final IWorkoutService _workoutService;
-  late final ISessionNoteService _sessionNoteService;
-  late final IReadinessService _readinessService;
+  // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
+  late final IWorkoutController _workoutController;
+  late final SessionNoteController _sessionNoteController;
+  late final AppointmentController _appointmentController;
   late final ErrorHandlingService _errorService;
 
   bool _isLoading = true;
@@ -45,9 +47,9 @@ class _SessionRecordPageState extends State<SessionRecordPage> {
   @override
   void initState() {
     super.initState();
-    _workoutService = serviceLocator<IWorkoutService>();
-    _sessionNoteService = serviceLocator<ISessionNoteService>();
-    _readinessService = serviceLocator<IReadinessService>();
+    _workoutController = serviceLocator<IWorkoutController>();
+    _sessionNoteController = serviceLocator<SessionNoteController>();
+    _appointmentController = serviceLocator<AppointmentController>();
     _errorService = serviceLocator<ErrorHandlingService>();
     _loadData();
   }
@@ -56,15 +58,16 @@ class _SessionRecordPageState extends State<SessionRecordPage> {
     setState(() => _isLoading = true);
 
     try {
+      // ⭐ v3.6: 全部透過 Controller 查詢
       // 1. 載入訓練記錄
       if (widget.appointment.workoutPlanId != null) {
-        _workoutRecord = await _workoutService.getRecordById(
+        _workoutRecord = await _workoutController.getRecordById(
           widget.appointment.workoutPlanId!,
         );
       }
 
       // 2. 載入課程筆記（只載入分享的）
-      final notes = await _sessionNoteService.getNotesByAppointment(
+      final notes = await _sessionNoteController.getNotesByAppointment(
         appointmentId: widget.appointment.id,
       );
       // 學員只能看到 visibility = 'shared' 的記錄（RLS 會過濾）
@@ -73,7 +76,7 @@ class _SessionRecordPageState extends State<SessionRecordPage> {
       }
 
       // 3. 載入課前問卷
-      _readiness = await _readinessService.getByAppointmentId(
+      _readiness = await _appointmentController.getReadinessByAppointmentId(
         widget.appointment.id,
       );
     } catch (e) {

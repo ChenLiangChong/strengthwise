@@ -11,7 +11,7 @@ import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/notes/session_note_editor_page.dart';
 import 'package:strengthwise/views/pages/notes/drawing_viewer_page.dart';
 import 'package:strengthwise/views/pages/notes/widgets/soap_section_card.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// ⭐ v3.7: MVVM 修復 - 移除 Supabase 直接調用，透過 Controller 獲取簽名 URL
 
 /// 課程筆記詳情頁面
 ///
@@ -418,7 +418,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
                   decoration: BoxDecoration(
                     color: note.isShared
                         ? colorScheme.primaryContainer
-                        : colorScheme.surfaceVariant,
+                        : colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -592,7 +592,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
       child: ListTile(
         leading: Container(
           width: 48,
@@ -768,18 +768,23 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
     );
   }
 
-  /// 取得照片 URL（Supabase Storage Signed URL）
+  /// 取得照片 URL（透過 Controller 生成 Signed URL）
+  /// ⭐ v3.7: MVVM 修復 - 透過 Controller 取得簽名 URL
   Future<String> _getPhotoUrl(String storagePath) async {
     debugPrint('[NOTE_DETAIL] 🔗 取得照片簽名 URL');
     debugPrint('[NOTE_DETAIL] 📂 Storage 路徑: $storagePath');
     debugPrint('[NOTE_DETAIL] 📦 Bucket: session_photos');
 
     try {
-      final supabase = Supabase.instance.client;
-      // 生成 24 小時有效的 signed URL
-      final signedUrl = supabase.storage
-          .from('session_photos') // 🔧 修正：使用正確名稱，不含破折號
-          .createSignedUrl(storagePath, 86400); // 24 小時
+      // ⭐ v3.7: 透過 Controller 生成簽名 URL（不直接訪問 Supabase）
+      final signedUrl = await _controller.generateSignedUrl(
+        bucket: 'session_photos',
+        path: storagePath,
+      );
+
+      if (signedUrl == null) {
+        throw Exception('無法生成簽名 URL');
+      }
 
       debugPrint('[NOTE_DETAIL] ✅ Signed URL 生成成功');
       debugPrint('[NOTE_DETAIL] 🔗 URL: $signedUrl');

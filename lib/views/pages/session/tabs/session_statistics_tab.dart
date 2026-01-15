@@ -1,9 +1,9 @@
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/session_mode_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_statistics_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/models/statistics_model.dart';
-import 'package:strengthwise/models/statistics/time_range.dart';
-import 'package:strengthwise/services/interfaces/i_statistics_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/statistics/widgets/frequency_card.dart';
 import 'package:strengthwise/views/pages/statistics/widgets/volume_trend_chart.dart';
@@ -21,20 +21,21 @@ class SessionStatisticsTab extends StatefulWidget {
 }
 
 class _SessionStatisticsTabState extends State<SessionStatisticsTab> {
-  late final IStatisticsService _statisticsService;
+  late final IStatisticsController _statisticsController; // ⭐ v3.6: MVVM
   StatisticsData? _data;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _statisticsService = serviceLocator<IStatisticsService>();
+    _statisticsController = serviceLocator<IStatisticsController>(); // ⭐ v3.6: MVVM
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadStatistics();
     });
   }
 
+  /// ⭐ v3.6: 透過 Controller 查詢
   Future<void> _loadStatistics() async {
     final controller = context.read<SessionModeController>();
     final clientId = controller.clientId;
@@ -43,7 +44,7 @@ class _SessionStatisticsTabState extends State<SessionStatisticsTab> {
 
     try {
       // 載入最近 7 天的統計
-      final data = await _statisticsService.getStatistics(
+      final data = await _statisticsController.getStatistics(
         clientId,
         TimeRange.sevenDays,
       );

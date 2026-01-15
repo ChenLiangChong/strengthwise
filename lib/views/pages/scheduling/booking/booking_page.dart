@@ -1,4 +1,7 @@
 // ✅ v3.1-B: 訓練行事曆 - Tab 分離（我的/教練）+ SpeedDial
+// ✅ v3.5: AppEventBus 自動刷新
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
@@ -11,16 +14,18 @@ import 'package:strengthwise/models/client_availability_model.dart';
 import 'package:strengthwise/views/pages/session/session_mode_page.dart';
 import 'package:strengthwise/controllers/interfaces/i_booking_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart'; // ⭐ v3.5: MVVM
 import 'package:strengthwise/controllers/booking_controller.dart';
 import 'package:strengthwise/controllers/profile_controller.dart';
-import 'package:strengthwise/services/interfaces/i_workout_service.dart';
-import 'package:strengthwise/services/interfaces/i_coaching_relationship_service.dart';
-import 'package:strengthwise/services/interfaces/i_availability_slot_service.dart';
-import 'package:strengthwise/services/interfaces/i_client_availability_service.dart';
-import 'package:strengthwise/services/interfaces/i_appointment_service.dart';
-import 'package:strengthwise/services/interfaces/i_user_service.dart';
+import 'package:strengthwise/controllers/event_bus_controller.dart';
+import 'package:strengthwise/controllers/appointment_controller.dart'; // ⭐ v3.5: MVVM 重構
+import 'package:strengthwise/controllers/client_availability_controller.dart'; // ⭐ v3.5: MVVM
+import 'package:strengthwise/controllers/coaching_relationship_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/availability_slot_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/services/interfaces/i_availability_slot_service.dart'; // ⭐ 保留：類型定義
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
+import 'package:strengthwise/services/core/app_event_bus.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/models/appointment_model.dart';
@@ -47,15 +52,19 @@ class BookingPage extends StatefulWidget {
 class _BookingPageState extends State<BookingPage>
     with SingleTickerProviderStateMixin {
   late final IBookingController _controller;
-  late final IWorkoutService _workoutService;
+  late final IWorkoutController _workoutController; // ⭐ v3.5: MVVM
   late final IAuthController _authController;
   late final ProfileController _profileController;
-  late final ICoachingRelationshipService _relationshipService;
-  late final IAvailabilitySlotService _slotService;
-  late final IClientAvailabilityService _clientAvailabilityService;
-  late final IAppointmentService _appointmentService;
+  late final CoachingRelationshipController _relationshipController; // ⭐ v3.6: MVVM
+  late final AvailabilitySlotController _slotController; // ⭐ v3.6: MVVM
+  late final ClientAvailabilityController _clientAvailabilityController; // ⭐ v3.5: MVVM
+  late final EventBusController _eventBusController; // ⭐ v3.5
+  late final AppointmentController _appointmentController; // ⭐ v3.5: MVVM 重構
   final ErrorHandlingService _errorService =
       serviceLocator<ErrorHandlingService>();
+
+  // ⭐ v3.5: 事件訂閱
+  StreamSubscription<AppEvent>? _eventSubscription;
 
   bool _isLoading = true;
   bool _isInitialized = false;
@@ -114,13 +123,17 @@ class _BookingPageState extends State<BookingPage>
 
     // 使用注入的控制器或創建新的控制器
     _controller = widget.controller ?? BookingController();
-    _workoutService = serviceLocator<IWorkoutService>();
+    _workoutController = serviceLocator<IWorkoutController>(); // ⭐ v3.5: MVVM
     _authController = serviceLocator<IAuthController>();
     _profileController = serviceLocator<ProfileController>();
-    _relationshipService = serviceLocator<ICoachingRelationshipService>();
-    _slotService = serviceLocator<IAvailabilitySlotService>();
-    _clientAvailabilityService = serviceLocator<IClientAvailabilityService>();
-    _appointmentService = serviceLocator<IAppointmentService>();
+    _relationshipController = serviceLocator<CoachingRelationshipController>(); // ⭐ v3.6: MVVM
+    _slotController = serviceLocator<AvailabilitySlotController>(); // ⭐ v3.6: MVVM
+    _clientAvailabilityController = serviceLocator<ClientAvailabilityController>(); // ⭐ v3.5: MVVM
+    _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.5
+    _appointmentController = serviceLocator<AppointmentController>(); // ⭐ v3.5: MVVM 重構
+
+    // ⭐ v3.5: 訂閱行事曆相關事件
+    _eventSubscription = _eventBusController.calendarEvents.listen(_onAppEvent);
 
     // 確保控制器已初始化後載入數據
     _safeInitialize();
@@ -144,12 +157,12 @@ class _BookingPageState extends State<BookingPage>
             }),
             Future.delayed(const Duration(seconds: 8), () {
               if (!initializationComplete) {
-                debugPrint('[BOOKING PAGE] 控制器初始化超時(8秒)，強制繼續');
+                // debugPrint('[BOOKING PAGE] 控制器初始化超時(8秒)，強制繼續');
               }
             })
           ]);
         } catch (e) {
-          debugPrint('[BOOKING PAGE] 等待控制器初始化時發生錯誤: $e');
+          // debugPrint('[BOOKING PAGE] 等待控制器初始化時發生錯誤: $e');
           // 繼續執行，不要中斷頁面顯示
         }
       }
@@ -209,8 +222,9 @@ class _BookingPageState extends State<BookingPage>
       if (userId == null) return;
 
       // 檢查是否有教練，並保存所有教練資訊
+      // ⭐ v3.6: 透過 Controller 查詢
       final coaches =
-          await _relationshipService.getClientCoachesWithRelationship(userId);
+          await _relationshipController.getClientCoachesWithRelationship(userId);
       _hasCoach = coaches.isNotEmpty;
       _coachIds =
           coaches.where((c) => c.user != null).map((c) => c.user!.uid).toList();
@@ -219,13 +233,14 @@ class _BookingPageState extends State<BookingPage>
           c.user!.uid: c.user!.displayName ?? c.user?.email ?? '未知教練'
       };
 
-      debugPrint(
-          '[BOOKING PAGE] 🔍 用戶身份載入：isCoach=$_isCoach, hasCoach=$_hasCoach, coachIds=${_coachIds.length}個');
+      // debugPrint(
+      //     '[BOOKING PAGE] 🔍 用戶身份載入：isCoach=$_isCoach, hasCoach=$_hasCoach, coachIds=${_coachIds.length}個');
 
       // 如果是教練，載入學員列表
+      // ⭐ v3.6: 透過 Controller 查詢
       if (_isCoach) {
         final clients =
-            await _relationshipService.getCoachClientsWithRelationship(userId);
+            await _relationshipController.getCoachClientsWithRelationship(userId);
         _clientIds = clients
             .where((c) => c.user != null)
             .map((c) => c.user!.uid)
@@ -248,7 +263,7 @@ class _BookingPageState extends State<BookingPage>
         });
       }
     } catch (e) {
-      debugPrint('[BOOKING PAGE] 載入用戶身份失敗: $e');
+      // debugPrint('[BOOKING PAGE] 載入用戶身份失敗: $e');
     }
   }
 
@@ -312,8 +327,8 @@ class _BookingPageState extends State<BookingPage>
 
   /// ⭐ v3.1-B: 載入所有必要數據
   Future<void> _loadAllData() async {
-    debugPrint(
-        '[BOOKING PAGE] 🔄 _loadAllData: hasCoach=$_hasCoach, coachIds=${_coachIds.length}個, isCoach=$_isCoach, clientIds=${_clientIds.length}個');
+    // debugPrint(
+    //     '[BOOKING PAGE] 🔄 _loadAllData: hasCoach=$_hasCoach, coachIds=${_coachIds.length}個, isCoach=$_isCoach, clientIds=${_clientIds.length}個');
 
     final futures = <Future>[];
 
@@ -322,20 +337,20 @@ class _BookingPageState extends State<BookingPage>
 
     // 2. Tab 1：如果有教練，載入所有教練的可上課時段
     if (_hasCoach && _coachIds.isNotEmpty) {
-      debugPrint('[BOOKING PAGE] ✅ 將載入 ${_coachIds.length} 位教練的可上課時段');
+      // debugPrint('[BOOKING PAGE] ✅ 將載入 ${_coachIds.length} 位教練的可上課時段');
       futures.add(_loadCoachSlots());
     } else {
-      debugPrint(
-          '[BOOKING PAGE] ⚠️ 跳過載入教練時段：hasCoach=$_hasCoach, coachIds=${_coachIds.length}個');
+      // debugPrint(
+      //     '[BOOKING PAGE] ⚠️ 跳過載入教練時段：hasCoach=$_hasCoach, coachIds=${_coachIds.length}個');
     }
 
     // 3. Tab 2：如果是教練，載入學員可訓練時段
     if (_isCoach && _clientIds.isNotEmpty) {
-      debugPrint('[BOOKING PAGE] ✅ 將載入學員可訓練時段');
+      // debugPrint('[BOOKING PAGE] ✅ 將載入學員可訓練時段');
       futures.add(_loadClientAvailability());
     } else {
-      debugPrint(
-          '[BOOKING PAGE] ⚠️ 跳過載入學員時段：isCoach=$_isCoach, clientIds=${_clientIds.length}');
+      // debugPrint(
+      //     '[BOOKING PAGE] ⚠️ 跳過載入學員時段：isCoach=$_isCoach, clientIds=${_clientIds.length}');
     }
 
     // 4. 載入預約數據（保留相容性）
@@ -355,15 +370,19 @@ class _BookingPageState extends State<BookingPage>
 
       // 按日期分組（合併所有教練的時段）
       final slotsByDate = <DateTime, List<AvailabilitySlotWithBooking>>{};
+      // ignore: unused_local_variable
       int totalSlots = 0;
+      // ignore: unused_local_variable
       int bookedCount = 0;
 
       // 載入每個教練的時段
       for (final coachId in _coachIds) {
+        // ignore: unused_local_variable
         final coachName = _coachNames[coachId] ?? '未知教練';
-        debugPrint('[BOOKING PAGE] 📋 載入教練 $coachName ($coachId) 的時段...');
+        // debugPrint('[BOOKING PAGE] 📋 載入教練 $coachName ($coachId) 的時段...');
 
-        final slots = await _slotService.getAvailableSlots(
+        // ⭐ v3.6: 透過 Controller 查詢
+        final slots = await _slotController.getAvailableSlots(
           coachId: coachId,
           startDate: startDate,
           endDate: endDate,
@@ -375,8 +394,8 @@ class _BookingPageState extends State<BookingPage>
           final date = slot.slot.startTime;
           final day = DateTime(date.year, date.month, date.day);
 
-          debugPrint(
-              '[BOOKING PAGE]   🕐 [$coachName] ${slot.slot.startTime} - ${slot.slot.endTime}, isBooked=${slot.isBooked}');
+          // debugPrint(
+          //     '[BOOKING PAGE]   🕐 [$coachName] ${slot.slot.startTime} - ${slot.slot.endTime}, isBooked=${slot.isBooked}');
 
           // 只顯示未被預約的時段
           if (slot.isBooked) {
@@ -391,9 +410,9 @@ class _BookingPageState extends State<BookingPage>
         }
       }
 
-      if (bookedCount > 0) {
-        debugPrint('[BOOKING PAGE]   ⚠️ 已過濾 $bookedCount 個已預約時段');
-      }
+      // if (bookedCount > 0) {
+      //   debugPrint('[BOOKING PAGE]   ⚠️ 已過濾 $bookedCount 個已預約時段');
+      // }
 
       if (mounted) {
         setState(() {
@@ -402,15 +421,15 @@ class _BookingPageState extends State<BookingPage>
         });
       }
 
-      debugPrint(
-          '[BOOKING PAGE] ✅ 載入 ${_coachIds.length} 位教練時段完成，共 $totalSlots 個時段，可預約 ${slotsByDate.values.fold(0, (sum, list) => sum + list.length)} 個');
+      // debugPrint(
+      //     '[BOOKING PAGE] ✅ 載入 ${_coachIds.length} 位教練時段完成，共 $totalSlots 個時段，可預約 ${slotsByDate.values.fold(0, (sum, list) => sum + list.length)} 個');
       // 顯示時段分佈
-      for (var entry in slotsByDate.entries) {
-        debugPrint(
-            '[BOOKING PAGE]   📅 ${entry.key}: ${entry.value.length} 個時段');
-      }
+      // for (var entry in slotsByDate.entries) {
+      //   debugPrint(
+      //       '[BOOKING PAGE]   📅 ${entry.key}: ${entry.value.length} 個時段');
+      // }
     } catch (e) {
-      debugPrint('[BOOKING PAGE] ❌ 載入教練時段失敗: $e');
+      // debugPrint('[BOOKING PAGE] ❌ 載入教練時段失敗: $e');
     }
   }
 
@@ -425,9 +444,10 @@ class _BookingPageState extends State<BookingPage>
       final allAvailability = <DateTime, List<ClientAvailabilityModel>>{};
 
       // 載入所有學員的可訓練時段
+      // ⭐ v3.6: 透過 Controller 查詢
       for (var clientId in _clientIds) {
         final availability =
-            await _clientAvailabilityService.getClientAvailabilityForCoach(
+            await _clientAvailabilityController.getClientAvailabilityForCoach(
           coachId: userId,
           clientId: clientId,
         );
@@ -450,14 +470,14 @@ class _BookingPageState extends State<BookingPage>
         });
       }
 
-      debugPrint('[BOOKING PAGE] ✅ 載入學員可訓練時段完成，共 ${allAvailability.length} 天');
+      // debugPrint('[BOOKING PAGE] ✅ 載入學員可訓練時段完成，共 ${allAvailability.length} 天');
       // 顯示時段分佈
-      for (var entry in allAvailability.entries) {
-        debugPrint(
-            '[BOOKING PAGE]   📅 ${entry.key}: ${entry.value.length} 個時段');
-      }
+      // for (var entry in allAvailability.entries) {
+      //   debugPrint(
+      //       '[BOOKING PAGE]   📅 ${entry.key}: ${entry.value.length} 個時段');
+      // }
     } catch (e) {
-      debugPrint('[BOOKING PAGE] ❌ 載入學員可訓練時段失敗: $e');
+      // debugPrint('[BOOKING PAGE] ❌ 載入學員可訓練時段失敗: $e');
     }
   }
 
@@ -526,7 +546,29 @@ class _BookingPageState extends State<BookingPage>
   void dispose() {
     _tabController?.removeListener(_onTabChanged);
     _tabController?.dispose();
+    _eventSubscription?.cancel(); // ⭐ v3.5
     super.dispose();
+  }
+
+  /// ⭐ v3.5: 處理 AppEventBus 事件
+  void _onAppEvent(AppEvent event) {
+    if (!mounted) {
+      debugPrint('[BOOKING_PAGE] ⚠️ 頁面已 unmounted，忽略事件: ${event.type}');
+      return;
+    }
+
+    debugPrint('[BOOKING_PAGE] 📥 收到事件: ${event.type}, entityId: ${event.entityId}');
+
+    // ⭐ 清除快取後再刷新（確保從資料庫讀取最新數據）
+    // ⭐ v3.6: 透過 Controller 操作
+    final userId = _authController.user?.uid;
+    if (userId != null) {
+      _workoutController.clearUserPlansCache(userId);
+      debugPrint('[BOOKING_PAGE] 🧹 已清除用戶快取，準備重新載入...');
+    }
+
+    // 刷新行事曆數據
+    _loadTrainingPlans();
   }
 
   Future<void> _loadBookings() async {
@@ -570,13 +612,14 @@ class _BookingPageState extends State<BookingPage>
   // 載入訓練計劃數據，根據新的資料結構
   /// 重新載入數據（清除快取）
   Future<void> _refreshData() async {
-    debugPrint('[BOOKING PAGE] 🔄 重新載入數據（清除快取）');
+    // debugPrint('[BOOKING PAGE] 🔄 重新載入數據（清除快取）');
 
     try {
       // 先清除當前用戶的訓練計劃快取
+      // ⭐ v3.6: 透過 Controller 操作
       final userId = _authController.user?.uid;
       if (userId != null) {
-        _workoutService.clearUserPlansCache(userId);
+        _workoutController.clearUserPlansCache(userId);
       }
 
       // ⭐ v3.1-B: 重新載入所有數據
@@ -586,7 +629,7 @@ class _BookingPageState extends State<BookingPage>
         NotificationUtils.showSuccess(context, '數據已更新');
       }
     } catch (e) {
-      debugPrint('[BOOKING PAGE] ❌ 重新載入失敗: $e');
+      // debugPrint('[BOOKING PAGE] ❌ 重新載入失敗: $e');
       if (mounted) {
         NotificationUtils.showError(context, '重新失敗');
       }
@@ -613,27 +656,28 @@ class _BookingPageState extends State<BookingPage>
         return;
       }
 
-      debugPrint('[BOOKING PAGE] 從 WorkoutService 載入訓練計劃，userId: $userId');
+      // debugPrint('[BOOKING PAGE] 從 WorkoutService 載入訓練計劃，userId: $userId');
 
-      // ⚡ 優化：使用 WorkoutService 的快取和 limit 設定（較大值以獲取全部資料）
+      // ⚡ 優化：使用 WorkoutController 的快取和 limit 設定（較大值以獲取全部資料）
       // WorkoutService 內部有 3 小時快取機制，避免頻繁查詢資料庫
       // 必須確保傳入 userId，確保查詢的是當前用戶的訓練計劃
-      final userPlans = await _workoutService.getUserPlans(
+      // ⭐ v3.6: 透過 Controller 查詢
+      final userPlans = await _workoutController.getUserPlans(
         userId: userId, // 必須確保用戶 ID
-        limit: 100,
       );
 
-      debugPrint('[BOOKING PAGE] ✅ 查詢到 ${userPlans.length} 筆用戶訓練計劃');
+      // debugPrint('[BOOKING PAGE] ✅ 查詢到 ${userPlans.length} 筆用戶訓練計劃');
 
       // ⭐ v3.1-B: 如果是教練，額外載入為學員創建的訓練計劃（Tab 2 用）
+      // ⭐ v3.6: 透過 Controller 查詢
       List<WorkoutRecord> coachCreatedPlans = [];
       if (_isCoach && _clientIds.isNotEmpty) {
-        coachCreatedPlans = await _workoutService.getCoachCreatedPlans(
+        coachCreatedPlans = await _workoutController.getCoachCreatedPlans(
           coachId: userId,
           clientIds: _clientIds,
           limit: 100,
         );
-        debugPrint('[BOOKING PAGE] ✅ 查詢到 ${coachCreatedPlans.length} 筆教練創建的計劃');
+        // debugPrint('[BOOKING PAGE] ✅ 查詢到 ${coachCreatedPlans.length} 筆教練創建的計劃');
       }
 
       // 合併兩個列表（去重）
@@ -646,7 +690,7 @@ class _BookingPageState extends State<BookingPage>
         }
       }
 
-      debugPrint('[BOOKING PAGE] ✅ 合併後共 ${plans.length} 筆訓練計劃');
+      // debugPrint('[BOOKING PAGE] ✅ 合併後共 ${plans.length} 筆訓練計劃');
 
       // ⭐ v3.1 修復：查詢「只有預約沒有訓練計畫」的課程
       // 收集已有訓練計畫的 appointment IDs
@@ -656,30 +700,32 @@ class _BookingPageState extends State<BookingPage>
           .toSet();
 
       // Tab 1「我的」：查詢學員的已確認預約
+      // ⭐ v3.6: 透過 Controller 查詢
       List<AppointmentModel> mySessionsWithoutPlan = [];
-      final myAppointments = await _appointmentService.getClientAppointments(
+      final myAppointments = await _appointmentController.getClientAppointments(
         clientId: userId,
         status: AppointmentStatus.confirmed,
       );
       mySessionsWithoutPlan = myAppointments
           .where((a) => !plansWithAppointment.contains(a.id))
           .toList();
-      debugPrint(
-          '[BOOKING PAGE] ✅ Tab1 沒有訓練計畫的預約：${mySessionsWithoutPlan.length} 筆');
+      // debugPrint(
+      //     '[BOOKING PAGE] ✅ Tab1 沒有訓練計畫的預約：${mySessionsWithoutPlan.length} 筆');
 
       // Tab 2「教練」：查詢教練的已確認預約
+      // ⭐ v3.6: 透過 Controller 查詢
       List<AppointmentModel> coachSessionsWithoutPlan = [];
       if (_isCoach) {
         final coachAppointments =
-            await _appointmentService.getCoachAppointments(
+            await _appointmentController.getCoachAppointments(
           coachId: userId,
           status: AppointmentStatus.confirmed,
         );
         coachSessionsWithoutPlan = coachAppointments
             .where((a) => !plansWithAppointment.contains(a.id))
             .toList();
-        debugPrint(
-            '[BOOKING PAGE] ✅ Tab2 沒有訓練計畫的預約：${coachSessionsWithoutPlan.length} 筆');
+        // debugPrint(
+        //     '[BOOKING PAGE] ✅ Tab2 沒有訓練計畫的預約：${coachSessionsWithoutPlan.length} 筆');
       }
 
       // ⭐ v3.1-B: 分離 Tab 1 和 Tab 2 的訓練數據
@@ -742,9 +788,9 @@ class _BookingPageState extends State<BookingPage>
             plan.appointmentId != null;
 
         final planType = planData['planType'] as String;
-        debugPrint('[BOOKING PAGE] 📋 計劃 ${plan.id}: '
-            'creator=$creatorId, trainee=$traineeId, appointmentId=${plan.appointmentId}, '
-            'planType=$planType, isCoachSession=$isCoachSession');
+        // debugPrint('[BOOKING PAGE] 📋 計劃 ${plan.id}: '
+        //     'creator=$creatorId, trainee=$traineeId, appointmentId=${plan.appointmentId}, '
+        //     'planType=$planType, isCoachSession=$isCoachSession');
 
         // ⭐ v3.1.1: 如果是上課類型，覆蓋標題為「XXX 的課程」格式
         if (planType == 'session') {
@@ -797,14 +843,14 @@ class _BookingPageState extends State<BookingPage>
         );
 
         // 獲取學員名稱
+        // ⭐ v3.6: 透過 ProfileController 查詢
         String studentName = '學員';
         try {
-          final userService = serviceLocator<IUserService>();
           final profile =
-              await userService.getUserProfile(appointment.clientId);
+              await _profileController.getUserProfileById(appointment.clientId);
           studentName = profile?.displayName ?? profile?.email ?? '學員';
         } catch (e) {
-          debugPrint('[BOOKING PAGE] 載入學員資料失敗: ${appointment.clientId}');
+          // debugPrint('[BOOKING PAGE] 載入學員資料失敗: ${appointment.clientId}');
         }
 
         final sessionData = _buildSessionOnlyData(
@@ -831,8 +877,8 @@ class _BookingPageState extends State<BookingPage>
         _isLoading = false;
       });
 
-      debugPrint(
-          '[BOOKING PAGE] ✅ 訓練計劃載入完成：Tab1=${myTrainings.length}天，Tab2=${coachTrainings.length}天');
+      // debugPrint(
+      //     '[BOOKING PAGE] ✅ 訓練計劃載入完成：Tab1=${myTrainings.length}天，Tab2=${coachTrainings.length}天');
     } catch (e) {
       if (!mounted) return;
 
@@ -840,7 +886,7 @@ class _BookingPageState extends State<BookingPage>
         _isLoading = false;
       });
 
-      debugPrint('[BOOKING PAGE] 載入訓練計劃失敗: $e');
+      // debugPrint('[BOOKING PAGE] 載入訓練計劃失敗: $e');
     }
   }
 
@@ -909,20 +955,20 @@ class _BookingPageState extends State<BookingPage>
     }).toList();
     _selectedDayBookings = _bookings[selectedDay] ?? [];
 
-    debugPrint('[BOOKING PAGE] 📅 更新選定日數據：$selectedDay');
-    debugPrint('[BOOKING PAGE]   - 我的訓練：${_selectedDayMyTrainings.length}');
-    debugPrint('[BOOKING PAGE]   - 教練時段：${_selectedDayCoachSlots.length}');
-    debugPrint(
-        '[BOOKING PAGE]   - 教練Tab訓練：${_selectedDayCoachTrainings.length}');
-    debugPrint(
-        '[BOOKING PAGE]   - 學員可訓練：${_selectedDayClientAvailability.length}');
+    // debugPrint('[BOOKING PAGE] 📅 更新選定日數據：$selectedDay');
+    // debugPrint('[BOOKING PAGE]   - 我的訓練：${_selectedDayMyTrainings.length}');
+    // debugPrint('[BOOKING PAGE]   - 教練時段：${_selectedDayCoachSlots.length}');
+    // debugPrint(
+    //     '[BOOKING PAGE]   - 教練Tab訓練：${_selectedDayCoachTrainings.length}');
+    // debugPrint(
+    //     '[BOOKING PAGE]   - 學員可訓練：${_selectedDayClientAvailability.length}');
     // 檢查 coachSlots 的 keys
-    if (_coachSlots.isNotEmpty) {
-      debugPrint(
-          '[BOOKING PAGE]   - coachSlots keys: ${_coachSlots.keys.toList()}');
-      debugPrint(
-          '[BOOKING PAGE]   - 查找 key: $selectedDay, 找到: ${_coachSlots.containsKey(selectedDay)}');
-    }
+    // if (_coachSlots.isNotEmpty) {
+    //   debugPrint(
+    //       '[BOOKING PAGE]   - coachSlots keys: ${_coachSlots.keys.toList()}');
+    //   debugPrint(
+    //       '[BOOKING PAGE]   - 查找 key: $selectedDay, 找到: ${_coachSlots.containsKey(selectedDay)}');
+    // }
   }
 
   /// ⭐ v3.1: 判斷訓練類型
@@ -1033,11 +1079,16 @@ class _BookingPageState extends State<BookingPage>
 
     if (result != null && mounted) {
       try {
-        // 保存到資料庫
-        await _clientAvailabilityService.createAvailability(result);
-        NotificationUtils.showSuccess(context, '可訓練時段已新增');
-        // 重新載入數據
-        await _loadAllData();
+        // ⭐ v3.5: 透過 Controller 創建可訓練時段
+        final created = await _clientAvailabilityController.createAvailability(result);
+        if (created != null) {
+          NotificationUtils.showSuccess(context, '可訓練時段已新增');
+          // 重新載入數據
+          await _loadAllData();
+        } else {
+          NotificationUtils.showError(
+              context, _clientAvailabilityController.errorMessage ?? '新增失敗');
+        }
       } catch (e) {
         if (mounted) {
           NotificationUtils.showError(context, '新增失敗: $e');
@@ -1074,6 +1125,7 @@ class _BookingPageState extends State<BookingPage>
   }
 
   // ⭐ v3.1-B: 預約教練時段
+  // ⭐ v3.5: MVVM 重構 - 透過 Controller 操作，事件由 Controller 自動發布
   Future<void> _bookCoachSlot(AvailabilitySlotWithBooking slot) async {
     final coachId = slot.slot.coachId;
     final coachName = _coachNames[coachId] ?? '教練';
@@ -1105,7 +1157,12 @@ class _BookingPageState extends State<BookingPage>
         updatedAt: DateTime.now(),
       );
 
-      await _appointmentService.createAppointment(appointment);
+      // ⭐ v3.5: 透過 Controller 創建預約（Controller 會自動發布事件）
+      final success = await _appointmentController.createAppointment(appointment);
+
+      if (!success) {
+        throw Exception(_appointmentController.errorMessage ?? '預約失敗');
+      }
 
       if (mounted) {
         NotificationUtils.showSuccess(context, '預約申請已送出，等待教練確認');
@@ -1141,8 +1198,9 @@ class _BookingPageState extends State<BookingPage>
   Future<void> _enterSession(String planId, String appointmentId) async {
     try {
       // 查詢預約詳情
+      // ⭐ v3.6: 透過 Controller 查詢
       final appointment =
-          await _appointmentService.getAppointmentById(appointmentId);
+          await _appointmentController.getAppointmentById(appointmentId);
 
       if (appointment == null) {
         if (mounted) {
@@ -1166,7 +1224,8 @@ class _BookingPageState extends State<BookingPage>
         displayName = _clientNames[appointment.clientId] ?? '學員';
         if (displayName == '學員') {
           // 如果快取中沒有，嘗試重新查詢
-          final clients = await _relationshipService
+          // ⭐ v3.6: 透過 Controller 查詢
+          final clients = await _relationshipController
               .getCoachClientsWithRelationship(userId!);
           final client = clients
               .where((c) => c.user?.uid == appointment.clientId)
@@ -1224,7 +1283,7 @@ class _BookingPageState extends State<BookingPage>
   Future<void> _editTrainingPlan(String planId, DateTime scheduledDate) async {
     if (!mounted) return;
 
-    debugPrint('[BOOKING PAGE] 編輯訓練計劃: $planId');
+    // debugPrint('[BOOKING PAGE] 編輯訓練計劃: $planId');
 
     final result = await Navigator.push(
       context,
@@ -1298,24 +1357,19 @@ class _BookingPageState extends State<BookingPage>
     if (confirmed != true || !mounted) return;
 
     try {
-      debugPrint('[BOOKING PAGE] 刪除訓練計畫: $planId');
-
-      // 使用 WorkoutService 刪除記錄
-      final success = await _workoutService.deleteRecord(planId);
+      // ⭐ v3.5: 透過 Controller 刪除訓練記錄（Controller 會自動發布事件）
+      final success = await _workoutController.deleteRecord(planId);
 
       if (mounted) {
         if (success) {
           NotificationUtils.showSuccess(context, '訓練計畫已刪除');
         } else {
-          NotificationUtils.showError(context, '刪除失敗，請稍後再試');
+          NotificationUtils.showError(
+              context, _workoutController.errorMessage ?? '刪除失敗，請稍後再試');
         }
-
-        // 重新載入訓練計畫
-        _loadTrainingPlans();
+        // 不需要手動 _loadTrainingPlans()，EventBus 會自動觸發刷新
       }
     } catch (e) {
-      debugPrint('[BOOKING PAGE] 刪除訓練計畫失敗: $e');
-
       if (mounted) {
         NotificationUtils.showError(context, '刪除失敗: $e');
       }

@@ -1,7 +1,8 @@
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/favorite_exercise_model.dart';
 import 'package:strengthwise/models/statistics_model.dart';
-import 'package:strengthwise/services/interfaces/i_favorites_service.dart';
+import 'package:strengthwise/controllers/exercise_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'widgets/favorite_list_header.dart';
@@ -33,8 +34,9 @@ class FavoriteExercisesList extends StatefulWidget {
 }
 
 class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
-  final IFavoritesService _favoritesService =
-      serviceLocator<IFavoritesService>();
+  // ⭐ v3.6: MVVM 重構 - 透過 Controller 查詢
+  final ExerciseController _exerciseController =
+      serviceLocator<ExerciseController>();
 
   List<FavoriteExercise> _favorites = [];
   Map<String, ExerciseStrengthProgress> _progressMap = {};
@@ -68,8 +70,9 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
     setState(() => _isLoading = true);
 
     try {
+      // ⭐ v3.6: 透過 ExerciseController 查詢
       final favorites =
-          await _favoritesService.getFavoriteExercises(widget.userId);
+          await _exerciseController.getFavoriteExercises(widget.userId);
 
       if (favorites.isEmpty) {
         setState(() {
@@ -94,13 +97,25 @@ class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
   }
 
   /// 移除收藏
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作
   Future<void> _removeFavorite(String exerciseId) async {
     try {
-      await _favoritesService.removeFavorite(widget.userId, exerciseId);
-      await _loadFavorites();
+      // ⭐ v3.5: 透過 Controller 移除收藏
+      final success = await _exerciseController.removeFavorite(
+        userId: widget.userId,
+        exerciseId: exerciseId,
+      );
 
-      if (mounted) {
-        NotificationUtils.showSuccess(context, '已移除收藏');
+      if (success) {
+        await _loadFavorites();
+        if (mounted) {
+          NotificationUtils.showSuccess(context, '已移除收藏');
+        }
+      } else {
+        if (mounted) {
+          NotificationUtils.showError(
+              context, _exerciseController.errorMessage ?? '移除收藏失敗');
+        }
       }
     } catch (e) {
       if (mounted) {

@@ -48,7 +48,7 @@ class CompletionRateTab extends StatelessWidget {
                   LinearProgressIndicator(
                     value: completion.completionRate,
                     backgroundColor:
-                        Theme.of(context).colorScheme.surfaceVariant,
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     minHeight: 12,
                   ),
                   const SizedBox(height: 16),

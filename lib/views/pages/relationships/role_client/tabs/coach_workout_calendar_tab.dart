@@ -1,8 +1,9 @@
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:strengthwise/controllers/coach_management_controller.dart';
-import 'package:strengthwise/services/interfaces/i_workout_service.dart';
+import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/models/workout_record/workout_record.dart';
@@ -35,12 +36,13 @@ class _CoachWorkoutCalendarTabState extends State<CoachWorkoutCalendarTab> {
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
   CalendarFormat _calendarFormat = CalendarFormat.month;
-  late final IWorkoutService _workoutService;  // ⭐ 添加
+  // ⭐ v3.6: MVVM 重構 - 透過 Controller
+  late final IWorkoutController _workoutController;
 
   @override
   void initState() {
     super.initState();
-    _workoutService = serviceLocator<IWorkoutService>();  // ⭐ 初始化
+    _workoutController = serviceLocator<IWorkoutController>();
     // 初始化時載入當月數據
     _loadMonthData(_focusedDay);
   }
@@ -48,8 +50,8 @@ class _CoachWorkoutCalendarTabState extends State<CoachWorkoutCalendarTab> {
   /// 載入當月數據（帶快取清除）⭐
   Future<void> _loadMonthData(DateTime month, {bool clearCache = false}) async {
     if (clearCache) {
-      // ⭐ 清除學員的快取
-      _workoutService.clearUserPlansCache(widget.clientId);
+      // ⭐ v3.6: 透過 Controller 清除快取
+      _workoutController.clearUserPlansCache(widget.clientId);
     }
     
     final controller = context.read<CoachManagementController>();

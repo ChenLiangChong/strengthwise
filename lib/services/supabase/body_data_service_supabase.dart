@@ -76,6 +76,7 @@ class BodyDataServiceSupabase implements IBodyDataService {
   }
 
   /// 🆕 查詢指定日期的身體數據記錄
+  @override
   Future<BodyDataRecord?> getRecordByDate(String userId, DateTime date) async {
     return await _query.getRecordByDate(userId, date);
   }

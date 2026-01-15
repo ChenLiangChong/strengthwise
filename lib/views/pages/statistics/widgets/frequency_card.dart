@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import '../../../../models/statistics_model.dart';
-import '../../../../models/statistics/time_range.dart';
 
 /// 訓練頻率卡片組件
 ///

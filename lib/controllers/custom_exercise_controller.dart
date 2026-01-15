@@ -6,13 +6,13 @@ import '../services/interfaces/i_custom_exercise_service.dart';
 import '../services/core/error_handling_service.dart';
 import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_custom_exercise_controller.dart';
-import 'custom_exercise/custom_exercise_cache_manager.dart';
 import 'custom_exercise/custom_exercise_validator.dart';
 import 'custom_exercise/custom_exercise_converter.dart';
 
 /// 自定義動作控制器實現
 /// 
 /// 管理用戶自定義訓練動作的業務邏輯，提供數據驗證，錯誤處理和狀態管理功能
+/// ⭐ v3.7: 快取統一到 Service 層
 class CustomExerciseController extends ChangeNotifier implements ICustomExerciseController {
   // 依賴注入
   final ICustomExerciseService _service;
@@ -23,17 +23,11 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
   String? _errorMessage;
   bool _isInitialized = false;
   
-  // 子模組
-  late final CustomExerciseCacheManager _cacheManager;
-  
   /// 正在載入數據
   bool get isLoading => _isLoading;
   
   /// 錯誤訊息
   String? get errorMessage => _errorMessage;
-  
-  /// 緩存的用戶自定義動作
-  List<CustomExercise> get cachedExercises => _cacheManager.cachedExercises;
   
   /// 構造函數，支持依賴注入
   CustomExerciseController({
@@ -42,8 +36,6 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
   }) : 
     _service = service ?? serviceLocator<ICustomExerciseService>(),
     _errorService = errorService ?? serviceLocator<ErrorHandlingService>() {
-    // 初始化子模組
-    _cacheManager = CustomExerciseCacheManager();
     _initialize();
   }
   
@@ -92,16 +84,10 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
     }
   }
   
-  /// 清除緩存
-  void clearCache() {
-    _cacheManager.clearCache();
-  }
-  
   /// 釋放資源
   @override
   void dispose() {
     _isInitialized = false;
-    clearCache();
     super.dispose();
   }
   
@@ -110,27 +96,22 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
     if (!_isInitialized) await _initialize();
     
     try {
-      // 使用緩存管理器檢查是否需要刷新
-      if (_cacheManager.shouldRefresh()) {
-        _setLoading(true);
-        clearError();
-        
-        final exercises = await _service.getUserCustomExercises();
-        _cacheManager.updateCache(exercises);
-        
-        _setLoading(false);
-      }
+      _setLoading(true);
+      clearError();
       
-      return _cacheManager.cachedExercises;
+      // ⭐ v3.7: 快取統一到 Service 層
+      final exercises = await _service.getUserCustomExercises();
+      
+      _setLoading(false);
+      return exercises;
     } catch (e) {
       _handleError('獲取自定義動作失敗', e);
-      return _cacheManager.cachedExercises;
+      return [];
     }
   }
   
-  /// 強制重新載入自定義動作，忽略緩存
+  /// 強制重新載入自定義動作
   Future<List<CustomExercise>> reloadExercises() async {
-    clearCache();
     return getUserExercises();
   }
   
@@ -161,6 +142,7 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
       _setLoading(true);
       clearError();
       
+      // ⭐ v3.7: Service 層會自動更新快取
       final exercise = await _service.addCustomExercise(
         name: name,
         trainingType: trainingType,
@@ -170,9 +152,6 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
         notes: notes,
         trackingMode: trackingMode, // v3.2+
       );
-      
-      // 使用緩存管理器更新緩存
-      _cacheManager.addToCache(exercise);
       
       _setLoading(false);
       return exercise;
@@ -210,6 +189,7 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
       _setLoading(true);
       clearError();
       
+      // ⭐ v3.7: Service 層會自動更新快取
       await _service.updateCustomExercise(
         exerciseId: exerciseId,
         name: name,
@@ -220,9 +200,6 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
         description: description,
         notes: notes,
       );
-      
-      // 清除緩存，下次重新載入
-      _cacheManager.clearCache();
       
       _setLoading(false);
     } catch (e) {
@@ -247,10 +224,8 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
       _setLoading(true);
       clearError();
       
+      // ⭐ v3.7: Service 層會自動更新快取
       await _service.deleteCustomExercise(exerciseId);
-      
-      // 使用緩存管理器更新緩存
-      _cacheManager.removeFromCache(exerciseId);
       
       _setLoading(false);
     } catch (e) {
@@ -311,6 +286,7 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
       _setLoading(true);
       clearError();
 
+      // ⭐ v3.7: Service 層會自動更新快取
       final exercise = await _service.copyToMyExercises(
         name: name,
         trainingType: trainingType,
@@ -320,9 +296,6 @@ class CustomExerciseController extends ChangeNotifier implements ICustomExercise
         description: description,
         notes: notes,
       );
-
-      // 更新緩存
-      _cacheManager.addToCache(exercise);
 
       _setLoading(false);
       return exercise;

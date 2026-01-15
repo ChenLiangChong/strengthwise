@@ -152,7 +152,7 @@ class ExerciseDetailPage extends StatelessWidget {
                 return Container(
                   height: 200,
                   width: double.infinity,
-                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: Center(
                     child: CircularProgressIndicator(
                       value: loadingProgress.expectedTotalBytes != null
@@ -167,7 +167,7 @@ class ExerciseDetailPage extends StatelessWidget {
                 return Container(
                   height: 200,
                   width: double.infinity,
-                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: const Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -187,7 +187,7 @@ class ExerciseDetailPage extends StatelessWidget {
       return Container(
         height: 200,
         width: double.infinity,
-        color: Theme.of(context).colorScheme.surfaceVariant,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: const Center(
           child: Text('無圖片'),
         ),

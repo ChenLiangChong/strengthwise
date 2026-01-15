@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../models/statistics_model.dart';
+import '../../models/favorite_exercise_model.dart'; // ⭐ v3.6: MVVM 查詢方法
 
 /// 統計控制器介面
 ///
@@ -47,5 +48,36 @@ abstract class IStatisticsController extends ChangeNotifier {
 
   /// 清除快取
   void clearCache();
+
+  // =============================================
+  // ⭐ v3.6: MVVM 查詢方法（View 層透過 Controller 調用）
+  // =============================================
+
+  /// 獲取力量進步數據
+  Future<List<ExerciseStrengthProgress>> getStrengthProgress(
+    String userId,
+    TimeRange timeRange, {
+    int limit = 1000,
+  });
+
+  /// 獲取有訓練記錄的動作列表
+  Future<List<ExerciseWithRecord>> getExercisesWithRecords(
+    String userId, {
+    TimeRange? timeRange,
+  });
+
+  /// 清除統計快取
+  void clearStatisticsCache();
+
+  /// 預熱統計快取（從 Hive 載入到記憶體）
+  Future<void> warmupFromLocalCache(String userId);
+
+  /// 預載入所有時間範圍的統計數據
+  Future<void> preloadAllTimeRanges(String userId);
+
+  /// 查詢統計數據（直接返回結果）
+  ///
+  /// 用於 Session Mode 等需要直接獲取數據的場景
+  Future<StatisticsData?> getStatistics(String userId, TimeRange timeRange);
 }
 

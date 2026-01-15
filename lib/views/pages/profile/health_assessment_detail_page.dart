@@ -1,10 +1,11 @@
 // ✅ 已響應式改造 (Phase 0)
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/models/health_assessment/injury_record.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/services/interfaces/i_injury_coach_note_service.dart';
+import 'package:strengthwise/controllers/profile_controller.dart';
 import 'package:strengthwise/models/injury_coach_note_model.dart';
 
 /// 健康評估完整詳情頁面
@@ -28,7 +29,8 @@ class HealthAssessmentDetailPage extends StatefulWidget {
 
 class _HealthAssessmentDetailPageState
     extends State<HealthAssessmentDetailPage> {
-  late final IInjuryCoachNoteService _injuryNoteService;
+  // ⭐ v3.6: MVVM 重構 - 透過 Controller 查詢
+  late final ProfileController _profileController;
 
   // ⭐ v3.4: 傷病教練備註快取（Map<injurySite, List<InjuryCoachNoteModel>>）
   Map<String, List<InjuryCoachNoteModel>> _injuryCoachNotes = {};
@@ -40,7 +42,7 @@ class _HealthAssessmentDetailPageState
   @override
   void initState() {
     super.initState();
-    _injuryNoteService = serviceLocator<IInjuryCoachNoteService>();
+    _profileController = serviceLocator<ProfileController>();
     _loadInjuryCoachNotes();
   }
 
@@ -51,8 +53,9 @@ class _HealthAssessmentDetailPageState
     debugPrint('[HealthAssessmentDetail] injuries = ${assessment.injuries.map((e) => e.site).toList()}');
     
     try {
-      final notes = await _injuryNoteService.getNotesForClient(
-        clientId: assessment.userId,
+      // ⭐ v3.6: 透過 ProfileController 查詢
+      final notes = await _profileController.getInjuryCoachNotes(
+        assessment.userId,
       );
       debugPrint('[HealthAssessmentDetail] 載入完成，共 ${notes.length} 個部位有備註');
       for (final entry in notes.entries) {

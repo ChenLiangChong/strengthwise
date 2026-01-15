@@ -1,12 +1,15 @@
 // ✅ 已響應式改造 (Phase 0)
 // ✅ v3.2: Coach Mark 引導
+// ✅ v3.5: AppEventBus 自動刷新
+import 'dart:async'; // ⭐ v3.5
 import 'package:flutter/material.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:strengthwise/services/core/app_event_bus.dart'; // ⭐ v3.5
 import 'package:strengthwise/models/workout_template_model.dart';
 import 'package:strengthwise/models/workout_record_model.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/services/interfaces/i_workout_service.dart';
+import 'package:strengthwise/controllers/event_bus_controller.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
@@ -37,10 +40,11 @@ class TrainingPage extends StatefulWidget {
 
 class _TrainingPageState extends State<TrainingPage> {
   late final IWorkoutController _workoutController;
-  late final IWorkoutService _workoutService;
   late final IAuthController _authController;
   late final ErrorHandlingService _errorService;
+  late final EventBusController _eventBusController; // ⭐ v3.5
 
+  StreamSubscription<AppEvent>? _eventSubscription; // ⭐ v3.5
   List<WorkoutTemplate> _templates = [];
   bool _isLoading = true;
 
@@ -52,9 +56,26 @@ class _TrainingPageState extends State<TrainingPage> {
   void initState() {
     super.initState();
     _workoutController = serviceLocator<IWorkoutController>();
-    _workoutService = serviceLocator<IWorkoutService>();
     _authController = serviceLocator<IAuthController>();
     _errorService = serviceLocator<ErrorHandlingService>();
+    _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.5
+
+    // ⭐ v3.5: 訂閱模板相關事件
+    _eventSubscription = _eventBusController.templateEvents.listen(_onAppEvent);
+
+    _loadTemplates();
+  }
+
+  @override
+  void dispose() {
+    _eventSubscription?.cancel(); // ⭐ v3.5
+    super.dispose();
+  }
+
+  /// ⭐ v3.5: 處理模板相關事件
+  void _onAppEvent(AppEvent event) {
+    if (!mounted) return;
+    // 收到模板事件時，重新載入模板列表
     _loadTemplates();
   }
 
@@ -150,6 +171,7 @@ class _TrainingPageState extends State<TrainingPage> {
   }
 
   /// 從模板快速創建今日訓練
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作，事件由 Controller 自動發布
   Future<void> _createTodayPlanFromTemplate(WorkoutTemplate template) async {
     try {
       final userId = _authController.user?.uid;
@@ -175,10 +197,12 @@ class _TrainingPageState extends State<TrainingPage> {
           '[TrainingPage] 從模板創建今日訓練: ${template.title}，時間: $trainingStart - $trainingEnd');
 
       // 從模板創建動作列表
+      // ⭐ v3.5: 修復 - 傳遞 trackingMode 和相關欄位（time, distance, calories）
       final exerciseRecords = template.exercises
           .map((exercise) => ExerciseRecord(
                 exerciseId: exercise.id,
                 exerciseName: exercise.name,
+                trackingMode: exercise.trackingMode,
                 sets: List.generate(
                   exercise.sets,
                   (index) => SetRecord(
@@ -186,6 +210,9 @@ class _TrainingPageState extends State<TrainingPage> {
                     reps: exercise.reps,
                     weight: exercise.weight,
                     restTime: exercise.restTime,
+                    time: exercise.time,
+                    distance: exercise.distance,
+                    calories: exercise.calories,
                   ),
                 ),
               ))
@@ -204,7 +231,9 @@ class _TrainingPageState extends State<TrainingPage> {
         trainingEndTime: trainingEnd,
       );
 
-      await _workoutService.createRecord(record);
+      // ⭐ v3.5: 透過 Controller 創建訓練記錄（Controller 會自動發布事件）
+      final createdRecord = await _workoutController.createRecord(record);
+      debugPrint('[TRAINING_PAGE] ✅ 訓練記錄已創建: ${createdRecord.id}');
 
       if (mounted) {
         // 使用統一的成功通知（浮動，不會完全遮擋底部內容）
@@ -212,14 +241,6 @@ class _TrainingPageState extends State<TrainingPage> {
           context,
           '已創建今日訓練：${template.title}',
         );
-
-        // 可選：短暫延遲後自動跳轉到行事曆
-        // 取消註解以啟用自動跳轉
-        // Future.delayed(const Duration(milliseconds: 1500), () {
-        //   if (mounted) {
-        //     DefaultTabController.of(context).animateTo(1);
-        //   }
-        // });
       }
     } catch (e) {
       print('[TrainingPage] 創建今日訓練失敗: $e');
@@ -230,6 +251,7 @@ class _TrainingPageState extends State<TrainingPage> {
   }
 
   /// 從模板創建自訂日期的訓練
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作，事件由 Controller 自動發布
   Future<void> _createScheduledPlanFromTemplate(
       WorkoutTemplate template) async {
     try {
@@ -256,10 +278,12 @@ class _TrainingPageState extends State<TrainingPage> {
           '[TrainingPage] 從模板創建訓練: ${template.title}，時間: $trainingStart - $trainingEnd');
 
       // 從模板創建動作列表
+      // ⭐ v3.5: 修復 - 傳遞 trackingMode 和相關欄位（time, distance, calories）
       final exerciseRecords = template.exercises
           .map((exercise) => ExerciseRecord(
                 exerciseId: exercise.id,
                 exerciseName: exercise.name,
+                trackingMode: exercise.trackingMode,
                 sets: List.generate(
                   exercise.sets,
                   (index) => SetRecord(
@@ -267,6 +291,9 @@ class _TrainingPageState extends State<TrainingPage> {
                     reps: exercise.reps,
                     weight: exercise.weight,
                     restTime: exercise.restTime,
+                    time: exercise.time,
+                    distance: exercise.distance,
+                    calories: exercise.calories,
                   ),
                 ),
               ))
@@ -285,7 +312,9 @@ class _TrainingPageState extends State<TrainingPage> {
         trainingEndTime: trainingEnd,
       );
 
-      await _workoutService.createRecord(record);
+      // ⭐ v3.5: 透過 Controller 創建訓練記錄（Controller 會自動發布事件）
+      final createdRecord = await _workoutController.createRecord(record);
+      debugPrint('[TRAINING_PAGE] ✅ 排程訓練記錄已創建: ${createdRecord.id}');
 
       if (mounted) {
         NotificationUtils.showSuccess(
@@ -326,6 +355,7 @@ class _TrainingPageState extends State<TrainingPage> {
 
     try {
       final success = await _workoutController.deleteTemplate(template.id);
+      // ⭐ v3.5: 事件由 Controller 統一發布，View 只處理 UI 回饋
 
       if (success) {
         setState(() {

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:strengthwise/controllers/appointment_controller.dart';
+import 'package:strengthwise/controllers/event_bus_controller.dart';
 import 'package:strengthwise/models/appointment_model.dart';
 import 'package:strengthwise/services/interfaces/i_appointment_service.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
@@ -10,12 +11,15 @@ class MockAppointmentService extends Mock implements IAppointmentService {}
 
 class MockErrorHandlingService extends Mock implements ErrorHandlingService {}
 
+class MockEventBusController extends Mock implements EventBusController {}
+
 /// AppointmentController 測試
 ///
 /// P3 優先級 - 10 個測試案例
 void main() {
   late MockAppointmentService mockService;
   late MockErrorHandlingService mockErrorService;
+  late MockEventBusController mockEventBusController;
   late AppointmentController controller;
 
   final testAppointment = AppointmentModel(
@@ -45,6 +49,7 @@ void main() {
   setUp(() {
     mockService = MockAppointmentService();
     mockErrorService = MockErrorHandlingService();
+    mockEventBusController = MockEventBusController();
 
     // 預設行為
     when(() => mockService.getCoachAppointments(
@@ -78,8 +83,8 @@ void main() {
     when(() => mockErrorService.logError(any(), type: any(named: 'type')))
         .thenReturn(null);
 
-    // 使用位置參數構造
-    controller = AppointmentController(mockService, mockErrorService);
+    // 使用位置參數構造（v3.5 新增 EventBusController）
+    controller = AppointmentController(mockService, mockErrorService, mockEventBusController);
   });
 
   tearDown(() {

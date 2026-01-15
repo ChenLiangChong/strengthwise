@@ -1,7 +1,8 @@
 // ✅ 已響應式改造 (Phase 0)
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/exercise_history_record.dart';
-import 'package:strengthwise/services/interfaces/i_workout_service.dart';
+import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 
@@ -51,22 +52,23 @@ class ExerciseHistoryDialog extends StatefulWidget {
 }
 
 class _ExerciseHistoryDialogState extends State<ExerciseHistoryDialog> {
-  late final IWorkoutService _workoutService;
+  late final IWorkoutController _workoutController; // ⭐ v3.6: MVVM
   List<ExerciseHistoryRecord> _records = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _workoutService = serviceLocator<IWorkoutService>();
+    _workoutController = serviceLocator<IWorkoutController>(); // ⭐ v3.6: MVVM
     _loadHistory();
   }
 
+  /// ⭐ v3.6: 透過 Controller 查詢
   Future<void> _loadHistory() async {
     setState(() => _isLoading = true);
 
     try {
-      final records = await _workoutService.getExerciseHistory(
+      final records = await _workoutController.getExerciseHistory(
         userId: widget.userId,
         exerciseId: widget.exerciseId,
         limit: 10,

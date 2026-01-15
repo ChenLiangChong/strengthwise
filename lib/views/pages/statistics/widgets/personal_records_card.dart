@@ -194,7 +194,7 @@ class PersonalRecordsCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '${pr.maxWeight.toStringAsFixed(1)}',
+                          pr.maxWeight.toStringAsFixed(1),
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,

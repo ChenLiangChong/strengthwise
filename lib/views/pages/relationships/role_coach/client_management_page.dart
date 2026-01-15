@@ -1,7 +1,8 @@
 // ✅ 已響應式改造 (Phase 0 + P3 Master-Detail)
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
-import 'package:strengthwise/services/interfaces/i_coaching_relationship_service.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
+import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/coaching_relationship_model.dart';
 import 'package:strengthwise/models/user_model.dart';
@@ -30,8 +31,9 @@ class ClientManagementPage extends StatefulWidget {
 }
 
 class _ClientManagementPageState extends State<ClientManagementPage> {
-  late final ICoachingRelationshipService _relationshipService;
+  // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
   late final IAuthController _authController;
+  late final CoachingRelationshipController _coachingController;
 
   String _selectedFilter = 'active'; // active, pending, archived, all
   bool _isLoading = false;
@@ -45,8 +47,8 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
   @override
   void initState() {
     super.initState();
-    _relationshipService = serviceLocator<ICoachingRelationshipService>();
     _authController = serviceLocator<IAuthController>();
+    _coachingController = serviceLocator<CoachingRelationshipController>();
     _initializeAndLoad();
   }
 
@@ -81,14 +83,14 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
     });
 
     try {
-      // 使用 getCoachClientsWithDetails 獲取學員詳情
-      final clientUsers = await _relationshipService.getCoachClientsWithDetails(
+      // ⭐ v3.6: 透過 CoachingRelationshipController 查詢
+      final clientUsers = await _coachingController.getCoachClientsWithDetails(
         _currentUserId!,
         status: _selectedFilter == 'all' ? null : _selectedFilter,
       );
 
       // 同時獲取關係列表（包含備註、創建時間等）
-      final relationships = await _relationshipService.getCoachClients(
+      final relationships = await _coachingController.getCoachClients(
         _currentUserId!,
         status: _selectedFilter == 'all' ? null : _selectedFilter,
       );
@@ -196,7 +198,8 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
   /// 歸檔學員
   Future<void> _archiveClient(String relationshipId) async {
     try {
-      await _relationshipService.archiveRelationship(relationshipId);
+      // ⭐ v3.6: 透過 Controller 操作
+      await _coachingController.archiveRelationship(relationshipId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('學員已歸檔')),
@@ -213,17 +216,25 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
   }
 
   /// 刪除學員
+  /// ⭐ v3.6: MVVM 重構 - 透過 Controller 操作
   Future<void> _deleteClient(String relationshipId) async {
     try {
-      await _relationshipService.deleteRelationship(relationshipId);
+      // ⭐ v3.6: 透過 Controller 刪除關係
+      final success = await _coachingController.deleteRelationship(relationshipId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('學員已刪除'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        _loadClients();
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('學員已刪除'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          _loadClients();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(_coachingController.errorMessage ?? '刪除失敗')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

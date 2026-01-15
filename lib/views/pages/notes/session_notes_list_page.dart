@@ -1,15 +1,16 @@
 // ✅ 已響應式改造 (Phase 0)
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/session_note_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
+import 'package:strengthwise/controllers/coaching_relationship_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/models/session_note/session_note_model.dart';
 import 'package:strengthwise/models/user_model.dart';
-import 'package:strengthwise/models/client_with_relationship.dart'; // ⭐ 新增
-import 'package:strengthwise/models/coach_with_relationship.dart'; // ⭐ 新增
+import 'package:strengthwise/models/client_with_relationship.dart';
+import 'package:strengthwise/models/coach_with_relationship.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/services/interfaces/i_coaching_relationship_service.dart';
-import 'package:strengthwise/services/interfaces/i_user_service.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/notes/widgets/session_note_card.dart';
 import 'package:strengthwise/views/pages/notes/widgets/empty_notes_state.dart';
@@ -68,8 +69,8 @@ class SessionNotesListPage extends StatefulWidget {
 class _SessionNotesListPageState extends State<SessionNotesListPage> {
   late final SessionNoteController _controller;
   late final IAuthController _authController;
-  late final ICoachingRelationshipService _relationshipService;
-  late final IUserService _userService;
+  late final CoachingRelationshipController _coachingController; // ⭐ v3.6: MVVM
+  late final ProfileController _profileController; // ⭐ v3.6: MVVM
   String _currentFilter = 'all'; // 'all', 'private', 'shared'
 
   // UX 重構：學員篩選與搜尋
@@ -90,10 +91,11 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
   @override
   void initState() {
     super.initState();
+    // ⭐ v3.6: MVVM 重構 - 只使用 Controller，不直接使用 Service
     _controller = serviceLocator<SessionNoteController>();
     _authController = serviceLocator<IAuthController>();
-    _relationshipService = serviceLocator<ICoachingRelationshipService>();
-    _userService = serviceLocator<IUserService>();
+    _coachingController = serviceLocator<CoachingRelationshipController>();
+    _profileController = serviceLocator<ProfileController>();
     _searchController.addListener(_onSearchChanged);
 
     // 調試：顯示當前用戶資訊
@@ -149,10 +151,10 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
 
       // ⭐ 如果是學員查看模式（學員查看教練的共享筆記）
       if (widget.isClientView == true) {
-        // 學員查看自己，查詢完整的用戶資料（包含 displayName）
+        // ⭐ v3.6: 透過 ProfileController 查詢用戶資料
         if (widget.clientId != null) {
           final clientProfile =
-              await _userService.getUserProfile(widget.clientId!);
+              await _profileController.getUserProfileById(widget.clientId!);
           if (clientProfile != null) {
             clients = [clientProfile];
             print(
@@ -160,8 +162,8 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
           }
         }
       } else {
-        // ⭐ 查詢完整的用戶資料，檢查是否為教練
-        final userProfile = await _userService.getUserProfile(currentUser.uid);
+        // ⭐ v3.6: 透過 ProfileController 查詢用戶資料
+        final userProfile = await _profileController.getUserProfileById(currentUser.uid);
         final isCoach = userProfile?.isCoach ?? false;
 
         print(
@@ -169,10 +171,9 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
         print('[SessionNotesListPage] 📋 isCoach (從資料庫): $isCoach');
 
         if (isCoach) {
-          // 教練模式：使用 CoachingRelationshipService 載入學員列表（含關係狀態）⭐ 修改
-          // ⭐ 載入所有學員（包括已解除關係的），以便查看歷史筆記
+          // ⭐ v3.6: 透過 CoachingRelationshipController 載入學員列表
           final clientsWithRel =
-              await _relationshipService.getCoachClientsWithRelationship(
+              await _coachingController.getCoachClientsWithRelationship(
             currentUser.uid,
             status: null, // null = 載入所有狀態（active + archived）
           );
@@ -246,9 +247,9 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
     });
 
     try {
-      // ⭐ 使用新的 Service 方法：載入所有教練（含關係狀態）
+      // ⭐ v3.6: 透過 CoachingRelationshipController 載入教練列表
       final coachesWithRel =
-          await _relationshipService.getClientCoachesWithRelationship(
+          await _coachingController.getClientCoachesWithRelationship(
         currentUser.uid,
         status: null, // null = 載入所有狀態（active + archived）
       );
@@ -426,13 +427,11 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
                   String? clientId = widget.clientId;
                   
                   // 如果沒有傳入 clientId，才顯示選擇對話框
-                  if (clientId == null) {
-                    clientId = await showDialog<String>(
+                  clientId ??= await showDialog<String>(
                       context: context,
                       barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
                       builder: (context) => const ClientSelectorDialog(),
                     );
-                  }
 
                   if (clientId != null && mounted) {
                     // 導航到新增筆記頁面
@@ -902,9 +901,10 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
 
       try {
         // 學員模式：檢查是否還有 active 綁定關係
+        // ⭐ v3.6: 透過 CoachingRelationshipController 查詢
         if (isClient) {
           final relationship =
-              await _relationshipService.getRelationshipByUsers(
+              await _coachingController.getRelationshipByUsers(
             note.coachId!,
             currentUser.uid,
           );

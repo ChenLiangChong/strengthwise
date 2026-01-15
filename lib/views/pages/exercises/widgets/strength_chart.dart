@@ -170,16 +170,16 @@ class StrengthChart extends StatelessWidget {
   }
 
   Widget _buildLegend() {
-    return Row(
+    return const Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.circle, size: 12, color: Colors.amber),
-        const SizedBox(width: 4),
-        const Text('個人記錄 (PR)', style: TextStyle(fontSize: 11)),
-        const SizedBox(width: 16),
+        Icon(Icons.circle, size: 12, color: Colors.amber),
+        SizedBox(width: 4),
+        Text('個人記錄 (PR)', style: TextStyle(fontSize: 11)),
+        SizedBox(width: 16),
         Icon(Icons.circle, size: 12, color: Colors.blue),
-        const SizedBox(width: 4),
-        const Text('一般訓練', style: TextStyle(fontSize: 11)),
+        SizedBox(width: 4),
+        Text('一般訓練', style: TextStyle(fontSize: 11)),
       ],
     );
   }

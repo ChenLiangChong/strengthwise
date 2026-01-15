@@ -48,7 +48,7 @@ class PersonalRecordsCalculator {
       // ⚠️ 重要：View 已包含 body_part，不需要額外查詢
       final result = <PersonalRecord>[];
       final now = DateTime.now();
-      final oneWeekAgo = now.subtract(Duration(days: 7));
+      final oneWeekAgo = now.subtract(const Duration(days: 7));
 
       for (var item in records) {
         try {
@@ -110,7 +110,7 @@ class PersonalRecordsCalculator {
             exercise.weight > currentRecord.maxWeight) {
           // 檢查是否為本週內達成
           final isNew = workout.completedTime.isAfter(
-            DateTime.now().subtract(Duration(days: 7)),
+            DateTime.now().subtract(const Duration(days: 7)),
           );
 
           records[exerciseId] = PersonalRecord(

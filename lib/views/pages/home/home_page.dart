@@ -2,17 +2,20 @@
 // ✅ Phase 3.1-B: 首頁 UX 優化（今日行程 + 我的學員 + 快捷按鈕 + 可折疊）
 // ✅ v3.1.1: 載入優化 - 骨架屏取代轉圈
 // ✅ v3.2: Coach Mark 引導
+// ✅ v3.5: AppEventBus 自動刷新
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/controllers/interfaces/i_statistics_controller.dart';
-import 'package:strengthwise/services/interfaces/i_statistics_service.dart';
-import 'package:strengthwise/services/interfaces/i_workout_service.dart';
-import 'package:strengthwise/services/interfaces/i_user_service.dart';
-import 'package:strengthwise/services/interfaces/i_appointment_service.dart';
-import 'package:strengthwise/services/interfaces/i_coaching_relationship_service.dart';
+import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
+import 'package:strengthwise/controllers/event_bus_controller.dart';
+import 'package:strengthwise/controllers/appointment_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_statistics_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/coaching_relationship_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/services/core/app_event_bus.dart';
 import 'package:strengthwise/models/user_model.dart';
 import 'package:strengthwise/models/appointment_model.dart';
 import 'package:strengthwise/models/workout_record/workout_record.dart';
@@ -51,11 +54,15 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final IAuthController _authController;
-  late final IWorkoutService _workoutService;
-  late final IUserService _userService;
-  late final IAppointmentService _appointmentService;
-  late final ICoachingRelationshipService _coachingService;
-  late final ProfileController _profileController; // ⭐ v3.2: 監聽身份變更
+  late final IWorkoutController _workoutController;
+  late final ProfileController _profileController;
+  late final EventBusController _eventBusController;
+  late final AppointmentController _appointmentController;
+  late final IStatisticsController _statisticsController; // ⭐ v3.6: MVVM
+  late final CoachingRelationshipController _coachingController; // ⭐ v3.6: MVVM
+
+  // ⭐ v3.5: 事件訂閱
+  StreamSubscription<AppEvent>? _eventSubscription;
 
   // ⭐ Phase 3.1-B: 使用 WorkoutRecord 取代 Map
   List<WorkoutRecord> _todayPlans = [];
@@ -69,7 +76,6 @@ class _HomePageState extends State<HomePage> {
 
   // ⭐ Phase 3.1-B: 教練視角 - 待確認預約
   List<AppointmentModel> _pendingAppointments = [];
-  bool _isLoadingPending = true;
 
   // ⭐ Phase 3.1-B: 是否有綁定教練（用於快捷按鈕）
   bool _hasCoach = false;
@@ -86,15 +92,20 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    // ⭐ v3.6: MVVM 重構 - 只使用 Controller，不直接使用 Service
     _authController = serviceLocator<IAuthController>();
-    _workoutService = serviceLocator<IWorkoutService>();
-    _userService = serviceLocator<IUserService>();
-    _coachingService = serviceLocator<ICoachingRelationshipService>();
-    _appointmentService = serviceLocator<IAppointmentService>();
+    _workoutController = serviceLocator<IWorkoutController>();
     _profileController = serviceLocator<ProfileController>();
+    _eventBusController = serviceLocator<EventBusController>();
+    _appointmentController = serviceLocator<AppointmentController>();
+    _statisticsController = serviceLocator<IStatisticsController>();
+    _coachingController = serviceLocator<CoachingRelationshipController>();
 
-    // ⭐ v3.2: 監聽 ProfileController 變化（教練模式切換時刷新）
+    // ⭐ v3.2: 監聯 ProfileController 變化（教練模式切換時刷新）
     _profileController.addListener(_onProfileChanged);
+
+    // ⭐ v3.5: 訂閱首頁相關事件（訓練創建/刪除/完成、預約變更）
+    _eventSubscription = _eventBusController.homePageEvents.listen(_onAppEvent);
 
     // ⚡ 優先載入首頁關鍵數據，完成後才預載入其他
     _initializeHomePage();
@@ -124,13 +135,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// ⚡ v3.1.2: 立即預熱統計快取（從 Hive 到記憶體）
+  /// ⭐ v3.6: MVVM 重構 - 透過 Controller 操作
   Future<void> _warmupStatisticsCache() async {
     try {
       final user = _authController.user;
       if (user == null) return;
 
-      final statisticsService = serviceLocator<IStatisticsService>();
-      await statisticsService.warmupFromLocalCache(user.uid);
+      await _statisticsController.warmupFromLocalCache(user.uid);
     } catch (e) {
       if (kDebugMode) {
         print('[HomePage] ⚠️ 統計快取預熱失敗: $e');
@@ -237,7 +248,45 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _profileController.removeListener(_onProfileChanged);
+    _eventSubscription?.cancel(); // ⭐ v3.5: 取消事件訂閱
     super.dispose();
+  }
+
+  /// ⭐ v3.5: 處理 AppEventBus 事件
+  void _onAppEvent(AppEvent event) {
+    if (!mounted) {
+      debugPrint('[HOME_PAGE] ⚠️ 收到事件但頁面已 unmounted: ${event.type}');
+      return;
+    }
+
+    debugPrint(
+        '[HOME_PAGE] 📥 收到事件: ${event.type}, entityId: ${event.entityId}');
+
+    // 根據事件類型決定刷新什麼（快取已在 Service 層增量更新）
+    switch (event.type) {
+      case AppEventType.workoutCreated:
+      case AppEventType.workoutDeleted:
+      case AppEventType.workoutCompleted:
+        // 刷新今日訓練計畫（包含學員的只有預約沒有訓練計畫的課程）
+        debugPrint('[HOME_PAGE] 🔄 開始刷新今日計畫...');
+        _loadTodayPlans();
+        break;
+      case AppEventType.appointmentCreated:
+      case AppEventType.appointmentConfirmed:
+      case AppEventType.appointmentCancelled:
+        // 刷新今日計畫（包含學員視角的課程）
+        debugPrint('[HOME_PAGE] 🔄 開始刷新今日計畫（預約變更）...');
+        _loadTodayPlans();
+        // 刷新教練視角數據
+        if (_userProfile?.isCoach == true) {
+          _loadTodayCoachSessions();
+          _loadPendingAppointments();
+        }
+        break;
+      default:
+        debugPrint('[HOME_PAGE] ⏭️ 忽略事件: ${event.type}');
+        break;
+    }
   }
 
   // ⭐ v3.2: 檢查是否顯示 Coach Mark
@@ -302,19 +351,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// ⭐ Phase 3.1-B: 檢查用戶是否有綁定教練
+  /// ⭐ v3.6: MVVM 重構 - 透過 Controller 操作
   Future<void> _checkHasCoach() async {
     try {
       final userId = _authController.user?.uid;
       if (userId == null) return;
 
-      final coaches = await _coachingService.getClientCoaches(
-        userId,
-        status: 'active',
-      );
+      final hasCoach = await _coachingController.hasActiveCoach(userId);
 
       if (mounted) {
         setState(() {
-          _hasCoach = coaches.isNotEmpty;
+          _hasCoach = hasCoach;
         });
       }
     } catch (e) {
@@ -328,6 +375,7 @@ class _HomePageState extends State<HomePage> {
   ///
   /// v3.1.1 優化：直接並行預載入所有時間範圍，不阻塞首頁
   /// ⭐ Phase 1 優化：確保只執行一次
+  /// ⭐ v3.6: MVVM 重構 - 透過 Controller 操作
   static bool _hasPreloadedStatistics = false;
 
   Future<void> _preloadStatistics() async {
@@ -347,12 +395,10 @@ class _HomePageState extends State<HomePage> {
         final user = _authController.user;
         if (user == null) return;
 
-        final statisticsService = serviceLocator<IStatisticsService>();
-
         if (kDebugMode) {
           print('[HomePage] 🚀 檢查並從 DB 補充缺少的時間範圍...');
         }
-        await statisticsService.preloadAllTimeRanges(user.uid);
+        await _statisticsController.preloadAllTimeRanges(user.uid);
 
         if (kDebugMode) {
           print('[HomePage] ✅ 統計數據預載入完成');
@@ -368,6 +414,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// ⭐ 載入用戶完整資料
+  /// ⭐ v3.6: MVVM 重構 - 透過 Controller 操作
   Future<void> _loadUserProfile() async {
     if (!mounted) return;
 
@@ -380,8 +427,8 @@ class _HomePageState extends State<HomePage> {
 
       print('[HomePage] 查詢用戶資料，userId: $userId');
 
-      // 使用 UserService 查詢完整的用戶資料
-      final profile = await _userService.getUserProfile(userId);
+      // ⭐ v3.6: 透過 ProfileController 查詢用戶資料
+      final profile = await _profileController.getUserProfileById(userId);
 
       if (!mounted) return;
 
@@ -400,6 +447,7 @@ class _HomePageState extends State<HomePage> {
 
   /// ⭐ Phase 3.1-B: 載入今日行程（作為學員的課程 + 自主訓練）
   /// ⭐ v3.1 修復：合併「只有預約沒有訓練計畫」的上課卡片
+  /// ⭐ v3.6: MVVM 重構 - 透過 Controller 操作
   Future<void> _loadTodayPlans() async {
     if (!mounted) return;
 
@@ -426,16 +474,16 @@ class _HomePageState extends State<HomePage> {
       final today = DateTime(now.year, now.month, now.day);
       final tomorrow = today.add(const Duration(days: 1));
 
-      // ⭐ Phase 3.1-B: 查詢今天的訓練計畫（包含上課、自主訓練、教練安排）
-      final plans = await _workoutService.getUserPlans(
+      // ⭐ v3.6: 透過 WorkoutController 查詢今天的訓練計畫
+      final plans = await _workoutController.getUserPlans(
         startDate: today,
         endDate: tomorrow,
       );
 
       debugPrint('[HomePage] 查詢到 ${plans.length} 個今日訓練計畫');
 
-      // ⭐ v3.1 修復：額外查詢學員的已確認預約（可能沒有訓練計畫）
-      final appointments = await _appointmentService.getClientAppointments(
+      // ⭐ v3.6: 透過 AppointmentController 查詢學員的已確認預約
+      final appointments = await _appointmentController.getClientAppointments(
         clientId: userId,
         startDate: today,
         endDate: tomorrow,
@@ -456,13 +504,14 @@ class _HomePageState extends State<HomePage> {
 
       debugPrint('[HomePage] 過濾後：${sessionsWithoutPlan.length} 個預約沒有訓練計畫');
 
-      // 載入教練資料（用於顯示教練名稱）
+      // ⭐ v3.6: 透過 ProfileController 載入教練資料
       if (sessionsWithoutPlan.isNotEmpty) {
         final coachIds = sessionsWithoutPlan.map((a) => a.coachId).toSet();
         final profiles = <String, UserModel>{};
         for (final coachId in coachIds) {
           try {
-            final profile = await _userService.getUserProfile(coachId);
+            final profile =
+                await _profileController.getUserProfileById(coachId);
             if (profile != null) {
               profiles[coachId] = profile;
             }
@@ -491,6 +540,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// ⭐ Phase 3.1-B: 載入今日要教的課（教練視角）
+  /// ⭐ v3.6: MVVM 重構 - 透過 Controller 操作
   Future<void> _loadTodayCoachSessions() async {
     if (!mounted) return;
 
@@ -518,8 +568,8 @@ class _HomePageState extends State<HomePage> {
         print('[HomePage] 🔍 日期範圍：$today ~ $tomorrow');
       }
 
-      // 查詢今日已確認的預約（教練視角）
-      final appointments = await _appointmentService.getCoachAppointments(
+      // ⭐ v3.6: 透過 AppointmentController 查詢今日已確認的預約
+      final appointments = await _appointmentController.getCoachAppointments(
         coachId: userId,
         startDate: today,
         endDate: tomorrow,
@@ -536,7 +586,8 @@ class _HomePageState extends State<HomePage> {
 
       // 也查詢所有狀態的預約（debug 用）
       if (kDebugMode) {
-        final allAppointments = await _appointmentService.getCoachAppointments(
+        final allAppointments =
+            await _appointmentController.getCoachAppointments(
           coachId: userId,
           startDate: today,
           endDate: tomorrow,
@@ -550,10 +601,10 @@ class _HomePageState extends State<HomePage> {
       // 收集所有學員 ID
       final studentIds = appointments.map((a) => a.clientId).toSet();
 
-      // 批量查詢學員資料
+      // ⭐ v3.6: 透過 ProfileController 批量查詢學員資料
       final profiles = <String, UserModel>{};
       for (final studentId in studentIds) {
-        final profile = await _userService.getUserProfile(studentId);
+        final profile = await _profileController.getUserProfileById(studentId);
         if (profile != null) {
           profiles[studentId] = profile;
         }
@@ -581,31 +632,25 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// ⭐ Phase 3.1-B: 載入待確認預約（教練視角）
+  /// ⭐ v3.6: MVVM 重構 - 透過 Controller 操作
   Future<void> _loadPendingAppointments() async {
     if (!mounted) return;
 
-    setState(() {
-      _isLoadingPending = true;
-    });
-
     try {
       final userId = _authController.user?.uid;
-      if (userId == null) {
-        setState(() => _isLoadingPending = false);
-        return;
-      }
+      if (userId == null) return;
 
-      // 查詢待確認的預約（status = 'requested'）
-      final appointments = await _appointmentService.getCoachAppointments(
+      // ⭐ v3.6: 透過 AppointmentController 查詢待確認的預約
+      final appointments = await _appointmentController.getCoachAppointments(
         coachId: userId,
         status: AppointmentStatus.requested,
       );
 
-      // 收集所有學員 ID（可能與 _loadTodayCoachSessions 重複，但不影響）
+      // ⭐ v3.6: 透過 ProfileController 載入學員資料
       for (final appointment in appointments) {
         if (!_studentProfiles.containsKey(appointment.clientId)) {
           final profile =
-              await _userService.getUserProfile(appointment.clientId);
+              await _profileController.getUserProfileById(appointment.clientId);
           if (profile != null) {
             _studentProfiles[appointment.clientId] = profile;
           }
@@ -616,15 +661,12 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         _pendingAppointments = appointments;
-        _isLoadingPending = false;
       });
 
       if (kDebugMode) {
         print('[HomePage] ✅ 載入待確認預約：${appointments.length} 個');
       }
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoadingPending = false);
       if (kDebugMode) {
         print('[HomePage] ⚠️ 載入待確認預約失敗: $e');
       }
@@ -668,10 +710,10 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: () async {
-          // ⭐ 刷新時清除快取
+          // ⭐ v3.6: 透過 Controller 刷新時清除快取
           final userId = _authController.user?.uid;
           if (userId != null) {
-            _workoutService.clearUserPlansCache(userId);
+            _workoutController.clearUserPlansCache(userId);
           }
 
           // ⭐ Phase 3.1-B: 刷新今日行程
@@ -816,8 +858,8 @@ class _HomePageState extends State<HomePage> {
                 child: _buildMyStudentsCollapsible(),
               ),
             // 底部填充，避免被底部導航遮擋
-            SliverPadding(
-              padding: const EdgeInsets.only(bottom: 24),
+            const SliverPadding(
+              padding: EdgeInsets.only(bottom: 24),
             ),
           ],
         ),
@@ -1060,61 +1102,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// ⭐ Phase 3.1-B: 今日行程區塊（作為學員）
-  /// ⭐ v3.1 修復：合併顯示「有訓練計畫」和「只有預約」的卡片
-  Widget _buildTodaySchedule() {
-    // 計算總數（訓練計畫 + 只有預約的上課）
-    final hasAnySchedule =
-        _todayPlans.isNotEmpty || _todayStudentSessions.isNotEmpty;
-
-    return Container(
-      padding: context.cardPadding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 標題行（含刷新按鈕）
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '📚 今日行程',
-                style: context.responsive.sectionTitle,
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () async {
-                  final userId = _authController.user?.uid;
-                  if (userId != null) {
-                    _workoutService.clearUserPlansCache(userId);
-                  }
-                  await _loadTodayPlans();
-                },
-                tooltip: '刷新',
-              ),
-            ],
-          ),
-          SizedBox(height: context.spacing.md),
-          _isLoadingPlans
-              ? _buildLoadingSkeleton()
-              : !hasAnySchedule
-                  ? _buildNoPlansToday()
-                  : Column(
-                      children: [
-                        // 有訓練計畫的卡片
-                        ..._todayPlans.map((plan) {
-                          return _buildScheduleCard(plan);
-                        }),
-                        // ⭐ v3.1 修復：只有預約沒有訓練計畫的上課卡片
-                        ..._todayStudentSessions.map((appointment) {
-                          return _buildSessionOnlyCard(appointment);
-                        }),
-                      ],
-                    ),
-        ],
-      ),
-    );
-  }
-
   /// ⭐ v3.1 修復：構建「只有預約沒有訓練計畫」的上課卡片
   Widget _buildSessionOnlyCard(AppointmentModel appointment) {
     final coach = _coachProfiles[appointment.coachId];
@@ -1283,61 +1270,25 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// 執行刪除訓練計畫
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作，事件由 Controller 自動發布
   Future<void> _deleteWorkout(String planId) async {
     try {
-      await _workoutService.deleteRecord(planId);
+      // ⭐ v3.5: 透過 Controller 刪除訓練記錄（Controller 會自動發布事件）
+      final success = await _workoutController.deleteRecord(planId);
+
+      if (!success) {
+        throw Exception(_workoutController.errorMessage ?? '刪除失敗');
+      }
 
       if (mounted) {
-        // 清除快取並重新載入
-        final userId = _authController.user?.uid;
-        if (userId != null) {
-          _workoutService.clearUserPlansCache(userId);
-        }
-
         NotificationUtils.showSuccess(context, '訓練計畫已刪除');
-        _loadTodayPlans();
+        // 不需要手動刷新，EventBus 會自動觸發
       }
     } catch (e) {
       if (mounted) {
         NotificationUtils.showError(context, '刪除失敗: $e');
       }
     }
-  }
-
-  /// ⭐ Phase 3.1-B: 我的學員區塊（教練視角）
-  Widget _buildMyStudentsSection() {
-    return Container(
-      padding: context.cardPadding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 標題
-          Text(
-            '🏋️ 我的學員',
-            style: context.responsive.sectionTitle,
-          ),
-          SizedBox(height: context.spacing.md),
-
-          // 今日要教的課
-          if (_isLoadingCoachSessions)
-            _buildLoadingSkeleton()
-          else if (_todayCoachSessions.isEmpty && _pendingAppointments.isEmpty)
-            _buildNoStudentSessions()
-          else ...[
-            // 今日課程
-            ..._todayCoachSessions.map((appointment) {
-              return _buildCoachSessionCard(appointment);
-            }),
-
-            // 待確認預約
-            if (_pendingAppointments.isNotEmpty) ...[
-              SizedBox(height: context.spacing.md),
-              _buildPendingSection(),
-            ],
-          ],
-        ],
-      ),
-    );
   }
 
   /// ⭐ Phase 3.1-B: 教練的課程卡片
@@ -1457,10 +1408,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// 確認預約
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作，事件由 Controller 自動發布
   Future<void> _confirmAppointment(AppointmentModel appointment) async {
     try {
-      await _appointmentService.confirmAppointment(appointment.id);
-      // 刷新列表
+      // ⭐ v3.5: 透過 Controller 確認預約（Controller 會自動發布事件）
+      final success =
+          await _appointmentController.confirmAppointment(appointment.id);
+
+      if (!success) {
+        throw Exception(_appointmentController.errorMessage ?? '確認預約失敗');
+      }
+
+      // 刷新列表（EventBus 會自動觸發，但保留手動刷新確保即時響應）
       await _loadPendingAppointments();
       await _loadTodayCoachSessions();
 
@@ -1480,6 +1439,7 @@ class _HomePageState extends State<HomePage> {
 
   /// 拒絕預約
   /// ⭐ v3.1.1: 必須填寫拒絕原因
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作，事件由 Controller 自動發布
   Future<void> _rejectAppointment(AppointmentModel appointment) async {
     final reasonController = TextEditingController();
 
@@ -1536,16 +1496,19 @@ class _HomePageState extends State<HomePage> {
     if (reason == null || reason.isEmpty) return;
 
     try {
-      // 使用 cancelAppointment 取消預約（拒絕 = 取消）
-      // ⭐ v3.1.1: 加上角色前綴
-      final fullReason = '教練拒絕：$reason';
+      // ⭐ v3.5: 透過 Controller 拒絕預約（Controller 會自動發布事件）
       final userId = _authController.user?.uid ?? '';
-      await _appointmentService.cancelAppointment(
+      final success = await _appointmentController.rejectAppointment(
         appointmentId: appointment.id,
         cancelledBy: userId,
-        reason: fullReason,
+        reason: reason,
       );
-      // 刷新列表
+
+      if (!success) {
+        throw Exception(_appointmentController.errorMessage ?? '拒絕預約失敗');
+      }
+
+      // 刷新列表（EventBus 會自動觸發，但保留手動刷新確保即時響應）
       await _loadPendingAppointments();
 
       if (mounted) {
@@ -1584,11 +1547,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// 通過預約 ID 跳轉到 Session Mode
+  /// ⭐ v3.6: MVVM 重構 - 透過 Controller 操作
   Future<void> _navigateToSessionByAppointmentId(String appointmentId,
       {required bool isCoachView}) async {
     try {
       final appointment =
-          await _appointmentService.getAppointmentById(appointmentId);
+          await _appointmentController.getAppointmentById(appointmentId);
       if (appointment == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

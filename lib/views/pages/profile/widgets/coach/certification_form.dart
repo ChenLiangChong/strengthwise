@@ -84,7 +84,7 @@ class _CertificationFormState extends State<CertificationForm> {
           children: [
             // 發證機構下拉選單
             DropdownButtonFormField<String>(
-              value: _selectedOrg,
+              initialValue: _selectedOrg,
               decoration: const InputDecoration(
                 labelText: '發證機構',
                 isDense: true,

@@ -610,7 +610,7 @@ class _NoteInputFieldState extends State<_NoteInputField> {
           ),
         ),
         filled: true,
-        fillColor: colorScheme.surfaceVariant.withOpacity(0.3),
+        fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
       ),
       maxLines: 2,
       minLines: 1,

@@ -1,17 +1,15 @@
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/models/coaching_relationship_model.dart';
 import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
 import 'package:strengthwise/models/coach_display_preferences_model.dart';
 import 'package:strengthwise/models/coach_assessment_note_model.dart';
-import 'package:strengthwise/models/injury_coach_note_model.dart'; // ⭐ v3.3
+import 'package:strengthwise/models/injury_coach_note_model.dart';
 import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/services/interfaces/i_coaching_relationship_service.dart';
-import 'package:strengthwise/services/interfaces/i_health_assessment_service.dart';
-import 'package:strengthwise/services/interfaces/i_coach_display_preferences_service.dart';
-import 'package:strengthwise/services/interfaces/i_coach_assessment_note_service.dart';
-import 'package:strengthwise/services/interfaces/i_injury_coach_note_service.dart'; // ⭐ v3.3
+import 'package:strengthwise/controllers/profile_controller.dart';
+import 'package:strengthwise/controllers/coach_profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/profile/health_assessment_detail_page.dart';
@@ -34,11 +32,11 @@ class ClientInfoTab extends StatefulWidget {
 }
 
 class _ClientInfoTabState extends State<ClientInfoTab> {
-  late final ICoachingRelationshipService _relationshipService;
+  // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
+  late final CoachingRelationshipController _coachingController;
   late final IAuthController _authController;
-  late final IHealthAssessmentService _healthAssessmentService;
-  late final ICoachDisplayPreferencesService _preferencesService;
-  late final ICoachAssessmentNoteService _assessmentNoteService; // ⭐ 新增
+  late final ProfileController _profileController;
+  late final CoachProfileController _coachProfileController;
 
   // ignore: unused_field - 用於未來功能擴展
   CoachingRelationshipModel? _relationship;
@@ -49,20 +47,17 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
   bool _isLoadingHealthAssessment = true;
 
   CoachDisplayPreferencesModel? _displayPreferences;
-  CoachAssessmentNoteModel? _coachNote; // ⭐ 新增
-  Map<String, List<InjuryCoachNoteModel>>? _injuryCoachNotes; // ⭐ v3.3
-  late final IInjuryCoachNoteService _injuryNoteService; // ⭐ v3.3
+  CoachAssessmentNoteModel? _coachNote;
+  Map<String, List<InjuryCoachNoteModel>>? _injuryCoachNotes;
 
   @override
   void initState() {
     super.initState();
-    _relationshipService = serviceLocator<ICoachingRelationshipService>();
+    // ⭐ v3.6: MVVM 重構 - 只使用 Controller
+    _coachingController = serviceLocator<CoachingRelationshipController>();
     _authController = serviceLocator<IAuthController>();
-    _healthAssessmentService = serviceLocator<IHealthAssessmentService>();
-    _preferencesService = serviceLocator<ICoachDisplayPreferencesService>();
-    _assessmentNoteService =
-        serviceLocator<ICoachAssessmentNoteService>(); // ⭐ 新增
-    _injuryNoteService = serviceLocator<IInjuryCoachNoteService>(); // ⭐ v3.3
+    _profileController = serviceLocator<ProfileController>();
+    _coachProfileController = serviceLocator<CoachProfileController>();
     _loadRelationship();
     _loadHealthAssessment();
     _loadDisplayPreferences();
@@ -76,8 +71,9 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
     setState(() => _isLoadingProfile = true);
 
     try {
+      // ⭐ v3.6: 透過 Controller 查詢
       final relationship =
-          await _relationshipService.getRelationshipByUsersDetailed(
+          await _coachingController.getRelationshipByUsersDetailed(
         currentUser.uid,
         widget.client.uid,
       );
@@ -103,7 +99,8 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
     setState(() => _isLoadingHealthAssessment = true);
 
     try {
-      final assessment = await _healthAssessmentService.getCurrentAssessment(
+      // ⭐ v3.6: 透過 ProfileController 查詢
+      final assessment = await _profileController.getCurrentHealthAssessment(
         widget.client.uid,
       );
 
@@ -113,14 +110,15 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
       if (assessment != null) {
         final coachId = _authController.user?.uid;
         if (coachId != null) {
-          coachNote = await _assessmentNoteService.getNote(
+          // ⭐ v3.6: 透過 ProfileController 查詢
+          coachNote = await _profileController.getCoachAssessmentNote(
             coachId: coachId,
             assessmentId: assessment.id,
           );
         }
-        // ⭐ v3.3: 載入傷病教練備註
-        injuryNotes = await _injuryNoteService.getNotesForClient(
-          clientId: widget.client.uid,
+        // ⭐ v3.6: 透過 ProfileController 查詢傷病教練備註
+        injuryNotes = await _profileController.getInjuryCoachNotes(
+          widget.client.uid,
         );
       }
 
@@ -148,8 +146,9 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
       final currentUser = _authController.user;
       if (currentUser == null) return;
 
+      // ⭐ v3.6: 透過 CoachProfileController 查詢
       final preferences =
-          await _preferencesService.getPreferences(currentUser.uid);
+          await _coachProfileController.getDisplayPreferences(currentUser.uid);
 
       if (mounted) {
         setState(() {
@@ -240,7 +239,8 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
       final currentUser = _authController.user;
       if (currentUser == null) return;
 
-      await _assessmentNoteService.upsertNote(
+      // ⭐ v3.6: 透過 ProfileController 操作
+      await _profileController.upsertCoachAssessmentNote(
         coachId: currentUser.uid,
         assessmentId: _healthAssessment!.id,
         notes: notes,

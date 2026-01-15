@@ -134,8 +134,9 @@ class WorkoutRecordOperations {
             if (startDate != null || endDate != null) {
               filtered = filtered.where((r) {
                 final schedDate = r.date;
-                if (startDate != null && schedDate.isBefore(startDate))
+                if (startDate != null && schedDate.isBefore(startDate)) {
                   return false;
+                }
                 if (endDate != null && schedDate.isAfter(endDate)) return false;
                 return true;
               }).toList();

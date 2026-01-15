@@ -5,12 +5,12 @@ import '../services/interfaces/i_note_service.dart';
 import '../services/core/error_handling_service.dart';
 import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_note_controller.dart';
-import 'note/note_cache_manager.dart';
 import 'note/note_validator.dart';
 
 /// 筆記控制器實現
 /// 
 /// 管理用戶筆記的業務邏輯，提供數據驗證，錯誤處理和狀態管理功能
+/// ⭐ v3.7: 快取統一到 Service 層
 class NoteController extends ChangeNotifier implements INoteController {
   // 依賴注入
   final INoteService _noteService;
@@ -21,17 +21,11 @@ class NoteController extends ChangeNotifier implements INoteController {
   String? _errorMessage;
   bool _isInitialized = false;
   
-  // 子模組
-  late final NoteCacheManager _cacheManager;
-  
   /// 正在載入數據
   bool get isLoading => _isLoading;
   
   /// 錯誤訊息
   String? get errorMessage => _errorMessage;
-  
-  /// 緩存的筆記
-  List<Note> get cachedNotes => _cacheManager.cachedNotes;
   
   /// 構造函數，支持依賴注入
   NoteController({
@@ -40,8 +34,6 @@ class NoteController extends ChangeNotifier implements INoteController {
   }) : 
     _noteService = noteService ?? serviceLocator<INoteService>(),
     _errorService = errorService ?? serviceLocator<ErrorHandlingService>() {
-    // 初始化子模組
-    _cacheManager = NoteCacheManager();
     _initialize();
   }
   
@@ -90,16 +82,10 @@ class NoteController extends ChangeNotifier implements INoteController {
     }
   }
   
-  /// 清除緩存
-  void clearCache() {
-    _cacheManager.clearCache();
-  }
-  
   /// 釋放資源
   @override
   void dispose() {
     _isInitialized = false;
-    clearCache();
     super.dispose();
   }
   
@@ -108,27 +94,22 @@ class NoteController extends ChangeNotifier implements INoteController {
     if (!_isInitialized) await _initialize();
     
     try {
-      // 使用緩存管理器檢查是否需要刷新
-      if (_cacheManager.shouldRefresh()) {
-        _setLoading(true);
-        clearError();
-        
-        final notes = await _noteService.getUserNotes();
-        _cacheManager.updateNotesCache(notes);
-        
-        _setLoading(false);
-      }
+      _setLoading(true);
+      clearError();
       
-      return _cacheManager.cachedNotes;
+      // ⭐ v3.7: 快取統一到 Service 層
+      final notes = await _noteService.getUserNotes();
+      
+      _setLoading(false);
+      return notes;
     } catch (e) {
       _handleError('載入筆記失敗', e);
-      return _cacheManager.cachedNotes;
+      return [];
     }
   }
   
-  /// 強制重新載入筆記，忽略緩存
+  /// 強制重新載入筆記
   Future<List<Note>> reloadNotes() async {
-    clearCache();
     return loadUserNotes();
   }
   
@@ -137,30 +118,8 @@ class NoteController extends ChangeNotifier implements INoteController {
     if (!_isInitialized) await _initialize();
     
     try {
-      // 從緩存中查找
-      if (_cacheManager.hasNoteDetails(noteId)) {
-        return _cacheManager.getNoteDetails(noteId);
-      }
-      
-      // 從列表緩存中查找
-      final cachedNote = _cacheManager.findNoteInListCache(noteId);
-      if (cachedNote != null) {
-        _cacheManager.setNoteDetails(noteId, cachedNote);
-        return cachedNote;
-      }
-      
-      // 從服務獲取
-      _setLoading(true);
-      clearError();
-      
-      final note = await _noteService.getNoteById(noteId);
-      
-      if (note != null) {
-        _cacheManager.setNoteDetails(noteId, note);
-      }
-      
-      _setLoading(false);
-      return note;
+      // ⭐ v3.7: 快取統一到 Service 層
+      return await _noteService.getNoteById(noteId);
     } catch (e) {
       _handleError('獲取筆記詳情失敗', e);
       return null;
@@ -183,10 +142,8 @@ class NoteController extends ChangeNotifier implements INoteController {
       _setLoading(true);
       clearError();
       
+      // ⭐ v3.7: Service 層會自動更新快取
       final note = await _noteService.createNote(title, textContent, drawingPoints);
-      
-      // 使用緩存管理器更新緩存
-      _cacheManager.addNoteToCache(note);
       
       _setLoading(false);
       return note;
@@ -222,12 +179,8 @@ class NoteController extends ChangeNotifier implements INoteController {
         updatedAt: DateTime.now(),
       );
       
+      // ⭐ v3.7: Service 層會自動更新快取
       final success = await _noteService.updateNote(updatedNote);
-      
-      // 使用緩存管理器更新緩存
-      if (success) {
-        _cacheManager.updateNoteInCache(updatedNote);
-      }
       
       _setLoading(false);
       return success;
@@ -245,12 +198,8 @@ class NoteController extends ChangeNotifier implements INoteController {
       _setLoading(true);
       clearError();
       
+      // ⭐ v3.7: Service 層會自動更新快取
       final success = await _noteService.deleteNote(noteId);
-      
-      // 使用緩存管理器更新緩存
-      if (success) {
-        _cacheManager.removeNoteFromCache(noteId);
-      }
       
       _setLoading(false);
       return success;

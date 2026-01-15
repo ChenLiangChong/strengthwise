@@ -415,11 +415,11 @@ class _SessionModeContentState extends State<_SessionModeContent>
     final allFilled = soapStatus.values.every((filled) => filled);
 
     if (allFilled) {
-      return Row(
+      return const Row(
         children: [
-          Icon(Icons.check_circle, color: const Color(0xFF10B981), size: 20),
-          const SizedBox(width: 8),
-          const Text('SOAP 筆記已填寫完成'),
+          Icon(Icons.check_circle, color: Color(0xFF10B981), size: 20),
+          SizedBox(width: 8),
+          Text('SOAP 筆記已填寫完成'),
         ],
       );
     }
@@ -435,12 +435,12 @@ class _SessionModeContentState extends State<_SessionModeContent>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               Icon(Icons.warning_amber,
-                  color: const Color(0xFFF59E0B), size: 20),
-              const SizedBox(width: 8),
-              const Text('SOAP 筆記尚未填寫完成'),
+                  color: Color(0xFFF59E0B), size: 20),
+              SizedBox(width: 8),
+              Text('SOAP 筆記尚未填寫完成'),
             ],
           ),
           const SizedBox(height: 8),

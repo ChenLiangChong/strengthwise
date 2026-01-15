@@ -263,7 +263,7 @@ class TrainingPlanCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
                   value: progressInfo.progress,
-                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   valueColor: AlwaysStoppedAnimation(
                     completed
                         ? Theme.of(context).colorScheme.secondary

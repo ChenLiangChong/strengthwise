@@ -3,6 +3,7 @@ import '../models/workout_record_model.dart';
 import '../models/exercise_model.dart';
 import '../services/interfaces/i_workout_service.dart';
 import '../controllers/interfaces/i_auth_controller.dart';
+import '../controllers/event_bus_controller.dart';
 import '../services/core/error_handling_service.dart';
 import '../services/service_locator.dart';
 import '../utils/notification_utils.dart';
@@ -23,6 +24,7 @@ class WorkoutExecutionController extends ChangeNotifier
   final IWorkoutService _workoutService;
   final IAuthController _authController;
   final ErrorHandlingService _errorService;
+  final EventBusController _eventBusController; // ⭐ v3.5
 
   // 狀態管理
   bool _isLoading = true;
@@ -45,9 +47,11 @@ class WorkoutExecutionController extends ChangeNotifier
     IWorkoutService? workoutService,
     IAuthController? authController,
     ErrorHandlingService? errorService,
+    EventBusController? eventBusController,
   })  : _workoutService = workoutService ?? serviceLocator<IWorkoutService>(),
         _authController = authController ?? serviceLocator<IAuthController>(),
-        _errorService = errorService ?? serviceLocator<ErrorHandlingService>() {
+        _errorService = errorService ?? serviceLocator<ErrorHandlingService>(),
+        _eventBusController = eventBusController ?? serviceLocator<EventBusController>() {
     // 初始化子模組
     _dataManager = WorkoutExecutionDataManager();
     _autoSave = WorkoutExecutionAutoSave(workoutService: _workoutService);
@@ -284,6 +288,7 @@ class WorkoutExecutionController extends ChangeNotifier
   ///
   /// 當 Session Mode 內嵌使用此 Controller 時，可以覆蓋預設的權限判斷
   /// ⭐ v3.1.1: 新增 showTimerUI 覆蓋，確保狀態檢查正確
+  @override
   void setPermissionOverride({
     bool? canEdit,
     bool? canMarkSet,
@@ -862,6 +867,19 @@ class WorkoutExecutionController extends ChangeNotifier
 
       if (success) {
         _isDataChanged = false;
+
+        // ⭐ v3.5: 發布事件（根據訓練狀態決定事件類型）
+        if (_dataManager.isCompleted) {
+          _eventBusController.publishWorkoutCompleted(
+            workoutId: _dataManager.workoutRecordId,
+            userId: userId,
+          );
+        } else {
+          _eventBusController.publishWorkoutUpdated(
+            workoutId: _dataManager.workoutRecordId,
+            userId: userId,
+          );
+        }
       }
 
       _setSaving(false);

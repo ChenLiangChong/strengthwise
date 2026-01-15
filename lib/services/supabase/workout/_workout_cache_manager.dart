@@ -21,7 +21,9 @@ class WorkoutCacheManager {
   bool isTemplatesListCacheValid(String userId) {
     if (_templatesListCache == null || 
         _templatesListCachedUserId != userId ||
-        _templatesListCacheTime == null) return false;
+        _templatesListCacheTime == null) {
+      return false;
+    }
     return DateTime.now().difference(_templatesListCacheTime!).inMinutes < 5;
   }
 
@@ -45,7 +47,11 @@ class WorkoutCacheManager {
   void addTemplate(String userId, WorkoutTemplate template) {
     _templateCache[template.id] = template;
     if (_templatesListCache != null && _templatesListCachedUserId == userId) {
-      _templatesListCache!.insert(0, template);
+      // ⭐ v3.7: 檢查是否已存在，避免重複
+      final exists = _templatesListCache!.any((t) => t.id == template.id);
+      if (!exists) {
+        _templatesListCache!.insert(0, template);
+      }
     }
   }
 
@@ -67,7 +73,9 @@ class WorkoutCacheManager {
   bool isCompletedRecordsCacheValid(String userId) {
     if (_completedRecordsCache == null ||
         _completedRecordsCachedUserId != userId ||
-        _completedRecordsCacheTime == null) return false;
+        _completedRecordsCacheTime == null) {
+      return false;
+    }
     return DateTime.now().difference(_completedRecordsCacheTime!).inMinutes < 5;
   }
 
@@ -85,7 +93,9 @@ class WorkoutCacheManager {
   bool isAllPlansCacheValid(String userId) {
     if (_allPlansCache == null ||
         _allPlansCachedUserId != userId ||
-        _allPlansCacheTime == null) return false;
+        _allPlansCacheTime == null) {
+      return false;
+    }
     return DateTime.now().difference(_allPlansCacheTime!).inMinutes < 5;
   }
 
@@ -106,12 +116,20 @@ class WorkoutCacheManager {
   void addRecord(String userId, WorkoutRecord record) {
     _recordCache[record.id] = record;
     if (_allPlansCache != null && _allPlansCachedUserId == userId) {
-      _allPlansCache!.insert(0, record);
+      // ⭐ v3.7: 修復重複卡片問題 - 先檢查是否已存在
+      final exists = _allPlansCache!.any((r) => r.id == record.id);
+      if (!exists) {
+        _allPlansCache!.insert(0, record);
+      }
     }
     if (record.completed && 
         _completedRecordsCache != null &&
         _completedRecordsCachedUserId == userId) {
-      _completedRecordsCache!.insert(0, record);
+      // ⭐ v3.7: 同樣檢查是否已存在
+      final exists = _completedRecordsCache!.any((r) => r.id == record.id);
+      if (!exists) {
+        _completedRecordsCache!.insert(0, record);
+      }
     }
   }
 

@@ -7,8 +7,9 @@ import '../../../models/body_data_record.dart';
 /// 負責執行身體數據的查詢操作
 
 /// ⭐ 定義 body_data 表的標準查詢欄位（避免 SELECT *）
+/// 注意：height 在 users 表，不在 body_data 表
 const String _kBodyDataSelectFields = '''
-  id, user_id, record_date, weight, height, body_fat_percentage, 
+  id, user_id, record_date, weight, body_fat, 
   muscle_mass, bmi, notes, created_at, updated_at
 ''';
 

@@ -39,7 +39,7 @@ class BMITrendChart extends StatelessWidget {
               height: 200,
               child: LineChart(
                 LineChartData(
-                  gridData: FlGridData(show: false),
+                  gridData: const FlGridData(show: false),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
@@ -82,9 +82,9 @@ class BMITrendChart extends StatelessWidget {
                       ),
                     ),
                     topTitles:
-                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     rightTitles:
-                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
                   borderData: FlBorderData(show: false),
                   lineBarsData: [
@@ -93,7 +93,7 @@ class BMITrendChart extends StatelessWidget {
                       isCurved: true,
                       color: colorScheme.secondary,
                       barWidth: 3,
-                      dotData: FlDotData(show: true),
+                      dotData: const FlDotData(show: true),
                       belowBarData: BarAreaData(
                         show: true,
                         color: colorScheme.secondary.withOpacity(0.1),

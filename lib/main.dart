@@ -14,9 +14,9 @@ import 'services/core/deep_link_service.dart';
 import 'services/core/theme_service.dart';
 import 'services/core/network_status_service.dart';
 import 'views/widgets/offline_banner.dart';
-import 'services/interfaces/i_auth_service.dart';
-import 'services/interfaces/i_notification_service.dart';
-import 'services/interfaces/i_statistics_service.dart';
+import 'services/interfaces/i_notification_service.dart'; // 基礎設施服務，保留
+import 'controllers/interfaces/i_auth_controller.dart'; // ⭐ v3.6: MVVM
+import 'controllers/interfaces/i_statistics_controller.dart'; // ⭐ v3.6: MVVM
 import 'controllers/theme_controller.dart';
 import 'themes/app_theme.dart';
 
@@ -188,24 +188,24 @@ void _warmupGoogleFonts() {
 ///
 /// 從 Hive 載入統計數據到記憶體
 /// 讓用戶進入統計頁面時不需等待
+/// ⭐ v3.6: MVVM 重構 - 透過 Controller
 void _warmupStatisticsCache() {
   // 不 await，讓它在背景執行
   Future.microtask(() async {
     try {
-      final authService = serviceLocator<IAuthService>();
-      if (!authService.isUserLoggedIn()) {
+      final authController = serviceLocator<IAuthController>();
+      if (!authController.isLoggedIn) {
         if (kDebugMode) {
           print('[MAIN] ⏭️ 統計預熱跳過（用戶未登入）');
         }
         return;
       }
 
-      final user = authService.getCurrentUser();
-      final userId = user?['uid'] as String?;
+      final userId = authController.user?.uid;
       if (userId == null) return;
 
-      final statisticsService = serviceLocator<IStatisticsService>();
-      await statisticsService.warmupFromLocalCache(userId);
+      final statisticsController = serviceLocator<IStatisticsController>();
+      await statisticsController.warmupFromLocalCache(userId);
 
       if (kDebugMode) {
         print('[MAIN] ✅ 統計快取預熱完成');
@@ -236,18 +236,16 @@ Future<void> _initializeFCM() async {
     final notificationService = serviceLocator<INotificationService>();
     await notificationService.initialize();
 
-    // 如果用戶已登入，保存 Token
-    final authService = serviceLocator<IAuthService>();
-    final isLoggedIn = authService.isUserLoggedIn();
+    // ⭐ v3.6: MVVM 重構 - 透過 Controller 檢查登入狀態
+    final authController = serviceLocator<IAuthController>();
+    final isLoggedIn = authController.isLoggedIn;
 
     if (kDebugMode) {
       print('[MAIN] 🔍 FCM 檢查：isLoggedIn=$isLoggedIn');
     }
 
     if (isLoggedIn) {
-      final user = authService.getCurrentUser();
-      // 注意：getCurrentUser() 返回的是 'uid' 而不是 'id'
-      final userId = user?['uid'] as String?;
+      final userId = authController.user?.uid;
 
       if (kDebugMode) {
         print('[MAIN] 🔍 FCM 用戶：userId=$userId');

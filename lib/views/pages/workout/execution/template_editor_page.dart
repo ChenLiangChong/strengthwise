@@ -5,10 +5,10 @@ import 'package:strengthwise/models/workout_exercise_model.dart'
     as exercise_models;
 import 'package:strengthwise/models/exercise_model.dart';
 import 'package:strengthwise/models/tracking_mode.dart'; // v3.2+
-import 'package:strengthwise/models/workout_template/plan_type_enum.dart'; // v3.4+
-import 'package:strengthwise/services/interfaces/i_workout_service.dart';
-import 'package:strengthwise/services/interfaces/i_auth_service.dart';
+// v3.4+
 import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart'; // ⭐ v3.5: MVVM 重構
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/exercises/exercises_page.dart';
 import 'widgets/exercise_settings_dialog.dart'; // v3.2+ 添加動作設定對話框
@@ -44,9 +44,9 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
   final _newExerciseDistanceController = TextEditingController();
   final _newExerciseCaloriesController = TextEditingController();
 
-  // Service 層
-  late final IWorkoutService _workoutService;
-  late final IAuthService _authService;
+  // ⭐ v3.6: MVVM 重構 - 透過 Controller
+  late final IAuthController _authController;
+  late final IWorkoutController _workoutController;
 
   // ⭐ v3.4: 使用統一的訓練計畫類型列表
   List<String> get _planTypes => PlanTypeExtension.uiOptions;
@@ -54,8 +54,8 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
   @override
   void initState() {
     super.initState();
-    _workoutService = serviceLocator<IWorkoutService>();
-    _authService = serviceLocator<IAuthService>();
+    _authController = serviceLocator<IAuthController>(); // ⭐ v3.6: MVVM
+    _workoutController = serviceLocator<IWorkoutController>();
     if (widget.template != null) {
       _loadTemplateData();
     }
@@ -94,6 +94,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
   }
 
   /// 保存模板
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作，事件由 Controller 自動發布
   Future<void> _saveTemplate() async {
     if (_titleController.text.isEmpty || _selectedPlanType == null) {
       NotificationUtils.showWarning(context, '請填寫模板名稱和類型');
@@ -112,8 +113,9 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
     try {
       print('[模板編輯] 準備保存模板，動作數量: ${_exercises.length}');
 
-      final currentUser = _authService.getCurrentUser();
-      if (currentUser == null) {
+      // ⭐ v3.6: MVVM 重構 - 透過 Controller 獲取用戶
+      final userId = _authController.user?.uid;
+      if (userId == null || userId.isEmpty) {
         throw Exception('用戶未登入');
       }
 
@@ -128,14 +130,18 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
           updatedAt: DateTime.now(),
         );
 
-        await _workoutService.updateTemplate(updatedTemplate);
+        // ⭐ v3.5: 透過 Controller 更新模板（Controller 會自動發布事件）
+        final success = await _workoutController.updateTemplate(updatedTemplate);
+        if (!success) {
+          throw Exception(_workoutController.errorMessage ?? '更新模板失敗');
+        }
         print('[模板編輯] 更新完成');
       } else {
         // 創建新模板
         print('[模板編輯] 創建新模板');
         final newTemplate = WorkoutTemplate(
           id: '', // Service 會生成
-          userId: currentUser['uid'] ?? '',
+          userId: userId,
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           planType: _selectedPlanType!,
@@ -144,7 +150,8 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
           updatedAt: DateTime.now(),
         );
 
-        final savedTemplate = await _workoutService.createTemplate(newTemplate);
+        // ⭐ v3.5: 透過 Controller 創建模板（Controller 會自動發布事件）
+        final savedTemplate = await _workoutController.createTemplate(newTemplate);
         print('[模板編輯] 創建完成，ID: ${savedTemplate.id}');
       }
 
@@ -570,7 +577,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedPlanType,
+                    initialValue: _selectedPlanType,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       contentPadding:

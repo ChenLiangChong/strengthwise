@@ -391,6 +391,10 @@ class WorkoutServiceSupabase implements IWorkoutService {
       _localCacheService!.updateCachedPlan(currentUserId!, createdRecord);
     }
 
+    // ⭐ v3.5: 增量更新查詢快取（只新增一筆，不清除全部）
+    _cacheManager.addRecord(currentUserId!, createdRecord);
+    _logDebug('🔄 創建記錄後，已增量更新查詢快取');
+
     return createdRecord;
   }
 
@@ -425,6 +429,12 @@ class WorkoutServiceSupabase implements IWorkoutService {
       }
     }
 
+    // ⭐ v3.5: 增量更新查詢快取（只更新一筆，不清除全部）
+    if (success) {
+      _cacheManager.updateRecord(currentUserId!, record);
+      _logDebug('🔄 更新記錄後，已增量更新查詢快取');
+    }
+
     return success;
   }
 
@@ -445,6 +455,12 @@ class WorkoutServiceSupabase implements IWorkoutService {
     // ⚡ v3.1.1: 從本地快取移除
     if (success && _localCacheService != null) {
       _localCacheService!.removeCachedPlan(currentUserId!, recordId);
+    }
+
+    // ⭐ v3.5: 增量更新查詢快取（只刪除一筆，不清除全部）
+    if (success) {
+      _cacheManager.removeRecord(currentUserId!, recordId);
+      _logDebug('🔄 刪除記錄後，已增量更新查詢快取');
     }
 
     return success;

@@ -33,9 +33,9 @@ void main() {
 
     testWidgets('空列表不顯示任何內容', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
-            body: QuickActionBar(actions: const []),
+            body: QuickActionBar(actions: []),
           ),
         ),
       );

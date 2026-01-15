@@ -1,5 +1,6 @@
 // ✅ 已響應式改造 (Phase 0) - 表單頁，複雜操作不約束
 // ✅ v3.2: Coach Mark 引導
+// ✅ v3.5: AppEventBus 自動刷新
 import 'package:flutter/material.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:strengthwise/models/workout_exercise_model.dart'
@@ -7,9 +8,9 @@ import 'package:strengthwise/models/workout_exercise_model.dart'
 import 'package:strengthwise/models/workout_record_model.dart';
 import 'package:strengthwise/models/exercise_model.dart';
 import 'package:strengthwise/models/tracking_mode.dart'; // v3.2+
-import 'package:strengthwise/models/workout_template/plan_type_enum.dart'; // v3.4+
-import 'package:strengthwise/services/interfaces/i_workout_service.dart';
+// v3.4+
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart'; // ⭐ v3.5: MVVM 重構
 import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/exercises/exercises_page.dart';
@@ -50,25 +51,33 @@ class PlanEditorPage extends StatefulWidget {
 }
 
 class _PlanEditorPageState extends State<PlanEditorPage> {
-  late final IWorkoutService _workoutService;
+  // ⭐ v3.6: MVVM 重構 - 移除 Service 直接調用
   late final IAuthController _authController;
+  late final IWorkoutController _workoutController;
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  
+
   // v3.2+ 新增動作設定對話框控制器
-  final TextEditingController _newExerciseSetsController = TextEditingController();
-  final TextEditingController _newExerciseRepsController = TextEditingController();
-  final TextEditingController _newExerciseWeightController = TextEditingController();
-  final TextEditingController _newExerciseRestController = TextEditingController();
-  final TextEditingController _newExerciseTimeController = TextEditingController();
-  final TextEditingController _newExerciseDistanceController = TextEditingController();
-  final TextEditingController _newExerciseCaloriesController = TextEditingController();
+  final TextEditingController _newExerciseSetsController =
+      TextEditingController();
+  final TextEditingController _newExerciseRepsController =
+      TextEditingController();
+  final TextEditingController _newExerciseWeightController =
+      TextEditingController();
+  final TextEditingController _newExerciseRestController =
+      TextEditingController();
+  final TextEditingController _newExerciseTimeController =
+      TextEditingController();
+  final TextEditingController _newExerciseDistanceController =
+      TextEditingController();
+  final TextEditingController _newExerciseCaloriesController =
+      TextEditingController();
 
   List<exercise_models.WorkoutExercise> _exercises = [];
   bool _isLoading = false;
   String? _selectedPlanType;
-  
+
   // ⭐ v3.2: Coach Mark 引導
   final GlobalKey _addExerciseButtonKey = GlobalKey();
   bool _coachMarkShown = false;
@@ -86,9 +95,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   void initState() {
     super.initState();
 
-    // 從服務定位器獲取依賴
-    _workoutService = serviceLocator<IWorkoutService>();
+    // ⭐ v3.6: MVVM 重構 - 透過 Controller
     _authController = serviceLocator<IAuthController>();
+    _workoutController = serviceLocator<IWorkoutController>();
 
     // ⭐ v2.1: 設定訓練時間
     // 1. 如果調用方提供 initialStartTime（偏好時段）→ 使用該時間
@@ -172,7 +181,8 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     try {
       print('[PlanEditor] 載入現有計畫: ${widget.planId}');
 
-      final record = await _workoutService.getRecordById(widget.planId!);
+      // ⭐ v3.6: MVVM 重構 - 透過 Controller 查詢
+      final record = await _workoutController.getRecordById(widget.planId!);
 
       if (record != null) {
         _titleController.text = record.title;
@@ -247,19 +257,23 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
             exercise.sets,
             (index) {
               // ✅ 優先使用 setTargets 中的個別設定
-              if (exercise.setTargets != null && 
+              if (exercise.setTargets != null &&
                   index < exercise.setTargets!.length) {
                 final target = exercise.setTargets![index];
                 return SetRecord(
                   setNumber: index + 1,
                   reps: (target['reps'] as num?)?.toInt() ?? exercise.reps,
-                  weight: (target['weight'] as num?)?.toDouble() ?? exercise.weight,
-                  restTime: (target['restTime'] as num?)?.toInt() ?? exercise.restTime,
+                  weight:
+                      (target['weight'] as num?)?.toDouble() ?? exercise.weight,
+                  restTime: (target['restTime'] as num?)?.toInt() ??
+                      exercise.restTime,
                   completed: false,
                   // v3.2+ 新增欄位
                   time: (target['time'] as num?)?.toInt() ?? exercise.time,
-                  distance: (target['distance'] as num?)?.toDouble() ?? exercise.distance,
-                  calories: (target['calories'] as num?)?.toDouble() ?? exercise.calories,
+                  distance: (target['distance'] as num?)?.toDouble() ??
+                      exercise.distance,
+                  calories: (target['calories'] as num?)?.toDouble() ??
+                      exercise.calories,
                 );
               }
               // 沒有 setTargets 時使用預設值
@@ -284,8 +298,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         // 更新現有記錄
         print('[PlanEditor] 更新現有計畫: ${widget.planId}');
 
+        // ⭐ v3.6: MVVM 重構 - 透過 Controller 查詢
         final existingRecord =
-            await _workoutService.getRecordById(widget.planId!);
+            await _workoutController.getRecordById(widget.planId!);
         if (existingRecord != null) {
           final updatedRecord = WorkoutRecord(
             id: widget.planId!,
@@ -304,13 +319,18 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
             trainingEndTime: _trainingEndTime, // ⭐ v2.1: 訓練結束時間
           );
 
-          await _workoutService.updateRecord(updatedRecord);
+          // ⭐ v3.5: 透過 Controller 更新訓練記錄（Controller 會自動發布事件）
+          final success = await _workoutController.updateRecord(updatedRecord);
+          if (!success) {
+            throw Exception(_workoutController.errorMessage ?? '更新失敗');
+          }
           print('[PlanEditor] 更新完成');
         }
       } else {
         // 創建新記錄
         print('[PlanEditor] 創建新記錄');
-        print('[PlanEditor] appointmentId: ${widget.appointmentId}'); // ⭐ v3.1 調試
+        print(
+            '[PlanEditor] appointmentId: ${widget.appointmentId}'); // ⭐ v3.1 調試
 
         // ⭐ Phase 4C: 正確設置 traineeId 和 creatorId
         final traineeId = widget.traineeId ?? userId; // 如果指定學員則用學員 ID；否則用當前用戶
@@ -334,8 +354,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           planType: _selectedPlanType, // ⭐ v3.4: 訓練計畫類型
         );
 
-        await _workoutService.createRecord(newRecord);
-        print('[PlanEditor] 創建完成');
+        // ⭐ v3.5: 透過 Controller 創建訓練記錄（Controller 會自動發布事件）
+        final createdRecord = await _workoutController.createRecord(newRecord);
+        print('[PlanEditor] 創建完成: ${createdRecord.id}');
       }
 
       // 顯示成功通知
@@ -376,6 +397,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   }
 
   // 保存為模板
+  // ⭐ v3.5: MVVM 重構 - 透過 Controller 操作，事件由 Controller 自動發布
   Future<void> _saveAsTemplate() async {
     try {
       if (_titleController.text.isEmpty || _selectedPlanType == null) {
@@ -444,8 +466,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         updatedAt: DateTime.now(),
       );
 
-      await _workoutService.createTemplate(template);
-      print('[PlanEditor] 模板已儲存: $templateName');
+      // ⭐ v3.5: 透過 Controller 創建模板（Controller 會自動發布事件）
+      final savedTemplate = await _workoutController.createTemplate(template);
+      print('[PlanEditor] 模板已儲存: $templateName, ID: ${savedTemplate.id}');
 
       setState(() {
         _isLoading = false;
@@ -605,8 +628,10 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       currentReps = target['reps'] as int? ?? exercise.reps;
       currentWeight = (target['weight'] as num?)?.toDouble() ?? exercise.weight;
       currentTime = target['time'] as int? ?? exercise.time;
-      currentDistance = (target['distance'] as num?)?.toDouble() ?? exercise.distance;
-      currentCalories = (target['calories'] as num?)?.toDouble() ?? exercise.calories;
+      currentDistance =
+          (target['distance'] as num?)?.toDouble() ?? exercise.distance;
+      currentCalories =
+          (target['calories'] as num?)?.toDouble() ?? exercise.calories;
     } else {
       currentReps = exercise.reps;
       currentWeight = exercise.weight;
@@ -659,16 +684,17 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   }
 
   /// v3.2+ 根據 exercise 建立 setTarget
-  Map<String, dynamic> _buildSetTarget(exercise_models.WorkoutExercise exercise) {
+  Map<String, dynamic> _buildSetTarget(
+      exercise_models.WorkoutExercise exercise) {
     final target = <String, dynamic>{};
     final mode = exercise.trackingMode;
-    
+
     if (mode.needsReps) target['reps'] = exercise.reps;
     if (mode.needsWeight) target['weight'] = exercise.weight;
     if (mode.needsTime) target['time'] = exercise.time ?? 0;
     if (mode.needsDistance) target['distance'] = exercise.distance ?? 0.0;
     if (mode.needsCalories) target['calories'] = exercise.calories ?? 0.0;
-    
+
     return target;
   }
 
@@ -749,6 +775,61 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     }
   }
 
+  /// 處理 inline 編輯更新（來自 PlanExerciseCard）
+  /// 支援兩種模式：
+  /// - 批量更新（無 setIndex）：更新預設目標並應用到所有組
+  /// - 單組更新（有 setIndex）：只更新指定組
+  void _handleBatchUpdate(int exerciseIndex, Map<String, dynamic> values) {
+    setState(() {
+      final exercise = _exercises[exerciseIndex];
+      final setIndex = values['setIndex'] as int?;
+
+      if (setIndex != null) {
+        // 單組更新模式
+        final updatedValues = Map<String, dynamic>.from(values);
+        updatedValues.remove('setIndex'); // 移除 setIndex，只保留數據
+
+        // 確保 setTargets 存在
+        List<Map<String, dynamic>> newSetTargets;
+        if (exercise.setTargets != null && exercise.setTargets!.isNotEmpty) {
+          newSetTargets = List<Map<String, dynamic>>.from(exercise.setTargets!);
+        } else {
+          newSetTargets = List.generate(
+            exercise.sets,
+            (i) => _buildSetTarget(exercise),
+          );
+        }
+
+        // 確保 setIndex 在範圍內
+        while (newSetTargets.length <= setIndex) {
+          newSetTargets.add(_buildSetTarget(exercise));
+        }
+
+        // 更新指定組
+        newSetTargets[setIndex] = updatedValues;
+
+        _exercises[exerciseIndex] = exercise.copyWith(
+          setTargets: newSetTargets,
+        );
+      } else {
+        // 批量更新模式：更新預設值並應用到所有組
+        final newSetTargets = List.generate(
+          exercise.sets,
+          (i) => Map<String, dynamic>.from(values),
+        );
+
+        _exercises[exerciseIndex] = exercise.copyWith(
+          reps: values['reps'] as int? ?? exercise.reps,
+          weight: (values['weight'] as num?)?.toDouble() ?? exercise.weight,
+          time: values['time'] as int?,
+          distance: (values['distance'] as num?)?.toDouble(),
+          calories: (values['calories'] as num?)?.toDouble(),
+          setTargets: newSetTargets,
+        );
+      }
+    });
+  }
+
   // 移除訓練動作
   void _removeExercise(int index) {
     setState(() {
@@ -775,16 +856,16 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       );
     });
   }
-  
+
   // ⭐ v3.2: 檢查是否顯示 Coach Mark
   Future<void> _checkCoachMark() async {
     if (_coachMarkShown) return;
-    
+
     final onboardingService = serviceLocator<OnboardingService>();
     final shouldShow = await onboardingService.shouldShowCoachMark(
       OnboardingService.keyWorkoutPlanCreate,
     );
-    
+
     if (shouldShow && mounted) {
       // 延遲顯示，確保 UI 已渲染
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -792,14 +873,14 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       });
     }
   }
-  
+
   // ⭐ v3.2: 顯示 Coach Mark 引導
   void _showCoachMark() {
     if (_coachMarkShown) return;
     _coachMarkShown = true;
-    
+
     final targets = <TargetFocus>[];
-    
+
     // 添加動作按鈕引導
     if (_addExerciseButtonKey.currentContext != null) {
       targets.add(
@@ -811,7 +892,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         ),
       );
     }
-    
+
     if (targets.isNotEmpty) {
       CoachMarkHelper.show(
         context: context,
@@ -898,7 +979,8 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                             return PlanExerciseCard(
                               exercise: _exercises[index],
                               exerciseIndex: index,
-                              onBatchEdit: () => _batchEditSets(index),
+                              onBatchUpdate: (values) =>
+                                  _handleBatchUpdate(index, values),
                               onDelete: () => _removeExercise(index),
                               onEditSet: (setIndex) =>
                                   _editSet(index, setIndex),

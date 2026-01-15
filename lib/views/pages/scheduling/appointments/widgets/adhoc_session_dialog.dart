@@ -1,9 +1,10 @@
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/services/interfaces/i_coaching_relationship_service.dart';
-import 'package:strengthwise/services/interfaces/i_appointment_service.dart';
+import 'package:strengthwise/controllers/coaching_relationship_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/services/core/error_handling_service.dart';
+import 'package:strengthwise/controllers/appointment_controller.dart'; // ⭐ v3.5: MVVM 重構
 
 /// ⭐ v3.1.1: 臨時課程建立結果
 ///
@@ -54,8 +55,8 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
 
-  late final ICoachingRelationshipService _relationshipService;
-  late final IAppointmentService _appointmentService;
+  late final CoachingRelationshipController _relationshipController; // ⭐ v3.6: MVVM
+  late final AppointmentController _appointmentController; // ⭐ v3.5: MVVM 重構
   late final ErrorHandlingService _errorService;
 
   List<UserModel> _clients = [];
@@ -71,8 +72,8 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
   @override
   void initState() {
     super.initState();
-    _relationshipService = serviceLocator<ICoachingRelationshipService>();
-    _appointmentService = serviceLocator<IAppointmentService>();
+    _relationshipController = serviceLocator<CoachingRelationshipController>(); // ⭐ v3.6: MVVM
+    _appointmentController = serviceLocator<AppointmentController>(); // ⭐ v3.5: MVVM 重構
     _errorService = serviceLocator<ErrorHandlingService>();
     _loadClients();
   }
@@ -83,9 +84,10 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
     super.dispose();
   }
 
+  /// ⭐ v3.6: 透過 Controller 查詢
   Future<void> _loadClients() async {
     try {
-      final clients = await _relationshipService.getCoachClientsWithDetails(
+      final clients = await _relationshipController.getCoachClientsWithDetails(
         widget.coachId,
         status: 'active',
       );
@@ -132,6 +134,7 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
     }
   }
 
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作，事件由 Controller 自動發布
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedClient == null) {
@@ -162,8 +165,8 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
         );
         final endTime = startTime.add(Duration(minutes: _durationMinutes));
 
-        // ⭐ v3.1.1: 獲取創建的 appointment ID
-        final appointmentId = await _appointmentService.createAdHocSession(
+        // ⭐ v3.5: 透過 Controller 創建臨時課程（Controller 會自動發布事件）
+        final appointmentId = await _appointmentController.createAdHocSession(
           coachId: widget.coachId,
           clientId: _selectedClient!.uid,
           startTime: startTime,
@@ -171,6 +174,10 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
           notes:
               _notesController.text.isNotEmpty ? _notesController.text : null,
         );
+
+        if (appointmentId == null) {
+          throw Exception(_appointmentController.errorMessage ?? '建立臨時課程失敗');
+        }
 
         // 記錄第一筆課程資訊（用於跳轉）
         if (i == 0) {
@@ -259,7 +266,7 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
 
                     // 選擇學員
                     DropdownButtonFormField<UserModel>(
-                      value: _selectedClient,
+                      initialValue: _selectedClient,
                       decoration: const InputDecoration(
                         labelText: '選擇學員',
                         prefixIcon: Icon(Icons.person),
@@ -306,7 +313,7 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
 
                     // 課程時長
                     DropdownButtonFormField<int>(
-                      value: _durationMinutes,
+                      initialValue: _durationMinutes,
                       decoration: const InputDecoration(
                         labelText: '課程時長',
                         prefixIcon: Icon(Icons.timer),

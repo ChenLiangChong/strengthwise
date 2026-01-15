@@ -2,42 +2,121 @@
 
 > 下一步計劃、當前版本、未來規劃
 
-**當前版本**：v3.4（2026-01-12 完成）  
-**上一版本**：v3.3（2026-01-12 完成）  
+**當前版本**：v3.6（2026-01-15 完成）  
+**上一版本**：v3.5（2026-01-15 完成）  
 **維護者**：StrengthWise 開發團隊
 
 ---
 
 ## 📋 目錄
 
-- [v3.4 已完成](#v34-已完成)
+- [v3.6 已完成](#v36-已完成)
 - [未來計劃](#未來計劃)
 - [已完成功能](#已完成功能)
 
 ---
 
-## v3.4 已完成
+## v3.6 已完成
 
-> 傷病教練備註顯示修復 + 模板儲存優化
+> MVVM 純架構重構 - View 層完全透過 Controller 操作
 
 ### 完成項目
 
 | 項目 | 說明 |
 |------|------|
-| ✅ 傷病教練備註顯示 | 學員端健康評估摘要卡片正確顯示教練備註 |
-| ✅ 訓練計畫類型統一 | 新增「綜合訓練」，統一 11 種計畫類型 |
-| ✅ 模板儲存 TrackingMode | 儲存模板時保留動作的 TrackingMode |
-| ✅ 教練動作匯入 | 儲存模板時自動替換為用戶自建動作 ID |
+| ✅ MVVM 100% 合規 | View 層不再直接調用 Service（含 CUD 和 Query）|
+| ✅ Controller 介面擴展 | 新增純查詢方法，支援 View 層數據獲取 |
+| ✅ IStatisticsController 擴展 | 新增 6 個查詢方法（getStrengthProgress 等）|
+| ✅ IWorkoutController 擴展 | 新增 getRecordById、getCoachCreatedPlans 等 |
+| ✅ 全專案 Service 調用清理 | 60+ 個 View 檔案的 Service 調用改為 Controller |
 
-### 修改檔案
+### 架構成果
 
-| 檔案 | 說明 |
-|------|------|
-| `health_assessment_tab.dart` | Session Mode 健康評估 Tab 載入傷病備註 |
-| `my_health_assessment_page.dart` | 學員健康評估頁面載入傷病備註 |
-| `workout_execution_content.dart` | 儲存模板時保留 TrackingMode |
-| `plan_type_enum.dart` | 新增 `mixed` 類型，統一 uiOptions |
-| `template_editor_page.dart` | 動態顯示各 TrackingMode 動作摘要 |
+```
+View Layer → Controller Layer → Service Layer
+    ↑              ↑                 ↑
+  只負責 UI      業務邏輯         數據存取
+              + 事件發布        + 快取管理
+              + 狀態管理        + 本地持久化
+```
+
+### 修改檔案（重點）
+
+| 類型 | 檔案數 | 說明 |
+|------|--------|------|
+| Controller 介面 | 8+ | 新增純查詢方法到 Interface |
+| View 層 | 60+ | Service 調用改為 Controller 調用 |
+| main.dart | 1 | 使用 IAuthController/IStatisticsController |
+
+### 擴展的 Controller 介面
+
+| Controller | 新增方法 |
+|------------|---------|
+| `IStatisticsController` | `getStrengthProgress()`, `getExercisesWithRecords()`, `clearStatisticsCache()`, `warmupFromLocalCache()`, `preloadAllTimeRanges()`, `getStatistics()` |
+| `IWorkoutController` | `getRecordById()`, `getCoachCreatedPlans()`, `getTodayPlans()`, `getUserTemplates()` |
+| `ProfileController` | `getCurrentUserProfile()`, `getUserProfile()`, `upsertCoachAssessmentNote()` |
+| `CoachingRelationshipController` | `getCoachClientsWithRelationship()`, `hasActiveCoach()` |
+| `AppointmentController` | `getUserAppointments()` |
+
+---
+
+## ✅ v3.5 MVVM CUD 事件修復（已完成）
+
+> View 層 CUD 操作改為透過 Controller，事件由 Controller 統一發布
+
+### 已修復項目
+
+| 檔案 | 原違規操作 | 修復方案 |
+|------|----------|---------|
+| `home_page.dart` | `_appointmentService.confirmAppointment()` | → `AppointmentController.confirmAppointment()` |
+| `home_page.dart` | `_appointmentService.cancelAppointment()` | → `AppointmentController.rejectAppointment()` |
+| `home_page.dart` | `_workoutService.deleteRecord()` | → `WorkoutController.deleteRecord()` |
+| `booking_page.dart` | `_appointmentService.createAppointment()` | → `AppointmentController.createAppointment()` |
+| `booking_page.dart` | `_workoutService.deleteRecord()` | → `WorkoutController.deleteRecord()` |
+| `training_page.dart` | `_workoutService.createRecord()` | → `WorkoutController.createRecord()` |
+| `template_editor_page.dart` | `_workoutService.createTemplate()` | → `WorkoutController.createTemplate()` |
+| `template_editor_page.dart` | `_workoutService.updateTemplate()` | → `WorkoutController.updateTemplate()` |
+| `plan_editor_page.dart` | `_workoutService.createTemplate()` | → `WorkoutController.createTemplate()` |
+| `plan_editor_page.dart` | `_workoutService.create/updateRecord()` | → `WorkoutController.create/updateRecord()` |
+| `adhoc_session_dialog.dart` | `_appointmentService.createAdHocSession()` | → `AppointmentController.createAdHocSession()` |
+| `client_workout_calendar_tab.dart` | `_workoutService.deleteRecord()` | → `WorkoutController.deleteRecord()` |
+| `template_management_page.dart` | `_workoutService.createRecord()` | → `WorkoutController.createRecord()` |
+
+### Controller 事件發布
+
+| Controller | 已內建事件 |
+|------------|----------|
+| `AppointmentController` | confirm/reject/cancel/complete/create/createAdHocSession 事件 |
+| `WorkoutController` | template CUD + workout record CUD 事件 |
+| `ClientManagementController` | workout CUD 事件 |
+| `BodyDataController` | bodyDataUpdated 事件 |
+
+### 額外修復項目（第二輪）
+
+| 檔案 | 原違規操作 | 修復方案 |
+|------|----------|---------|
+| `health_assessment_page.dart` | `_healthService.create/updateAssessment()` | → `ProfileController.create/updateHealthAssessment()` |
+| `health_assessment_page.dart` | `_injuryNoteService.delete/upsertNote()` | → `ProfileController.delete/upsertInjuryNote()` |
+| `favorite_exercises_list.dart` | `_favoritesService.removeFavorite()` | → `ExerciseController.removeFavorite()` |
+| `exercise_selection_navigator.dart` | `_favoritesService.add/removeFavorite()` | → `ExerciseController.add/removeFavorite()` |
+| `exercise_strength_detail_page.dart` | `_favoritesService.add/removeFavorite()` | → `ExerciseController.add/removeFavorite()` |
+| `client_management_page.dart` | `_relationshipService.deleteRelationship()` | → `CoachingRelationshipController.deleteRelationship()` |
+| `coach_display_preferences_page.dart` | `_preferencesService.updatePreferences()` | → `CoachProfileController.updateDisplayPreferences()` |
+| `booking_page.dart` | `_clientAvailabilityService.createAvailability()` | → `ClientAvailabilityController.createAvailability()` |
+
+### Controller 方法擴展
+
+| Controller | 新增方法 |
+|------------|---------|
+| `ExerciseController` | `addFavorite()`, `removeFavorite()` |
+| `ProfileController` | `createHealthAssessment()`, `updateHealthAssessment()`, `deleteInjuryNote()`, `upsertInjuryNote()` |
+| `CoachProfileController` | `updateDisplayPreferences()` |
+
+### 架構優化成果
+
+1. **事件發布集中**：所有需要跨頁面刷新的事件發布邏輯在 Controller 層統一處理
+2. **維護簡化**：修改事件邏輯只需修改 Controller
+3. **一致性保證**：透過 Controller 操作自動發布事件，不會遺漏
 
 ---
 
@@ -79,7 +158,9 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 | v3.1 | Session Mode 完善、性能優化、首頁 UX、離線提示 |
 | v3.2 | Coach Mark Onboarding、TrackingMode 擴充、Web PWA |
 | v3.3 | TrackingMode 統計適配、PR 修復、Migrations 整理 |
-| **v3.4** | **傷病教練備註顯示、模板儲存優化** |
+| v3.4 | 傷病教練備註顯示、模板儲存優化 |
+| v3.5 | MVVM CUD 事件修復（Controller 統一發布事件）|
+| **v3.6** | **MVVM 純架構重構（View 完全透過 Controller）** |
 
 **詳細版本歷史**：[archived/VERSION_HISTORY.md](archived/VERSION_HISTORY.md)  
 **技術架構**：[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)  
@@ -91,8 +172,9 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 
 | 項目 | 狀態 |
 |------|------|
-| v1.0-v3.4 | ✅ 100% |
+| v1.0-v3.6 | ✅ 100% |
 | 代碼品質 | ✅ 0 linter errors |
+| MVVM 架構 | ✅ 100% 合規 |
 
 **下一步重點**：
 1. Beta 測試準備
@@ -100,7 +182,7 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 
 ---
 
-> ✅ **v3.4 完成**（2026-01-12）：傷病教練備註顯示 + 模板儲存優化
+> ✅ **v3.6 完成**（2026-01-15）：MVVM 純架構重構
 >
 > 📱 **Google Play**：內部測試已發布（v1.0.0），等待 Google 審核
 >

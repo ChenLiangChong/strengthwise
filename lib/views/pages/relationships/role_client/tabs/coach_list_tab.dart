@@ -1,8 +1,9 @@
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/coach_management_controller.dart';
+import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/services/interfaces/i_coaching_relationship_service.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/views/pages/relationships/role_client/coach_detail_page.dart';
@@ -54,9 +55,9 @@ class _CoachListTabState extends State<CoachListTab>
 
   /// 刷新列表
   Future<void> _refresh() async {
-    // 清除教練關係快取
-    final relationshipService = serviceLocator<ICoachingRelationshipService>();
-    relationshipService.clearClientCache(widget.clientId);
+    // ⭐ v3.6: 透過 Controller 清除快取
+    final coachingController = serviceLocator<CoachingRelationshipController>();
+    coachingController.clearClientCache(widget.clientId);
 
     // 重新載入
     await _controller.loadCoaches(widget.clientId);

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
+import 'package:strengthwise/controllers/event_bus_controller.dart';
 import 'package:strengthwise/models/coaching_relationship_model.dart';
 import 'package:strengthwise/models/user/user_model.dart';
-import 'package:strengthwise/models/invite_code_model.dart';
 import 'package:strengthwise/services/interfaces/i_coaching_relationship_service.dart';
 import 'package:strengthwise/services/interfaces/i_user_service.dart';
 import 'package:strengthwise/services/interfaces/i_invite_code_service.dart';
@@ -19,12 +19,15 @@ class MockInviteCodeService extends Mock implements IInviteCodeService {}
 
 class MockErrorHandlingService extends Mock implements ErrorHandlingService {}
 
+class MockEventBusController extends Mock implements EventBusController {}
+
 /// CoachingRelationshipController 測試
 void main() {
   late MockCoachingRelationshipService mockRelationshipService;
   late MockUserService mockUserService;
   late MockInviteCodeService mockInviteCodeService;
   late MockErrorHandlingService mockErrorService;
+  late MockEventBusController mockEventBusController;
   late CoachingRelationshipController controller;
 
   final testUser = UserModel(
@@ -53,6 +56,7 @@ void main() {
     mockUserService = MockUserService();
     mockInviteCodeService = MockInviteCodeService();
     mockErrorService = MockErrorHandlingService();
+    mockEventBusController = MockEventBusController();
 
     // 預設 mock 行為
     when(() => mockRelationshipService.getCoachClientsWithDetails(any(),
@@ -65,11 +69,13 @@ void main() {
     when(() => mockErrorService.logError(any(), type: any(named: 'type')))
         .thenReturn(null);
 
+    // v3.5: 新增 EventBusController
     controller = CoachingRelationshipController(
       mockRelationshipService,
       mockUserService,
       mockInviteCodeService,
       mockErrorService,
+      mockEventBusController,
     );
   });
 

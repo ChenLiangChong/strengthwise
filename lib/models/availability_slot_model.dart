@@ -223,7 +223,7 @@ class RecurrenceRule {
     }
 
     if (frequency == null) {
-      throw FormatException('Invalid RRULE: missing FREQ');
+      throw const FormatException('Invalid RRULE: missing FREQ');
     }
 
     return RecurrenceRule(

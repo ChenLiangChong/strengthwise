@@ -183,7 +183,7 @@ class _RestTimerWidgetState extends State<RestTimerWidget>
                         child: CircularProgressIndicator(
                           value: progress,
                           strokeWidth: 4,
-                          backgroundColor: colorScheme.surfaceVariant,
+                          backgroundColor: colorScheme.surfaceContainerHighest,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             isUrgent ? colorScheme.error : colorScheme.primary,
                           ),

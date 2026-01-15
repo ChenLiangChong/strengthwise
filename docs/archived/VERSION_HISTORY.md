@@ -2,7 +2,49 @@
 
 > 已完成並測試的版本詳細記錄
 
-**最後更新**：2026-01-12
+**最後更新**：2026-01-15
+
+---
+
+## v3.6: MVVM 純架構重構（2026-01-15 完成）
+
+**功能**：
+- View 層完全透過 Controller 操作（CUD + Query）
+- 60+ 個 View 檔案重構，移除直接 Service 調用
+- Controller 介面擴展，新增純查詢方法
+
+**擴展的 Controller**：
+- `IStatisticsController`：新增 6 個查詢方法
+- `IWorkoutController`：新增 getRecordById、getCoachCreatedPlans
+- `ProfileController`：新增 getCurrentUserProfile、upsertCoachAssessmentNote
+- `CoachingRelationshipController`：新增 getCoachClientsWithRelationship
+
+**架構成果**：MVVM 架構 100% 合規
+
+---
+
+## v3.5: MVVM CUD 事件修復（2026-01-15 完成）
+
+**功能**：
+- View 層 CUD 操作改為透過 Controller
+- 事件由 Controller 統一發布（AppEventBus）
+- 13 個 View 檔案的 Service 調用修復
+
+**擴展的 Controller**：
+- `AppointmentController`：confirm/reject/cancel/complete/create 事件
+- `WorkoutController`：template CUD + workout record CUD 事件
+- `ExerciseController`：addFavorite、removeFavorite
+- `ProfileController`：健康評估 CUD、傷病備註 CUD
+
+---
+
+## v3.4: 傷病教練備註顯示 + 模板儲存優化（2026-01-12 完成）
+
+**功能**：
+- 學員端健康評估摘要卡片正確顯示教練備註
+- 新增「綜合訓練」計畫類型，統一 11 種計畫類型
+- 儲存模板時保留動作的 TrackingMode
+- 儲存模板時自動替換為用戶自建動作 ID
 
 ---
 

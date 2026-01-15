@@ -232,7 +232,7 @@ class ExerciseDataLoader {
   Future<List<dynamic>> loadAllExercises() async {
     final response =
         await _client.from('exercises').select(_kExerciseSelectFields).timeout(
-              Duration(seconds: 30),
+              const Duration(seconds: 30),
               onTimeout: () => throw TimeoutException('載入所有動作超時'),
             );
 

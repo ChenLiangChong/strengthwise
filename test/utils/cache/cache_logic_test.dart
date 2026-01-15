@@ -11,22 +11,24 @@ void main() {
     group('快取時間計算', () {
       test('新快取未過期', () {
         final cacheTime = DateTime.now();
-        final maxAge = const Duration(days: 7);
+        const maxAge = Duration(days: 7);
         final isExpired = DateTime.now().difference(cacheTime) > maxAge;
         expect(isExpired, isFalse);
       });
 
       test('7 天前的快取過期', () {
         final cacheTime = DateTime.now().subtract(const Duration(days: 8));
-        final maxAge = const Duration(days: 7);
+        const maxAge = Duration(days: 7);
         final isExpired = DateTime.now().difference(cacheTime) > maxAge;
         expect(isExpired, isTrue);
       });
 
       test('剛好 7 天的快取未過期', () {
-        final cacheTime = DateTime.now().subtract(const Duration(days: 7));
-        final maxAge = const Duration(days: 7);
-        final isExpired = DateTime.now().difference(cacheTime) > maxAge;
+        // 使用固定時間點避免毫秒精度問題
+        final now = DateTime.now();
+        final cacheTime = now.subtract(const Duration(days: 7));
+        const maxAge = Duration(days: 7);
+        final isExpired = now.difference(cacheTime) > maxAge;
         expect(isExpired, isFalse);
       });
     });

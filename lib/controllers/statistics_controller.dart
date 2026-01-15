@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/statistics_model.dart';
+import '../models/favorite_exercise_model.dart'; // ⭐ MVVM: ExerciseWithRecord
 import '../services/interfaces/i_statistics_service.dart';
 import '../services/core/error_handling_service.dart';
 import 'interfaces/i_statistics_controller.dart';
@@ -184,6 +185,82 @@ class StatisticsController extends ChangeNotifier implements IStatisticsControll
     } catch (e) {
       _errorService.logError('載入肌群詳情失敗: $e', type: 'StatisticsControllerError');
       return [];
+    }
+  }
+
+  // =========================================================================
+  // ⭐ MVVM 重構：直接查詢方法（供 View 層使用）
+  // =========================================================================
+
+  /// 獲取力量進步數據
+  /// ⭐ MVVM 重構：View 層透過 Controller 查詢
+  Future<List<ExerciseStrengthProgress>> getStrengthProgress(
+    String userId,
+    TimeRange timeRange, {
+    int limit = 1000,
+  }) async {
+    try {
+      return await _statisticsService.getStrengthProgress(userId, timeRange, limit: limit);
+    } catch (e) {
+      _errorService.logError('獲取力量進步數據失敗: $e', type: 'StatisticsControllerError');
+      return [];
+    }
+  }
+
+  /// 獲取有訓練記錄的動作列表
+  /// ⭐ MVVM 重構：View 層透過 Controller 查詢
+  Future<List<ExerciseWithRecord>> getExercisesWithRecords(
+    String userId, {
+    TimeRange? timeRange,
+  }) async {
+    try {
+      return await _statisticsService.getExercisesWithRecords(userId, timeRange: timeRange);
+    } catch (e) {
+      _errorService.logError('獲取動作列表失敗: $e', type: 'StatisticsControllerError');
+      return [];
+    }
+  }
+
+  /// 清除統計快取
+  /// ⭐ MVVM 重構：View 層透過 Controller 操作
+  void clearStatisticsCache() {
+    _statisticsService.clearCache();
+  }
+
+  /// 預熱統計快取（從 Hive 載入到記憶體）
+  /// ⭐ MVVM 重構：首頁初始化時調用
+  Future<void> warmupFromLocalCache(String userId) async {
+    try {
+      await _statisticsService.warmupFromLocalCache(userId);
+    } catch (e) {
+      _errorService.logError('統計快取預熱失敗: $e', type: 'StatisticsControllerError');
+    }
+  }
+
+  /// 預載入所有時間範圍的統計數據
+  /// ⭐ MVVM 重構：首頁背景載入時調用
+  Future<void> preloadAllTimeRanges(String userId) async {
+    try {
+      await _statisticsService.preloadAllTimeRanges(userId);
+    } catch (e) {
+      _errorService.logError('統計數據預載入失敗: $e', type: 'StatisticsControllerError');
+    }
+  }
+
+  // ============================================================================
+  // ⭐ MVVM 重構：直接查詢方法（返回結果，不更新 Controller 狀態）
+  // ============================================================================
+
+  /// 查詢統計數據（直接返回結果）
+  /// ⭐ v3.6 MVVM 重構
+  ///
+  /// 用於 Session Mode 等需要直接獲取數據的場景
+  Future<StatisticsData?> getStatistics(String userId, TimeRange timeRange) async {
+    try {
+      return await _statisticsService.getStatistics(userId, timeRange);
+    } catch (e) {
+      _errorService.logError('查詢統計數據失敗: $e', type: 'StatisticsControllerError');
+      return null;
     }
   }
 

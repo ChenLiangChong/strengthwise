@@ -1,14 +1,15 @@
 // ✅ 已響應式改造 (Phase 0)
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
+// ✅ v3.7: MVVM 修復 - Supabase.auth → AuthController
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/health_assessment_models.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/services/interfaces/i_health_assessment_service.dart';
-import 'package:strengthwise/services/interfaces/i_injury_coach_note_service.dart'; // ⭐ v3.3
-import 'package:strengthwise/models/injury_coach_note_model.dart'; // ⭐ v3.3
+import 'package:strengthwise/models/injury_coach_note_model.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:strengthwise/controllers/profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:uuid/uuid.dart';
 
 /// 健康評估問卷頁面
@@ -55,9 +56,10 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
   int _currentStep = 0;
   final int _totalSteps = 5;
 
-  // Services
-  late final IHealthAssessmentService _healthService;
-  late final IInjuryCoachNoteService _injuryNoteService; // ⭐ v3.3
+  // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
+  // ⭐ v3.7: 新增 AuthController 取代直接訪問 Supabase.auth
+  late final ProfileController _profileController;
+  late final IAuthController _authController;
   late final ErrorHandlingService _errorService;
   final _uuid = const Uuid();
   bool _isLoading = false;
@@ -121,8 +123,10 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
   @override
   void initState() {
     super.initState();
-    _healthService = serviceLocator<IHealthAssessmentService>();
-    _injuryNoteService = serviceLocator<IInjuryCoachNoteService>(); // ⭐ v3.3
+    // ⭐ v3.6: MVVM 重構
+    // ⭐ v3.7: 新增 AuthController
+    _profileController = serviceLocator<ProfileController>();
+    _authController = serviceLocator<IAuthController>();
     _errorService = serviceLocator<ErrorHandlingService>();
     _loadExistingData();
     _initializeQuickEditMode();
@@ -226,8 +230,9 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
     // 教練模式和學員模式都載入備註（學員看教練備註是唯讀）
 
     try {
-      final notes = await _injuryNoteService.getNotesForClient(
-        clientId: widget.clientId,
+      // ⭐ v3.6: 透過 ProfileController 查詢
+      final notes = await _profileController.getInjuryCoachNotes(
+        widget.clientId,
       );
       debugPrint('[HealthAssessment] 載入備註: ${notes.length} 個部位');
       for (final entry in notes.entries) {
@@ -249,51 +254,12 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
     }
   }
 
-  /// ⭐ v3.3: 儲存/更新當前教練的傷病備註
-  Future<void> _saveInjuryCoachNote(String injurySite, String note) async {
-    if (widget.isClientSelfFilling) return;
-
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-    if (currentUserId == null) return;
-
-    try {
-      if (note.trim().isEmpty) {
-        // 備註為空則刪除
-        await _injuryNoteService.deleteNote(
-          coachId: currentUserId,
-          clientId: widget.clientId,
-          injurySite: injurySite,
-        );
-      } else {
-        // 新增或更新
-        await _injuryNoteService.upsertNote(
-          coachId: currentUserId,
-          clientId: widget.clientId,
-          injurySite: injurySite,
-          note: note.trim(),
-        );
-      }
-      // 重新載入備註
-      await _loadInjuryCoachNotes();
-      if (mounted) {
-        NotificationUtils.showSuccess(context, '備註已儲存');
-      }
-    } catch (e) {
-      _errorService.logError(
-        '儲存傷病備註失敗: $e',
-        type: 'HealthAssessmentPage',
-      );
-      if (mounted) {
-        NotificationUtils.showError(context, '儲存備註失敗');
-      }
-    }
-  }
-
   /// ⭐ v3.3: 儲存所有編輯中的傷病備註
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作
   Future<void> _saveAllInjuryNotes() async {
     if (widget.isClientSelfFilling) return;
 
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    final currentUserId = _authController.user?.uid;
     if (currentUserId == null) return;
 
     debugPrint('[HealthAssessment] 儲存備註，共 ${_editingInjuryNotes.length} 個');
@@ -306,16 +272,16 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
 
       try {
         if (note.isEmpty) {
-          // 備註為空則刪除
-          await _injuryNoteService.deleteNote(
+          // ⭐ v3.5: 透過 Controller 刪除備註（Controller 內部獲取 Service）
+          await _profileController.deleteInjuryNote(
             coachId: currentUserId,
             clientId: widget.clientId,
             injurySite: injurySite,
           );
           debugPrint('[HealthAssessment] 已刪除備註: $injurySite');
         } else {
-          // 新增或更新
-          await _injuryNoteService.upsertNote(
+          // ⭐ v3.5: 透過 Controller 新增或更新備註
+          await _profileController.upsertInjuryNote(
             coachId: currentUserId,
             clientId: widget.clientId,
             injurySite: injurySite,
@@ -441,7 +407,7 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
 
     try {
       // 取得當前使用者 ID
-      final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+      final currentUserId = _authController.user?.uid;
       if (currentUserId == null) {
         throw Exception('無法取得使用者 ID');
       }
@@ -518,15 +484,31 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
         updatedAt: DateTime.now(),
       );
 
-      // 呼叫 Service
+      // ⭐ v3.5: 透過 Controller 操作（Controller 內部獲取 Service）
+      bool success;
       if (widget.existingAssessment != null) {
-        await _healthService.updateAssessment(assessment);
+        success = await _profileController.updateHealthAssessment(assessment);
         if (!mounted) return;
-        NotificationUtils.showSuccess(context, '健康評估已更新');
+        if (success) {
+          NotificationUtils.showSuccess(context, '健康評估已更新');
+        } else {
+          NotificationUtils.showError(
+              context, _profileController.errorMessage ?? '更新失敗');
+          return;
+        }
       } else {
-        await _healthService.createAssessment(assessment, setAsCurrent: true);
+        success = await _profileController.createHealthAssessment(
+          assessment,
+          setAsCurrent: true,
+        );
         if (!mounted) return;
-        NotificationUtils.showSuccess(context, '健康評估已建立');
+        if (success) {
+          NotificationUtils.showSuccess(context, '健康評估已建立');
+        } else {
+          NotificationUtils.showError(
+              context, _profileController.errorMessage ?? '建立失敗');
+          return;
+        }
       }
 
       // ⭐ v3.3: 儲存所有傷病備註
@@ -645,20 +627,25 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
   }
 
   /// ⭐ v3.3: 靜默保存（不顯示 Toast）
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作
   Future<void> _saveAssessmentQuietly() async {
     if (!_validateAllSteps()) return;
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+      final currentUserId = _authController.user?.uid;
       if (currentUserId == null) return;
 
       final assessment = _buildAssessmentModel(currentUserId);
 
+      // ⭐ v3.5: 透過 Controller 操作（Controller 內部獲取 Service）
       if (widget.existingAssessment != null) {
-        await _healthService.updateAssessment(assessment);
+        await _profileController.updateHealthAssessment(assessment);
       } else {
-        await _healthService.createAssessment(assessment, setAsCurrent: true);
+        await _profileController.createHealthAssessment(
+          assessment,
+          setAsCurrent: true,
+        );
       }
     } catch (e) {
       _errorService.logError(
@@ -996,7 +983,7 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
   /// 傷病卡片（v3.3 重構：不折疊，直接顯示）
   Widget _buildInjuryCard(ThemeData theme, InjuryRecord injury, int index) {
     final notes = _injuryCoachNotes[injury.site] ?? [];
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    final currentUserId = _authController.user?.uid;
     final myNote = notes.where((n) => n.coachId == currentUserId).firstOrNull;
     final otherNotes = notes.where((n) => n.coachId != currentUserId).toList();
 
@@ -1283,7 +1270,7 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
                     // 年份選擇
                     Expanded(
                       child: DropdownButtonFormField<int>(
-                        value: occurredDate?.year,
+                        initialValue: occurredDate?.year,
                         isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: '年',
@@ -1314,7 +1301,7 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
                     // 月份選擇
                     Expanded(
                       child: DropdownButtonFormField<int>(
-                        value: occurredDate?.month,
+                        initialValue: occurredDate?.month,
                         isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: '月',

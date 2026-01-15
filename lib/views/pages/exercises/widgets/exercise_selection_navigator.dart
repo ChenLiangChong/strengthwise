@@ -1,8 +1,9 @@
+// ⭐ MVVM 重構：移除 Service 直接調用，改用 Controller
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/favorite_exercise_model.dart';
 import 'package:strengthwise/models/statistics/time_range.dart';
-import 'package:strengthwise/services/interfaces/i_favorites_service.dart';
-import 'package:strengthwise/services/interfaces/i_statistics_service.dart';
+import 'package:strengthwise/controllers/exercise_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_statistics_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'widgets/selection_breadcrumb.dart';
@@ -36,10 +37,11 @@ class ExerciseSelectionNavigator extends StatefulWidget {
 
 class _ExerciseSelectionNavigatorState
     extends State<ExerciseSelectionNavigator> {
-  final IFavoritesService _favoritesService =
-      serviceLocator<IFavoritesService>();
-  final IStatisticsService _statisticsService =
-      serviceLocator<IStatisticsService>();
+  // ⭐ MVVM 重構：改用 Controller
+  final ExerciseController _exerciseController =
+      serviceLocator<ExerciseController>();
+  final IStatisticsController _statisticsController =
+      serviceLocator<IStatisticsController>();
 
   // 層級：0=訓練類型, 1=身體部位, 2=動作列表
   int _currentStep = 0;
@@ -79,14 +81,15 @@ class _ExerciseSelectionNavigatorState
   }
 
   /// ⭐ 一次性載入所有數據（收藏 + 動作列表）
+  /// ⭐ MVVM 重構：透過 Controller 載入
   Future<void> _loadAllData() async {
     setState(() => _isLoading = true);
 
     try {
-      // 並行載入收藏和動作數據
+      // 並行載入收藏和動作數據（透過 Controller）
       final results = await Future.wait([
-        _favoritesService.getFavoriteExerciseIds(widget.userId),
-        _statisticsService.getExercisesWithRecords(
+        _exerciseController.getFavoriteExerciseIds(widget.userId),
+        _statisticsController.getExercisesWithRecords(
           widget.userId,
           timeRange: widget.timeRange,
         ),
@@ -192,26 +195,38 @@ class _ExerciseSelectionNavigatorState
   }
 
   /// 切換收藏狀態
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作
   Future<void> _toggleFavorite(ExerciseWithRecord exercise) async {
     try {
       final isFavorite = _favoriteIds.contains(exercise.exerciseId);
+      bool success;
 
       if (isFavorite) {
-        await _favoritesService.removeFavorite(
-            widget.userId, exercise.exerciseId);
-        if (mounted) {
+        // ⭐ v3.5: 透過 Controller 移除收藏
+        success = await _exerciseController.removeFavorite(
+          userId: widget.userId,
+          exerciseId: exercise.exerciseId,
+        );
+        if (success && mounted) {
           setState(() => _favoriteIds.remove(exercise.exerciseId));
         }
       } else {
-        await _favoritesService.addFavorite(
-          widget.userId,
-          exercise.exerciseId,
-          exercise.exerciseName,
-          exercise.bodyPart,
+        // ⭐ v3.5: 透過 Controller 添加收藏
+        success = await _exerciseController.addFavorite(
+          userId: widget.userId,
+          exerciseId: exercise.exerciseId,
+          exerciseName: exercise.exerciseName,
+          bodyPart: exercise.bodyPart,
         );
-        if (mounted) {
+        if (success && mounted) {
           setState(() => _favoriteIds.add(exercise.exerciseId));
         }
+      }
+
+      if (!success && mounted) {
+        NotificationUtils.showError(
+            context, _exerciseController.errorMessage ?? '操作失敗');
+        return;
       }
 
       // 更新列表中的收藏狀態

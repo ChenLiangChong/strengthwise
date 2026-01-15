@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:strengthwise/models/appointment_model.dart';
-import 'package:strengthwise/services/interfaces/i_appointment_service.dart';
 
 import '../../mocks/mock_services.dart';
 

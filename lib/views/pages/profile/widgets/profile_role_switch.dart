@@ -19,7 +19,7 @@ class ProfileRoleSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
       child: SwitchListTile(
         title: Text(
           title,
@@ -35,7 +35,7 @@ class ProfileRoleSwitch extends StatelessWidget {
               )
             : null,
         value: value,
-        activeColor: Theme.of(context).colorScheme.primary,
+        activeThumbColor: Theme.of(context).colorScheme.primary,
         onChanged: onChanged,
       ),
     );

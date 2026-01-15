@@ -5,6 +5,7 @@ import 'dart:async';
 import '../models/user_model.dart';
 import '../services/interfaces/i_auth_service.dart';
 import '../services/interfaces/i_notification_service.dart';
+import '../services/interfaces/i_user_service.dart';
 import '../services/core/error_handling_service.dart';
 import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_auth_controller.dart';
@@ -313,5 +314,20 @@ class AuthController extends ChangeNotifier implements IAuthController {
   /// 返回值: 0 (弱) 到 3 (強)
   int getPasswordStrength(String password) {
     return AuthValidators.getPasswordStrength(password);
+  }
+
+  // =========================================================================
+  // ⭐ MVVM 重構：個人資料完整性檢查
+  // =========================================================================
+
+  @override
+  Future<bool> isProfileCompleted() async {
+    try {
+      final userService = serviceLocator<IUserService>();
+      return await userService.isProfileCompleted();
+    } catch (e) {
+      _errorService.logError('檢查個人資料完整性失敗: $e');
+      return false;
+    }
   }
 }

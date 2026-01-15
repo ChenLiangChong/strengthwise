@@ -1,10 +1,10 @@
 // ✅ 已響應式改造 (Phase 0)
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
-import 'package:strengthwise/models/injury_coach_note_model.dart'; // ⭐ v3.4
-import 'package:strengthwise/services/interfaces/i_health_assessment_service.dart';
-import 'package:strengthwise/services/interfaces/i_injury_coach_note_service.dart'; // ⭐ v3.4
+import 'package:strengthwise/models/injury_coach_note_model.dart';
+import 'package:strengthwise/controllers/profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/profile/health_assessment_detail_page.dart';
@@ -31,18 +31,17 @@ class MyHealthAssessmentPage extends StatefulWidget {
 }
 
 class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
-  late final IHealthAssessmentService _healthAssessmentService;
-  late final IInjuryCoachNoteService _injuryNoteService; // ⭐ v3.4
+  // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
+  late final ProfileController _profileController;
 
   HealthAssessmentModel? _healthAssessment;
-  Map<String, List<InjuryCoachNoteModel>> _injuryCoachNotes = {}; // ⭐ v3.4
+  Map<String, List<InjuryCoachNoteModel>> _injuryCoachNotes = {};
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _healthAssessmentService = serviceLocator<IHealthAssessmentService>();
-    _injuryNoteService = serviceLocator<IInjuryCoachNoteService>(); // ⭐ v3.4
+    _profileController = serviceLocator<ProfileController>();
     _loadHealthAssessment();
   }
 
@@ -55,16 +54,17 @@ class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
     });
 
     try {
-      final assessment = await _healthAssessmentService.getCurrentAssessment(
+      // ⭐ v3.6: 透過 ProfileController 查詢
+      final assessment = await _profileController.getCurrentHealthAssessment(
         widget.userId,
       );
 
-      // ⭐ v3.4: 載入傷病教練備註
+      // ⭐ v3.6: 透過 ProfileController 載入傷病教練備註
       Map<String, List<InjuryCoachNoteModel>> injuryNotes = {};
       if (assessment != null) {
         try {
-          injuryNotes = await _injuryNoteService.getNotesForClient(
-            clientId: assessment.userId,
+          injuryNotes = await _profileController.getInjuryCoachNotes(
+            assessment.userId,
           );
         } catch (e) {
           debugPrint('載入傷病備註失敗: $e');

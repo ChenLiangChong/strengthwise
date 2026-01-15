@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/exercise_model.dart';
+import '../models/favorite/favorite_exercise.dart'; // ⭐ v3.6: MVVM
 import '../services/interfaces/i_exercise_service.dart';
+import '../services/interfaces/i_favorites_service.dart'; // ⭐ v3.5: MVVM
 import '../services/core/error_handling_service.dart';
+import '../services/core/app_event_bus.dart'; // ⭐ v3.5: EventBus
 import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_exercise_controller.dart';
+import 'event_bus_controller.dart'; // ⭐ v3.5: EventBus
 import 'exercise/exercise_cache_manager.dart';
 import 'exercise/exercise_cache_key_builder.dart';
 import 'exercise/exercise_filter_validator.dart';
@@ -99,7 +103,7 @@ class ExerciseController extends ChangeNotifier implements IExerciseController {
   /// 清除特定類型的緩存
   void clearCache(String cacheType) {
     _cacheManager.clearCache(cacheType);
-    logDebug('已清除${cacheType}緩存');
+    logDebug('已清除$cacheType緩存');
   }
   
   /// 清除特定層級的分類緩存
@@ -321,6 +325,134 @@ class ExerciseController extends ChangeNotifier implements IExerciseController {
     } catch (e) {
       _handleError('獲取動作詳情失敗', e);
       return null;
+    }
+  }
+
+  // =========================================================================
+  // ⭐ v3.5: 收藏功能（MVVM 重構）
+  // =========================================================================
+
+  /// 添加動作到收藏
+  Future<bool> addFavorite({
+    required String userId,
+    required String exerciseId,
+    required String exerciseName,
+    required String bodyPart,
+  }) async {
+    try {
+      _setLoading(true);
+      clearError();
+
+      final favoritesService = serviceLocator<IFavoritesService>();
+      await favoritesService.addFavorite(userId, exerciseId, exerciseName, bodyPart);
+
+      // ⭐ v3.5: 發布收藏新增事件
+      final eventBusController = serviceLocator<EventBusController>();
+      eventBusController.publish(AppEvent(
+        type: AppEventType.favoriteAdded,
+        entityId: exerciseId,
+        userId: userId,
+        timestamp: DateTime.now(),
+        metadata: {'exerciseName': exerciseName, 'bodyPart': bodyPart},
+      ));
+
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _handleError('添加收藏失敗', e);
+      return false;
+    }
+  }
+
+  /// 移除收藏動作
+  Future<bool> removeFavorite({
+    required String userId,
+    required String exerciseId,
+  }) async {
+    try {
+      _setLoading(true);
+      clearError();
+
+      final favoritesService = serviceLocator<IFavoritesService>();
+      await favoritesService.removeFavorite(userId, exerciseId);
+
+      // ⭐ v3.5: 發布收藏移除事件
+      final eventBusController = serviceLocator<EventBusController>();
+      eventBusController.publish(AppEvent(
+        type: AppEventType.favoriteRemoved,
+        entityId: exerciseId,
+        userId: userId,
+        timestamp: DateTime.now(),
+      ));
+
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _handleError('移除收藏失敗', e);
+      return false;
+    }
+  }
+
+  /// 檢查動作是否已收藏
+  /// ⭐ MVVM 重構：View 層透過 Controller 查詢
+  Future<bool> isFavorite(String userId, String exerciseId) async {
+    try {
+      final favoritesService = serviceLocator<IFavoritesService>();
+      return await favoritesService.isFavorite(userId, exerciseId);
+    } catch (e) {
+      _handleError('檢查收藏狀態失敗', e);
+      return false;
+    }
+  }
+
+  /// 獲取用戶收藏的動作 ID 列表
+  /// ⭐ MVVM 重構：View 層透過 Controller 查詢
+  Future<List<String>> getFavoriteExerciseIds(String userId) async {
+    try {
+      final favoritesService = serviceLocator<IFavoritesService>();
+      return await favoritesService.getFavoriteExerciseIds(userId);
+    } catch (e) {
+      _handleError('獲取收藏列表失敗', e);
+      return [];
+    }
+  }
+
+  /// 獲取用戶收藏的動作列表（含詳細資訊）
+  /// ⭐ v3.6 MVVM 重構：View 層透過 Controller 查詢
+  Future<List<FavoriteExercise>> getFavoriteExercises(String userId) async {
+    try {
+      final favoritesService = serviceLocator<IFavoritesService>();
+      return await favoritesService.getFavoriteExercises(userId);
+    } catch (e) {
+      _handleError('獲取收藏動作列表失敗', e);
+      return [];
+    }
+  }
+
+  // =========================================================================
+  // ⭐ MVVM 重構：直接查詢方法（供 View 層使用）
+  // =========================================================================
+
+  /// 獲取訓練類型列表
+  /// ⭐ MVVM 重構：View 層透過 Controller 查詢
+  Future<List<String>> getExerciseTypes() async {
+    return await loadExerciseTypes();
+  }
+
+  /// 根據篩選條件獲取動作列表
+  /// ⭐ MVVM 重構：View 層透過 Controller 查詢
+  Future<List<Exercise>> getExercisesByFilters(Map<String, String> filters) async {
+    if (!_isInitialized) await _initialize();
+
+    try {
+      _setLoading(true);
+      clearError();
+      final exercises = await _service.getExercisesByFilters(filters);
+      _setLoading(false);
+      return exercises;
+    } catch (e) {
+      _handleError('獲取動作列表失敗', e);
+      return [];
     }
   }
 } 

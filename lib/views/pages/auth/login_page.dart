@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
-import 'package:strengthwise/services/interfaces/i_user_service.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/home/main_home_page.dart';
@@ -65,9 +64,8 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final success = await authAction();
       if (success && mounted) {
-        // ✅ 檢查用戶是否完成個人資料設置
-        final userService = serviceLocator<IUserService>();
-        final isProfileCompleted = await userService.isProfileCompleted();
+        // ✅ 檢查用戶是否完成個人資料設置（MVVM：透過 Controller）
+        final isProfileCompleted = await _authController.isProfileCompleted();
 
         if (!isProfileCompleted) {
           // 首次登入，跳轉到個人資料設定頁面

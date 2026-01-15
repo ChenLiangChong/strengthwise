@@ -1,10 +1,12 @@
 // ✅ 已響應式改造 (Phase 0) - 列表頁，子組件處理
+import 'dart:async'; // ⭐ v3.5
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/workout_template_model.dart';
 import 'package:strengthwise/models/workout_record_model.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/services/interfaces/i_workout_service.dart';
+import 'package:strengthwise/controllers/event_bus_controller.dart'; // ⭐ v3.5
+import 'package:strengthwise/services/core/app_event_bus.dart'; // ⭐ v3.5
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
@@ -24,10 +26,11 @@ class TemplateManagementPage extends StatefulWidget {
 
 class _TemplateManagementPageState extends State<TemplateManagementPage> {
   late final IWorkoutController _workoutController;
-  late final IWorkoutService _workoutService;
   late final IAuthController _authController;
   late final ErrorHandlingService _errorService;
+  late final EventBusController _eventBusController; // ⭐ v3.5
 
+  StreamSubscription<AppEvent>? _eventSubscription; // ⭐ v3.5
   List<WorkoutTemplate> _templates = [];
   bool _isLoading = true;
 
@@ -37,11 +40,27 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
 
     // 從服務定位器獲取依賴
     _workoutController = serviceLocator<IWorkoutController>();
-    _workoutService = serviceLocator<IWorkoutService>();
     _authController = serviceLocator<IAuthController>();
     _errorService = serviceLocator<ErrorHandlingService>();
+    _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.5
+
+    // ⭐ v3.5: 訂閱模板相關事件
+    _eventSubscription = _eventBusController.templateEvents.listen(_onAppEvent);
 
     _loadTemplates();
+  }
+
+  @override
+  void dispose() {
+    _eventSubscription?.cancel(); // ⭐ v3.5
+    super.dispose();
+  }
+
+  /// ⭐ v3.5: 處理模板相關事件
+  void _onAppEvent(AppEvent event) {
+    if (!mounted) return;
+    // 收到模板事件時，重新載入模板列表
+    _loadTemplates(forceRefresh: true);
   }
 
   /// 載入模板列表
@@ -95,6 +114,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
 
       // 使用控制器創建模板
       await _workoutController.createTemplate(newTemplate);
+      // ⭐ v3.5: 事件由 Controller 統一發布，View 只處理 UI 回饋
 
       // 強制重新載入模板列表（忽略緩存）
       await _loadTemplates(forceRefresh: true);
@@ -113,6 +133,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
     try {
       // 使用控制器刪除模板
       final success = await _workoutController.deleteTemplate(templateId);
+      // ⭐ v3.5: 事件由 Controller 統一發布，View 只處理 UI 回饋
 
       if (success) {
         setState(() {
@@ -206,7 +227,9 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
         trainingEndTime: trainingEnd,
       );
 
-      await _workoutService.createRecord(record);
+      // ⭐ v3.5: 透過 Controller 創建訓練記錄（Controller 會自動發布事件）
+      final createdRecord = await _workoutController.createRecord(record);
+      debugPrint('[TEMPLATE_MANAGEMENT] ✅ 訓練記錄已創建: ${createdRecord.id}');
 
       if (mounted) {
         NotificationUtils.showSuccess(

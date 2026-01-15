@@ -25,8 +25,8 @@ class StatisticsDataLoader {
     DateTime endDate,
   ) async {
     // 擴展查詢範圍（前後各加 1 天）以確保不遺漏數據
-    final queryStartDate = startDate.subtract(Duration(days: 1));
-    final queryEndDate = endDate.add(Duration(days: 2));
+    final queryStartDate = startDate.subtract(const Duration(days: 1));
+    final queryEndDate = endDate.add(const Duration(days: 2));
 
     // v3.3+ 修正：加入 scheduled_date 以統一時間判斷邏輯
     final response = await _supabase

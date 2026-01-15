@@ -1,9 +1,10 @@
 // ✅ P3 響應式分欄佈局
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/client_management_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/services/interfaces/i_workout_service.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/tabs/client_info_tab.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/tabs/client_workout_calendar_tab.dart';
@@ -74,8 +75,9 @@ class _ClientDetailContentState extends State<ClientDetailContent>
         _controller.selectClient(widget.clientId);
         break;
       case 1:
-        final workoutService = serviceLocator<IWorkoutService>();
-        workoutService.clearUserCache(userId: widget.clientId);
+        // ⭐ v3.6: 透過 Controller 清除快取
+        final workoutController = serviceLocator<IWorkoutController>();
+        workoutController.clearUserCache(userId: widget.clientId);
         final now = DateTime.now();
         await _controller.loadClientWorkouts(
           widget.clientId,

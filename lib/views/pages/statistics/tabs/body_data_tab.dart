@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../controllers/body_data_controller.dart';
 import '../../../../controllers/interfaces/i_auth_controller.dart';
+import '../../../../controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
 import '../../../../services/service_locator.dart';
-import '../../../../services/interfaces/i_user_service.dart';
 import '../../profile/body_data_page.dart';
 
 /// 身體數據 Tab 頁面
@@ -164,10 +164,10 @@ class BodyDataTab extends StatelessWidget {
                 Center(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      // 獲取當前用戶資料
-                      final userService = serviceLocator<IUserService>();
+                      // ⭐ v3.6: MVVM 重構 - 透過 Controller 獲取
+                      final profileController = serviceLocator<ProfileController>();
                       final userProfile =
-                          await userService.getCurrentUserProfile();
+                          await profileController.getCurrentUserProfile();
 
                       if (!context.mounted) return;
 

@@ -8,6 +8,7 @@ import '../models/user/user_model.dart';
 import '../models/workout_record/workout_record.dart';
 import '../models/workout_record/exercise_record.dart';
 import '../models/client_availability_model.dart';
+import 'event_bus_controller.dart'; // ⭐ v3.5
 
 /// 教練端學員管理控制器
 ///
@@ -18,6 +19,7 @@ class ClientManagementController extends ChangeNotifier {
   final IClientAvailabilityService _availabilityService;
   final IUserService _userService;
   final ErrorHandlingService _errorService;
+  final EventBusController _eventBusController; // ⭐ v3.5
 
   ClientManagementController(
     this._relationshipService,
@@ -25,6 +27,7 @@ class ClientManagementController extends ChangeNotifier {
     this._availabilityService,
     this._userService,
     this._errorService,
+    this._eventBusController, // ⭐ v3.5
   );
 
   // ============================================================================
@@ -208,6 +211,12 @@ class ClientManagementController extends ChangeNotifier {
 
       await _workoutService.createRecord(workout);
 
+      // ⭐ v3.5: 發布訓練創建事件（觸發首頁、行事曆自動刷新）
+      _eventBusController.publishWorkoutCreated(
+        workoutId: workout.workoutPlanId,
+        userId: clientId,
+      );
+
       // 重新載入訓練計畫
       await loadClientWorkouts(clientId);
 
@@ -228,6 +237,13 @@ class ClientManagementController extends ChangeNotifier {
 
     try {
       await _workoutService.updateRecord(workout);
+
+      // ⭐ v3.5: 發布訓練更新事件（觸發首頁、行事曆自動刷新）
+      final traineeId = workout.traineeId ?? workout.userId;
+      _eventBusController.publishWorkoutUpdated(
+        workoutId: workout.workoutPlanId,
+        userId: traineeId,
+      );
 
       // 重新載入訓練計畫
       if (_selectedClient != null) {
@@ -250,7 +266,18 @@ class ClientManagementController extends ChangeNotifier {
     _clearError();
 
     try {
+      // ⭐ v3.5: 先取得 clientId 用於發布事件（刪除後無法取得）
+      final clientId = _selectedClient?.uid;
+      
       await _workoutService.deleteRecord(workoutId);
+
+      // ⭐ v3.5: 發布訓練刪除事件（觸發首頁、行事曆自動刷新）
+      if (clientId != null) {
+        _eventBusController.publishWorkoutDeleted(
+          workoutId: workoutId,
+          userId: clientId,
+        );
+      }
 
       // 重新載入訓練計畫
       if (_selectedClient != null) {

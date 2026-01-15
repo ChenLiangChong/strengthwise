@@ -1,5 +1,6 @@
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
-import 'package:strengthwise/services/interfaces/i_auth_service.dart';
+import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/profile/widgets/coach/coach_profile_content.dart';
 
@@ -11,10 +12,11 @@ class CoachProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authService = serviceLocator<IAuthService>();
-    final currentUser = authService.getCurrentUser();
-    final coachId = currentUser?['uid'] as String?;
-    final email = currentUser?['email'] as String?;
+    // ⭐ v3.6: 透過 IAuthController 取得當前用戶
+    final authController = serviceLocator<IAuthController>();
+    final currentUser = authController.user;
+    final coachId = currentUser?.uid;
+    final email = currentUser?.email;
 
     if (coachId == null) {
       return const Center(

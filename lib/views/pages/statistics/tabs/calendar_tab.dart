@@ -242,7 +242,7 @@ class CalendarTab extends StatelessWidget {
 
   /// 根據訓練強度返回顏色
   static Color _getHeatmapColor(BuildContext context, int intensity) {
-    final surfaceVariant = Theme.of(context).colorScheme.surfaceVariant;
+    final surfaceVariant = Theme.of(context).colorScheme.surfaceContainerHighest;
     final secondary = Theme.of(context).colorScheme.secondary;
     switch (intensity) {
       case 0:

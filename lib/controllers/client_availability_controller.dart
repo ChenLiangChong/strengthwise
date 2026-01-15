@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import '../services/interfaces/i_client_availability_service.dart';
 import '../services/core/error_handling_service.dart';
+import '../services/core/app_event_bus.dart'; // ⭐ v3.5: EventBus
 import '../models/client_availability_model.dart';
+import 'event_bus_controller.dart'; // ⭐ v3.5: EventBus
 
 /// ClientAvailabilityController - Phase 3 學員時間偏好控制器
 ///
@@ -10,10 +12,12 @@ import '../models/client_availability_model.dart';
 class ClientAvailabilityController extends ChangeNotifier {
   final IClientAvailabilityService _service;
   final ErrorHandlingService _errorService;
+  final EventBusController _eventBusController; // ⭐ v3.5: EventBus
 
   ClientAvailabilityController(
     this._service,
     this._errorService,
+    this._eventBusController, // ⭐ v3.5: EventBus
   );
 
   // ============================================================================
@@ -161,6 +165,14 @@ class ClientAvailabilityController extends ChangeNotifier {
       // 新增到列表
       _availabilities.insert(0, created!);
       _recalculateStats();
+
+      // ⭐ v3.5: 發布可訓練時段創建事件
+      _eventBusController.publish(AppEvent(
+        type: AppEventType.availabilitySlotCreated,
+        entityId: created!.id,
+        userId: created!.clientId,
+        timestamp: DateTime.now(),
+      ));
     }, '創建時間偏好失敗');
 
     return created;
@@ -382,6 +394,32 @@ class ClientAvailabilityController extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // ============================================================================
+  // ⭐ MVVM 重構：直接查詢方法（返回結果，不更新 Controller 狀態）
+  // ============================================================================
+
+  /// 查詢教練視角下學員的時間偏好（直接返回結果）
+  /// ⭐ v3.6 MVVM 重構
+  ///
+  /// 用於行事曆頁面等需要直接獲取數據的場景
+  Future<List<ClientAvailabilityModel>> getClientAvailabilityForCoach({
+    required String coachId,
+    required String clientId,
+  }) async {
+    try {
+      return await _service.getClientAvailabilityForCoach(
+        coachId: coachId,
+        clientId: clientId,
+      );
+    } catch (e) {
+      _errorService.logError(
+        '查詢學員時間偏好失敗: $e',
+        type: 'ClientAvailabilityControllerError',
+      );
+      return [];
     }
   }
 }

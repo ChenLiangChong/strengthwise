@@ -35,7 +35,7 @@ class ClientStatusChip extends StatelessWidget {
         icon = Icons.pending;
         break;
       case 'archived':
-        backgroundColor = colorScheme.surfaceVariant;
+        backgroundColor = colorScheme.surfaceContainerHighest;
         textColor = colorScheme.onSurfaceVariant;
         displayText = '已歸檔';
         icon = Icons.archive;
@@ -47,7 +47,7 @@ class ClientStatusChip extends StatelessWidget {
         icon = Icons.cancel;
         break;
       default:
-        backgroundColor = colorScheme.surfaceVariant;
+        backgroundColor = colorScheme.surfaceContainerHighest;
         textColor = colorScheme.onSurfaceVariant;
         displayText = status;
         icon = Icons.help_outline;

@@ -156,10 +156,10 @@ class BookingCalendarView extends StatelessWidget {
 
             // 訓練標記
             final plans = trainings[normalizedDay] ?? [];
-            if (plans.isNotEmpty) {
-              debugPrint(
-                  '[CALENDAR MARKER] 📅 $normalizedDay: ${plans.length} 個計劃');
-            }
+            // if (plans.isNotEmpty) {
+            //   debugPrint(
+            //       '[CALENDAR MARKER] 📅 $normalizedDay: ${plans.length} 個計劃');
+            // }
             for (var plan in plans) {
               final planType = plan['planType'] as String? ?? '';
 
@@ -178,8 +178,8 @@ class BookingCalendarView extends StatelessWidget {
                 case 'session':
                   shouldShow = showSessionPlans;
                   markerColor = Colors.orange; // 🟠 橘色
-                  debugPrint(
-                      '[CALENDAR MARKER]   🟠 session 計劃: ${plan['title']}, showSessionPlans=$showSessionPlans');
+                  // debugPrint(
+                  //     '[CALENDAR MARKER]   🟠 session 計劃: ${plan['title']}, showSessionPlans=$showSessionPlans');
                   break;
               }
 
@@ -195,10 +195,10 @@ class BookingCalendarView extends StatelessWidget {
             // ⭐ v3.1-B: Tab 1 - 教練可上課時段（🟢 綠色）
             if (!isCoachMode && coachSlots != null) {
               final slots = coachSlots![normalizedDay] ?? [];
-              if (slots.isNotEmpty) {
-                debugPrint(
-                    '[CALENDAR MARKER] 🟢 $normalizedDay: ${slots.length} 個教練可上課時段');
-              }
+              // if (slots.isNotEmpty) {
+              //   debugPrint(
+              //       '[CALENDAR MARKER] 🟢 $normalizedDay: ${slots.length} 個教練可上課時段');
+              // }
               for (var slot in slots) {
                 markers.add(CalendarMarker(
                   color: Colors.green, // 🟢 綠色
@@ -211,10 +211,10 @@ class BookingCalendarView extends StatelessWidget {
             // ⭐ v3.1.1: Tab 2 - 學員可訓練時段（區分 preferred/available）
             if (isCoachMode && clientAvailability != null) {
               final slots = clientAvailability![normalizedDay] ?? [];
-              if (slots.isNotEmpty) {
-                debugPrint(
-                    '[CALENDAR MARKER] 🟡 $normalizedDay: ${slots.length} 個學員可訓練時段');
-              }
+              // if (slots.isNotEmpty) {
+              //   debugPrint(
+              //       '[CALENDAR MARKER] 🟡 $normalizedDay: ${slots.length} 個學員可訓練時段');
+              // }
               for (var slot in slots) {
                 // ⭐ v3.1.1: 根據 priority 區分顏色
                 // preferred = 綠色，available = 橘色
@@ -240,16 +240,16 @@ class BookingCalendarView extends StatelessWidget {
               return colorOrder(a.color).compareTo(colorOrder(b.color));
             });
 
-            if (markers.isNotEmpty) {
-              final colorSummary = markers.map((m) {
-                if (m.color == Colors.orange) return '🟠';
-                if (m.color == Colors.green) return '🟢';
-                if (m.color == Colors.amber) return '🟡';
-                return '🔵';
-              }).join(' ');
-              debugPrint(
-                  '[CALENDAR MARKER] 📍 $normalizedDay 最終標記: $colorSummary');
-            }
+            // if (markers.isNotEmpty) {
+            //   final colorSummary = markers.map((m) {
+            //     if (m.color == Colors.orange) return '🟠';
+            //     if (m.color == Colors.green) return '🟢';
+            //     if (m.color == Colors.amber) return '🟡';
+            //     return '🔵';
+            //   }).join(' ');
+            //   debugPrint(
+            //       '[CALENDAR MARKER] 📍 $normalizedDay 最終標記: $colorSummary');
+            // }
             return markers;
           },
           maxMarkers: 5,

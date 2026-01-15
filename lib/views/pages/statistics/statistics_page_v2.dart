@@ -1,8 +1,13 @@
 // ✅ 已響應式改造 (Phase 0)
+// ✅ v3.5: AppEventBus 自動刷新
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/interfaces/i_statistics_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
+import 'package:strengthwise/controllers/event_bus_controller.dart';
+import 'package:strengthwise/services/core/app_event_bus.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/statistics/widgets/empty_state_widget.dart';
@@ -48,18 +53,27 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
   late IStatisticsController _controller;
   late IAuthController _authController;
   late TabController _tabController;
+  late EventBusController _eventBusController; // ⭐ v3.5
+
+  // ⭐ v3.5: 事件訂閱
+  StreamSubscription<AppEvent>? _eventSubscription;
 
   @override
   void initState() {
     super.initState();
     _controller = serviceLocator<IStatisticsController>();
     _authController = serviceLocator<IAuthController>();
+    _eventBusController = serviceLocator<EventBusController>();
     _tabController = TabController(length: 6, vsync: this);
 
     // ⚡ 智能初始化（檢查是否已預載入）
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeStatistics();
     });
+
+    // ⭐ v3.5: 訂閱統計相關事件（訓練完成、身體數據更新）
+    _eventSubscription =
+        _eventBusController.statisticsEvents.listen(_onAppEvent);
   }
 
   /// 獲取目標用戶 ID
@@ -96,7 +110,20 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
   @override
   void dispose() {
     _tabController.dispose();
+    _eventSubscription?.cancel(); // ⭐ v3.5: 取消事件訂閱
     super.dispose();
+  }
+
+  /// ⭐ v3.5: 處理 AppEventBus 事件
+  void _onAppEvent(AppEvent event) {
+    if (!mounted) return;
+
+    if (kDebugMode) {
+      debugPrint('[STATISTICS_PAGE] 📥 收到事件: ${event.type}');
+    }
+
+    // 收到統計相關事件時，重新載入數據
+    _controller.refreshStatistics();
   }
 
   @override
@@ -175,8 +202,8 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
                 currentRange: controller.timeRange,
                 onRangeChanged: (range) => controller.changeTimeRange(range),
               ),
-              Expanded(
-                child: const EmptyStateWidget(
+              const Expanded(
+                child: EmptyStateWidget(
                   icon: Icons.fitness_center,
                   title: '這個時間範圍還沒有訓練記錄',
                   subtitle: '試試切換到其他時間範圍，或開始訓練吧！',

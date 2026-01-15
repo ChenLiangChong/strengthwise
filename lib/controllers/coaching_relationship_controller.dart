@@ -4,9 +4,13 @@ import '../services/interfaces/i_coaching_relationship_service.dart';
 import '../services/interfaces/i_user_service.dart';
 import '../services/interfaces/i_invite_code_service.dart';
 import '../services/core/error_handling_service.dart';
+import '../services/core/app_event_bus.dart'; // ⭐ v3.5: EventBus
 import '../models/coaching_relationship_model.dart';
 import '../models/user/user_model.dart';
 import '../models/invite_code_model.dart';
+import '../models/client_with_relationship.dart'; // ⭐ v3.6: MVVM
+import '../models/coach_with_relationship.dart'; // ⭐ v3.6: MVVM
+import 'event_bus_controller.dart'; // ⭐ v3.5: EventBus
 
 /// 教練-學員關係控制器
 ///
@@ -16,12 +20,14 @@ class CoachingRelationshipController extends ChangeNotifier {
   final IUserService _userService;
   final IInviteCodeService _inviteCodeService;
   final ErrorHandlingService _errorService;
+  final EventBusController _eventBusController; // ⭐ v3.5: EventBus
 
   CoachingRelationshipController(
     this._relationshipService,
     this._userService,
     this._inviteCodeService,
     this._errorService,
+    this._eventBusController, // ⭐ v3.5: EventBus
   );
 
   // ============================================================================
@@ -319,6 +325,14 @@ class CoachingRelationshipController extends ChangeNotifier {
 
     try {
       await _relationshipService.deleteRelationship(relationshipId);
+
+      // ⭐ v3.5: 發布關係刪除事件
+      _eventBusController.publish(AppEvent(
+        type: AppEventType.relationshipDeleted,
+        entityId: relationshipId,
+        timestamp: DateTime.now(),
+      ));
+
       return true;
     } catch (e) {
       _handleError('刪除綁定關係失敗', e);
@@ -560,6 +574,144 @@ class CoachingRelationshipController extends ChangeNotifier {
       _setLoading(false);
       return false;
     }
+  }
+
+  // ============================================================================
+  // ⭐ MVVM 重構：查詢方法（直接返回結果，不更新 Controller 狀態）
+  // ============================================================================
+
+  /// 檢查學員是否有活躍的教練
+  ///
+  /// 用於首頁判斷是否顯示「我的教練」相關功能
+  ///
+  /// [clientId] 學員 ID
+  /// 返回 true 表示有至少一個活躍教練
+  Future<bool> hasActiveCoach(String clientId) async {
+    try {
+      final coaches = await _relationshipService.getClientCoaches(
+        clientId,
+        status: 'active',
+      );
+      return coaches.isNotEmpty;
+    } catch (e) {
+      _errorService.logError(
+        '檢查教練綁定失敗: $e',
+        type: 'CoachingRelationshipControllerError',
+      );
+      return false;
+    }
+  }
+
+  /// 取得教練的學員列表（含關係狀態）
+  /// ⭐ v3.6: MVVM 重構 - 直接返回結果
+  ///
+  /// [coachId] 教練 ID
+  /// [status] 過濾狀態（可選，null = 全部）
+  Future<List<ClientWithRelationship>> getCoachClientsWithRelationship(
+    String coachId, {
+    String? status,
+  }) async {
+    try {
+      return await _relationshipService.getCoachClientsWithRelationship(
+        coachId,
+        status: status,
+      );
+    } catch (e) {
+      _errorService.logError(
+        '查詢學員列表失敗: $e',
+        type: 'CoachingRelationshipControllerError',
+      );
+      return [];
+    }
+  }
+
+  /// 取得學員的教練列表（含關係狀態）
+  /// ⭐ v3.6: MVVM 重構 - 直接返回結果
+  ///
+  /// [clientId] 學員 ID
+  /// [status] 過濾狀態（可選，null = 全部）
+  Future<List<CoachWithRelationship>> getClientCoachesWithRelationship(
+    String clientId, {
+    String? status,
+  }) async {
+    try {
+      return await _relationshipService.getClientCoachesWithRelationship(
+        clientId,
+        status: status,
+      );
+    } catch (e) {
+      _errorService.logError(
+        '查詢教練列表失敗: $e',
+        type: 'CoachingRelationshipControllerError',
+      );
+      return [];
+    }
+  }
+
+  /// 根據教練和學員 ID 查詢詳細綁定關係
+  /// ⭐ v3.6 MVVM 重構
+  Future<CoachingRelationshipModel?> getRelationshipByUsersDetailed(
+    String coachId,
+    String clientId,
+  ) async {
+    try {
+      return await _relationshipService.getRelationshipByUsersDetailed(
+        coachId,
+        clientId,
+      );
+    } catch (e) {
+      _errorService.logError(
+        '查詢關係詳情失敗: $e',
+        type: 'CoachingRelationshipControllerError',
+      );
+      return null;
+    }
+  }
+
+  /// 取得教練的學員列表（UserModel）
+  /// ⭐ v3.6 MVVM 重構
+  Future<List<UserModel>> getCoachClientsWithDetails(
+    String coachId, {
+    String? status,
+  }) async {
+    try {
+      return await _relationshipService.getCoachClientsWithDetails(
+        coachId,
+        status: status,
+      );
+    } catch (e) {
+      _errorService.logError(
+        '查詢學員詳情列表失敗: $e',
+        type: 'CoachingRelationshipControllerError',
+      );
+      return [];
+    }
+  }
+
+  /// 取得教練的學員關係列表
+  /// ⭐ v3.6 MVVM 重構
+  Future<List<CoachingRelationshipModel>> getCoachClients(
+    String coachId, {
+    String? status,
+  }) async {
+    try {
+      return await _relationshipService.getCoachClients(
+        coachId,
+        status: status,
+      );
+    } catch (e) {
+      _errorService.logError(
+        '查詢學員關係列表失敗: $e',
+        type: 'CoachingRelationshipControllerError',
+      );
+      return [];
+    }
+  }
+
+  /// 清除學員快取（用於強制刷新）
+  /// ⭐ v3.6 MVVM 重構
+  void clearClientCache(String clientId) {
+    _relationshipService.clearClientCache(clientId);
   }
 
   // ============================================================================

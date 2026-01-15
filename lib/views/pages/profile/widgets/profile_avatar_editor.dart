@@ -21,7 +21,7 @@ class ProfileAvatarEditor extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 50,
-            backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
             backgroundImage: avatarFile != null
                 ? FileImage(avatarFile!)
                 : (photoURL != null

@@ -53,24 +53,24 @@ void main() {
     // =========================================================================
     group('特殊字符', () {
       test('Emoji 字串長度', () {
-        final emoji = '😀😁😂🤣😃';
+        const emoji = '😀😁😂🤣😃';
         expect(emoji.runes.length, 5); // 使用 runes 計算真實字符數
       });
 
       test('換行符處理', () {
-        final text = 'line1\nline2\nline3';
+        const text = 'line1\nline2\nline3';
         final lines = text.split('\n');
         expect(lines.length, 3);
       });
 
       test('Tab 字符處理', () {
-        final text = 'col1\tcol2\tcol3';
+        const text = 'col1\tcol2\tcol3';
         final cols = text.split('\t');
         expect(cols.length, 3);
       });
 
       test('中文字串正常處理', () {
-        final chinese = '測試中文字串';
+        const chinese = '測試中文字串';
         expect(chinese.length, 6);
       });
     });
@@ -181,7 +181,7 @@ void main() {
 
     test('?. 運算符', () {
       String? nullableStr = 'hello';
-      expect(nullableStr?.toUpperCase(), 'HELLO');
+      expect(nullableStr.toUpperCase(), 'HELLO');
     });
   });
 }

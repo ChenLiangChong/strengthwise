@@ -219,18 +219,18 @@ class SkeletonAppointmentCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: colorScheme.outlineVariant),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      child: const Padding(
+        padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 標題列
             Row(
               children: [
-                const SkeletonCircle(size: 20),
-                const SizedBox(width: 8),
-                const Expanded(child: SkeletonBox(height: 16, width: 120)),
-                const SizedBox(width: 8),
+                SkeletonCircle(size: 20),
+                SizedBox(width: 8),
+                Expanded(child: SkeletonBox(height: 16, width: 120)),
+                SizedBox(width: 8),
                 SkeletonBox(
                   height: 24,
                   width: 60,
@@ -238,9 +238,9 @@ class SkeletonAppointmentCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             // 時間行
-            const Row(
+            Row(
               children: [
                 SkeletonCircle(size: 18),
                 SizedBox(width: 8),
@@ -441,18 +441,18 @@ class SkeletonClientList extends StatelessWidget {
                 color: colorScheme.outlineVariant.withValues(alpha: 0.5),
               ),
             ),
-            child: Row(
+            child: const Row(
               children: [
                 // 頭像
-                const SkeletonCircle(size: 48),
-                const SizedBox(width: 12),
+                SkeletonCircle(size: 48),
+                SizedBox(width: 12),
                 // 資訊
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SkeletonBox(height: 16, width: 100),
-                      const SizedBox(height: 8),
+                      SkeletonBox(height: 16, width: 100),
+                      SizedBox(height: 8),
                       Row(
                         children: [
                           SkeletonBox(
@@ -460,15 +460,15 @@ class SkeletonClientList extends StatelessWidget {
                             width: 50,
                             borderRadius: 10,
                           ),
-                          const SizedBox(width: 8),
-                          const SkeletonBox(height: 12, width: 80),
+                          SizedBox(width: 8),
+                          SkeletonBox(height: 12, width: 80),
                         ],
                       ),
                     ],
                   ),
                 ),
                 // 箭頭
-                const SkeletonBox(height: 24, width: 24),
+                SkeletonBox(height: 24, width: 24),
               ],
             ),
           );

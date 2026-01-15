@@ -5,6 +5,7 @@ import 'package:strengthwise/controllers/appointment_controller.dart';
 import 'package:strengthwise/controllers/availability_slot_controller.dart';
 import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
+import 'package:strengthwise/controllers/event_bus_controller.dart'; // ⭐ v3.5
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/interfaces/i_availability_slot_service.dart';
 import 'package:strengthwise/models/user/user_model.dart';
@@ -33,6 +34,7 @@ class _ClientBookingPageState extends State<ClientBookingPage> {
   late final CoachingRelationshipController _relationshipController;
   late final IAuthController _authController;
   late final ErrorHandlingService _errorService;
+  late final EventBusController _eventBusController; // ⭐ v3.5
 
   bool _isLoading = true;
   String? _selectedCoachId;
@@ -53,6 +55,7 @@ class _ClientBookingPageState extends State<ClientBookingPage> {
     _relationshipController = serviceLocator<CoachingRelationshipController>();
     _authController = serviceLocator<IAuthController>();
     _errorService = serviceLocator<ErrorHandlingService>();
+    _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.5
   }
 
   Future<void> _loadInitialData() async {
@@ -177,6 +180,12 @@ class _ClientBookingPageState extends State<ClientBookingPage> {
 
       if (mounted) {
         if (success) {
+          // ⭐ v3.5: 發布預約創建事件（觸發首頁、行事曆自動刷新）
+          _eventBusController.publishAppointmentCreated(
+            appointmentId: '', // 實際 ID 由後端生成，這裡使用空值
+            coachId: _selectedCoachId!,
+            clientId: userId,
+          );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('預約成功！等待教練確認')),
           );

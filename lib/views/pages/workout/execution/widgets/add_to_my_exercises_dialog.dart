@@ -243,7 +243,7 @@ class _AddToMyExercisesDialogState extends State<AddToMyExercisesDialog> {
   /// 建立身體部位下拉選單
   Widget _buildBodyPartDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedBodyPart,
+      initialValue: _selectedBodyPart,
       isExpanded: true,
       decoration: const InputDecoration(
         labelText: '身體部位',
@@ -272,7 +272,7 @@ class _AddToMyExercisesDialogState extends State<AddToMyExercisesDialog> {
   /// 建立器材下拉選單
   Widget _buildEquipmentDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedEquipment,
+      initialValue: _selectedEquipment,
       isExpanded: true,
       decoration: const InputDecoration(
         labelText: '使用器材',
@@ -295,7 +295,7 @@ class _AddToMyExercisesDialogState extends State<AddToMyExercisesDialog> {
   /// 建立追蹤模式下拉選單
   Widget _buildTrackingModeDropdown() {
     return DropdownButtonFormField<TrackingMode>(
-      value: _selectedTrackingMode,
+      initialValue: _selectedTrackingMode,
       isExpanded: true,
       decoration: const InputDecoration(
         labelText: '追蹤模式',

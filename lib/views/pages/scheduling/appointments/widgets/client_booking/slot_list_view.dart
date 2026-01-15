@@ -76,7 +76,7 @@ class SlotListView extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isBookedByOthers
-                      ? colorScheme.surfaceVariant.withOpacity(0.5)
+                      ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
                       : isMyBooking
                           ? colorScheme.primaryContainer.withOpacity(0.7)
                           : colorScheme.primaryContainer,

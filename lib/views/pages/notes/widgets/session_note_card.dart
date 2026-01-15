@@ -99,7 +99,7 @@ class SessionNoteCard extends StatelessWidget {
                               vertical: context.spacing.xs,
                             ),
                             decoration: BoxDecoration(
-                              color: colorScheme.surfaceVariant,
+                              color: colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -122,7 +122,7 @@ class SessionNoteCard extends StatelessWidget {
                   // ⭐ 頭像 + 名稱（限制寬度，防止 email 溢出）
                   CircleAvatar(
                     radius: 12,
-                    backgroundColor: colorScheme.surfaceVariant,
+                    backgroundColor: colorScheme.surfaceContainerHighest,
                     child: Text(
                       _getPersonInitial(),
                       style: TextStyle(

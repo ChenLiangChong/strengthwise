@@ -1,7 +1,8 @@
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/appointment_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/services/interfaces/i_user_service.dart';
+import 'package:strengthwise/controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
 
 /// 詳情資訊區域組件
 /// ⭐ v3.1.1: 改為 StatefulWidget 以支援異步加載用戶名稱
@@ -30,13 +31,14 @@ class _DetailsInfoSectionState extends State<DetailsInfoSection> {
   }
 
   /// 加載用戶名稱
+  /// ⭐ v3.6: 透過 ProfileController 查詢
   Future<void> _loadUserName() async {
     try {
-      final userService = serviceLocator<IUserService>();
+      final profileController = serviceLocator<ProfileController>();
       final userId = widget.isCoachMode
           ? widget.appointment.clientId
           : widget.appointment.coachId;
-      final profile = await userService.getUserProfile(userId);
+      final profile = await profileController.getUserProfileById(userId);
       if (mounted) {
         setState(() {
           _displayName = profile?.displayName ?? profile?.email ?? userId;

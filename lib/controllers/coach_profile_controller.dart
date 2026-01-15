@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:strengthwise/models/coach_profile/coach_profile_model.dart';
 import 'package:strengthwise/models/coach_profile/certification_model.dart';
+import 'package:strengthwise/models/coach_display_preferences_model.dart'; // ⭐ v3.5: MVVM
 import 'package:strengthwise/services/interfaces/i_coach_profile_service.dart';
+import 'package:strengthwise/services/interfaces/i_coach_display_preferences_service.dart'; // ⭐ v3.5: MVVM
 import 'package:strengthwise/services/interfaces/i_auth_service.dart';
+import 'package:strengthwise/services/service_locator.dart'; // ⭐ v3.5: MVVM
 
 /// 教練公開檔案控制器
 /// 
@@ -314,6 +317,78 @@ class CoachProfileController extends ChangeNotifier {
       _initEmptyForm();
     }
     notifyListeners();
+  }
+
+  // =========================================================================
+  // ⭐ v3.5: 教練顯示偏好設定（MVVM 重構）
+  // Controller 內部獲取 Service，View 不需要知道 Service 的存在
+  // =========================================================================
+
+  /// 更新教練顯示偏好設定
+  Future<bool> updateDisplayPreferences(
+    CoachDisplayPreferencesModel preferences,
+  ) async {
+    try {
+      _isSaving = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final preferencesService = serviceLocator<ICoachDisplayPreferencesService>();
+      await preferencesService.updatePreferences(preferences);
+
+      _isSaving = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = '儲存設定失敗: $e';
+      _isSaving = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ============================================================================
+  // ⭐ v3.6 MVVM 重構：純查詢方法（不更新 Controller 狀態）
+  // ============================================================================
+
+  /// 查詢指定教練的公開檔案
+  ///
+  /// 用於純展示場景，不影響 Controller 內部狀態
+  ///
+  /// [coachId] 教練 ID
+  /// 返回 CoachProfileModel 或 null
+  Future<CoachProfileModel?> getCoachProfileById(String coachId) async {
+    try {
+      return await _profileService.getProfile(coachId);
+    } catch (e) {
+      debugPrint('[COACH_PROFILE_CONTROLLER] ⚠️ 查詢教練檔案失敗: $coachId, $e');
+      return null;
+    }
+  }
+
+  /// 取得教練的顯示偏好設定
+  /// ⭐ v3.6 MVVM 重構
+  Future<CoachDisplayPreferencesModel?> getDisplayPreferences(String coachId) async {
+    try {
+      final preferencesService = serviceLocator<ICoachDisplayPreferencesService>();
+      return await preferencesService.getPreferences(coachId);
+    } catch (e) {
+      debugPrint('[COACH_PROFILE_CONTROLLER] ⚠️ 查詢顯示偏好失敗: $coachId, $e');
+      return null;
+    }
+  }
+
+  /// 重置顯示偏好為預設值
+  /// ⭐ v3.6 MVVM 重構
+  Future<bool> resetDisplayPreferences(String coachId) async {
+    try {
+      final preferencesService = serviceLocator<ICoachDisplayPreferencesService>();
+      await preferencesService.resetToDefault(coachId);
+      return true;
+    } catch (e) {
+      debugPrint('[COACH_PROFILE_CONTROLLER] ⚠️ 重置顯示偏好失敗: $coachId, $e');
+      return false;
+    }
   }
 }
 

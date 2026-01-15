@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/services/interfaces/i_user_service.dart'; // ⭐ v3.4
 import 'package:strengthwise/views/pages/auth/login_page.dart';
 import 'package:strengthwise/views/pages/home/main_home_page.dart';
 import 'package:strengthwise/views/pages/profile/profile_settings_page.dart'; // ⭐ v3.4
@@ -88,9 +87,8 @@ class _SplashScreenState extends State<SplashScreen> {
       Widget targetPage;
       
       if (authController.isLoggedIn) {
-        // ⭐ v3.4: 檢查是否完成個人資料設置
-        final userService = serviceLocator<IUserService>();
-        final isProfileCompleted = await userService.isProfileCompleted();
+        // ⭐ v3.6: MVVM 重構 - 透過 Controller 檢查
+        final isProfileCompleted = await authController.isProfileCompleted();
         
         if (!isProfileCompleted) {
           // 首次登入，跳轉到個人資料設定頁面

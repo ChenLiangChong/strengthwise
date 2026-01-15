@@ -437,7 +437,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
     try {
       // ⚡ 1. 一次查詢最大時間範圍的數據（一年）
-      final maxRange = TimeRange.year;
+      const maxRange = TimeRange.year;
       final allWorkouts = await _getCompletedWorkouts(
         userId,
         maxRange.startDate,
@@ -619,7 +619,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
       // ⚡ v3.1.1 優化：固定查詢一年範圍，後續客戶端過濾
       // 這樣可以快取結果，避免切換時間範圍時重複查詢
-      final yearRange = TimeRange.year;
+      const yearRange = TimeRange.year;
       final expandedStartDate = yearRange.startDate;
 
       // 查詢所有訓練計劃（包括部分完成的）
@@ -828,8 +828,9 @@ class StatisticsServiceSupabase implements IStatisticsService {
 
       if (_kStatisticsDebugLog) {
         print('[GET_EXERCISES] 返回 ${filtered.length} 個動作');
-        if (timeRange != null)
+        if (timeRange != null) {
           print('   過濾條件 - 時間範圍: ${timeRange.displayName}');
+        }
         if (trainingType != null) print('   過濾條件 - 訓練類型: $trainingType');
         if (bodyPart != null) print('   過濾條件 - 身體部位: $bodyPart');
       }

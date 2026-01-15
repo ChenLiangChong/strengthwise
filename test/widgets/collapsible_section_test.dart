@@ -12,12 +12,12 @@ void main() {
     // =========================================================================
     testWidgets('預設展開顯示內容', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: CollapsibleSection(
               title: '測試區塊',
               initiallyExpanded: true,
-              child: const Text('內容文字'),
+              child: Text('內容文字'),
             ),
           ),
         ),
@@ -29,12 +29,12 @@ void main() {
 
     testWidgets('預設收起時內容不可見', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: CollapsibleSection(
               title: '測試區塊',
               initiallyExpanded: false,
-              child: const Text('內容文字'),
+              child: Text('內容文字'),
             ),
           ),
         ),
@@ -100,12 +100,12 @@ void main() {
     // =========================================================================
     testWidgets('顯示標題圖標', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: CollapsibleSection(
               title: '測試區塊',
               icon: Icons.star,
-              child: const Text('內容'),
+              child: Text('內容'),
             ),
           ),
         ),
@@ -116,12 +116,12 @@ void main() {
 
     testWidgets('顯示 trailing widget', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: CollapsibleSection(
               title: '測試區塊',
-              trailing: const Chip(label: Text('3')),
-              child: const Text('內容'),
+              trailing: Chip(label: Text('3')),
+              child: Text('內容'),
             ),
           ),
         ),
@@ -136,12 +136,12 @@ void main() {
     // =========================================================================
     testWidgets('展開有動畫效果', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: CollapsibleSection(
               title: '測試區塊',
               initiallyExpanded: false,
-              child: const Text('內容'),
+              child: Text('內容'),
             ),
           ),
         ),
@@ -161,11 +161,11 @@ void main() {
 
     testWidgets('展開箭頭顯示', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: CollapsibleSection(
               title: '測試區塊',
-              child: const Text('內容'),
+              child: Text('內容'),
             ),
           ),
         ),

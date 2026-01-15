@@ -27,4 +27,9 @@ abstract class IAuthController {
   
   /// 登出
   Future<void> signOut();
+  
+  /// 檢查用戶是否已完成個人資料設置
+  /// 
+  /// 用於登入後判斷是否需要跳轉到個人資料設定頁面
+  Future<bool> isProfileCompleted();
 } 

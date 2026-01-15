@@ -55,9 +55,9 @@ class TrainingCalendarGenerator {
       // 計算強度等級（0-4）
       int intensity = 0;
       if (totalVolume > 0) {
-        if (totalVolume > 10000)
+        if (totalVolume > 10000) {
           intensity = 4;
-        else if (totalVolume > 7000)
+        } else if (totalVolume > 7000)
           intensity = 3;
         else if (totalVolume > 4000)
           intensity = 2;

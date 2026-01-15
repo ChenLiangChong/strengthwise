@@ -1,9 +1,11 @@
 // ✅ 已響應式改造 (Phase 0 + P3 Master-Detail)
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/services/interfaces/i_user_service.dart';
+import 'package:strengthwise/controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/controllers/appointment_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
+// ⭐ v3.5: 事件由 Controller 統一發布，View 不需要直接使用 EventBusController
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/models/appointment_model.dart';
 import 'package:strengthwise/models/user/user_model.dart';
@@ -45,6 +47,7 @@ class AppointmentsListPage extends StatefulWidget {
 class _AppointmentsListPageState extends State<AppointmentsListPage> {
   late final AppointmentController _appointmentController;
   late final IAuthController _authController;
+  late final ProfileController _profileController; // ⭐ v3.6: MVVM
   late final ErrorHandlingService _errorService;
 
   AppointmentStatus? _selectedStatus;
@@ -63,6 +66,7 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
   void _initializeControllers() {
     _appointmentController = serviceLocator<AppointmentController>();
     _authController = serviceLocator<IAuthController>();
+    _profileController = serviceLocator<ProfileController>(); // ⭐ v3.6: MVVM
     _errorService = serviceLocator<ErrorHandlingService>();
     _appointmentController.addListener(_onControllerUpdate);
   }
@@ -137,10 +141,10 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
   /// ⭐ v3.1.1: 異步獲取學員名稱
   Future<void> _onStartSession(AppointmentModel appointment) async {
     // 獲取學員名稱
+    // ⭐ v3.6: 透過 ProfileController 查詢
     String clientName = '學員';
     try {
-      final userService = serviceLocator<IUserService>();
-      final profile = await userService.getUserProfile(appointment.clientId);
+      final profile = await _profileController.getUserProfileById(appointment.clientId);
       clientName = profile?.displayName ?? profile?.email ?? '學員';
     } catch (e) {
       debugPrint('[APPOINTMENTS_LIST] 獲取學員名稱失敗: $e');
@@ -168,10 +172,10 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
   /// ⭐ v3.1.1: 異步獲取教練名稱
   Future<void> _onViewSession(AppointmentModel appointment) async {
     // 獲取教練名稱
+    // ⭐ v3.6: 透過 ProfileController 查詢
     String coachName = '教練';
     try {
-      final userService = serviceLocator<IUserService>();
-      final profile = await userService.getUserProfile(appointment.coachId);
+      final profile = await _profileController.getUserProfileById(appointment.coachId);
       coachName = profile?.displayName ?? profile?.email ?? '教練';
     } catch (e) {
       debugPrint('[APPOINTMENTS_LIST] 獲取教練名稱失敗: $e');
@@ -257,6 +261,7 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
 
       if (mounted) {
         if (success) {
+          // ⭐ v3.5: 事件由 Controller 統一發布，View 只處理 UI 回饋
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(_getSuccessMessage(action))),
           );

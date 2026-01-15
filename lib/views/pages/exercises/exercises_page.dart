@@ -1,9 +1,10 @@
 // ✅ 已響應式改造 (Phase 0)
+// ⭐ MVVM 重構：移除 Service 直接調用，改用 Controller
 import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import '../../../models/exercise_model.dart';
 import 'exercise_detail_page.dart';
-import '../../../services/interfaces/i_exercise_service.dart';
+import '../../../controllers/exercise_controller.dart';
 import '../../../services/service_locator.dart';
 import '../../../utils/notification_utils.dart';
 import 'custom_exercises_page.dart';
@@ -27,8 +28,8 @@ class ExercisesPage extends StatefulWidget {
 class _ExercisesPageState extends State<ExercisesPage> {
   bool _isLoading = true;
   
-  // 注入 ExerciseService
-  late final IExerciseService _exerciseService;
+  // ⭐ MVVM 重構：改用 Controller
+  late final ExerciseController _exerciseController;
 
   // 新的 5 層分類選擇
   String? _selectedTrainingType; // 訓練類型
@@ -52,8 +53,8 @@ class _ExercisesPageState extends State<ExercisesPage> {
   void initState() {
     super.initState();
     
-    // 初始化 ExerciseService
-    _exerciseService = serviceLocator<IExerciseService>();
+    // ⭐ MVVM 重構：改用 Controller
+    _exerciseController = serviceLocator<ExerciseController>();
     
     _logDebug('應用啟動：等待服務初始化...');
 
@@ -119,8 +120,8 @@ class _ExercisesPageState extends State<ExercisesPage> {
     try {
       _logDebug('開始載入訓練類型...');
 
-      // 使用 ExerciseService 取得訓練類型
-      final types = await _exerciseService.getExerciseTypes();
+      // ⭐ MVVM：透過 Controller 取得訓練類型
+      final types = await _exerciseController.getExerciseTypes();
       
       _logDebug('成功載入 ${types.length} 個訓練類型: ${types.join(", ")}');
 
@@ -155,8 +156,8 @@ class _ExercisesPageState extends State<ExercisesPage> {
         filters['type'] = _selectedTrainingType!;
       }
       
-      // 使用 getExercisesByFilters 取得動作列表
-      final exercises = await _exerciseService.getExercisesByFilters(filters);
+      // ⭐ MVVM：透過 Controller 取得動作列表
+      final exercises = await _exerciseController.getExercisesByFilters(filters);
       
       // 從動作列表中提取唯一的身體部位
       final partsSet = <String>{};
@@ -201,7 +202,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       }
       
       // 取得動作列表
-      final exercises = await _exerciseService.getExercisesByFilters(filters);
+      final exercises = await _exerciseController.getExercisesByFilters(filters);
       
       // 提取唯一的特定肌群
       final musclesSet = <String>{};
@@ -252,7 +253,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       }
       
       // 取得動作列表
-      final exercises = await _exerciseService.getExercisesByFilters(filters);
+      final exercises = await _exerciseController.getExercisesByFilters(filters);
 
       // 客戶端過濾並提取器材類別
       final categoriesSet = <String>{};
@@ -309,7 +310,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       }
       
       // 取得動作列表
-      final exercises = await _exerciseService.getExercisesByFilters(filters);
+      final exercises = await _exerciseController.getExercisesByFilters(filters);
 
       // 客戶端過濾並提取器材子類別
       final subcategoriesSet = <String>{};
@@ -374,7 +375,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       }
       
       // 取得動作列表
-      var exercises = await _exerciseService.getExercisesByFilters(filters);
+      var exercises = await _exerciseController.getExercisesByFilters(filters);
 
       // 客戶端過濾其他條件
       exercises = exercises.where((exercise) {
@@ -621,10 +622,12 @@ class _ExercisesPageState extends State<ExercisesPage> {
     if (_selectedTrainingType != null) parts.add(_selectedTrainingType!);
     if (_selectedBodyPart != null) parts.add(_selectedBodyPart!);
     if (_selectedSpecificMuscle != null) parts.add(_selectedSpecificMuscle!);
-    if (_selectedEquipmentCategory != null)
+    if (_selectedEquipmentCategory != null) {
       parts.add(_selectedEquipmentCategory!);
-    if (_selectedEquipmentSubcategory != null)
+    }
+    if (_selectedEquipmentSubcategory != null) {
       parts.add(_selectedEquipmentSubcategory!);
+    }
 
     return parts.isEmpty ? '' : '已選擇：${parts.join(' > ')}';
   }

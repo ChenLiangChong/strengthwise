@@ -537,6 +537,30 @@ class SessionNoteController extends ChangeNotifier {
     }
   }
 
+  // ============================================================================
+  // ⭐ MVVM 重構：直接查詢方法（返回結果，不更新 Controller 狀態）
+  // ============================================================================
+
+  /// 查詢與預約關聯的筆記（直接返回結果）
+  /// ⭐ v3.6 MVVM 重構
+  ///
+  /// 用於課程紀錄頁面等需要直接獲取數據的場景
+  Future<List<SessionNoteModel>> getNotesByAppointment({
+    required String appointmentId,
+  }) async {
+    try {
+      return await _noteService.getNotesByAppointment(
+        appointmentId: appointmentId,
+      );
+    } catch (e) {
+      _errorService.logError(
+        '查詢預約筆記失敗: $e',
+        type: 'SessionNoteControllerError',
+      );
+      return [];
+    }
+  }
+
   @override
   void dispose() {
     _state.removeListener(notifyListeners);

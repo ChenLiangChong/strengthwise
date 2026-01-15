@@ -1,10 +1,11 @@
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:strengthwise/controllers/client_management_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/services/interfaces/i_workout_service.dart';
+import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/models/workout_record/workout_record.dart';
@@ -37,8 +38,9 @@ class ClientWorkoutCalendarTab extends StatefulWidget {
 }
 
 class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
+  // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
   late final IAuthController _authController;
-  late final IWorkoutService _workoutService; // ⭐ 添加服務
+  late final IWorkoutController _workoutController;
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
   CalendarFormat _calendarFormat = CalendarFormat.month;
@@ -47,7 +49,7 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
   void initState() {
     super.initState();
     _authController = serviceLocator<IAuthController>();
-    _workoutService = serviceLocator<IWorkoutService>(); // ⭐ 初始化服務
+    _workoutController = serviceLocator<IWorkoutController>();
 
     // 初始化時載入當月數據
     _loadMonthData(_focusedDay);
@@ -86,8 +88,9 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
     }
 
     // ⭐ v2.1: 預檢查時間是否重疊
+    // ⭐ v3.6: 透過 Controller 操作
     try {
-      final overlappingWorkouts = await _workoutService.checkTimeOverlap(
+      final overlappingWorkouts = await _workoutController.checkTimeOverlap(
         traineeId: widget.clientId,
         startTime: slot.startTime,
         endTime: slot.endTime,
@@ -557,11 +560,15 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
   }
 
   /// ⭐ v2.9.1: 執行刪除訓練
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作，事件由 Controller 自動發布
   Future<void> _deleteWorkout(WorkoutRecord workout) async {
     try {
-      final workoutService = serviceLocator<IWorkoutService>();
+      // ⭐ v3.5: 透過 Controller 刪除訓練記錄（Controller 會自動發布事件）
+      final success = await _workoutController.deleteRecord(workout.id);
 
-      await workoutService.deleteRecord(workout.id);
+      if (!success) {
+        throw Exception(_workoutController.errorMessage ?? '刪除失敗');
+      }
 
       if (mounted) {
         NotificationUtils.showSuccess(context, '訓練計畫已刪除');

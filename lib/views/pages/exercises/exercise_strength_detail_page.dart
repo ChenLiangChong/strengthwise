@@ -1,11 +1,12 @@
 // ✅ 已響應式改造 (Phase 0) - 統計詳情頁
 // v3.3+ 支援多元追蹤模式 + 傳遞數據方案
+// ⭐ MVVM 重構：移除 Service 直接調用，改用 Controller
 import 'package:flutter/material.dart';
 import '../../../models/statistics_model.dart';
 import '../../../models/tracking_mode.dart';
 import '../../../models/favorite_exercise_model.dart';
-import '../../../services/interfaces/i_statistics_service.dart';
-import '../../../services/interfaces/i_favorites_service.dart';
+import '../../../controllers/exercise_controller.dart';
+import '../../../controllers/interfaces/i_statistics_controller.dart';
 import '../../../services/service_locator.dart';
 import '../../../utils/notification_utils.dart';
 import 'widgets/statistics_card.dart';
@@ -45,10 +46,11 @@ class ExerciseStrengthDetailPage extends StatefulWidget {
 
 class _ExerciseStrengthDetailPageState
     extends State<ExerciseStrengthDetailPage> {
-  final IStatisticsService _statisticsService =
-      serviceLocator<IStatisticsService>();
-  final IFavoritesService _favoritesService =
-      serviceLocator<IFavoritesService>();
+  // ⭐ MVVM 重構：改用 Controller
+  final IStatisticsController _statisticsController =
+      serviceLocator<IStatisticsController>();
+  final ExerciseController _exerciseController =
+      serviceLocator<ExerciseController>();
 
   ExerciseStrengthProgress? _progress;
   bool _isLoading = true;
@@ -73,8 +75,8 @@ class _ExerciseStrengthDetailPageState
 
     try {
       // v3.3+ 修正：恢復使用用戶選擇的時間範圍
-      // 根本問題已在 statistics_data_loader.dart 修復（統一時間判斷邏輯）
-      final progressList = await _statisticsService.getStrengthProgress(
+      // ⭐ MVVM：透過 Controller 取得力量進步數據
+      final progressList = await _statisticsController.getStrengthProgress(
         widget.userId,
         widget.timeRange,
         limit: 1000,
@@ -90,7 +92,7 @@ class _ExerciseStrengthDetailPageState
         // v3.3+ 找不到時，清除快取重試一次
         if (!_hasRetried) {
           _hasRetried = true;
-          _statisticsService.clearCache();
+          _statisticsController.clearStatisticsCache();
           return _loadData();
         }
         
@@ -103,8 +105,8 @@ class _ExerciseStrengthDetailPageState
         }
       }
 
-      // 檢查是否已收藏
-      final isFavorite = await _favoritesService.isFavorite(
+      // ⭐ MVVM：透過 Controller 檢查是否已收藏
+      final isFavorite = await _exerciseController.isFavorite(
         widget.userId,
         widget.exerciseId,
       );
@@ -152,29 +154,41 @@ class _ExerciseStrengthDetailPageState
   }
 
   /// 切換收藏狀態
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作
   Future<void> _toggleFavorite() async {
     if (_progress == null) return;
 
     try {
+      bool success;
+
       if (_isFavorite) {
-        await _favoritesService.removeFavorite(
-            widget.userId, widget.exerciseId);
-        if (mounted) {
+        // ⭐ v3.5: 透過 Controller 移除收藏
+        success = await _exerciseController.removeFavorite(
+          userId: widget.userId,
+          exerciseId: widget.exerciseId,
+        );
+        if (success && mounted) {
           NotificationUtils.showSuccess(context, '已移除收藏');
         }
       } else {
-        await _favoritesService.addFavorite(
-          widget.userId,
-          widget.exerciseId,
-          _progress!.exerciseName,
-          _progress!.bodyPart,
+        // ⭐ v3.5: 透過 Controller 添加收藏
+        success = await _exerciseController.addFavorite(
+          userId: widget.userId,
+          exerciseId: widget.exerciseId,
+          exerciseName: _progress!.exerciseName,
+          bodyPart: _progress!.bodyPart,
         );
-        if (mounted) {
+        if (success && mounted) {
           NotificationUtils.showSuccess(context, '已添加收藏');
         }
       }
 
-      setState(() => _isFavorite = !_isFavorite);
+      if (success) {
+        setState(() => _isFavorite = !_isFavorite);
+      } else if (mounted) {
+        NotificationUtils.showError(
+            context, _exerciseController.errorMessage ?? '操作失敗');
+      }
     } catch (e) {
       if (mounted) {
         NotificationUtils.showError(context, '操作失敗: $e');

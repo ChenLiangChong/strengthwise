@@ -11,7 +11,7 @@ alwaysApply: true
 | 項目 | 內容 |
 |------|------|
 | **專案名稱** | StrengthWise |
-| **當前版本** | v3.4（2026-01-12 完成 - 傷病教練備註顯示 + 模板儲存優化）|
+| **當前版本** | v3.6（2026-01-15 完成 - MVVM 純架構重構）|
 | **專案類型** | 跨平台健身訓練追蹤應用 |
 | **目標平台** | Android / iOS / Windows / Web |
 
@@ -71,6 +71,8 @@ Model Layer              → lib/models/
 - v3.2：Coach Mark + TrackingMode + Web PWA ✅
 - v3.3：TrackingMode 統計適配 + PR 修復 ✅
 - v3.4：傷病教練備註顯示 + 模板儲存優化 ✅
+- v3.5：MVVM CUD 事件修復（Controller 統一發布事件）✅
+- v3.6：MVVM 純架構重構（View 完全透過 Controller）✅
 
 ## 📊 專案規模
 

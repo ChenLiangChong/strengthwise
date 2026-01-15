@@ -5,13 +5,16 @@ import '../services/interfaces/i_user_service.dart';
 import '../services/core/error_handling_service.dart';
 import 'body_data/body_data_cache_manager.dart';
 import 'body_data/body_data_operation_helper.dart';
+import 'event_bus_controller.dart'; // ⭐ v3.5
 
 /// 身體數據控制器
 /// 遵循 MVVM 架構，處理身體數據相關業務邏輯
+/// ⭐ v3.5: 統一發布身體數據事件（Controller 層負責事件發布）
 class BodyDataController extends ChangeNotifier {
   final IBodyDataService _bodyDataService;
   final IUserService _userService;
   final ErrorHandlingService? _errorService;
+  final EventBusController _eventBusController; // ⭐ v3.5
 
   // 子模組
   late final BodyDataCacheManager _cacheManager;
@@ -23,9 +26,11 @@ class BodyDataController extends ChangeNotifier {
     required IBodyDataService bodyDataService,
     required IUserService userService,
     ErrorHandlingService? errorService,
+    required EventBusController eventBusController, // ⭐ v3.5
   })  : _bodyDataService = bodyDataService,
         _userService = userService,
-        _errorService = errorService {
+        _errorService = errorService,
+        _eventBusController = eventBusController {
     // 初始化子模組
     _cacheManager = BodyDataCacheManager();
   }
@@ -126,6 +131,9 @@ class BodyDataController extends ChangeNotifier {
             _errorService?.logError('同步用戶體重失敗: $e', type: 'BodyDataControllerError');
           }
 
+          // ⭐ v3.5: 發布身體數據更新事件
+          _eventBusController.publishBodyDataUpdated(userId: userId);
+
           // 重新載入數據
           await loadRecords(userId);
         }
@@ -154,6 +162,9 @@ class BodyDataController extends ChangeNotifier {
         // 不影響主流程，繼續執行
       }
 
+      // ⭐ v3.5: 發布身體數據更新事件
+      _eventBusController.publishBodyDataUpdated(userId: userId);
+
       // 重新載入數據
       await loadRecords(userId);
 
@@ -167,6 +178,7 @@ class BodyDataController extends ChangeNotifier {
   }
 
   /// 更新記錄
+  /// ⭐ v3.5: 操作成功後自動發布事件
   Future<bool> updateRecord(BodyDataRecord record, {double? heightCm}) async {
     try {
       // 使用助手類重新計算 BMI
@@ -176,6 +188,10 @@ class BodyDataController extends ChangeNotifier {
       if (success) {
         // 使用緩存管理器更新本地列表
         _cacheManager.updateRecordInCache(record.id, updatedRecord);
+
+        // ⭐ v3.5: 發布身體數據更新事件
+        _eventBusController.publishBodyDataUpdated(userId: record.userId);
+
         notifyListeners();
       }
       return success;
@@ -188,12 +204,24 @@ class BodyDataController extends ChangeNotifier {
   }
 
   /// 刪除記錄
+  /// ⭐ v3.5: 操作成功後自動發布事件
   Future<bool> deleteRecord(String recordId) async {
     try {
+      // ⭐ v3.5: 先取得 userId 用於發布事件
+      final recordToDelete = _cacheManager.records.firstWhere(
+        (r) => r.id == recordId,
+        orElse: () => throw Exception('記錄不存在'),
+      );
+      final userId = recordToDelete.userId;
+
       final success = await _bodyDataService.deleteRecord(recordId);
       if (success) {
         // 使用緩存管理器從本地列表中移除
         _cacheManager.removeRecordFromCache(recordId);
+
+        // ⭐ v3.5: 發布身體數據更新事件
+        _eventBusController.publishBodyDataUpdated(userId: userId);
+
         notifyListeners();
       }
       return success;

@@ -175,7 +175,7 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
   /// 建立訓練類型下拉選單
   Widget _buildTrainingTypeDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedTrainingType,
+      initialValue: _selectedTrainingType,
       isExpanded: true, // ⭐ v3.1.1: 展開以避免文字截斷
       decoration: const InputDecoration(
         labelText: '動作類型 *',
@@ -199,7 +199,7 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
   /// 建立身體部位下拉選單
   Widget _buildBodyPartDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedBodyPart,
+      initialValue: _selectedBodyPart,
       isExpanded: true, // ⭐ v3.1.1: 展開以避免文字截斷
       decoration: const InputDecoration(
         labelText: '身體部位 *',
@@ -229,7 +229,7 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
   /// 建立器材下拉選單
   Widget _buildEquipmentDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedEquipment,
+      initialValue: _selectedEquipment,
       isExpanded: true, // ⭐ v3.1.1: 展開以避免文字截斷
       decoration: const InputDecoration(
         labelText: '使用器材',
@@ -253,7 +253,7 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
   /// v3.2+ 建立追蹤模式下拉選單
   Widget _buildTrackingModeDropdown() {
     return DropdownButtonFormField<TrackingMode>(
-      value: _selectedTrackingMode,
+      initialValue: _selectedTrackingMode,
       isExpanded: true,
       decoration: const InputDecoration(
         labelText: '追蹤模式',

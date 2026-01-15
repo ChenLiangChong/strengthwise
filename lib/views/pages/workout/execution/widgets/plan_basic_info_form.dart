@@ -34,7 +34,7 @@ class PlanBasicInfoForm extends StatelessWidget {
             labelText: '訓練計畫類型',
             border: OutlineInputBorder(),
           ),
-          value: selectedPlanType,
+          initialValue: selectedPlanType,
           items: planTypes.map((String type) {
             return DropdownMenuItem<String>(
               value: type,

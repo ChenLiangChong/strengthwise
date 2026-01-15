@@ -1,6 +1,7 @@
 // ✅ 已響應式改造 (Phase 0) - CoachProfileContent 組件處理
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
-import 'package:strengthwise/services/interfaces/i_auth_service.dart';
+import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/profile/widgets/coach/coach_profile_content.dart';
 import 'package:strengthwise/views/pages/profile/coach_profile_form_page.dart';
@@ -24,10 +25,11 @@ class CoachProfileViewPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authService = serviceLocator<IAuthService>();
-    final currentUser = authService.getCurrentUser();
-    final targetId = coachId ?? currentUser?['uid'] as String?;
-    final targetEmail = email ?? currentUser?['email'] as String?;
+    // ⭐ v3.6: 透過 IAuthController 取得當前用戶
+    final authController = serviceLocator<IAuthController>();
+    final currentUser = authController.user;
+    final targetId = coachId ?? currentUser?.uid;
+    final targetEmail = email ?? currentUser?.email;
 
     if (targetId == null) {
       return Scaffold(

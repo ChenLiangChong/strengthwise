@@ -4,18 +4,22 @@ import '../services/interfaces/i_booking_service.dart';
 import '../services/core/error_handling_service.dart';
 import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_booking_controller.dart';
-import 'booking/booking_cache_manager.dart';
+import 'interfaces/i_auth_controller.dart';
 import 'booking/booking_data_validator.dart';
 import 'booking/booking_data_sorter.dart';
 import 'booking/booking_slot_filter.dart';
+import 'event_bus_controller.dart';
 
 /// 預約控制器實現
 /// 
 /// 管理用戶和教練預約的業務邏輯，提供數據驗證，錯誤處理和狀態管理功能
+/// ⭐ v3.7: 快取統一到 Service 層 + EventBus 自動刷新
 class BookingController extends ChangeNotifier implements IBookingController {
   // 依賴注入
   final IBookingService _bookingService;
   final ErrorHandlingService _errorService;
+  final EventBusController _eventBusController;
+  final IAuthController _authController;
   
   // 狀態管理
   bool _isLoading = false;
@@ -23,23 +27,11 @@ class BookingController extends ChangeNotifier implements IBookingController {
   bool _isInitialized = false;
   final Completer<void> _initCompleter = Completer<void>();
   
-  // 子模組
-  late final BookingCacheManager _cacheManager;
-  
   /// 正在載入數據
   bool get isLoading => _isLoading;
   
   /// 錯誤訊息
   String? get errorMessage => _errorMessage;
-  
-  /// 緩存的用戶預約
-  List<Map<String, dynamic>> get cachedUserBookings => _cacheManager.userBookingsCache ?? [];
-  
-  /// 緩存的教練預約
-  List<Map<String, dynamic>> get cachedCoachBookings => _cacheManager.coachBookingsCache ?? [];
-  
-  /// 緩存的可用時段
-  List<Map<String, dynamic>> get cachedAvailableSlots => _cacheManager.availableSlotsCache ?? [];
   
   /// 初始化完成的Future
   Future<void> get initialized => _initCompleter.future;
@@ -48,11 +40,13 @@ class BookingController extends ChangeNotifier implements IBookingController {
   BookingController({
     IBookingService? bookingService,
     ErrorHandlingService? errorService,
+    EventBusController? eventBusController,
+    IAuthController? authController,
   }) : 
     _bookingService = bookingService ?? serviceLocator<IBookingService>(),
-    _errorService = errorService ?? serviceLocator<ErrorHandlingService>() {
-    // 初始化子模組
-    _cacheManager = BookingCacheManager();
+    _errorService = errorService ?? serviceLocator<ErrorHandlingService>(),
+    _eventBusController = eventBusController ?? serviceLocator<EventBusController>(),
+    _authController = authController ?? serviceLocator<IAuthController>() {
     _initialize();
   }
   
@@ -150,16 +144,10 @@ class BookingController extends ChangeNotifier implements IBookingController {
     }
   }
   
-  /// 清除特定類型的緩存
-  void clearCache(String cacheType) {
-    _cacheManager.clearCache(cacheType);
-  }
-  
   /// 釋放資源
   @override
   void dispose() {
     _isInitialized = false;
-    clearCache('all');
     super.dispose();
   }
   
@@ -168,33 +156,23 @@ class BookingController extends ChangeNotifier implements IBookingController {
     if (!_isInitialized) await _initialize();
     
     try {
-      // 檢查是否需要重新載入
-      final shouldRefresh = _cacheManager.shouldRefresh('userBookings');
+      _setLoading(true);
+      clearError();
       
-      if (shouldRefresh || _cacheManager.userBookingsCache == null) {
-        _setLoading(true);
-        clearError();
-        
-        final bookings = await _bookingService.getUserBookings();
-        
-        // 排序並緩存
-        final sortedBookings = BookingDataSorter.sortByDate(bookings);
-        _cacheManager.userBookingsCache = sortedBookings;
-        _cacheManager.updateRefreshTime('userBookings');
-        
-        _setLoading(false);
-      }
+      // ⭐ v3.7: 快取統一到 Service 層
+      final bookings = await _bookingService.getUserBookings();
+      final sortedBookings = BookingDataSorter.sortByDate(bookings);
       
-      return _cacheManager.userBookingsCache ?? [];
+      _setLoading(false);
+      return sortedBookings;
     } catch (e) {
       _handleError('載入用戶預約失敗', e);
-      return _cacheManager.userBookingsCache ?? [];
+      return [];
     }
   }
   
-  /// 強制重新載入用戶預約，忽略緩存
+  /// 強制重新載入用戶預約
   Future<List<Map<String, dynamic>>> reloadUserBookings() async {
-    clearCache('userBookings');
     return loadUserBookings();
   }
   
@@ -203,33 +181,23 @@ class BookingController extends ChangeNotifier implements IBookingController {
     if (!_isInitialized) await _initialize();
     
     try {
-      // 檢查是否需要重新載入
-      final shouldRefresh = _cacheManager.shouldRefresh('coachBookings');
+      _setLoading(true);
+      clearError();
       
-      if (shouldRefresh || _cacheManager.coachBookingsCache == null) {
-        _setLoading(true);
-        clearError();
-        
-        final bookings = await _bookingService.getCoachBookings();
-        
-        // 排序並緩存
-        final sortedBookings = BookingDataSorter.sortByDate(bookings);
-        _cacheManager.coachBookingsCache = sortedBookings;
-        _cacheManager.updateRefreshTime('coachBookings');
-        
-        _setLoading(false);
-      }
+      // ⭐ v3.7: 快取統一到 Service 層
+      final bookings = await _bookingService.getCoachBookings();
+      final sortedBookings = BookingDataSorter.sortByDate(bookings);
       
-      return _cacheManager.coachBookingsCache ?? [];
+      _setLoading(false);
+      return sortedBookings;
     } catch (e) {
       _handleError('載入教練預約失敗', e);
-      return _cacheManager.coachBookingsCache ?? [];
+      return [];
     }
   }
   
-  /// 強制重新載入教練預約，忽略緩存
+  /// 強制重新載入教練預約
   Future<List<Map<String, dynamic>>> reloadCoachBookings() async {
-    clearCache('coachBookings');
     return loadCoachBookings();
   }
   
@@ -238,37 +206,8 @@ class BookingController extends ChangeNotifier implements IBookingController {
     if (!_isInitialized) await _initialize();
     
     try {
-      // 從緩存中查找
-      if (_cacheManager.hasBookingDetails(bookingId)) {
-        return _cacheManager.getBookingDetails(bookingId);
-      }
-      
-      // 從用戶預約緩存中查找
-      final userBooking = _cacheManager.findInUserBookings(bookingId);
-      if (userBooking != null) {
-        _cacheManager.setBookingDetails(bookingId, userBooking);
-        return userBooking;
-      }
-      
-      // 從教練預約緩存中查找
-      final coachBooking = _cacheManager.findInCoachBookings(bookingId);
-      if (coachBooking != null) {
-        _cacheManager.setBookingDetails(bookingId, coachBooking);
-        return coachBooking;
-      }
-      
-      // 從服務獲取
-      _setLoading(true);
-      clearError();
-      
-      final booking = await _bookingService.getBookingById(bookingId);
-      
-      if (booking != null) {
-        _cacheManager.setBookingDetails(bookingId, booking);
-      }
-      
-      _setLoading(false);
-      return booking;
+      // ⭐ v3.7: 快取統一到 Service 層
+      return await _bookingService.getBookingById(bookingId);
     } catch (e) {
       _handleError('獲取預約詳情失敗', e);
       return null;
@@ -293,8 +232,14 @@ class BookingController extends ChangeNotifier implements IBookingController {
       
       final bookingId = await _bookingService.createBooking(bookingData);
       
-      // 清除緩存，以便下次獲取最新數據
-      clearCache('userBookings');
+      // ⭐ v3.7: 發布預約創建事件
+      final userId = _authController.user?.uid;
+      if (userId != null) {
+        _eventBusController.publishAppointmentCreated(
+          appointmentId: bookingId,
+          userId: userId,
+        );
+      }
       
       _setLoading(false);
       return bookingId;
@@ -314,13 +259,6 @@ class BookingController extends ChangeNotifier implements IBookingController {
       
       final success = await _bookingService.updateBooking(bookingId, bookingData);
       
-      // 更新緩存
-      if (success) {
-        _cacheManager.removeBookingDetails(bookingId);
-        clearCache('userBookings');
-        clearCache('coachBookings');
-      }
-      
       _setLoading(false);
       return success;
     } catch (e) {
@@ -339,11 +277,15 @@ class BookingController extends ChangeNotifier implements IBookingController {
       
       final success = await _bookingService.cancelBooking(bookingId);
       
-      // 更新緩存
+      // ⭐ v3.7: 發布預約取消事件
       if (success) {
-        _cacheManager.removeBookingDetails(bookingId);
-        clearCache('userBookings');
-        clearCache('coachBookings');
+        final userId = _authController.user?.uid;
+        if (userId != null) {
+          _eventBusController.publishAppointmentCancelled(
+            appointmentId: bookingId,
+            userId: userId,
+          );
+        }
       }
       
       _setLoading(false);
@@ -364,11 +306,15 @@ class BookingController extends ChangeNotifier implements IBookingController {
       
       final success = await _bookingService.confirmBooking(bookingId);
       
-      // 更新緩存
+      // ⭐ v3.7: 發布預約確認事件
       if (success) {
-        _cacheManager.removeBookingDetails(bookingId);
-        clearCache('userBookings');
-        clearCache('coachBookings');
+        final userId = _authController.user?.uid;
+        if (userId != null) {
+          _eventBusController.publishAppointmentConfirmed(
+            appointmentId: bookingId,
+            userId: userId,
+          );
+        }
       }
       
       _setLoading(false);
@@ -389,11 +335,15 @@ class BookingController extends ChangeNotifier implements IBookingController {
       
       final success = await _bookingService.deleteBooking(bookingId);
       
-      // 更新緩存
+      // ⭐ v3.7: 發布預約取消事件（刪除視為取消）
       if (success) {
-        _cacheManager.removeBookingDetails(bookingId);
-        clearCache('userBookings');
-        clearCache('coachBookings');
+        final userId = _authController.user?.uid;
+        if (userId != null) {
+          _eventBusController.publishAppointmentCancelled(
+            appointmentId: bookingId,
+            userId: userId,
+          );
+        }
       }
       
       _setLoading(false);
@@ -409,23 +359,18 @@ class BookingController extends ChangeNotifier implements IBookingController {
     if (!_isInitialized) await _initialize();
     
     try {
-      // 每次都重新載入可用時段，因為這些數據可能會頻繁變化
       _setLoading(true);
       clearError();
       
+      // ⭐ v3.7: 快取統一到 Service 層
       final slots = await _bookingService.getAvailableSlots(coachId);
-      
-      // 過濾掉已過期的時段
       final availableSlots = BookingSlotFilter.filterExpiredSlots(slots);
-      
-      _cacheManager.availableSlotsCache = availableSlots;
-      _cacheManager.updateRefreshTime('availableSlots');
       
       _setLoading(false);
       return availableSlots;
     } catch (e) {
       _handleError('載入可用時段失敗', e);
-      return _cacheManager.availableSlotsCache ?? [];
+      return [];
     }
   }
   
@@ -438,11 +383,6 @@ class BookingController extends ChangeNotifier implements IBookingController {
       clearError();
       
       final success = await _bookingService.setSlotBooked(slotId);
-      
-      // 清除緩存
-      if (success) {
-        clearCache('availableSlots');
-      }
       
       _setLoading(false);
       return success;

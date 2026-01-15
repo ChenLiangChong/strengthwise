@@ -1,20 +1,37 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:strengthwise/controllers/profile_controller.dart';
+import 'package:strengthwise/controllers/event_bus_controller.dart';
 import 'package:strengthwise/models/user/user_model.dart';
+import 'package:strengthwise/models/body_data_record.dart';
 import 'package:strengthwise/services/interfaces/i_user_service.dart';
 import 'package:strengthwise/services/interfaces/i_auth_service.dart';
+import 'package:strengthwise/services/interfaces/i_body_data_service.dart';
 
 // Mock 類別
 class MockUserService extends Mock implements IUserService {}
 
 class MockAuthService extends Mock implements IAuthService {}
 
+class MockBodyDataService extends Mock implements IBodyDataService {}
+
+class MockEventBusController extends Mock implements EventBusController {}
+
+// Fake 類別（用於 fallback value）
+class FakeBodyDataRecord extends Fake implements BodyDataRecord {}
+
 /// ProfileController 測試
 void main() {
   late MockUserService mockUserService;
   late MockAuthService mockAuthService;
+  late MockBodyDataService mockBodyDataService;
+  late MockEventBusController mockEventBusController;
   late ProfileController controller;
+
+  setUpAll(() {
+    // 註冊 fallback values
+    registerFallbackValue(FakeBodyDataRecord());
+  });
 
   // 測試資料 - 使用正確的 uid 而非 id
   final testUser = UserModel(
@@ -31,6 +48,8 @@ void main() {
   setUp(() {
     mockUserService = MockUserService();
     mockAuthService = MockAuthService();
+    mockBodyDataService = MockBodyDataService();
+    mockEventBusController = MockEventBusController();
 
     // 預設 mock 行為
     when(() => mockUserService.getCurrentUserProfile())
@@ -39,10 +58,28 @@ void main() {
         .thenReturn({'email': 'test@example.com'});
     when(() => mockAuthService.isOAuthUser()).thenReturn(false);
     when(() => mockAuthService.hasPassword()).thenReturn(true);
+    
+    // ⭐ v3.5: 預設 body data service mock
+    when(() => mockBodyDataService.getRecordByDate(any(), any()))
+        .thenAnswer((_) async => null);
+    when(() => mockBodyDataService.createRecord(any()))
+        .thenAnswer((_) async => BodyDataRecord(
+          id: 'test-body-data-001',
+          userId: 'user-001',
+          recordDate: DateTime.now(),
+          weight: 70.0,
+          createdAt: DateTime.now(),
+        ));
+    
+    // ⭐ v3.5: 預設 event bus controller mock
+    when(() => mockEventBusController.publishBodyDataUpdated(userId: any(named: 'userId')))
+        .thenReturn(null);
 
     controller = ProfileController(
       userService: mockUserService,
       authService: mockAuthService,
+      bodyDataService: mockBodyDataService,
+      eventBusController: mockEventBusController,
     );
   });
 

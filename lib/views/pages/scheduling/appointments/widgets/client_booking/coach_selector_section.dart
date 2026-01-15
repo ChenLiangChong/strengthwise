@@ -1,8 +1,9 @@
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/coaching_relationship_model.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/services/interfaces/i_user_service.dart';
+import 'package:strengthwise/controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
 
 /// 教練選擇區域組件
 class CoachSelectorSection extends StatefulWidget {
@@ -22,17 +23,18 @@ class CoachSelectorSection extends StatefulWidget {
 }
 
 class _CoachSelectorSectionState extends State<CoachSelectorSection> {
-  late final IUserService _userService;
+  late final ProfileController _profileController; // ⭐ v3.6: MVVM
   final Map<String, UserModel> _coachProfiles = {}; // 快取教練資料
   bool _isLoadingProfiles = true;
 
   @override
   void initState() {
     super.initState();
-    _userService = serviceLocator<IUserService>();
+    _profileController = serviceLocator<ProfileController>(); // ⭐ v3.6: MVVM
     _loadCoachProfiles();
   }
 
+  /// ⭐ v3.6: 透過 ProfileController 查詢
   Future<void> _loadCoachProfiles() async {
     setState(() => _isLoadingProfiles = true);
 
@@ -41,7 +43,7 @@ class _CoachSelectorSectionState extends State<CoachSelectorSection> {
         // ⭐ 跳過已刪除的教練（coachId 為 null）
         if (relationship.coachId == null) continue;
         
-        final coachProfile = await _userService.getUserProfile(relationship.coachId!);
+        final coachProfile = await _profileController.getUserProfileById(relationship.coachId!);
         if (coachProfile != null) {
           _coachProfiles[relationship.coachId!] = coachProfile;
         }

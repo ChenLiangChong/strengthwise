@@ -134,9 +134,9 @@ class CanvasUtils {
     canvas.drawLine(startOffset, endOffset, paint);
 
     // 繪製箭頭頭部
-    final arrowSize = 20.0;
+    const arrowSize = 20.0;
     final angle = (endOffset - startOffset).direction;
-    final arrowAngle = 30 * (3.14159 / 180); // 30 度轉弧度
+    const arrowAngle = 30 * (3.14159 / 180); // 30 度轉弧度
 
     final arrowPoint1 = Offset(
       endOffset.dx - arrowSize * cos(angle - arrowAngle),

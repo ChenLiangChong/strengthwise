@@ -63,7 +63,7 @@ class BodyPartDistributionCard extends StatelessWidget {
                         LinearProgressIndicator(
                           value: stat.percentage,
                           backgroundColor:
-                              Theme.of(context).colorScheme.surfaceVariant,
+                              Theme.of(context).colorScheme.surfaceContainerHighest,
                           minHeight: 8,
                         ),
                       ],

@@ -4,6 +4,7 @@ import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/controllers/appointment_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
+// ⭐ v3.5: 事件由 Controller 統一發布，View 不需要直接使用 EventBusController
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appointment_details/details_header.dart';
@@ -12,7 +13,7 @@ import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appoint
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appointment_details/actions_section.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/session_record_page.dart';
 import 'package:strengthwise/views/pages/session/session_mode_page.dart';
-import 'package:strengthwise/services/interfaces/i_user_service.dart';
+import 'package:strengthwise/controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
 
 /// 預約詳情頁面 - Phase 2
 ///
@@ -38,6 +39,7 @@ class AppointmentDetailsPage extends StatefulWidget {
 class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
   late final AppointmentController _appointmentController;
   late final IAuthController _authController;
+  late final ProfileController _profileController; // ⭐ v3.6: MVVM
   late final ErrorHandlingService _errorService;
 
   final TextEditingController _notesController = TextEditingController();
@@ -54,6 +56,7 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
   void _initializeControllers() {
     _appointmentController = serviceLocator<AppointmentController>();
     _authController = serviceLocator<IAuthController>();
+    _profileController = serviceLocator<ProfileController>(); // ⭐ v3.6: MVVM
     _errorService = serviceLocator<ErrorHandlingService>();
     _appointmentController.addListener(_onControllerUpdate);
   }
@@ -93,6 +96,7 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
     final success = await _appointmentController.confirmAppointment(
       widget.appointmentId,
     );
+    // ⭐ v3.5: 事件由 Controller 統一發布，View 只處理 UI 回饋
 
     if (mounted) {
       if (success) {
@@ -139,6 +143,7 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
 
       if (mounted) {
         if (success) {
+          // ⭐ v3.5: 事件由 Controller 統一發布
           NotificationUtils.showSuccess(context, '預約已拒絕');
           Navigator.pop(context);
         } else {
@@ -217,6 +222,7 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
 
       if (mounted) {
         if (success) {
+          // ⭐ v3.5: 事件由 Controller 統一發布
           NotificationUtils.showSuccess(context, '預約已取消');
           Navigator.pop(context);
         } else {
@@ -230,6 +236,7 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
     final success = await _appointmentController.completeAppointment(
       widget.appointmentId,
     );
+    // ⭐ v3.5: 事件由 Controller 統一發布，View 只處理 UI 回饋
 
     if (mounted) {
       if (success) {
@@ -347,15 +354,15 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
   Future<void> _navigateToSessionMode(dynamic appointment) async {
     String displayName = '';
 
+    // ⭐ v3.6: 透過 ProfileController 查詢
     try {
-      final userService = serviceLocator<IUserService>();
       if (widget.isCoachMode) {
         // 教練視角：獲取學員名稱
-        final profile = await userService.getUserProfile(appointment.clientId);
+        final profile = await _profileController.getUserProfileById(appointment.clientId);
         displayName = profile?.displayName ?? profile?.email ?? '學員';
       } else {
         // 學員視角：獲取教練名稱
-        final profile = await userService.getUserProfile(appointment.coachId);
+        final profile = await _profileController.getUserProfileById(appointment.coachId);
         displayName = profile?.displayName ?? profile?.email ?? '教練';
       }
     } catch (e) {

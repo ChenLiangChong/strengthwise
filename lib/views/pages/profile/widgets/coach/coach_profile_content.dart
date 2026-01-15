@@ -1,7 +1,8 @@
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/coach_profile/coach_profile_model.dart';
 import 'package:strengthwise/models/coach_profile/coach_specialty.dart';
-import 'package:strengthwise/services/interfaces/i_coach_profile_service.dart';
+import 'package:strengthwise/controllers/coach_profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/profile/coach_profile_form_page.dart';
 
@@ -76,8 +77,9 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
     });
 
     try {
-      final profileService = serviceLocator<ICoachProfileService>();
-      final profile = await profileService.getProfile(widget.coachId);
+      // ⭐ v3.6: 透過 CoachProfileController 查詢
+      final coachProfileController = serviceLocator<CoachProfileController>();
+      final profile = await coachProfileController.getCoachProfileById(widget.coachId);
       if (mounted) {
         setState(() {
           _profile = profile;

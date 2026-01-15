@@ -86,7 +86,7 @@ class AnnotationPainter extends CustomPainter {
     canvas.drawLine(arrow.start, arrow.end, paint);
     
     // 繪製箭頭
-    final arrowSize = 20.0;
+    const arrowSize = 20.0;
     final angle = (arrow.end - arrow.start).direction;
     
     final arrowPath = Path();

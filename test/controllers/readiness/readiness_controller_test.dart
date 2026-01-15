@@ -19,7 +19,7 @@ void main() {
   late MockAuthService mockAuthService;
   ReadinessController? controller;
 
-  final testMetrics = ReadinessMetrics(
+  const testMetrics = ReadinessMetrics(
     sleepQuality: 4,
     sleepHours: 7.5,
     soreness: 3,

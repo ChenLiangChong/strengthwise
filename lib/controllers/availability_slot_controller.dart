@@ -407,6 +407,34 @@ class AvailabilitySlotController extends ChangeNotifier {
     _state.clearAll();
   }
 
+  // ============================================================================
+  // ⭐ MVVM 重構：直接查詢方法（返回結果，不更新 Controller 狀態）
+  // ============================================================================
+
+  /// 查詢可預約時段（直接返回結果）
+  /// ⭐ v3.6 MVVM 重構
+  ///
+  /// 用於行事曆頁面等需要直接獲取數據的場景
+  Future<List<AvailabilitySlotWithBooking>> getAvailableSlots({
+    required String coachId,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      return await _slotService.getAvailableSlots(
+        coachId: coachId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+    } catch (e) {
+      _errorService.logError(
+        '查詢可用時段失敗: $e',
+        type: 'AvailabilitySlotControllerError',
+      );
+      return [];
+    }
+  }
+
   @override
   void dispose() {
     _state.removeListener(notifyListeners);

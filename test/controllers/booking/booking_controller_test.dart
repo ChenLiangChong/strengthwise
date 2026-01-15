@@ -1,25 +1,37 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:strengthwise/controllers/booking_controller.dart';
+import 'package:strengthwise/controllers/event_bus_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/interfaces/i_booking_service.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
+import 'package:strengthwise/models/user_model.dart';
 
 // Mock Classes
 class MockBookingService extends Mock implements IBookingService {}
 
 class MockErrorHandlingService extends Mock implements ErrorHandlingService {}
 
+class MockEventBusController extends Mock implements EventBusController {}
+
+class MockAuthController extends Mock implements IAuthController {}
+
 /// BookingController 測試
 ///
 /// P3 優先級 - 10 個測試案例
+/// ⭐ v3.7: 更新以支援 EventBusController 和 IAuthController
 void main() {
   late MockBookingService mockService;
   late MockErrorHandlingService mockErrorService;
+  late MockEventBusController mockEventBusController;
+  late MockAuthController mockAuthController;
   late BookingController controller;
 
   setUp(() {
     mockService = MockBookingService();
     mockErrorService = MockErrorHandlingService();
+    mockEventBusController = MockEventBusController();
+    mockAuthController = MockAuthController();
 
     // 預設行為
     when(() => mockService.isInitialized).thenReturn(true);
@@ -45,9 +57,33 @@ void main() {
     when(() => mockErrorService.logError(any(), type: any(named: 'type')))
         .thenReturn(null);
 
+    // ⭐ v3.7: Mock EventBusController 和 AuthController
+    final mockUser = UserModel(uid: 'user-001', email: 'test@test.com');
+    when(() => mockAuthController.user).thenReturn(mockUser);
+    when(() => mockEventBusController.publishAppointmentCreated(
+          appointmentId: any(named: 'appointmentId'),
+          userId: any(named: 'userId'),
+          coachId: any(named: 'coachId'),
+          clientId: any(named: 'clientId'),
+        )).thenReturn(null);
+    when(() => mockEventBusController.publishAppointmentCancelled(
+          appointmentId: any(named: 'appointmentId'),
+          userId: any(named: 'userId'),
+          coachId: any(named: 'coachId'),
+          clientId: any(named: 'clientId'),
+        )).thenReturn(null);
+    when(() => mockEventBusController.publishAppointmentConfirmed(
+          appointmentId: any(named: 'appointmentId'),
+          userId: any(named: 'userId'),
+          coachId: any(named: 'coachId'),
+          clientId: any(named: 'clientId'),
+        )).thenReturn(null);
+
     controller = BookingController(
       bookingService: mockService,
       errorService: mockErrorService,
+      eventBusController: mockEventBusController,
+      authController: mockAuthController,
     );
   });
 
@@ -89,9 +125,9 @@ void main() {
     group('loadAvailableSlots', () {
       test('成功載入可用時段', () async {
         // Act
-        final result = await controller.loadAvailableSlots('coach-001');
+        await controller.loadAvailableSlots('coach-001');
 
-        // Assert
+        // Assert - 驗證服務層被調用即可（過濾邏輯在 Controller 層）
         verify(() => mockService.getAvailableSlots('coach-001')).called(1);
       });
     });
@@ -151,10 +187,7 @@ void main() {
         expect(controller.errorMessage, isNull);
       });
 
-      test('clearCache 清除緩存', () {
-        controller.clearCache('all');
-        // 測試不拋出異常即可
-      });
+      // ⭐ v3.7: clearCache 已移除，快取統一到 Service 層
     });
   });
 }

@@ -889,7 +889,7 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
     String selectedPlanType = _executionController.getPlanType();
     
     // ⭐ v3.4: 使用統一的訓練計畫類型列表
-    final planTypeOptions = PlanTypeExtension.uiOptions;
+    const planTypeOptions = PlanTypeExtension.uiOptions;
     
     // 確保當前類型在選項中
     if (!planTypeOptions.contains(selectedPlanType)) {
@@ -924,7 +924,7 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
                       
                       // 訓練計畫類型
                       DropdownButtonFormField<String>(
-                        value: selectedPlanType,
+                        initialValue: selectedPlanType,
                         isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: '訓練計畫類型',

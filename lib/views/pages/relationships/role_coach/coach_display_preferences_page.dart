@@ -1,11 +1,12 @@
 // ✅ 已響應式改造 (Phase 0)
+// ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/models/coach_display_preferences_model.dart';
-import 'package:strengthwise/services/interfaces/i_coach_display_preferences_service.dart';
+import 'package:strengthwise/controllers/coach_profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 教練顯示偏好設定頁面
 ///
@@ -20,7 +21,9 @@ class CoachDisplayPreferencesPage extends StatefulWidget {
 
 class _CoachDisplayPreferencesPageState
     extends State<CoachDisplayPreferencesPage> {
-  late final ICoachDisplayPreferencesService _preferencesService;
+  // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
+  late final CoachProfileController _coachController;
+  late final IAuthController _authController;
 
   CoachDisplayPreferencesModel? _preferences;
   bool _isLoading = true;
@@ -31,7 +34,8 @@ class _CoachDisplayPreferencesPageState
   @override
   void initState() {
     super.initState();
-    _preferencesService = serviceLocator<ICoachDisplayPreferencesService>();
+    _coachController = serviceLocator<CoachProfileController>();
+    _authController = serviceLocator<IAuthController>();
     _loadPreferences();
   }
 
@@ -40,19 +44,23 @@ class _CoachDisplayPreferencesPageState
     setState(() => _isLoading = true);
 
     try {
-      final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+      // ⭐ v3.6: 透過 IAuthController 取得當前用戶
+      final currentUserId = _authController.user?.uid;
       if (currentUserId == null) {
         throw Exception('無法獲取使用者 ID');
       }
 
+      // ⭐ v3.6: 透過 CoachProfileController 查詢
       final preferences =
-          await _preferencesService.getPreferences(currentUserId);
+          await _coachController.getDisplayPreferences(currentUserId);
 
       if (mounted) {
         setState(() {
           _preferences = preferences;
           _selectedFields.clear();
-          _selectedFields.addAll(preferences.healthAssessmentFields);
+          if (preferences != null) {
+            _selectedFields.addAll(preferences.healthAssessmentFields);
+          }
           _isLoading = false;
         });
       }
@@ -65,13 +73,15 @@ class _CoachDisplayPreferencesPageState
   }
 
   /// 儲存偏好設定
+  /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作
   Future<void> _savePreferences() async {
     if (_preferences == null) return;
 
     setState(() => _isSaving = true);
 
     try {
-      final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+      // ⭐ v3.6: 透過 IAuthController 取得當前用戶
+      final currentUserId = _authController.user?.uid;
       if (currentUserId == null) {
         throw Exception('無法獲取使用者 ID');
       }
@@ -81,14 +91,23 @@ class _CoachDisplayPreferencesPageState
         updatedAt: DateTime.now(),
       );
 
-      await _preferencesService.updatePreferences(updatedPreferences);
+      // ⭐ v3.5: 透過 Controller 更新偏好設定（Controller 內部獲取 Service）
+      final success = await _coachController.updateDisplayPreferences(
+        updatedPreferences,
+      );
 
       if (mounted) {
-        setState(() {
-          _preferences = updatedPreferences;
-          _isSaving = false;
-        });
-        NotificationUtils.showSuccess(context, '設定已儲存');
+        if (success) {
+          setState(() {
+            _preferences = updatedPreferences;
+            _isSaving = false;
+          });
+          NotificationUtils.showSuccess(context, '設定已儲存');
+        } else {
+          setState(() => _isSaving = false);
+          NotificationUtils.showError(
+              context, _coachController.errorMessage ?? '儲存設定失敗');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -123,12 +142,14 @@ class _CoachDisplayPreferencesPageState
     setState(() => _isSaving = true);
 
     try {
-      final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+      // ⭐ v3.6: 透過 IAuthController 取得當前用戶
+      final currentUserId = _authController.user?.uid;
       if (currentUserId == null) {
         throw Exception('無法獲取使用者 ID');
       }
 
-      await _preferencesService.resetToDefault(currentUserId);
+      // ⭐ v3.6: 透過 CoachProfileController 重置
+      await _coachController.resetDisplayPreferences(currentUserId);
       await _loadPreferences();
 
       if (mounted) {

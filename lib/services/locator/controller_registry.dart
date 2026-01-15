@@ -47,6 +47,7 @@ import '../../controllers/coach_management_controller.dart';
 import '../../controllers/delete_account_controller.dart';
 import '../../controllers/profile_controller.dart';
 import '../../controllers/coach_profile_controller.dart';
+import '../../controllers/event_bus_controller.dart';
 import '../interfaces/i_coach_profile_service.dart';
 
 /// 控制器註冊器
@@ -55,6 +56,9 @@ import '../interfaces/i_coach_profile_service.dart';
 class ControllerRegistry {
   /// 註冊所有控制器層（工廠模式）
   static void registerControllers(GetIt serviceLocator) {
+    // ⭐ v3.5: 先註冊 EventBusController（全局單例，其他 Controller 可能依賴）
+    _registerEventBusController(serviceLocator);
+    
     _registerAuthController(serviceLocator);
     _registerBookingController(serviceLocator);
     _registerCustomExerciseController(serviceLocator);
@@ -75,6 +79,18 @@ class ControllerRegistry {
     _registerDeleteAccountController(serviceLocator);
     _registerProfileController(serviceLocator);
     _registerCoachProfileController(serviceLocator);
+  }
+
+  /// ⭐ v3.5: 註冊事件匯流排控制器（全局單例）
+  ///
+  /// 作為 AppEventBus（Service 層）和 View 層之間的中間層，
+  /// 所有頁面共享同一個實例來接收和發布事件。
+  static void _registerEventBusController(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<EventBusController>()) {
+      serviceLocator.registerLazySingleton<EventBusController>(
+        () => EventBusController(),
+      );
+    }
   }
 
   /// 註冊身份驗證控制器
@@ -138,22 +154,29 @@ class ControllerRegistry {
   }
 
   /// 註冊訓練計畫控制器
+  /// ⭐ v3.5: 注入 EventBusController 用於發布模板 CUD 事件
+  /// ⭐ v3.6: 注入 IAuthController 用於 EventBus userId fallback
   static void _registerWorkoutController(GetIt serviceLocator) {
     if (!serviceLocator.isRegistered<IWorkoutController>()) {
       serviceLocator.registerFactory<IWorkoutController>(
         () => WorkoutController(
           workoutService: serviceLocator<IWorkoutService>(),
           errorService: serviceLocator<ErrorHandlingService>(),
+          eventBusController: serviceLocator<EventBusController>(), // ⭐ v3.5
+          authController: serviceLocator<IAuthController>(), // ⭐ v3.6: EventBus fallback
         ),
       );
     }
   }
 
   /// 註冊訓練執行控制器
+  /// ⭐ v3.5: 注入 EventBusController 用於發布訓練更新/完成事件
   static void _registerWorkoutExecutionController(GetIt serviceLocator) {
     if (!serviceLocator.isRegistered<IWorkoutExecutionController>()) {
       serviceLocator.registerFactory<IWorkoutExecutionController>(
-        () => WorkoutExecutionController(),
+        () => WorkoutExecutionController(
+          eventBusController: serviceLocator<EventBusController>(),
+        ),
       );
     }
   }
@@ -171,6 +194,7 @@ class ControllerRegistry {
   }
 
   /// 註冊身體數據控制器
+  /// ⭐ v3.5: 注入 EventBusController 用於發布身體數據事件
   static void _registerBodyDataController(GetIt serviceLocator) {
     if (!serviceLocator.isRegistered<BodyDataController>()) {
       serviceLocator.registerFactory<BodyDataController>(
@@ -178,6 +202,7 @@ class ControllerRegistry {
           bodyDataService: serviceLocator<IBodyDataService>(),
           userService: serviceLocator<IUserService>(),
           errorService: serviceLocator<ErrorHandlingService>(),
+          eventBusController: serviceLocator<EventBusController>(), // ⭐ v3.5
         ),
       );
     }
@@ -192,18 +217,21 @@ class ControllerRegistry {
           serviceLocator<IUserService>(),
           serviceLocator<IInviteCodeService>(),
           serviceLocator<ErrorHandlingService>(),
+          serviceLocator<EventBusController>(), // ⭐ v3.5: EventBus
         ),
       );
     }
   }
 
   /// 註冊預約控制器（Phase 2）
+  /// ⭐ v3.5: 注入 EventBusController 用於發布預約事件
   static void _registerAppointmentController(GetIt serviceLocator) {
     if (!serviceLocator.isRegistered<AppointmentController>()) {
       serviceLocator.registerFactory<AppointmentController>(
         () => AppointmentController(
           serviceLocator<IAppointmentService>(),
           serviceLocator<ErrorHandlingService>(),
+          serviceLocator<EventBusController>(), // ⭐ v3.5
         ),
       );
     }
@@ -240,6 +268,7 @@ class ControllerRegistry {
         () => ClientAvailabilityController(
           serviceLocator<IClientAvailabilityService>(),
           serviceLocator<ErrorHandlingService>(),
+          serviceLocator<EventBusController>(), // ⭐ v3.5: EventBus
         ),
       );
     }
@@ -258,6 +287,7 @@ class ControllerRegistry {
   }
 
   /// 註冊學員管理控制器（Phase 4C - 教練端）
+  /// ⭐ v3.5: 注入 EventBusController 用於發布訓練計畫 CUD 事件
   static void _registerClientManagementController(GetIt serviceLocator) {
     if (!serviceLocator.isRegistered<ClientManagementController>()) {
       serviceLocator.registerFactory<ClientManagementController>(
@@ -267,6 +297,7 @@ class ControllerRegistry {
           serviceLocator<IClientAvailabilityService>(),
           serviceLocator<IUserService>(),
           serviceLocator<ErrorHandlingService>(),
+          serviceLocator<EventBusController>(), // ⭐ v3.5
         ),
       );
     }
@@ -302,12 +333,17 @@ class ControllerRegistry {
   /// ⭐ v3.1-B 修復：改為 LazySingleton
   /// 確保所有頁面共享同一個實例，當用戶更新 isCoach 時，
   /// 其他頁面（如 TrainingHubPage）能即時收到 notifyListeners 通知
+  /// 
+  /// ⭐ v3.5: 新增 IBodyDataService 依賴，用於同步體重到 body_data
+  /// ⭐ v3.5: 新增 EventBusController 依賴，用於發布身體數據更新事件
   static void _registerProfileController(GetIt serviceLocator) {
     if (!serviceLocator.isRegistered<ProfileController>()) {
       serviceLocator.registerLazySingleton<ProfileController>(
         () => ProfileController(
           userService: serviceLocator<IUserService>(),
           authService: serviceLocator<IAuthService>(),
+          bodyDataService: serviceLocator<IBodyDataService>(),
+          eventBusController: serviceLocator<EventBusController>(),
         ),
       );
     }

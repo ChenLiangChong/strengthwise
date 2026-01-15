@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/statistics_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/services/interfaces/i_favorites_service.dart';
+import 'package:strengthwise/controllers/exercise_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/views/pages/profile/widgets/favorite_exercises_list.dart';
 import 'package:strengthwise/views/pages/exercises/widgets/exercise_selection_navigator.dart';
 import 'package:strengthwise/views/pages/exercises/exercise_strength_detail_page.dart';
@@ -35,8 +35,9 @@ class StrengthProgressTab extends StatefulWidget {
 }
 
 class _StrengthProgressTabState extends State<StrengthProgressTab> {
-  final IFavoritesService _favoritesService =
-      serviceLocator<IFavoritesService>();
+  // ⭐ v3.6: MVVM 重構 - 透過 Controller
+  final ExerciseController _exerciseController =
+      serviceLocator<ExerciseController>();
   bool _hasFavorites = false;
   int _refreshKey = 0; // 用於強制刷新 FavoriteExercisesList
 
@@ -57,10 +58,11 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
   }
 
   /// 檢查是否有收藏並刷新列表
+  /// ⭐ v3.6: 透過 Controller 查詢
   Future<void> _checkFavorites() async {
     try {
       final favorites =
-          await _favoritesService.getFavoriteExercises(widget.userId);
+          await _exerciseController.getFavoriteExercises(widget.userId);
       if (mounted) {
         final hasChanged = _hasFavorites != favorites.isNotEmpty;
         setState(() {

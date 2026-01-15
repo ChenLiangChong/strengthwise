@@ -298,7 +298,7 @@ void main() {
     group('toJson', () {
       test('正確序列化', () {
         // Arrange
-        final record = InjuryRecord(
+        const record = InjuryRecord(
           site: '左膝',
           status: InjuryStatus.postSurgery,
           diagnosis: 'ACL 重建',
