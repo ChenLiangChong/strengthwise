@@ -2,7 +2,80 @@
 
 > 已完成並測試的版本詳細記錄
 
-**最後更新**：2026-01-15
+**最後更新**：2026-01-17
+
+---
+
+## v3.9: 跨用戶即時同步 + FCM 完善（2026-01-17 完成）
+
+**功能**：
+- Realtime 跨用戶同步：availability_slots、client_availability、appointments、workout_plans
+- FCM 推播完善：NotificationRouter 導航、workout_plans 通知
+- EventBus 擴展：9 個新事件類型（availabilitySlot、clientAvailability、workout、appointmentRejected）
+- BookingPage Tab 1 顯示教練自己的可上課時段（日曆標記 + 列表 + 編輯/刪除）
+- 增量刪除優化：解決 Realtime DELETE 事件 oldRecord 為空問題
+- ReasonInputDialog 共用組件：解決 TextEditingController 過早釋放問題
+
+**技術決策**：
+- 頁面級 Realtime 訂閱（BookingPage、CoachSlotsManagementPage、ClientWorkoutCalendarTab）
+- 全局 Realtime 訂閱（appointments、workout_plans）在 AuthController 管理
+- `REPLICA IDENTITY FULL` 支援 DELETE 事件
+- Debounce 機制防止過度 UI 刷新
+
+**核心檔案**：
+- `lib/services/realtime/realtime_subscription_manager.dart`
+- `lib/controllers/realtime_controller.dart`
+- `lib/common_widgets/dialogs/reason_input_dialog.dart`
+- `supabase/functions/push-notify/index.ts`
+- `supabase/functions/_shared/notification_types.ts`
+
+**Migration**：33_enable_realtime_availability.sql
+
+---
+
+## v3.8: 時間輸入 UX 優化（2026-01-17 完成）
+
+**功能**：
+- TimeInputField 通用組件：分鐘:秒數雙欄位輸入
+- 訓練執行計時器：每 Set 倒數計時按鈕（啟動/暫停/恢復/自動完成 + 震動）
+- 模板編輯優化：移除不必要的休息時間欄位
+- 時間輸入統一：計劃/模板/執行/上課頁面使用 TimeInputField
+
+**技術決策**：
+- TimeInputField 內部儲存秒數（int），UI 顯示分鐘:秒數
+- 計時器為純前端功能，不影響資料庫
+- 秒數超過 59 自動進位到分鐘
+
+**核心檔案**：
+- `lib/common_widgets/time_picker/time_input_field.dart`
+- `lib/views/pages/workout/execution/widgets/exercise_card.dart`
+- `lib/views/pages/workout/execution/template_editor_page.dart`
+
+---
+
+## v3.7: 快取架構統一 + DI 優化 + Bug 修復（2026-01-17 完成）
+
+**架構優化**：
+- 快取統一到 Service 層：Workout、Booking、Note、Custom Exercise 模組
+- Hive Box 名稱修正：`main.dart` 與 `LocalCacheService` 對齊
+- Hive 解析修復：遞迴 `_convertToMapStringDynamic` 解決嵌套 Map 類型問題
+- Controller Singleton 優化：`ExerciseController`、`AuthController` 改為 LazySingleton
+
+**依賴注入修復**：
+- `IExerciseController` 接口擴展：新增 isLoading、getExerciseTypes、addFavorite 等
+- View 層 DI 修正：5 個 View 改用接口
+
+**Bug 修復**：
+- 重複卡片 Bug：`_workout_cache_manager.dart` 添加 exists 檢查
+- setState during build：`SessionNoteController.generateSignedUrl` 重構
+- 隱私政策連結：Android 11+ URL 啟動支援
+
+**Android 配置**：
+- `AndroidManifest.xml` 添加 `<queries>` 支援 URL 啟動
+- `enableOnBackInvokedCallback="true"` 預測返回手勢
+- 快取版本升級至 v4
+
+**修改檔案**：32 個（Controller 6、Service/Cache 6、View 6、配置 2）
 
 ---
 

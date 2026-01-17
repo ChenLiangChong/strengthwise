@@ -1,5 +1,6 @@
 // ✅ 已響應式改造 (Phase 0) - Tab 子組件處理
 // ✅ v3.2: Coach Mark 引導
+// ✅ v3.9: Realtime 訂閱移至 CoachSlotsManagementPage（頁面級訂閱）
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
@@ -52,6 +53,8 @@ class _CoachDetailPageState extends State<CoachDetailPage>
 
     // 選中教練（載入詳細資料）
     _controller.selectCoach(widget.coachId, widget.clientId);
+    
+    // ⭐ v3.9: Realtime 訂閱已移至 CoachSlotsManagementPage（Tab 2）
     
     // ⭐ v3.2: 檢查 Coach Mark 引導
     WidgetsBinding.instance.addPostFrameCallback((_) {

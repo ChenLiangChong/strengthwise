@@ -4,18 +4,25 @@ import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/controllers/availability_slot_controller.dart';
 import 'package:strengthwise/utils/date_format_utils.dart';
 
-/// 快速添加時段對話框
+/// 快速添加/編輯時段對話框
 ///
-/// 點擊日曆日期後彈出，快速創建單次時段
+/// 點擊日曆日期後彈出，快速創建或編輯單次時段
+/// ⭐ v3.9: 支持編輯模式
 class QuickAddSlotDialog extends StatefulWidget {
   final String coachId;
   final DateTime selectedDate;
+  /// 傳入現有時段則為編輯模式
+  final AvailabilitySlotModel? existingSlot;
 
   const QuickAddSlotDialog({
     super.key,
     required this.coachId,
     required this.selectedDate,
+    this.existingSlot,
   });
+
+  /// 是否為編輯模式
+  bool get isEditMode => existingSlot != null;
 
   @override
   State<QuickAddSlotDialog> createState() => _QuickAddSlotDialogState();
@@ -24,8 +31,8 @@ class QuickAddSlotDialog extends StatefulWidget {
 class _QuickAddSlotDialogState extends State<QuickAddSlotDialog> {
   late final AvailabilitySlotController _slotController;
 
-  TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
-  TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
+  late TimeOfDay _startTime;
+  late TimeOfDay _endTime;
   final TextEditingController _notesController = TextEditingController();
 
   bool _isLoading = false;
@@ -34,6 +41,17 @@ class _QuickAddSlotDialogState extends State<QuickAddSlotDialog> {
   void initState() {
     super.initState();
     _slotController = serviceLocator<AvailabilitySlotController>();
+
+    // ⭐ v3.9: 編輯模式預填數據
+    if (widget.existingSlot != null) {
+      final slot = widget.existingSlot!;
+      _startTime = TimeOfDay(hour: slot.startTime.hour, minute: slot.startTime.minute);
+      _endTime = TimeOfDay(hour: slot.endTime.hour, minute: slot.endTime.minute);
+      _notesController.text = slot.notes ?? '';
+    } else {
+      _startTime = const TimeOfDay(hour: 9, minute: 0);
+      _endTime = const TimeOfDay(hour: 10, minute: 0);
+    }
   }
 
   @override
@@ -72,8 +90,8 @@ class _QuickAddSlotDialogState extends State<QuickAddSlotDialog> {
     }
   }
 
-  /// 創建時段
-  Future<void> _createSlot() async {
+  /// 創建或更新時段
+  Future<void> _saveSlot() async {
     // 驗證
     final startDateTime = DateTime(
       widget.selectedDate.year,
@@ -99,33 +117,50 @@ class _QuickAddSlotDialogState extends State<QuickAddSlotDialog> {
     setState(() => _isLoading = true);
 
     try {
-      // 創建單次時段
-      final slot = AvailabilitySlotModel(
-        id: '',
-        coachId: widget.coachId,
-        startTime: startDateTime,
-        endTime: endDateTime,
-        recurrenceRule: null,
-        isOverride: false,
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+      bool success;
 
-      final success = await _slotController.createSlot(slot);
+      if (widget.isEditMode) {
+        // ⭐ v3.9: 編輯模式 - 更新時段
+        final updatedSlot = AvailabilitySlotModel(
+          id: widget.existingSlot!.id,
+          coachId: widget.coachId,
+          startTime: startDateTime,
+          endTime: endDateTime,
+          recurrenceRule: widget.existingSlot!.recurrenceRule,
+          isOverride: widget.existingSlot!.isOverride,
+          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          createdAt: widget.existingSlot!.createdAt,
+          updatedAt: DateTime.now(),
+        );
+        success = await _slotController.updateSlot(widget.existingSlot!.id, updatedSlot);
+      } else {
+        // 創建單次時段
+        final slot = AvailabilitySlotModel(
+          id: '',
+          coachId: widget.coachId,
+          startTime: startDateTime,
+          endTime: endDateTime,
+          recurrenceRule: null,
+          isOverride: false,
+          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        success = await _slotController.createSlot(slot);
+      }
 
       if (mounted) {
         setState(() => _isLoading = false);
         if (success) {
           Navigator.pop(context, true);
         } else {
-          _showError(_slotController.errorMessage ?? '創建失敗');
+          _showError(_slotController.errorMessage ?? (widget.isEditMode ? '更新失敗' : '創建失敗'));
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showError('創建時段時發生錯誤：$e');
+        _showError('${widget.isEditMode ? '更新' : '創建'}時段時發生錯誤：$e');
       }
     }
   }
@@ -144,7 +179,7 @@ class _QuickAddSlotDialogState extends State<QuickAddSlotDialog> {
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('新增時段'),
+          Text(widget.isEditMode ? '編輯時段' : '新增時段'),
           const SizedBox(height: 4),
           Text(
             DateFormatUtils.formatDate(widget.selectedDate),
@@ -200,22 +235,23 @@ class _QuickAddSlotDialogState extends State<QuickAddSlotDialog> {
 
             const SizedBox(height: 8),
 
-            // 提示
-            Row(
-              children: [
-                Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    '創建單次時段，學員可預約此時段',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+            // 提示（僅新增模式顯示）
+            if (!widget.isEditMode)
+              Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      '創建單次時段，學員可預約此時段',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
       ),
@@ -225,14 +261,14 @@ class _QuickAddSlotDialogState extends State<QuickAddSlotDialog> {
           child: const Text('取消'),
         ),
         ElevatedButton(
-          onPressed: _isLoading ? null : _createSlot,
+          onPressed: _isLoading ? null : _saveSlot,
           child: _isLoading
               ? const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('創建'),
+              : Text(widget.isEditMode ? '儲存' : '創建'),
         ),
       ],
     );

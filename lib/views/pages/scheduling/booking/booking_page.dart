@@ -1,5 +1,6 @@
 // ✅ v3.1-B: 訓練行事曆 - Tab 分離（我的/教練）+ SpeedDial
 // ✅ v3.5: AppEventBus 自動刷新
+// ✅ v3.9: Realtime 訂閱（教練時段跨用戶更新）
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ import 'package:strengthwise/controllers/appointment_controller.dart'; // ⭐ v3
 import 'package:strengthwise/controllers/client_availability_controller.dart'; // ⭐ v3.5: MVVM
 import 'package:strengthwise/controllers/coaching_relationship_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/controllers/availability_slot_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/realtime_controller.dart'; // ⭐ v3.9
 import 'package:strengthwise/services/interfaces/i_availability_slot_service.dart'; // ⭐ 保留：類型定義
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
@@ -40,9 +42,15 @@ class BookingPage extends StatefulWidget {
   // 允許外部注入控制器以實現依賴注入
   final IBookingController? controller;
 
+  /// ⭐ v3.9: 初始 Tab 索引（用於通知點擊導航）
+  /// - 0: 🎓 我的（個人行事曆）
+  /// - 1: 🏋️ 教練（教練身份）
+  final int initialTabIndex;
+
   const BookingPage({
     super.key,
     this.controller,
+    this.initialTabIndex = 0,
   });
 
   @override
@@ -55,16 +63,24 @@ class _BookingPageState extends State<BookingPage>
   late final IWorkoutController _workoutController; // ⭐ v3.5: MVVM
   late final IAuthController _authController;
   late final ProfileController _profileController;
-  late final CoachingRelationshipController _relationshipController; // ⭐ v3.6: MVVM
+  late final CoachingRelationshipController
+      _relationshipController; // ⭐ v3.6: MVVM
   late final AvailabilitySlotController _slotController; // ⭐ v3.6: MVVM
-  late final ClientAvailabilityController _clientAvailabilityController; // ⭐ v3.5: MVVM
+  late final ClientAvailabilityController
+      _clientAvailabilityController; // ⭐ v3.5: MVVM
   late final EventBusController _eventBusController; // ⭐ v3.5
   late final AppointmentController _appointmentController; // ⭐ v3.5: MVVM 重構
+  late final RealtimeController _realtimeController; // ⭐ v3.9
   final ErrorHandlingService _errorService =
       serviceLocator<ErrorHandlingService>();
 
   // ⭐ v3.5: 事件訂閱
   StreamSubscription<AppEvent>? _eventSubscription;
+  StreamSubscription<AppEvent>? _availabilitySubscription; // ⭐ v3.9: 時段事件訂閱
+
+  // ⭐ v3.9: Realtime 訂閱 ID 列表
+  final List<String> _coachSlotSubscriptionIds = []; // 教練時段
+  final List<String> _clientAvailabilitySubscriptionIds = []; // 學員可訓練時間
 
   bool _isLoading = true;
   bool _isInitialized = false;
@@ -100,6 +116,9 @@ class _BookingPageState extends State<BookingPage>
   Map<DateTime, List<ClientAvailabilityModel>> _clientAvailability =
       {}; // 學員可訓練時段
   List<ClientAvailabilityModel> _selectedDayClientAvailability = [];
+  // ⭐ v3.9: 教練自己的可上課時段（Tab 1 顯示）
+  Map<DateTime, List<AvailabilitySlotWithBooking>> _mySlots = {};
+  List<AvailabilitySlotWithBooking> _selectedDayMySlots = [];
 
   // 舊變數（保留相容性）
   Map<DateTime, List<Map<String, dynamic>>> _trainings = {};
@@ -126,14 +145,23 @@ class _BookingPageState extends State<BookingPage>
     _workoutController = serviceLocator<IWorkoutController>(); // ⭐ v3.5: MVVM
     _authController = serviceLocator<IAuthController>();
     _profileController = serviceLocator<ProfileController>();
-    _relationshipController = serviceLocator<CoachingRelationshipController>(); // ⭐ v3.6: MVVM
-    _slotController = serviceLocator<AvailabilitySlotController>(); // ⭐ v3.6: MVVM
-    _clientAvailabilityController = serviceLocator<ClientAvailabilityController>(); // ⭐ v3.5: MVVM
+    _relationshipController =
+        serviceLocator<CoachingRelationshipController>(); // ⭐ v3.6: MVVM
+    _slotController =
+        serviceLocator<AvailabilitySlotController>(); // ⭐ v3.6: MVVM
+    _clientAvailabilityController =
+        serviceLocator<ClientAvailabilityController>(); // ⭐ v3.5: MVVM
     _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.5
-    _appointmentController = serviceLocator<AppointmentController>(); // ⭐ v3.5: MVVM 重構
+    _appointmentController =
+        serviceLocator<AppointmentController>(); // ⭐ v3.5: MVVM 重構
+    _realtimeController = serviceLocator<RealtimeController>(); // ⭐ v3.9
 
     // ⭐ v3.5: 訂閱行事曆相關事件
     _eventSubscription = _eventBusController.calendarEvents.listen(_onAppEvent);
+
+    // ⭐ v3.9: 訂閱時段變更事件（Realtime DELETE 用 EventBus 通知）
+    _availabilitySubscription =
+        _eventBusController.availabilityEvents.listen(_onAvailabilityEvent);
 
     // 確保控制器已初始化後載入數據
     _safeInitialize();
@@ -223,8 +251,8 @@ class _BookingPageState extends State<BookingPage>
 
       // 檢查是否有教練，並保存所有教練資訊
       // ⭐ v3.6: 透過 Controller 查詢
-      final coaches =
-          await _relationshipController.getClientCoachesWithRelationship(userId);
+      final coaches = await _relationshipController
+          .getClientCoachesWithRelationship(userId);
       _hasCoach = coaches.isNotEmpty;
       _coachIds =
           coaches.where((c) => c.user != null).map((c) => c.user!.uid).toList();
@@ -233,14 +261,17 @@ class _BookingPageState extends State<BookingPage>
           c.user!.uid: c.user!.displayName ?? c.user?.email ?? '未知教練'
       };
 
+      // ⭐ v3.9: 訂閱所有教練的時段 Realtime（教練修改時學員即時看到）
+      _subscribeToCoachSlotsRealtime();
+
       // debugPrint(
       //     '[BOOKING PAGE] 🔍 用戶身份載入：isCoach=$_isCoach, hasCoach=$_hasCoach, coachIds=${_coachIds.length}個');
 
       // 如果是教練，載入學員列表
       // ⭐ v3.6: 透過 Controller 查詢
       if (_isCoach) {
-        final clients =
-            await _relationshipController.getCoachClientsWithRelationship(userId);
+        final clients = await _relationshipController
+            .getCoachClientsWithRelationship(userId);
         _clientIds = clients
             .where((c) => c.user != null)
             .map((c) => c.user!.uid)
@@ -250,6 +281,9 @@ class _BookingPageState extends State<BookingPage>
           for (var c in clients.where((c) => c.user != null))
             c.user!.uid: c.user!.displayName ?? c.user?.email ?? '學員'
         };
+
+        // ⭐ v3.9: 訂閱所有學員的可訓練時間 Realtime
+        _subscribeToClientAvailabilityRealtime();
       }
 
       // 初始化 TabController（只有教練才有兩個 Tab）
@@ -258,7 +292,9 @@ class _BookingPageState extends State<BookingPage>
           _tabController = TabController(
             length: _isCoach ? 2 : 1,
             vsync: this,
+            initialIndex: _isCoach ? widget.initialTabIndex.clamp(0, 1) : 0,
           );
+          _currentTabIndex = _tabController!.index;
           _tabController!.addListener(_onTabChanged);
         });
       }
@@ -353,7 +389,12 @@ class _BookingPageState extends State<BookingPage>
       //     '[BOOKING PAGE] ⚠️ 跳過載入學員時段：isCoach=$_isCoach, clientIds=${_clientIds.length}');
     }
 
-    // 4. 載入預約數據（保留相容性）
+    // 4. Tab 2：如果是教練，載入自己的可上課時段（從 Controller）
+    if (_isCoach) {
+      futures.add(_loadMySlots());
+    }
+
+    // 5. 載入預約數據（保留相容性）
     futures.add(_loadBookings());
 
     await Future.wait(futures);
@@ -481,6 +522,55 @@ class _BookingPageState extends State<BookingPage>
     }
   }
 
+  /// ⭐ v3.9: 載入教練自己的可上課時段（Tab 1 顯示，避免重複創建）
+  Future<void> _loadMySlots() async {
+    final userId = _authController.user?.uid;
+    if (userId == null) return;
+
+    try {
+      final now = DateTime.now();
+      final startDate = DateTime(now.year, now.month, 1);
+      final endDate = DateTime(now.year, now.month + 2, 0); // 載入兩個月
+
+      // 透過 Controller 載入（帶預約狀態）
+      final slots = await _slotController.getAvailableSlots(
+        coachId: userId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      // 按日期分組（過濾掉已被預約的時段）
+      final slotsByDate = <DateTime, List<AvailabilitySlotWithBooking>>{};
+      for (var slot in slots) {
+        // ⭐ v3.9: 已被預約的不顯示
+        if (slot.isBooked) continue;
+
+        final date = slot.slot.startTime;
+        final day = DateTime(date.year, date.month, date.day);
+
+        if (slotsByDate[day] == null) {
+          slotsByDate[day] = [];
+        }
+        slotsByDate[day]!.add(slot);
+      }
+
+      if (mounted) {
+        setState(() {
+          _mySlots = slotsByDate;
+          _updateSelectedDayData();
+        });
+      }
+
+      if (kDebugMode) {
+        debugPrint('[BOOKING PAGE] ✅ 載入自己的時段完成，共 ${slots.length} 個時段');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[BOOKING PAGE] ❌ 載入自己的時段失敗: $e');
+      }
+    }
+  }
+
   // ⭐ v3.2: 當頁面變為可見時檢查 Coach Mark
   @override
   void didChangeDependencies() {
@@ -547,7 +637,211 @@ class _BookingPageState extends State<BookingPage>
     _tabController?.removeListener(_onTabChanged);
     _tabController?.dispose();
     _eventSubscription?.cancel(); // ⭐ v3.5
+    _availabilitySubscription?.cancel(); // ⭐ v3.9
+    // ⭐ v3.9: 取消所有 Realtime 訂閱
+    _unsubscribeFromCoachSlotsRealtime();
+    _unsubscribeFromClientAvailabilityRealtime();
     super.dispose();
+  }
+
+  /// ⭐ v3.9: 訂閱所有教練的時段 Realtime
+  void _subscribeToCoachSlotsRealtime() {
+    // 先清理舊訂閱
+    _unsubscribeFromCoachSlotsRealtime();
+
+    // 訂閱每個教練的時段
+    for (final coachId in _coachIds) {
+      final subscriptionId = _realtimeController.subscribeToCoachSlots(
+        coachId: coachId,
+        onUpdate: _onCoachSlotRealtimeUpdate,
+      );
+      _coachSlotSubscriptionIds.add(subscriptionId);
+    }
+
+    if (kDebugMode && _coachSlotSubscriptionIds.isNotEmpty) {
+      debugPrint(
+          '[BookingPage] 🔴 訂閱 ${_coachSlotSubscriptionIds.length} 個教練時段 Realtime');
+    }
+  }
+
+  /// ⭐ v3.9: 取消所有教練時段 Realtime 訂閱
+  void _unsubscribeFromCoachSlotsRealtime() {
+    for (final id in _coachSlotSubscriptionIds) {
+      _realtimeController.unsubscribe(id);
+    }
+    _coachSlotSubscriptionIds.clear();
+  }
+
+  /// ⭐ v3.9: 訂閱所有學員的可訓練時間 Realtime
+  void _subscribeToClientAvailabilityRealtime() {
+    // 先清理舊訂閱
+    _unsubscribeFromClientAvailabilityRealtime();
+
+    // 訂閱每個學員的可訓練時間
+    for (final clientId in _clientIds) {
+      final subscriptionId = _realtimeController.subscribeToClientAvailability(
+        clientId: clientId,
+        onUpdate: _onClientAvailabilityRealtimeUpdate,
+      );
+      _clientAvailabilitySubscriptionIds.add(subscriptionId);
+    }
+
+    if (kDebugMode && _clientAvailabilitySubscriptionIds.isNotEmpty) {
+      debugPrint(
+          '[BookingPage] 🔴 訂閱 ${_clientAvailabilitySubscriptionIds.length} 個學員可訓練時間 Realtime');
+    }
+  }
+
+  /// ⭐ v3.9: 取消所有學員可訓練時間 Realtime 訂閱
+  void _unsubscribeFromClientAvailabilityRealtime() {
+    for (final id in _clientAvailabilitySubscriptionIds) {
+      _realtimeController.unsubscribe(id);
+    }
+    _clientAvailabilitySubscriptionIds.clear();
+  }
+
+  /// ⭐ v3.9: 教練時段 Realtime 更新回調（INSERT 事件）
+  void _onCoachSlotRealtimeUpdate() {
+    if (!mounted) return;
+    if (kDebugMode) {
+      debugPrint('[BookingPage] ⚡ Realtime INSERT: 教練時段更新');
+    }
+    _loadCoachSlots();
+  }
+
+  /// ⭐ v3.9: 學員可訓練時間 Realtime 更新回調（INSERT/UPDATE 事件）
+  void _onClientAvailabilityRealtimeUpdate() {
+    if (!mounted) return;
+    if (kDebugMode) {
+      debugPrint('[BookingPage] ⚡ Realtime INSERT/UPDATE: 學員可訓練時間更新');
+    }
+    _loadClientAvailability();
+  }
+
+  /// ⭐ v3.9: EventBus 時段事件回調（DELETE 事件透過 EventBus - 增量處理）
+  void _onAvailabilityEvent(AppEvent event) {
+    if (!mounted) return;
+    final userId = _authController.user?.uid;
+
+    // 教練時段刪除事件 - 增量刪除
+    if (event.type == AppEventType.availabilitySlotDeleted) {
+      final deletedId = event.entityId;
+
+      // 刪除「我的教練們」的時段（Tab 0）
+      if (deletedId != null && _coachIds.contains(event.userId)) {
+        if (kDebugMode) {
+          debugPrint('[BookingPage] ⚡ EventBus DELETE: 教練時段刪除 id=$deletedId');
+        }
+        _removeCoachSlotById(deletedId);
+      }
+
+      // 刪除「我自己」的時段（Tab 1）
+      if (deletedId != null && event.userId == userId) {
+        if (kDebugMode) {
+          debugPrint('[BookingPage] ⚡ EventBus DELETE: 我的時段刪除 id=$deletedId');
+        }
+        _removeMySlotById(deletedId);
+      }
+    }
+
+    // 教練時段新增事件 - 重新載入
+    if (event.type == AppEventType.availabilitySlotCreated) {
+      // 我自己新增的時段（Tab 1）- 重新載入
+      if (event.userId == userId && _isCoach) {
+        if (kDebugMode) {
+          debugPrint('[BookingPage] ⚡ EventBus INSERT: 我的時段新增');
+        }
+        _loadMySlots();
+      }
+      // 教練新增的時段（Tab 0）- 已有 Realtime 處理
+    }
+
+    // 學員可訓練時間刪除事件 - 增量刪除
+    if (event.type == AppEventType.clientAvailabilityDeleted) {
+      final deletedId = event.entityId;
+      if (deletedId != null && _clientIds.contains(event.userId)) {
+        if (kDebugMode) {
+          debugPrint(
+              '[BookingPage] ⚡ EventBus DELETE: 學員可訓練時間刪除 id=$deletedId');
+        }
+        _removeClientAvailabilityById(deletedId);
+      }
+    }
+  }
+
+  /// ⭐ v3.9: 增量刪除教練時段（Tab 0 用）
+  void _removeCoachSlotById(String slotId) {
+    bool removed = false;
+
+    for (final date in _coachSlots.keys) {
+      final slots = _coachSlots[date];
+      if (slots != null) {
+        final before = slots.length;
+        slots.removeWhere((slot) => slot.slot.id == slotId);
+        if (slots.length < before) {
+          removed = true;
+        }
+      }
+    }
+
+    if (removed && mounted) {
+      setState(() {
+        _updateSelectedDayData();
+      });
+      if (kDebugMode) {
+        debugPrint('[BookingPage] ✅ 增量刪除教練時段完成');
+      }
+    }
+  }
+
+  /// ⭐ v3.9: 增量刪除我自己的時段（Tab 1 用）
+  void _removeMySlotById(String slotId) {
+    bool removed = false;
+
+    for (final date in _mySlots.keys) {
+      final slots = _mySlots[date];
+      if (slots != null) {
+        final before = slots.length;
+        slots.removeWhere((slot) => slot.slot.id == slotId);
+        if (slots.length < before) {
+          removed = true;
+        }
+      }
+    }
+
+    if (removed && mounted) {
+      setState(() {
+        _updateSelectedDayData();
+      });
+      if (kDebugMode) {
+        debugPrint('[BookingPage] ✅ 增量刪除我的時段完成');
+      }
+    }
+  }
+
+  /// ⭐ v3.9: 增量刪除學員可訓練時間
+  void _removeClientAvailabilityById(String availabilityId) {
+    bool removed = false;
+
+    for (final date in _clientAvailability.keys) {
+      final availabilities = _clientAvailability[date];
+      if (availabilities != null) {
+        final before = availabilities.length;
+        availabilities.removeWhere((a) => a.id == availabilityId);
+        if (availabilities.length < before) {
+          removed = true;
+        }
+      }
+    }
+
+    if (removed && mounted) {
+      setState(() {
+        _updateSelectedDayData();
+      });
+      if (kDebugMode) {
+        debugPrint('[BookingPage] ✅ 增量刪除學員可訓練時間完成');
+      }
+    }
   }
 
   /// ⭐ v3.5: 處理 AppEventBus 事件
@@ -557,7 +851,8 @@ class _BookingPageState extends State<BookingPage>
       return;
     }
 
-    debugPrint('[BOOKING_PAGE] 📥 收到事件: ${event.type}, entityId: ${event.entityId}');
+    debugPrint(
+        '[BOOKING_PAGE] 📥 收到事件: ${event.type}, entityId: ${event.entityId}');
 
     // ⭐ 清除快取後再刷新（確保從資料庫讀取最新數據）
     // ⭐ v3.6: 透過 Controller 操作
@@ -943,6 +1238,8 @@ class _BookingPageState extends State<BookingPage>
     _selectedDayCoachTrainings = _coachTrainings[selectedDay] ?? [];
     // 學員可訓練時段
     _selectedDayClientAvailability = _clientAvailability[selectedDay] ?? [];
+    // ⭐ v3.9: 我自己的可上課時段
+    _selectedDayMySlots = _mySlots[selectedDay] ?? [];
 
     // 舊變數（相容性）
     final allTrainings = _trainings[selectedDay] ?? [];
@@ -1080,7 +1377,8 @@ class _BookingPageState extends State<BookingPage>
     if (result != null && mounted) {
       try {
         // ⭐ v3.5: 透過 Controller 創建可訓練時段
-        final created = await _clientAvailabilityController.createAvailability(result);
+        final created =
+            await _clientAvailabilityController.createAvailability(result);
         if (created != null) {
           NotificationUtils.showSuccess(context, '可訓練時段已新增');
           // 重新載入數據
@@ -1158,7 +1456,8 @@ class _BookingPageState extends State<BookingPage>
       );
 
       // ⭐ v3.5: 透過 Controller 創建預約（Controller 會自動發布事件）
-      final success = await _appointmentController.createAppointment(appointment);
+      final success =
+          await _appointmentController.createAppointment(appointment);
 
       if (!success) {
         throw Exception(_appointmentController.errorMessage ?? '預約失敗');
@@ -1451,8 +1750,11 @@ class _BookingPageState extends State<BookingPage>
         showTrainerPlans: _showTrainerPlans,
         showSessionPlans: _showSessionPlans,
         // ⭐ v3.1-B: 傳遞時段數據
-        coachSlots: isCoachTab ? null : _coachSlots,
-        selectedDayCoachSlots: isCoachTab ? null : _selectedDayCoachSlots,
+        // Tab 0：顯示「我的教練們」的可上課時段
+        // Tab 1：顯示「我自己」的可上課時段（⭐ v3.9）
+        coachSlots: isCoachTab ? _mySlots : _coachSlots,
+        selectedDayCoachSlots:
+            isCoachTab ? _selectedDayMySlots : _selectedDayCoachSlots,
         clientAvailability: isCoachTab ? _clientAvailability : null,
         selectedDayClientAvailability:
             isCoachTab ? _selectedDayClientAvailability : null,
@@ -1486,7 +1788,83 @@ class _BookingPageState extends State<BookingPage>
         onBookCoachSlot: _bookCoachSlot,
         onSelectClientSlot: _selectClientSlot,
         onEnterSession: _enterSession,
+        // ⭐ v3.9: 我的時段操作回調
+        onEditMySlot: _editMySlot,
+        onDeleteMySlot: _deleteMySlot,
       ),
     );
+  }
+
+  // ⭐ v3.9: 編輯我的時段（彈出編輯對話框）
+  Future<void> _editMySlot(AvailabilitySlotWithBooking slot) async {
+    final userId = _authController.user?.uid;
+    if (userId == null) return;
+
+    // 彈出編輯對話框
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => QuickAddSlotDialog(
+        coachId: userId,
+        selectedDate: slot.slot.startTime,
+        existingSlot: slot.slot, // ⭐ 傳入現有時段進入編輯模式
+      ),
+    );
+
+    // EventBus 會自動刷新，但如果返回 true 也手動刷新一下
+    if (result == true && mounted) {
+      await _loadMySlots();
+    }
+  }
+
+  // ⭐ v3.9: 刪除我的時段
+  Future<void> _deleteMySlot(AvailabilitySlotWithBooking slot) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('刪除時段'),
+        content: Text(
+          '確定要刪除 ${_formatTime(slot.slot.startTime)} - ${_formatTime(slot.slot.endTime)} 的時段嗎？',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('刪除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        // 透過 Controller 刪除
+        final success = await _slotController.deleteSlot(slot.slot.id);
+        if (success && mounted) {
+          NotificationUtils.showSuccess(context, '時段已刪除');
+          // ⭐ v3.9: 立即執行增量刪除（不只依賴 EventBus）
+          _removeMySlotById(slot.slot.id);
+        } else if (mounted) {
+          NotificationUtils.showError(
+            context,
+            _slotController.errorMessage ?? '刪除失敗',
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          NotificationUtils.showError(context, '刪除失敗: $e');
+        }
+      }
+    }
+  }
+
+  // 格式化時間
+  String _formatTime(DateTime time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 }

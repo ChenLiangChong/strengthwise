@@ -13,6 +13,7 @@ import 'auth/auth_error_handler.dart';
 import 'auth/auth_user_manager.dart';
 import 'auth/auth_state_listener.dart';
 import 'auth/auth_validators.dart';
+import 'realtime_controller.dart'; // ⭐ v3.9
 
 /// 身份驗證控制器
 ///
@@ -31,6 +32,10 @@ class AuthController extends ChangeNotifier implements IAuthController {
 
   // 子模組
   late final AuthStateListener _stateListener;
+  
+  // ⭐ v3.9: 全局 Realtime 訂閱 ID
+  String? _appointmentsRealtimeId;
+  String? _workoutPlansRealtimeId;
 
   @override
   bool get isLoading => _isLoading;
@@ -75,6 +80,18 @@ class AuthController extends ChangeNotifier implements IAuthController {
       _isInitialized = true;
       _isLoading = false;
       notifyListeners();
+      
+      // ⭐ v3.9: 如果已登入，訂閱全局預約 Realtime（App 重啟時）
+      if (_user != null) {
+        if (kDebugMode) {
+          debugPrint('[AUTH_CONTROLLER] 🔴 已登入用戶 ${_user!.uid}，開始訂閱 Realtime...');
+        }
+        _subscribeToAppointmentsRealtime();
+      } else {
+        if (kDebugMode) {
+          debugPrint('[AUTH_CONTROLLER] ⚠️ 未登入，跳過 Realtime 訂閱');
+        }
+      }
     } catch (e) {
       _handleError('初始化身份驗證控制器失敗: $e');
       _isLoading = false;
@@ -139,6 +156,13 @@ class AuthController extends ChangeNotifier implements IAuthController {
         _user = AuthUserManager.createUserFromData(userData);
         _isLoading = false;
         notifyListeners();
+        
+        // ⭐ v3.9: 登入成功後保存 FCM Token
+        await _saveFcmTokenAfterLogin();
+        
+        // ⭐ v3.9: 登入後訂閱全局預約 Realtime
+        _subscribeToAppointmentsRealtime();
+        
         return true;
       }
 
@@ -215,6 +239,13 @@ class AuthController extends ChangeNotifier implements IAuthController {
         _user = AuthUserManager.createUserFromData(userData);
         _isLoading = false;
         notifyListeners();
+        
+        // ⭐ v3.9: 登入成功後保存 FCM Token
+        await _saveFcmTokenAfterLogin();
+        
+        // ⭐ v3.9: 登入後訂閱全局預約 Realtime
+        _subscribeToAppointmentsRealtime();
+        
         return true;
       }
 
@@ -253,6 +284,9 @@ class AuthController extends ChangeNotifier implements IAuthController {
 
       // ⭐ v3.0-C: 登出前刪除 FCM Token（避免收到其他用戶的通知）
       await _removeFcmToken();
+      
+      // ⭐ v3.9: 登出時取消全局預約 Realtime 訂閱
+      _unsubscribeFromAppointmentsRealtime();
 
       await _authService.signOut();
       _user = null;
@@ -301,6 +335,120 @@ class AuthController extends ChangeNotifier implements IAuthController {
       // Token 刪除失敗不應該阻止登出
       if (kDebugMode) {
         debugPrint('[AUTH_CONTROLLER] ⚠️ FCM Token 移除失敗: $e');
+      }
+    }
+  }
+
+  /// ⭐ v3.9: 登入後保存 FCM Token
+  Future<void> _saveFcmTokenAfterLogin() async {
+    // 只在 Android/iOS 上執行
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      if (kDebugMode) {
+        debugPrint('[AUTH_CONTROLLER] ⏭️ FCM 跳過（非 Android/iOS）');
+      }
+      return;
+    }
+
+    try {
+      final userId = _user?.uid;
+      if (userId == null) {
+        if (kDebugMode) {
+          debugPrint('[AUTH_CONTROLLER] ⚠️ userId 為 null，跳過 FCM');
+        }
+        return;
+      }
+
+      final notificationService = serviceLocator<INotificationService>();
+      final token = await notificationService.getToken();
+
+      if (kDebugMode) {
+        debugPrint('[AUTH_CONTROLLER] 🔍 FCM Token: ${token?.substring(0, 20)}...');
+      }
+
+      if (token != null) {
+        final platform = Platform.isAndroid ? 'android' : 'ios';
+        await notificationService.saveTokenToDatabase(
+          userId,
+          token,
+          platform: platform,
+        );
+        notificationService.listenForTokenChanges(userId);
+
+        if (kDebugMode) {
+          debugPrint('[AUTH_CONTROLLER] ✅ FCM Token 已保存');
+        }
+      }
+    } catch (e) {
+      // FCM 失敗不應該阻止登入
+      if (kDebugMode) {
+        debugPrint('[AUTH_CONTROLLER] ⚠️ FCM Token 保存失敗: $e');
+      }
+    }
+  }
+
+  /// ⭐ v3.9: 訂閱全局 Realtime（登入後調用）
+  /// 
+  /// 讓所有訂閱 EventBus 的頁面都能收到跨用戶更新：
+  /// - 預約變更（appointments）
+  /// - 訓練計畫變更（workout_plans）
+  void _subscribeToAppointmentsRealtime() {
+    final userId = _user?.uid;
+    if (userId == null) return;
+    
+    try {
+      final realtimeController = serviceLocator<RealtimeController>();
+      
+      // 1. 訂閱預約變更
+      _appointmentsRealtimeId = realtimeController.subscribeToUserAppointments(
+        userId: userId,
+        onUpdate: () {
+          if (kDebugMode) {
+            debugPrint('[AUTH_CONTROLLER] ⚡ 全局預約 Realtime 更新');
+          }
+        },
+      );
+      
+      // 2. 訂閱訓練計畫變更（作為學員收到教練創建的計畫）
+      _workoutPlansRealtimeId = realtimeController.subscribeToUserWorkoutPlans(
+        userId: userId,
+        onUpdate: () {
+          if (kDebugMode) {
+            debugPrint('[AUTH_CONTROLLER] ⚡ 全局訓練計畫 Realtime 更新');
+          }
+        },
+      );
+      
+      if (kDebugMode) {
+        debugPrint('[AUTH_CONTROLLER] ✅ 已訂閱全局 Realtime（預約 + 訓練計畫）');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[AUTH_CONTROLLER] ⚠️ 訂閱 Realtime 失敗: $e');
+      }
+    }
+  }
+  
+  /// ⭐ v3.9: 取消全局 Realtime 訂閱（登出時調用）
+  void _unsubscribeFromAppointmentsRealtime() {
+    try {
+      final realtimeController = serviceLocator<RealtimeController>();
+      
+      if (_appointmentsRealtimeId != null) {
+        realtimeController.unsubscribe(_appointmentsRealtimeId!);
+        _appointmentsRealtimeId = null;
+      }
+      
+      if (_workoutPlansRealtimeId != null) {
+        realtimeController.unsubscribe(_workoutPlansRealtimeId!);
+        _workoutPlansRealtimeId = null;
+      }
+      
+      if (kDebugMode) {
+        debugPrint('[AUTH_CONTROLLER] ✅ 已取消全局 Realtime 訂閱');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[AUTH_CONTROLLER] ⚠️ 取消 Realtime 訂閱失敗: $e');
       }
     }
   }

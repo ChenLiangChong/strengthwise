@@ -18,14 +18,31 @@ import 'package:strengthwise/views/widgets/current_page_provider.dart';
 /// - 平板 (720-1023dp)：側邊導航軌（僅圖標）
 /// - 桌面 (≥ 1024dp)：常駐側邊欄（圖標+文字）
 class MainHomePage extends StatefulWidget {
-  const MainHomePage({super.key});
+  /// 初始 Tab 索引（用於通知點擊導航）
+  /// - 0: 首頁
+  /// - 1: 行事曆
+  /// - 2: 訓練
+  /// - 3: 課程
+  /// - 4: 我的
+  final int initialIndex;
+  
+  /// ⭐ v3.9: 行事曆內部 Tab 索引
+  /// - 0: 🎓 我的（個人行事曆）
+  /// - 1: 🏋️ 教練（教練身份）
+  final int bookingTabIndex;
+  
+  const MainHomePage({
+    super.key,
+    this.initialIndex = 0,
+    this.bookingTabIndex = 0,
+  });
 
   @override
   State<MainHomePage> createState() => _MainHomePageState();
 }
 
 class _MainHomePageState extends State<MainHomePage> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
 
   /// 導航項目定義
   static const List<NavigationItem> _destinations = [
@@ -57,13 +74,23 @@ class _MainHomePageState extends State<MainHomePage> {
   ];
 
   /// 頁面列表（使用 IndexedStack 保持狀態）
-  static const List<Widget> _pages = [
-    HomePage(),
-    BookingPage(),
-    TrainingPage(),
-    TrainingHubPage(),
-    ProfilePage(),
-  ];
+  /// ⭐ v3.9: 使用 late final 確保只創建一次
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+    
+    // ⭐ v3.9: 在 initState 中初始化頁面列表，確保只創建一次
+    _pages = [
+      const HomePage(),
+      BookingPage(initialTabIndex: widget.bookingTabIndex),
+      const TrainingPage(),
+      const TrainingHubPage(),
+      const ProfilePage(),
+    ];
+  }
 
   void _onDestinationSelected(int index) {
     setState(() {

@@ -25,8 +25,11 @@ interface FcmMessage {
   android?: {
     priority?: "high" | "normal";
     notification?: {
+      channel_id?: string;
       click_action?: string;
       sound?: string;
+      default_sound?: boolean;
+      default_vibrate_timings?: boolean;
     };
   };
 }
@@ -205,8 +208,11 @@ export async function sendFcmNotification(
         android: {
           priority: "high",
           notification: {
+            channel_id: "strengthwise_channel",
             click_action: "FLUTTER_NOTIFICATION_CLICK",
             sound: "default",
+            default_sound: true,
+            default_vibrate_timings: true,
           },
         },
       };

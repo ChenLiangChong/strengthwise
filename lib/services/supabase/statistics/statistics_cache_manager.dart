@@ -143,6 +143,32 @@ class StatisticsCacheManager {
     _statisticsDataCache.clear();
   }
 
+  /// ⭐ v3.7: 清除特定用戶的快取（增量清除）
+  ///
+  /// 只清除該用戶相關的快取，不影響其他用戶的資料
+  void clearUserCache(String userId) {
+    // 訓練數據快取
+    if (_cachedWorkoutsUserId == userId) {
+      _cachedWorkouts = null;
+      _cachedWorkoutsUserId = null;
+      _cachedWorkoutsStartDate = null;
+      _cachedWorkoutsEndDate = null;
+    }
+
+    // 個人記錄快取
+    if (_prCachedUserId == userId) {
+      _personalRecordsCache = null;
+      _prCacheTime = null;
+      _prCachedUserId = null;
+    }
+
+    // 統計數據快取（移除該用戶的所有時間範圍快取）
+    _statisticsDataCache.removeWhere((key, value) => key.startsWith('${userId}_'));
+
+    // 力量進步快取（移除該用戶的所有時間範圍快取）
+    _strengthProgressCache.removeWhere((key, value) => key.startsWith('${userId}_'));
+  }
+
   /// 檢查兩個日期是否為同一天
   bool _isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&

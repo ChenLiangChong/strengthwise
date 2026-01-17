@@ -92,6 +92,15 @@ class EventBusController extends ChangeNotifier {
         AppEventType.appointmentRescheduled,
       ]);
 
+  /// ⭐ v3.9: 時段相關事件流（教練時段 + 學員偏好）
+  Stream<AppEvent> get availabilityEvents => _eventBus.where([
+        AppEventType.availabilitySlotCreated,
+        AppEventType.availabilitySlotDeleted,
+        AppEventType.clientAvailabilityCreated,
+        AppEventType.clientAvailabilityUpdated,
+        AppEventType.clientAvailabilityDeleted,
+      ]);
+
   /// 首頁相關事件流（今日行程變更）
   Stream<AppEvent> get homePageEvents => _eventBus.where([
         AppEventType.workoutCreated,
@@ -258,6 +267,67 @@ class EventBusController extends ChangeNotifier {
     _eventBus.publishTemplateDeleted(
       templateId: templateId,
       userId: userId,
+    );
+  }
+
+  /// 發布預約重新安排事件 ⭐ v3.9
+  void publishAppointmentRescheduled({
+    required String appointmentId,
+    required String coachId,
+    required String clientId,
+  }) {
+    _eventBus.publishAppointmentRescheduled(
+      appointmentId: appointmentId,
+      coachId: coachId,
+      clientId: clientId,
+    );
+  }
+
+  /// 發布關係建立事件 ⭐ v3.9
+  void publishRelationshipCreated({
+    required String relationshipId,
+    required String coachId,
+    required String clientId,
+  }) {
+    _eventBus.publishRelationshipCreated(
+      relationshipId: relationshipId,
+      coachId: coachId,
+      clientId: clientId,
+    );
+  }
+
+  /// 發布教練時段建立事件 ⭐ v3.9
+  void publishAvailabilitySlotCreated({
+    required String slotId,
+    required String coachId,
+  }) {
+    _eventBus.publishAvailabilitySlotCreated(
+      slotId: slotId,
+      coachId: coachId,
+    );
+  }
+
+  /// 發布教練時段刪除事件 ⭐ v3.9
+  void publishAvailabilitySlotDeleted({
+    required String slotId,
+    required String coachId,
+  }) {
+    _eventBus.publishAvailabilitySlotDeleted(
+      slotId: slotId,
+      coachId: coachId,
+    );
+  }
+
+  /// 發布課程筆記更新事件 ⭐ v3.9
+  void publishSessionNoteUpdated({
+    required String noteId,
+    required String coachId,
+    required String clientId,
+  }) {
+    _eventBus.publishSessionNoteUpdated(
+      noteId: noteId,
+      coachId: coachId,
+      clientId: clientId,
     );
   }
 

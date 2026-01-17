@@ -548,6 +548,19 @@ class WorkoutExecutionController extends ChangeNotifier
 
     if (success) {
       _isDataChanged = false;
+
+      // ⭐ v3.7: 發布事件讓統計頁面自動更新
+      if (_dataManager.isCompleted) {
+        _eventBusController.publishWorkoutCompleted(
+          workoutId: _dataManager.workoutRecordId,
+          userId: userId,
+        );
+      } else {
+        _eventBusController.publishWorkoutUpdated(
+          workoutId: _dataManager.workoutRecordId,
+          userId: userId,
+        );
+      }
     }
   }
 

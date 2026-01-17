@@ -1,4 +1,7 @@
+import 'package:strengthwise/models/tracking_mode.dart';
+
 /// 有訓練記錄的動作（用於分類導航）
+/// v3.7+ 新增 trackingMode 支援
 class ExerciseWithRecord {
   final String exerciseId; // 動作 ID
   final String exerciseName; // 動作名稱
@@ -9,6 +12,7 @@ class ExerciseWithRecord {
   final int totalSets; // 總組數
   final bool isFavorite; // 是否已收藏
   final bool isCustom; // 是否為自訂動作
+  final TrackingMode trackingMode; // ⭐ v3.7+: 追蹤模式
 
   ExerciseWithRecord({
     required this.exerciseId,
@@ -20,7 +24,13 @@ class ExerciseWithRecord {
     required this.totalSets,
     this.isFavorite = false,
     this.isCustom = false, // 預設為系統動作
+    this.trackingMode = TrackingMode.weightReps, // 預設為重量+次數
   });
+
+  /// ⭐ v3.7+: 是否為重訓模式（顯示重量）
+  bool get isWeightBasedMode =>
+      trackingMode == TrackingMode.weightReps ||
+      trackingMode == TrackingMode.weightTime;
 
   /// 格式化最後訓練日期
   String get formattedLastTrainingDate {

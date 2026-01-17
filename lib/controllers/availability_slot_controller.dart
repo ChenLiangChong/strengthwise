@@ -7,14 +7,17 @@ import 'availability_slot/availability_slot_state_manager.dart';
 import 'availability_slot/availability_slot_query_manager.dart';
 import 'availability_slot/availability_slot_operations.dart';
 import 'availability_slot/availability_slot_batch_operations.dart';
+import 'event_bus_controller.dart'; // ⭐ v3.9: EventBus
 
 /// AvailabilitySlotController - Phase 2 時段管理控制器
 ///
 /// 管理教練的可用時段設定、查詢、修改等業務邏輯
 /// 遵循完全解耦架構（透過 Interface 注入依賴）+ 子模組化設計
+/// ⭐ v3.9: 統一發布時段事件（Controller 層負責事件發布）
 class AvailabilitySlotController extends ChangeNotifier {
   final IAvailabilitySlotService _slotService;
   final ErrorHandlingService _errorService;
+  final EventBusController _eventBusController; // ⭐ v3.9: EventBus
 
   // 子模組
   late final AvailabilitySlotStateManager _state;
@@ -25,6 +28,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   AvailabilitySlotController(
     this._slotService,
     this._errorService,
+    this._eventBusController, // ⭐ v3.9: EventBus
   ) {
     _state = AvailabilitySlotStateManager();
     _query = AvailabilitySlotQueryManager(_slotService, _state);
@@ -103,6 +107,15 @@ class AvailabilitySlotController extends ChangeNotifier {
     _state.setSelectedSlot(null);
   }
 
+  /// ⭐ v3.9: 增量刪除時段（本地）
+  /// 用於 Realtime DELETE 事件的增量處理
+  void removeSlotById(String slotId) {
+    _state.removeSlot(slotId);
+    if (kDebugMode) {
+      debugPrint('[AvailabilitySlotController] ✅ 增量刪除時段: $slotId');
+    }
+  }
+
   /// 檢查時段是否已被預約
   Future<bool> checkSlotBooked(String slotId) async {
     try {
@@ -173,12 +186,23 @@ class AvailabilitySlotController extends ChangeNotifier {
   }
 
   /// 創建單次時段（原始方法）
+  /// ⭐ v3.9: 操作成功後自動發布事件
   Future<bool> createSlot(AvailabilitySlotModel slot) async {
-    return await _executeOperation(() async {
+    final success = await _executeOperation(() async {
       await _operations.createSlot(slot);
       // 重新載入時段列表
       await _query.loadCoachSlots(coachId: slot.coachId);
     }, '創建時段失敗');
+
+    // ⭐ v3.9: 發布時段建立事件
+    if (success) {
+      _eventBusController.publishAvailabilitySlotCreated(
+        slotId: slot.id,
+        coachId: slot.coachId,
+      );
+    }
+
+    return success;
   }
 
   /// 創建週期性時段
@@ -238,14 +262,35 @@ class AvailabilitySlotController extends ChangeNotifier {
   }
 
   /// 刪除時段
+  /// ⭐ v3.9: 操作成功後自動發布事件
   Future<bool> deleteSlot(String slotId) async {
-    return await _executeOperation(() async {
-      // 先獲取時段資訊（用於重新載入）
-      final slot = _state.slots.firstWhere((s) => s.id == slotId);
+    // 先獲取時段資訊（用於事件發布和重新載入）
+    AvailabilitySlotModel? slot;
+    try {
+      slot = _state.slots.firstWhere((s) => s.id == slotId);
+    } catch (_) {
+      // 如果找不到，slot 保持 null
+    }
+
+    final coachId = slot?.coachId ?? '';
+
+    final success = await _executeOperation(() async {
       await _operations.deleteSlot(slotId);
       // 重新載入時段列表
-      await _query.loadCoachSlots(coachId: slot.coachId);
+      if (coachId.isNotEmpty) {
+        await _query.loadCoachSlots(coachId: coachId);
+      }
     }, '刪除時段失敗');
+
+    // ⭐ v3.9: 發布時段刪除事件
+    if (success && coachId.isNotEmpty) {
+      _eventBusController.publishAvailabilitySlotDeleted(
+        slotId: slotId,
+        coachId: coachId,
+      );
+    }
+
+    return success;
   }
 
   /// 批量刪除時段

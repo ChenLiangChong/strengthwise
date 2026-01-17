@@ -95,13 +95,15 @@ psql -U postgres -d strengthwise -f 002_v1_initial_data.sql
 | `21_v3_tracking_mode.sql` | 044, 044b, 045 | v3.2+ | TrackingMode 欄位與搜尋 |
 | `22_v3_pr_final_fixes.sql` | 046, 047 | v3.3 | PR DELETE 觸發器、ID 格式修復 |
 | `23_fix_pr_weight_time.sql` | - | v3.3.1 | 修復 weight_time 模式被錯誤納入 PR |
+| `32_add_webhooks_availability.sql` | - | v3.9 | FCM Webhook 配置說明（手動在 Dashboard） |
+| `33_enable_realtime_availability.sql` | - | v3.9 | 開啟 Realtime + REPLICA IDENTITY FULL |
 
 ---
 
 ## 🔄 執行順序
 
 ```
-演進版：001 → 002 → ... → 008 → 09 → 10 → ... → 23
+演進版：001 → 002 → ... → 008 → 09 → 10 → ... → 23 → 32 → 33
 
 精簡版：01 → 02 → ... → 10
 ```

@@ -128,6 +128,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// [coachId] 教練 ID
   /// [clientId] 學員 ID
   /// [status] 初始狀態（預設 'active'）
+  /// ⭐ v3.9: 操作成功後自動發布事件
   Future<bool> createRelationship(
     String coachId,
     String clientId, {
@@ -137,10 +138,17 @@ class CoachingRelationshipController extends ChangeNotifier {
     _clearError();
 
     try {
-      await _relationshipService.createRelationship(
+      final relationship = await _relationshipService.createRelationship(
         coachId,
         clientId,
         status: status,
+      );
+
+      // ⭐ v3.9: 發布關係建立事件
+      _eventBusController.publishRelationshipCreated(
+        relationshipId: relationship.id,
+        coachId: coachId,
+        clientId: clientId,
       );
 
       // 重新載入列表
@@ -269,12 +277,31 @@ class CoachingRelationshipController extends ChangeNotifier {
   ///
   /// [relationshipId] 關係 ID
   /// [clientId] 學員 ID（用於重新載入）
+  /// ⭐ v3.9: 操作成功後自動發布事件
   Future<bool> acceptInvitation(String relationshipId, String clientId) async {
     _setLoading(true);
     _clearError();
 
+    // 先從待處理邀請中獲取關係資訊
+    CoachingRelationshipModel? relationship;
+    try {
+      relationship = _pendingInvitations.firstWhere((r) => r.id == relationshipId);
+    } catch (_) {
+      // 如果找不到，relationship 保持 null
+    }
+
     try {
       await _relationshipService.acceptInvitation(relationshipId);
+
+      // ⭐ v3.9: 發布關係建立事件（接受邀請 = 關係正式建立）
+      final coachId = relationship?.coachId;
+      if (coachId != null && coachId.isNotEmpty) {
+        _eventBusController.publishRelationshipCreated(
+          relationshipId: relationshipId,
+          coachId: coachId,
+          clientId: clientId,
+        );
+      }
 
       // 重新載入列表
       await loadPendingInvitations(clientId);

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:strengthwise/common_widgets/time_picker/time_input_field.dart';
 import 'package:strengthwise/models/tracking_mode.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 
 /// 單組編輯對話框
 /// v3.2+ 支援多元追蹤模式
-class SetEditDialog extends StatelessWidget {
+/// v3.7+ 時間欄位使用 mm:ss 格式
+class SetEditDialog extends StatefulWidget {
   final int setNumber;
   final int initialReps;
   final double initialWeight;
@@ -25,24 +27,42 @@ class SetEditDialog extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final repsController = TextEditingController(text: initialReps.toString());
-    final weightController = TextEditingController(text: initialWeight.toString());
-    final timeController = TextEditingController(text: initialTime?.toString() ?? '0');
-    final distanceController = TextEditingController(text: initialDistance?.toString() ?? '0');
-    final caloriesController = TextEditingController(text: initialCalories?.toString() ?? '0');
+  State<SetEditDialog> createState() => _SetEditDialogState();
+}
 
+class _SetEditDialogState extends State<SetEditDialog> {
+  late TextEditingController _repsController;
+  late TextEditingController _weightController;
+  late TextEditingController _distanceController;
+  late TextEditingController _caloriesController;
+  int? _timeValue; // ⭐ v3.7+: 時間值直接存為 int，不用 controller
+
+  @override
+  void initState() {
+    super.initState();
+    _repsController = TextEditingController(text: widget.initialReps.toString());
+    _weightController = TextEditingController(text: widget.initialWeight.toString());
+    _distanceController = TextEditingController(text: widget.initialDistance?.toString() ?? '0');
+    _caloriesController = TextEditingController(text: widget.initialCalories?.toString() ?? '0');
+    _timeValue = widget.initialTime;
+  }
+
+  @override
+  void dispose() {
+    _repsController.dispose();
+    _weightController.dispose();
+    _distanceController.dispose();
+    _caloriesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('編輯第 $setNumber 組'),
+      title: Text('編輯第 ${widget.setNumber} 組'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
-        children: _buildInputFields(
-          repsController,
-          weightController,
-          timeController,
-          distanceController,
-          caloriesController,
-        ),
+        children: _buildInputFields(),
       ),
       actions: [
         TextButton(
@@ -51,14 +71,7 @@ class SetEditDialog extends StatelessWidget {
         ),
         ElevatedButton(
           onPressed: () {
-            final result = _parseInput(
-              repsController,
-              weightController,
-              timeController,
-              distanceController,
-              caloriesController,
-              context,
-            );
+            final result = _parseInput(context);
             if (result != null) {
               Navigator.pop(context, result);
             }
@@ -71,24 +84,19 @@ class SetEditDialog extends StatelessWidget {
   }
 
   /// v3.2+ 根據追蹤模式構建輸入欄位
-  List<Widget> _buildInputFields(
-    TextEditingController repsController,
-    TextEditingController weightController,
-    TextEditingController timeController,
-    TextEditingController distanceController,
-    TextEditingController caloriesController,
-  ) {
-    switch (trackingMode) {
+  /// v3.7+ 時間欄位使用 TimeInputField
+  List<Widget> _buildInputFields() {
+    switch (widget.trackingMode) {
       case TrackingMode.weightReps:
         return [
           TextField(
-            controller: repsController,
+            controller: _repsController,
             decoration: const InputDecoration(labelText: '次數', border: OutlineInputBorder()),
             keyboardType: TextInputType.number,
           ),
           const SizedBox(height: 16),
           TextField(
-            controller: weightController,
+            controller: _weightController,
             decoration: const InputDecoration(labelText: '重量 (kg)', border: OutlineInputBorder()),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
@@ -96,65 +104,69 @@ class SetEditDialog extends StatelessWidget {
       case TrackingMode.weightTime:
         return [
           TextField(
-            controller: weightController,
+            controller: _weightController,
             decoration: const InputDecoration(labelText: '重量 (kg)', border: OutlineInputBorder()),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: timeController,
-            decoration: const InputDecoration(labelText: '時間 (秒)', border: OutlineInputBorder()),
-            keyboardType: TextInputType.number,
+          TimeInputField(
+            value: _timeValue,
+            onChanged: (seconds) => setState(() => _timeValue = seconds),
+            useOutlineBorder: true,
+            labelText: '時間',
           ),
         ];
       case TrackingMode.repsOnly:
         return [
           TextField(
-            controller: repsController,
+            controller: _repsController,
             decoration: const InputDecoration(labelText: '次數', border: OutlineInputBorder()),
             keyboardType: TextInputType.number,
           ),
         ];
       case TrackingMode.timeOnly:
         return [
-          TextField(
-            controller: timeController,
-            decoration: const InputDecoration(labelText: '時間 (秒)', border: OutlineInputBorder()),
-            keyboardType: TextInputType.number,
+          TimeInputField(
+            value: _timeValue,
+            onChanged: (seconds) => setState(() => _timeValue = seconds),
+            useOutlineBorder: true,
+            labelText: '時間',
           ),
         ];
       case TrackingMode.repsTime:
         return [
           TextField(
-            controller: repsController,
+            controller: _repsController,
             decoration: const InputDecoration(labelText: '次數', border: OutlineInputBorder()),
             keyboardType: TextInputType.number,
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: timeController,
-            decoration: const InputDecoration(labelText: '每次時間 (秒)', border: OutlineInputBorder()),
-            keyboardType: TextInputType.number,
+          TimeInputField(
+            value: _timeValue,
+            onChanged: (seconds) => setState(() => _timeValue = seconds),
+            useOutlineBorder: true,
+            labelText: '每次時間',
           ),
         ];
       case TrackingMode.distanceTime:
         return [
           TextField(
-            controller: distanceController,
+            controller: _distanceController,
             decoration: const InputDecoration(labelText: '距離 (公尺)', border: OutlineInputBorder()),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: timeController,
-            decoration: const InputDecoration(labelText: '時間 (秒)', border: OutlineInputBorder()),
-            keyboardType: TextInputType.number,
+          TimeInputField(
+            value: _timeValue,
+            onChanged: (seconds) => setState(() => _timeValue = seconds),
+            useOutlineBorder: true,
+            labelText: '時間',
           ),
         ];
       case TrackingMode.distanceOnly:
         return [
           TextField(
-            controller: distanceController,
+            controller: _distanceController,
             decoration: const InputDecoration(labelText: '距離 (公尺)', border: OutlineInputBorder()),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
@@ -162,7 +174,7 @@ class SetEditDialog extends StatelessWidget {
       case TrackingMode.calories:
         return [
           TextField(
-            controller: caloriesController,
+            controller: _caloriesController,
             decoration: const InputDecoration(labelText: '卡路里 (kcal)', border: OutlineInputBorder()),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
@@ -171,70 +183,60 @@ class SetEditDialog extends StatelessWidget {
   }
 
   /// v3.2+ 解析輸入並驗證
-  Map<String, dynamic>? _parseInput(
-    TextEditingController repsController,
-    TextEditingController weightController,
-    TextEditingController timeController,
-    TextEditingController distanceController,
-    TextEditingController caloriesController,
-    BuildContext context,
-  ) {
-    switch (trackingMode) {
+  /// v3.7+ 時間值直接使用 _timeValue
+  Map<String, dynamic>? _parseInput(BuildContext context) {
+    switch (widget.trackingMode) {
       case TrackingMode.weightReps:
-        final reps = int.tryParse(repsController.text);
-        final weight = double.tryParse(weightController.text);
+        final reps = int.tryParse(_repsController.text);
+        final weight = double.tryParse(_weightController.text);
         if (reps == null || weight == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
         return {'reps': reps, 'weight': weight};
       case TrackingMode.weightTime:
-        final weight = double.tryParse(weightController.text);
-        final time = int.tryParse(timeController.text);
-        if (weight == null || time == null) {
+        final weight = double.tryParse(_weightController.text);
+        if (weight == null || _timeValue == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
-        return {'weight': weight, 'time': time};
+        return {'weight': weight, 'time': _timeValue};
       case TrackingMode.repsOnly:
-        final reps = int.tryParse(repsController.text);
+        final reps = int.tryParse(_repsController.text);
         if (reps == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
         return {'reps': reps};
       case TrackingMode.timeOnly:
-        final time = int.tryParse(timeController.text);
-        if (time == null) {
+        if (_timeValue == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
-        return {'time': time};
+        return {'time': _timeValue};
       case TrackingMode.repsTime:
-        final reps = int.tryParse(repsController.text);
-        final time = int.tryParse(timeController.text);
-        if (reps == null || time == null) {
+        final reps = int.tryParse(_repsController.text);
+        if (reps == null || _timeValue == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
-        return {'reps': reps, 'time': time};
+        return {'reps': reps, 'time': _timeValue};
       case TrackingMode.distanceTime:
-        final distance = double.tryParse(distanceController.text);
-        final time = int.tryParse(timeController.text);
-        if (distance == null || time == null) {
+        final distance = double.tryParse(_distanceController.text);
+        if (distance == null || _timeValue == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
-        return {'distance': distance, 'time': time};
+        return {'distance': distance, 'time': _timeValue};
       case TrackingMode.distanceOnly:
-        final distance = double.tryParse(distanceController.text);
+        final distance = double.tryParse(_distanceController.text);
         if (distance == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
         return {'distance': distance};
       case TrackingMode.calories:
-        final calories = double.tryParse(caloriesController.text);
+        final calories = double.tryParse(_caloriesController.text);
         if (calories == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
@@ -246,7 +248,8 @@ class SetEditDialog extends StatelessWidget {
 
 /// 批量編輯對話框
 /// v3.2+ 支援多元追蹤模式
-class BatchSetEditDialog extends StatelessWidget {
+/// v3.7+ 時間欄位使用 mm:ss 格式
+class BatchSetEditDialog extends StatefulWidget {
   final int initialReps;
   final double initialWeight;
   final int? initialTime;       // v3.2+
@@ -265,13 +268,37 @@ class BatchSetEditDialog extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final repsController = TextEditingController(text: initialReps.toString());
-    final weightController = TextEditingController(text: initialWeight.toString());
-    final timeController = TextEditingController(text: initialTime?.toString() ?? '0');
-    final distanceController = TextEditingController(text: initialDistance?.toString() ?? '0');
-    final caloriesController = TextEditingController(text: initialCalories?.toString() ?? '0');
+  State<BatchSetEditDialog> createState() => _BatchSetEditDialogState();
+}
 
+class _BatchSetEditDialogState extends State<BatchSetEditDialog> {
+  late TextEditingController _repsController;
+  late TextEditingController _weightController;
+  late TextEditingController _distanceController;
+  late TextEditingController _caloriesController;
+  int? _timeValue;
+
+  @override
+  void initState() {
+    super.initState();
+    _repsController = TextEditingController(text: widget.initialReps.toString());
+    _weightController = TextEditingController(text: widget.initialWeight.toString());
+    _distanceController = TextEditingController(text: widget.initialDistance?.toString() ?? '0');
+    _caloriesController = TextEditingController(text: widget.initialCalories?.toString() ?? '0');
+    _timeValue = widget.initialTime;
+  }
+
+  @override
+  void dispose() {
+    _repsController.dispose();
+    _weightController.dispose();
+    _distanceController.dispose();
+    _caloriesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('批量編輯所有組'),
       content: Column(
@@ -285,13 +312,7 @@ class BatchSetEditDialog extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          ..._buildInputFields(
-            repsController,
-            weightController,
-            timeController,
-            distanceController,
-            caloriesController,
-          ),
+          ..._buildInputFields(),
         ],
       ),
       actions: [
@@ -301,14 +322,7 @@ class BatchSetEditDialog extends StatelessWidget {
         ),
         ElevatedButton(
           onPressed: () {
-            final result = _parseInput(
-              repsController,
-              weightController,
-              timeController,
-              distanceController,
-              caloriesController,
-              context,
-            );
+            final result = _parseInput(context);
             if (result != null) {
               Navigator.pop(context, result);
             }
@@ -320,25 +334,20 @@ class BatchSetEditDialog extends StatelessWidget {
     );
   }
 
-  /// v3.2+ 根據追蹤模式構建輸入欄位（與 SetEditDialog 相同邏輯）
-  List<Widget> _buildInputFields(
-    TextEditingController repsController,
-    TextEditingController weightController,
-    TextEditingController timeController,
-    TextEditingController distanceController,
-    TextEditingController caloriesController,
-  ) {
-    switch (trackingMode) {
+  /// v3.2+ 根據追蹤模式構建輸入欄位
+  /// v3.7+ 時間欄位使用 TimeInputField
+  List<Widget> _buildInputFields() {
+    switch (widget.trackingMode) {
       case TrackingMode.weightReps:
         return [
           TextField(
-            controller: repsController,
+            controller: _repsController,
             decoration: const InputDecoration(labelText: '次數', border: OutlineInputBorder()),
             keyboardType: TextInputType.number,
           ),
           const SizedBox(height: 16),
           TextField(
-            controller: weightController,
+            controller: _weightController,
             decoration: const InputDecoration(labelText: '重量 (kg)', border: OutlineInputBorder()),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
@@ -346,65 +355,69 @@ class BatchSetEditDialog extends StatelessWidget {
       case TrackingMode.weightTime:
         return [
           TextField(
-            controller: weightController,
+            controller: _weightController,
             decoration: const InputDecoration(labelText: '重量 (kg)', border: OutlineInputBorder()),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: timeController,
-            decoration: const InputDecoration(labelText: '時間 (秒)', border: OutlineInputBorder()),
-            keyboardType: TextInputType.number,
+          TimeInputField(
+            value: _timeValue,
+            onChanged: (seconds) => setState(() => _timeValue = seconds),
+            useOutlineBorder: true,
+            labelText: '時間',
           ),
         ];
       case TrackingMode.repsOnly:
         return [
           TextField(
-            controller: repsController,
+            controller: _repsController,
             decoration: const InputDecoration(labelText: '次數', border: OutlineInputBorder()),
             keyboardType: TextInputType.number,
           ),
         ];
       case TrackingMode.timeOnly:
         return [
-          TextField(
-            controller: timeController,
-            decoration: const InputDecoration(labelText: '時間 (秒)', border: OutlineInputBorder()),
-            keyboardType: TextInputType.number,
+          TimeInputField(
+            value: _timeValue,
+            onChanged: (seconds) => setState(() => _timeValue = seconds),
+            useOutlineBorder: true,
+            labelText: '時間',
           ),
         ];
       case TrackingMode.repsTime:
         return [
           TextField(
-            controller: repsController,
+            controller: _repsController,
             decoration: const InputDecoration(labelText: '次數', border: OutlineInputBorder()),
             keyboardType: TextInputType.number,
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: timeController,
-            decoration: const InputDecoration(labelText: '每次時間 (秒)', border: OutlineInputBorder()),
-            keyboardType: TextInputType.number,
+          TimeInputField(
+            value: _timeValue,
+            onChanged: (seconds) => setState(() => _timeValue = seconds),
+            useOutlineBorder: true,
+            labelText: '每次時間',
           ),
         ];
       case TrackingMode.distanceTime:
         return [
           TextField(
-            controller: distanceController,
+            controller: _distanceController,
             decoration: const InputDecoration(labelText: '距離 (公尺)', border: OutlineInputBorder()),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: timeController,
-            decoration: const InputDecoration(labelText: '時間 (秒)', border: OutlineInputBorder()),
-            keyboardType: TextInputType.number,
+          TimeInputField(
+            value: _timeValue,
+            onChanged: (seconds) => setState(() => _timeValue = seconds),
+            useOutlineBorder: true,
+            labelText: '時間',
           ),
         ];
       case TrackingMode.distanceOnly:
         return [
           TextField(
-            controller: distanceController,
+            controller: _distanceController,
             decoration: const InputDecoration(labelText: '距離 (公尺)', border: OutlineInputBorder()),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
@@ -412,7 +425,7 @@ class BatchSetEditDialog extends StatelessWidget {
       case TrackingMode.calories:
         return [
           TextField(
-            controller: caloriesController,
+            controller: _caloriesController,
             decoration: const InputDecoration(labelText: '卡路里 (kcal)', border: OutlineInputBorder()),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
@@ -421,70 +434,60 @@ class BatchSetEditDialog extends StatelessWidget {
   }
 
   /// v3.2+ 解析輸入並驗證
-  Map<String, dynamic>? _parseInput(
-    TextEditingController repsController,
-    TextEditingController weightController,
-    TextEditingController timeController,
-    TextEditingController distanceController,
-    TextEditingController caloriesController,
-    BuildContext context,
-  ) {
-    switch (trackingMode) {
+  /// v3.7+ 時間值直接使用 _timeValue
+  Map<String, dynamic>? _parseInput(BuildContext context) {
+    switch (widget.trackingMode) {
       case TrackingMode.weightReps:
-        final reps = int.tryParse(repsController.text);
-        final weight = double.tryParse(weightController.text);
+        final reps = int.tryParse(_repsController.text);
+        final weight = double.tryParse(_weightController.text);
         if (reps == null || weight == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
         return {'reps': reps, 'weight': weight};
       case TrackingMode.weightTime:
-        final weight = double.tryParse(weightController.text);
-        final time = int.tryParse(timeController.text);
-        if (weight == null || time == null) {
+        final weight = double.tryParse(_weightController.text);
+        if (weight == null || _timeValue == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
-        return {'weight': weight, 'time': time};
+        return {'weight': weight, 'time': _timeValue};
       case TrackingMode.repsOnly:
-        final reps = int.tryParse(repsController.text);
+        final reps = int.tryParse(_repsController.text);
         if (reps == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
         return {'reps': reps};
       case TrackingMode.timeOnly:
-        final time = int.tryParse(timeController.text);
-        if (time == null) {
+        if (_timeValue == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
-        return {'time': time};
+        return {'time': _timeValue};
       case TrackingMode.repsTime:
-        final reps = int.tryParse(repsController.text);
-        final time = int.tryParse(timeController.text);
-        if (reps == null || time == null) {
+        final reps = int.tryParse(_repsController.text);
+        if (reps == null || _timeValue == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
-        return {'reps': reps, 'time': time};
+        return {'reps': reps, 'time': _timeValue};
       case TrackingMode.distanceTime:
-        final distance = double.tryParse(distanceController.text);
-        final time = int.tryParse(timeController.text);
-        if (distance == null || time == null) {
+        final distance = double.tryParse(_distanceController.text);
+        if (distance == null || _timeValue == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
-        return {'distance': distance, 'time': time};
+        return {'distance': distance, 'time': _timeValue};
       case TrackingMode.distanceOnly:
-        final distance = double.tryParse(distanceController.text);
+        final distance = double.tryParse(_distanceController.text);
         if (distance == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;
         }
         return {'distance': distance};
       case TrackingMode.calories:
-        final calories = double.tryParse(caloriesController.text);
+        final calories = double.tryParse(_caloriesController.text);
         if (calories == null) {
           NotificationUtils.showWarning(context, '請輸入有效的數值');
           return null;

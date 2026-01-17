@@ -38,6 +38,8 @@ import '../../controllers/statistics_controller.dart';
 import '../../controllers/body_data_controller.dart';
 import '../../controllers/coaching_relationship_controller.dart';
 import '../../controllers/appointment_controller.dart';
+import '../../controllers/realtime_controller.dart';
+import '../realtime/realtime_subscription_manager.dart';
 import '../../controllers/availability_slot_controller.dart';
 import '../../controllers/session_note_controller.dart';
 import '../../controllers/client_availability_controller.dart';
@@ -51,14 +53,37 @@ import '../../controllers/event_bus_controller.dart';
 import '../interfaces/i_coach_profile_service.dart';
 
 /// 控制器註冊器
-/// 
-/// 負責將所有控制器註冊到服務定位器（工廠模式）
+///
+/// 負責將所有控制器註冊到服務定位器
+///
+/// ### 註冊策略
+///
+/// | 類型 | 方式 | 適用場景 |
+/// |------|------|---------|
+/// | **LazySingleton** | 全局共享狀態 | Auth、Profile、EventBus、Exercise、BodyData |
+/// | **Factory** | 頁面級狀態 | 快取由 Service 層管理的 Controller |
+///
+/// ### 設計原則（v3.7+）
+///
+/// 1. **Factory Controller 只「發布」事件，不訂閱 EventBus**
+///    - 訂閱是在 View 層進行（透過 EventBusController 的事件流）
+///    - View 層在 dispose() 時正確取消 StreamSubscription
+///
+/// 2. **數據快取統一在 Service 層（Singleton）**
+///    - Controller 只是快取的「視圖」，無狀態代理
+///    - 多個 Factory Controller 實例共享同一份 Service 快取
+///
+/// 3. **Singleton Controller 用於需要跨頁面同步的狀態**
+///    - AuthController：登入狀態、避免多個 AuthStateListener
+///    - ProfileController：用戶資料即時同步
+///    - ExerciseController：運動類型/身體部位快取共享
+///    - EventBusController：事件匯流排必須單例
 class ControllerRegistry {
   /// 註冊所有控制器層（工廠模式）
   static void registerControllers(GetIt serviceLocator) {
     // ⭐ v3.5: 先註冊 EventBusController（全局單例，其他 Controller 可能依賴）
     _registerEventBusController(serviceLocator);
-    
+
     _registerAuthController(serviceLocator);
     _registerBookingController(serviceLocator);
     _registerCustomExerciseController(serviceLocator);
@@ -79,6 +104,7 @@ class ControllerRegistry {
     _registerDeleteAccountController(serviceLocator);
     _registerProfileController(serviceLocator);
     _registerCoachProfileController(serviceLocator);
+    _registerRealtimeController(serviceLocator);
   }
 
   /// ⭐ v3.5: 註冊事件匯流排控制器（全局單例）
@@ -94,9 +120,10 @@ class ControllerRegistry {
   }
 
   /// 註冊身份驗證控制器
+  /// ⭐ v3.7: 改為 LazySingleton，避免多個 AuthStateListener 訂閱
   static void _registerAuthController(GetIt serviceLocator) {
     if (!serviceLocator.isRegistered<IAuthController>()) {
-      serviceLocator.registerFactory<IAuthController>(
+      serviceLocator.registerLazySingleton<IAuthController>(
         () => AuthController(
           authService: serviceLocator<IAuthService>(),
           errorService: serviceLocator<ErrorHandlingService>(),
@@ -130,9 +157,10 @@ class ControllerRegistry {
   }
 
   /// 註冊運動項目控制器
+  /// ⭐ v3.7: 改為 LazySingleton，共享快取（訓練類型、身體部位）
   static void _registerExerciseController(GetIt serviceLocator) {
     if (!serviceLocator.isRegistered<IExerciseController>()) {
-      serviceLocator.registerFactory<IExerciseController>(
+      serviceLocator.registerLazySingleton<IExerciseController>(
         () => ExerciseController(
           service: serviceLocator<IExerciseService>(),
           errorService: serviceLocator<ErrorHandlingService>(),
@@ -163,7 +191,8 @@ class ControllerRegistry {
           workoutService: serviceLocator<IWorkoutService>(),
           errorService: serviceLocator<ErrorHandlingService>(),
           eventBusController: serviceLocator<EventBusController>(), // ⭐ v3.5
-          authController: serviceLocator<IAuthController>(), // ⭐ v3.6: EventBus fallback
+          authController:
+              serviceLocator<IAuthController>(), // ⭐ v3.6: EventBus fallback
         ),
       );
     }
@@ -195,9 +224,10 @@ class ControllerRegistry {
 
   /// 註冊身體數據控制器
   /// ⭐ v3.5: 注入 EventBusController 用於發布身體數據事件
+  /// ⭐ v3.8: 改為 LazySingleton，共享快取避免重複載入
   static void _registerBodyDataController(GetIt serviceLocator) {
     if (!serviceLocator.isRegistered<BodyDataController>()) {
-      serviceLocator.registerFactory<BodyDataController>(
+      serviceLocator.registerLazySingleton<BodyDataController>(
         () => BodyDataController(
           bodyDataService: serviceLocator<IBodyDataService>(),
           userService: serviceLocator<IUserService>(),
@@ -238,24 +268,28 @@ class ControllerRegistry {
   }
 
   /// 註冊時段控制器（Phase 2）
+  /// ⭐ v3.9: 注入 EventBusController 用於發布時段事件
   static void _registerAvailabilitySlotController(GetIt serviceLocator) {
     if (!serviceLocator.isRegistered<AvailabilitySlotController>()) {
       serviceLocator.registerFactory<AvailabilitySlotController>(
         () => AvailabilitySlotController(
           serviceLocator<IAvailabilitySlotService>(),
           serviceLocator<ErrorHandlingService>(),
+          serviceLocator<EventBusController>(), // ⭐ v3.9
         ),
       );
     }
   }
 
   /// 註冊課程筆記控制器（Phase 3）
+  /// ⭐ v3.9: 注入 EventBusController 用於發布筆記事件
   static void _registerSessionNoteController(GetIt serviceLocator) {
     if (!serviceLocator.isRegistered<SessionNoteController>()) {
       serviceLocator.registerFactory<SessionNoteController>(
         () => SessionNoteController(
           serviceLocator<ISessionNoteService>(),
           serviceLocator<ErrorHandlingService>(),
+          serviceLocator<EventBusController>(), // ⭐ v3.9
         ),
       );
     }
@@ -333,7 +367,7 @@ class ControllerRegistry {
   /// ⭐ v3.1-B 修復：改為 LazySingleton
   /// 確保所有頁面共享同一個實例，當用戶更新 isCoach 時，
   /// 其他頁面（如 TrainingHubPage）能即時收到 notifyListeners 通知
-  /// 
+  ///
   /// ⭐ v3.5: 新增 IBodyDataService 依賴，用於同步體重到 body_data
   /// ⭐ v3.5: 新增 EventBusController 依賴，用於發布身體數據更新事件
   static void _registerProfileController(GetIt serviceLocator) {
@@ -360,5 +394,18 @@ class ControllerRegistry {
       );
     }
   }
-}
 
+  /// 註冊 Realtime 控制器 ⭐ v3.9
+  ///
+  /// 提供 Realtime 訂閱的輔助方法，供各頁面使用
+  /// 使用 LazySingleton 確保全局只有一個實例
+  static void _registerRealtimeController(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<RealtimeController>()) {
+      serviceLocator.registerLazySingleton<RealtimeController>(
+        () => RealtimeController(
+          realtimeManager: serviceLocator<RealtimeSubscriptionManager>(),
+        ),
+      );
+    }
+  }
+}

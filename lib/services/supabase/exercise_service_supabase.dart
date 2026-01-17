@@ -436,6 +436,7 @@ class ExerciseServiceSupabase implements IExerciseService {
       if (customResponse != null) {
         // 將 custom_exercises 的資料轉換為 Exercise 格式
         // ⚠️ 自訂動作使用實際的 training_type（而非固定的「自訂」）
+        // ⭐ 修復：加入 tracking_mode 欄位
         final customExercise = {
           'id': customResponse['id'],
           'name': customResponse['name'],
@@ -460,6 +461,7 @@ class ExerciseServiceSupabase implements IExerciseService {
           'specific_muscle': '',
           'equipment_category': customResponse['equipment'] ?? '徒手',
           'equipment_subcategory': '',
+          'tracking_mode': customResponse['tracking_mode'], // ⭐ 修復：傳遞 tracking_mode
         };
 
         final exercise = Exercise.fromSupabase(customExercise);
@@ -528,6 +530,7 @@ class ExerciseServiceSupabase implements IExerciseService {
         for (var item in customResponse as List) {
           try {
             // ⚠️ 自訂動作使用實際的 training_type（而非固定的「自訂」）
+            // ⭐ 修復：加入 tracking_mode 欄位
             final customExercise = {
               'id': item['id'],
               'name': item['name'],
@@ -551,6 +554,7 @@ class ExerciseServiceSupabase implements IExerciseService {
               'specific_muscle': '',
               'equipment_category': item['equipment'] ?? '徒手',
               'equipment_subcategory': '',
+              'tracking_mode': item['tracking_mode'], // ⭐ 修復：傳遞 tracking_mode
             };
 
             final exercise = Exercise.fromSupabase(customExercise);

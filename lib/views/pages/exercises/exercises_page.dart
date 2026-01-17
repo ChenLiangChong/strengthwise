@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import '../../../models/exercise_model.dart';
 import 'exercise_detail_page.dart';
-import '../../../controllers/exercise_controller.dart';
+import '../../../controllers/interfaces/i_exercise_controller.dart';
 import '../../../services/service_locator.dart';
 import '../../../utils/notification_utils.dart';
 import 'custom_exercises_page.dart';
@@ -27,9 +27,9 @@ class ExercisesPage extends StatefulWidget {
 
 class _ExercisesPageState extends State<ExercisesPage> {
   bool _isLoading = true;
-  
+
   // ⭐ MVVM 重構：改用 Controller
-  late final ExerciseController _exerciseController;
+  late final IExerciseController _exerciseController;
 
   // 新的 5 層分類選擇
   String? _selectedTrainingType; // 訓練類型
@@ -52,23 +52,23 @@ class _ExercisesPageState extends State<ExercisesPage> {
   @override
   void initState() {
     super.initState();
-    
+
     // ⭐ MVVM 重構：改用 Controller
-    _exerciseController = serviceLocator<ExerciseController>();
-    
+    _exerciseController = serviceLocator<IExerciseController>();
+
     _logDebug('應用啟動：等待服務初始化...');
 
     // ⚡ 延遲載入，確保服務初始化完成
     _waitForInitializationAndLoad();
   }
-  
+
   /// 等待服務初始化完成後載入數據
   Future<void> _waitForInitializationAndLoad() async {
     // ⚡ 透過重試機制等待服務初始化
     int retryCount = 0;
     const maxRetries = 10; // 最多重試 10 次
     const retryDelay = Duration(milliseconds: 300); // 每次等待 300ms
-    
+
     while (retryCount < maxRetries) {
       try {
         // 嘗試載入訓練類型
@@ -84,7 +84,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
         } else {
           // 其他錯誤，直接顯示錯誤
           _logDebug('載入訓練類型失敗: $e');
-          
+
           if (mounted) {
             setState(() {
               _isLoading = false;
@@ -95,7 +95,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
         }
       }
     }
-    
+
     // 超時失敗
     _logDebug('⚠️ 服務初始化超時');
     if (mounted) {
@@ -122,7 +122,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
 
       // ⭐ MVVM：透過 Controller 取得訓練類型
       final types = await _exerciseController.getExerciseTypes();
-      
+
       _logDebug('成功載入 ${types.length} 個訓練類型: ${types.join(", ")}');
 
       setState(() {
@@ -155,10 +155,11 @@ class _ExercisesPageState extends State<ExercisesPage> {
       if (_selectedTrainingType != null && _selectedTrainingType!.isNotEmpty) {
         filters['type'] = _selectedTrainingType!;
       }
-      
+
       // ⭐ MVVM：透過 Controller 取得動作列表
-      final exercises = await _exerciseController.getExercisesByFilters(filters);
-      
+      final exercises =
+          await _exerciseController.getExercisesByFilters(filters);
+
       // 從動作列表中提取唯一的身體部位
       final partsSet = <String>{};
       for (var exercise in exercises) {
@@ -166,7 +167,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
           partsSet.add(exercise.bodyPart);
         }
       }
-      
+
       final parts = partsSet.toList()..sort();
       _logDebug('成功載入 ${parts.length} 個身體部位（來自 ${exercises.length} 個動作）');
 
@@ -200,10 +201,11 @@ class _ExercisesPageState extends State<ExercisesPage> {
       if (_selectedBodyPart != null) {
         filters['bodyPart'] = _selectedBodyPart!;
       }
-      
+
       // 取得動作列表
-      final exercises = await _exerciseController.getExercisesByFilters(filters);
-      
+      final exercises =
+          await _exerciseController.getExercisesByFilters(filters);
+
       // 提取唯一的特定肌群
       final musclesSet = <String>{};
       for (var exercise in exercises) {
@@ -251,15 +253,16 @@ class _ExercisesPageState extends State<ExercisesPage> {
       if (_selectedBodyPart != null) {
         filters['bodyPart'] = _selectedBodyPart!;
       }
-      
+
       // 取得動作列表
-      final exercises = await _exerciseController.getExercisesByFilters(filters);
+      final exercises =
+          await _exerciseController.getExercisesByFilters(filters);
 
       // 客戶端過濾並提取器材類別
       final categoriesSet = <String>{};
       for (var exercise in exercises) {
         // 如果選擇了特定肌群，進行過濾
-        if (_selectedSpecificMuscle != null && 
+        if (_selectedSpecificMuscle != null &&
             exercise.specificMuscle != _selectedSpecificMuscle) {
           continue;
         }
@@ -308,21 +311,22 @@ class _ExercisesPageState extends State<ExercisesPage> {
       if (_selectedBodyPart != null) {
         filters['bodyPart'] = _selectedBodyPart!;
       }
-      
+
       // 取得動作列表
-      final exercises = await _exerciseController.getExercisesByFilters(filters);
+      final exercises =
+          await _exerciseController.getExercisesByFilters(filters);
 
       // 客戶端過濾並提取器材子類別
       final subcategoriesSet = <String>{};
       for (var exercise in exercises) {
         // 過濾特定肌群
-        if (_selectedSpecificMuscle != null && 
+        if (_selectedSpecificMuscle != null &&
             exercise.specificMuscle != _selectedSpecificMuscle) {
           continue;
         }
 
         // 過濾器材類別
-        if (_selectedEquipmentCategory != null && 
+        if (_selectedEquipmentCategory != null &&
             exercise.equipmentCategory != _selectedEquipmentCategory) {
           continue;
         }
@@ -373,26 +377,26 @@ class _ExercisesPageState extends State<ExercisesPage> {
       if (_selectedBodyPart != null) {
         filters['bodyPart'] = _selectedBodyPart!;
       }
-      
+
       // 取得動作列表
       var exercises = await _exerciseController.getExercisesByFilters(filters);
 
       // 客戶端過濾其他條件
       exercises = exercises.where((exercise) {
         // 過濾特定肌群
-        if (_selectedSpecificMuscle != null && 
+        if (_selectedSpecificMuscle != null &&
             exercise.specificMuscle != _selectedSpecificMuscle) {
           return false;
         }
 
         // 過濾器材類別
-        if (_selectedEquipmentCategory != null && 
+        if (_selectedEquipmentCategory != null &&
             exercise.equipmentCategory != _selectedEquipmentCategory) {
           return false;
         }
 
         // 過濾器材子類別
-        if (_selectedEquipmentSubcategory != null && 
+        if (_selectedEquipmentSubcategory != null &&
             exercise.equipmentSubcategory != _selectedEquipmentSubcategory) {
           return false;
         }
@@ -427,13 +431,6 @@ class _ExercisesPageState extends State<ExercisesPage> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(_getAppBarTitle()),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: _navigateToCustomExercises,
-              tooltip: '自定義動作',
-            ),
-          ],
           leading: _currentStep > 0
               ? IconButton(
                   icon: const Icon(Icons.arrow_back),
@@ -531,13 +528,20 @@ class _ExercisesPageState extends State<ExercisesPage> {
   Widget _buildCurrentStep() {
     switch (_currentStep) {
       case 0:
+        // ⭐ 在訓練類型列表最後添加「自訂動作」選項
+        final typesWithCustom = [..._trainingTypes, '自訂動作'];
         return _buildSelection(
           title: '請選擇訓練類型:',
-          items: _trainingTypes,
+          items: typesWithCustom,
           selectedValue: _selectedTrainingType,
           onSelect: (value) {
-            setState(() => _selectedTrainingType = value);
-            _loadBodyParts();
+            if (value == '自訂動作') {
+              // 選擇自訂動作時，直接導航到自訂動作頁面
+              _navigateToCustomExercises();
+            } else {
+              setState(() => _selectedTrainingType = value);
+              _loadBodyParts();
+            }
           },
         );
       case 1:

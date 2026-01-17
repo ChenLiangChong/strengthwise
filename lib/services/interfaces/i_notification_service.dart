@@ -93,8 +93,9 @@ abstract class INotificationService {
   void setOnNotificationTap(void Function(Map<String, dynamic> data) onTap);
 }
 
-/// 通知類型枚舉
+/// 通知類型枚舉 ⭐ v3.9: 擴展時段相關通知
 enum NotificationType {
+  // ==================== 預約相關 ====================
   /// 新預約請求
   newAppointment,
 
@@ -113,13 +114,38 @@ enum NotificationType {
   /// 學員已填寫課前問卷
   readinessSubmitted,
 
+  // ==================== 時段相關（v3.9 新增）====================
+  /// 教練新增可預約時段
+  coachSlotCreated,
+
+  /// 教練刪除時段
+  coachSlotDeleted,
+
+  /// 學員新增可訓練時間
+  clientAvailabilityCreated,
+
+  /// 學員更新可訓練時間
+  clientAvailabilityUpdated,
+
+  // ==================== 關係相關（v3.9 新增）====================
+  /// 新學員加入
+  relationshipCreated,
+
+  /// 學員解除綁定
+  relationshipArchived,
+
+  // ==================== 課程筆記（v3.9 新增）====================
+  /// 教練分享課程筆記
+  sessionNoteShared,
+
   /// 一般通知
   general,
 }
 
-/// 從字串解析通知類型
+/// 從字串解析通知類型 ⭐ v3.9: 擴展解析
 NotificationType parseNotificationType(String? type) {
   switch (type) {
+    // 預約相關
     case 'new_appointment':
       return NotificationType.newAppointment;
     case 'appointment_confirmed':
@@ -132,6 +158,27 @@ NotificationType parseNotificationType(String? type) {
       return NotificationType.sessionReminder;
     case 'readiness_submitted':
       return NotificationType.readinessSubmitted;
+    
+    // 時段相關（v3.9 新增）
+    case 'coach_slot_created':
+      return NotificationType.coachSlotCreated;
+    case 'coach_slot_deleted':
+      return NotificationType.coachSlotDeleted;
+    case 'client_availability_created':
+      return NotificationType.clientAvailabilityCreated;
+    case 'client_availability_updated':
+      return NotificationType.clientAvailabilityUpdated;
+    
+    // 關係相關（v3.9 新增）
+    case 'relationship_created':
+      return NotificationType.relationshipCreated;
+    case 'relationship_archived':
+      return NotificationType.relationshipArchived;
+    
+    // 課程筆記（v3.9 新增）
+    case 'session_note_shared':
+      return NotificationType.sessionNoteShared;
+    
     default:
       return NotificationType.general;
   }

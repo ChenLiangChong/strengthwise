@@ -43,8 +43,11 @@ class NotificationService implements INotificationService {
   void Function(Map<String, dynamic> data)? _onForegroundMessage;
   void Function(Map<String, dynamic> data)? _onNotificationTap;
 
-  // Token 變化監聽
+  // Token 變化監聯
   StreamSubscription<String>? _tokenSubscription;
+
+  // ⭐ 暫存冷啟動的通知（等待回調設置後處理）
+  RemoteMessage? _pendingInitialMessage;
 
   NotificationService({
     required ErrorHandlingService errorService,
@@ -80,12 +83,25 @@ class NotificationService implements INotificationService {
       FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
       // 6. 設置通知點擊處理
-      FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+      FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        if (kDebugMode) {
+          print('[NotificationService] 📲 onMessageOpenedApp 觸發！');
+          print('[NotificationService] 📲 message.data: ${message.data}');
+        }
+        _handleNotificationTap(message);
+      });
 
-      // 7. 檢查是否從通知啟動
+      // 7. 檢查是否從通知啟動（⭐ 暫存，等待回調設置後處理）
       final initialMessage = await _messaging.getInitialMessage();
+      if (kDebugMode) {
+        print('[NotificationService] 🔍 initialMessage: ${initialMessage?.data}');
+      }
       if (initialMessage != null) {
-        _handleNotificationTap(initialMessage);
+        if (kDebugMode) {
+          print('[NotificationService] 📲 從通知啟動 App！暫存等待回調');
+        }
+        // ⭐ 暫存而不是立即處理（因為此時 _onNotificationTap 還沒設置）
+        _pendingInitialMessage = initialMessage;
       }
 
       _isInitialized = true;
@@ -171,9 +187,37 @@ class NotificationService implements INotificationService {
     }
 
     // 解析 payload 並調用回調
-    if (response.payload != null) {
-      // TODO: 解析 JSON payload
-      _onNotificationTap?.call({'payload': response.payload});
+    if (response.payload != null && response.payload!.isNotEmpty) {
+      try {
+        // 嘗試解析 JSON
+        final Map<String, dynamic> data = {};
+        final payload = response.payload!;
+        
+        // 簡單解析 JSON 格式 {"key":"value","key2":"value2"}
+        if (payload.startsWith('{') && payload.endsWith('}')) {
+          final content = payload.substring(1, payload.length - 1);
+          final pairs = content.split(',');
+          for (final pair in pairs) {
+            final kv = pair.split(':');
+            if (kv.length == 2) {
+              final key = kv[0].replaceAll('"', '').trim();
+              final value = kv[1].replaceAll('"', '').trim();
+              data[key] = value;
+            }
+          }
+        }
+        
+        if (kDebugMode) {
+          print('[NotificationService] 解析後的 payload: $data');
+        }
+        
+        _onNotificationTap?.call(data);
+      } catch (e) {
+        if (kDebugMode) {
+          print('[NotificationService] 解析 payload 失敗: $e');
+        }
+        _onNotificationTap?.call({'payload': response.payload});
+      }
     }
   }
 
@@ -275,12 +319,25 @@ class NotificationService implements INotificationService {
       iOS: iosDetails,
     );
 
+    // 將 payload 轉為 JSON 字符串
+    String? payloadString;
+    if (payload != null) {
+      try {
+        payloadString = payload.entries
+            .map((e) => '"${e.key}":"${e.value}"')
+            .join(',');
+        payloadString = '{$payloadString}';
+      } catch (e) {
+        payloadString = payload.toString();
+      }
+    }
+    
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch.remainder(100000),
       title,
       body,
       details,
-      payload: payload?.toString(),
+      payload: payloadString,
     );
   }
 
@@ -332,6 +389,15 @@ class NotificationService implements INotificationService {
   @override
   void setOnNotificationTap(void Function(Map<String, dynamic> data) onTap) {
     _onNotificationTap = onTap;
+    
+    // ⭐ 如果有暫存的冷啟動通知，現在處理它
+    if (_pendingInitialMessage != null) {
+      if (kDebugMode) {
+        print('[NotificationService] 📲 處理暫存的冷啟動通知: ${_pendingInitialMessage!.data}');
+      }
+      _handleNotificationTap(_pendingInitialMessage!);
+      _pendingInitialMessage = null; // 清除暫存
+    }
   }
 
   /// 釋放資源

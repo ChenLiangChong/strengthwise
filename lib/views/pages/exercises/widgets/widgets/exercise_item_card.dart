@@ -98,13 +98,23 @@ class ExerciseItemCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          '最大重量: ${exercise.formattedMaxWeight}',
-          style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        // ⭐ v3.7+: 根據 trackingMode 決定顯示內容
+        if (exercise.isWeightBasedMode)
+          Text(
+            '最大重量: ${exercise.formattedMaxWeight}',
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          )
+        else
+          Text(
+            '訓練組數: ${exercise.totalSets} 組',
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
       ],
     );
   }

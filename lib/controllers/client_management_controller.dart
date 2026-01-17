@@ -323,6 +323,22 @@ class ClientManagementController extends ChangeNotifier {
     }
   }
 
+  /// ⭐ v3.9: 增量刪除學員可訓練時間（本地）
+  /// 用於 Realtime DELETE 事件的增量處理
+  bool removeClientAvailabilityById(String availabilityId) {
+    final before = _clientAvailability.length;
+    _clientAvailability.removeWhere((a) => a.id == availabilityId);
+    
+    if (_clientAvailability.length < before) {
+      if (kDebugMode) {
+        debugPrint('[CLIENT_CONTROLLER] ✅ 增量刪除學員偏好: $availabilityId');
+      }
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
   /// 根據日期查詢時間偏好
   List<ClientAvailabilityModel> getAvailabilityForDate(DateTime date) {
     // ⚡ 只比較日期部分（忽略時分秒）

@@ -417,16 +417,17 @@ class WorkoutServiceSupabase implements IWorkoutService {
       if (record.completed) {
         // 已完成的計劃從快取移除
         _localCacheService!.removeCachedPlan(currentUserId!, record.id);
-        
-        // ⚡ 訓練完成時，清除統計快取（下次會重新計算）
-        if (_statisticsCacheService != null) {
-          _statisticsCacheService!.clearUserCache(currentUserId!);
-          _logDebug('🔄 訓練完成，已清除統計快取');
-        }
       } else {
         // 未完成的計劃更新快取
         _localCacheService!.updateCachedPlan(currentUserId!, record);
       }
+    }
+    
+    // ⭐ v3.7: 任何訓練資料更新都清除統計快取（確保統計頁面顯示最新數據）
+    // 無論是勾選完成還是取消勾選，都會影響統計數據（PR、訓練量等）
+    if (success && _statisticsCacheService != null) {
+      _statisticsCacheService!.clearUserCache(currentUserId!);
+      _logDebug('🔄 訓練資料更新，已清除統計快取');
     }
 
     // ⭐ v3.5: 增量更新查詢快取（只更新一筆，不清除全部）

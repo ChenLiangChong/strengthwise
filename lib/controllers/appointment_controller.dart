@@ -345,12 +345,18 @@ class AppointmentController extends ChangeNotifier {
   }
 
   /// 更新預約時間
+  /// ⭐ v3.9: 操作成功後自動發布事件
   Future<bool> rescheduleAppointment({
     required String appointmentId,
     required DateTime newStartTime,
     required DateTime newEndTime,
   }) async {
-    return await _executeOperation(
+    // 先獲取預約資訊用於事件發布
+    final appointment = _state.selectedAppointment?.id == appointmentId
+        ? _state.selectedAppointment
+        : await _appointmentService.getAppointmentById(appointmentId);
+
+    final success = await _executeOperation(
       () => _clientOps.rescheduleAppointment(
         appointmentId: appointmentId,
         newStartTime: newStartTime,
@@ -358,6 +364,17 @@ class AppointmentController extends ChangeNotifier {
       ),
       '更新預約時間失敗',
     );
+
+    // ⭐ v3.9: 操作成功後發布事件
+    if (success && appointment != null) {
+      _eventBusController.publishAppointmentRescheduled(
+        appointmentId: appointmentId,
+        coachId: appointment.coachId,
+        clientId: appointment.clientId,
+      );
+    }
+
+    return success;
   }
 
   // ============================================================================

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/statistics_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/controllers/exercise_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_exercise_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/views/pages/profile/widgets/favorite_exercises_list.dart';
 import 'package:strengthwise/views/pages/exercises/widgets/exercise_selection_navigator.dart';
 import 'package:strengthwise/views/pages/exercises/exercise_strength_detail_page.dart';
@@ -36,8 +36,8 @@ class StrengthProgressTab extends StatefulWidget {
 
 class _StrengthProgressTabState extends State<StrengthProgressTab> {
   // ⭐ v3.6: MVVM 重構 - 透過 Controller
-  final ExerciseController _exerciseController =
-      serviceLocator<ExerciseController>();
+  final IExerciseController _exerciseController =
+      serviceLocator<IExerciseController>();
   bool _hasFavorites = false;
   int _refreshKey = 0; // 用於強制刷新 FavoriteExercisesList
 

@@ -857,7 +857,11 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
     return EmptyNotesState(
       filter: _currentFilter,
       onCreateNote: () async {
-        final clientId = await showDialog<String>(
+        // ⭐ 修復：如果已傳入 clientId（學員詳情頁），直接使用
+        String? clientId = widget.clientId;
+        
+        // 如果沒有傳入 clientId，才顯示選擇對話框
+        clientId ??= await showDialog<String>(
           context: context,
           barrierDismissible: false,
           builder: (context) => const ClientSelectorDialog(),

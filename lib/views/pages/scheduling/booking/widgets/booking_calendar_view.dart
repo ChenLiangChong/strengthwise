@@ -103,6 +103,13 @@ class BookingCalendarView extends StatelessWidget {
   /// 進入 Session Mode 回調
   final void Function(String planId, String appointmentId)? onEnterSession;
 
+  // ⭐ v3.9: 我的可上課時段操作回調
+  /// 編輯我的時段回調
+  final void Function(AvailabilitySlotWithBooking slot)? onEditMySlot;
+
+  /// 刪除我的時段回調
+  final void Function(AvailabilitySlotWithBooking slot)? onDeleteMySlot;
+
   const BookingCalendarView({
     super.key,
     required this.focusedDay,
@@ -136,6 +143,8 @@ class BookingCalendarView extends StatelessWidget {
     this.onBookCoachSlot,
     this.onSelectClientSlot,
     this.onEnterSession,
+    this.onEditMySlot,
+    this.onDeleteMySlot,
   });
 
   @override
@@ -192,17 +201,15 @@ class BookingCalendarView extends StatelessWidget {
               }
             }
 
-            // ⭐ v3.1-B: Tab 1 - 教練可上課時段（🟢 綠色）
-            if (!isCoachMode && coachSlots != null) {
+            // ⭐ v3.1-B / v3.9: 教練可上課時段（🟢 綠色）
+            // Tab 0：顯示「我的教練們」的可上課時段
+            // Tab 1：顯示「我自己」的可上課時段
+            if (coachSlots != null) {
               final slots = coachSlots![normalizedDay] ?? [];
-              // if (slots.isNotEmpty) {
-              //   debugPrint(
-              //       '[CALENDAR MARKER] 🟢 $normalizedDay: ${slots.length} 個教練可上課時段');
-              // }
               for (var slot in slots) {
                 markers.add(CalendarMarker(
                   color: Colors.green, // 🟢 綠色
-                  tooltip: '教練可上課',
+                  tooltip: isCoachMode ? '我的可上課時段' : '教練可上課',
                   data: {'type': 'coachSlot', 'slot': slot},
                 ));
               }
@@ -218,9 +225,10 @@ class BookingCalendarView extends StatelessWidget {
               for (var slot in slots) {
                 // ⭐ v3.1.1: 根據 priority 區分顏色
                 // preferred = 綠色，available = 橘色
-                final isPreferred = slot.priority == AvailabilityPriority.preferred;
+                final isPreferred =
+                    slot.priority == AvailabilityPriority.preferred;
                 markers.add(CalendarMarker(
-                  color: isPreferred ? Colors.green : Colors.orange, 
+                  color: isPreferred ? Colors.green : Colors.orange,
                   tooltip: isPreferred ? '首選時段' : '可訓練時段',
                   data: {'type': 'clientSlot', 'slot': slot},
                 ));
@@ -337,16 +345,31 @@ class BookingCalendarView extends StatelessWidget {
     final hasTrainings = selectedDayTrainings.isNotEmpty;
     final hasClientSlots = selectedDayClientAvailability != null &&
         selectedDayClientAvailability!.isNotEmpty;
+    // ⭐ v3.9: 我的可上課時段
+    final hasMySlots =
+        selectedDayCoachSlots != null && selectedDayCoachSlots!.isNotEmpty;
 
-    if (!hasTrainings && !hasClientSlots) {
+    if (!hasTrainings && !hasClientSlots && !hasMySlots) {
       return _buildEmptyState(context, '今天沒有課程');
     }
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // ⭐ v3.9: 我的可上課時段（最上方顯示）
+        if (hasMySlots) ...[
+          _buildSectionTitle(
+              context, '🟢 我的可上課時段', selectedDayCoachSlots!.length),
+          const SizedBox(height: 8),
+          ...selectedDayCoachSlots!.map((slot) => _buildMySlotCard(
+                context,
+                slot,
+              )),
+        ],
+
         // 我要教的課（複用 TrainingPlanCard）
         if (hasTrainings) ...[
+          if (hasMySlots) const SizedBox(height: 16),
           _buildSectionTitle(context, '📚 我的學員訓練', selectedDayTrainings.length),
           const SizedBox(height: 8),
           ...selectedDayTrainings.map((training) => _buildTrainingPlanCard(
@@ -358,7 +381,7 @@ class BookingCalendarView extends StatelessWidget {
 
         // 學員可訓練時段
         if (hasClientSlots) ...[
-          if (hasTrainings) const SizedBox(height: 16),
+          if (hasTrainings || hasMySlots) const SizedBox(height: 16),
           _buildSectionTitle(
               context, '🟡 學員可訓練時段', selectedDayClientAvailability!.length),
           const SizedBox(height: 8),
@@ -419,12 +442,10 @@ class BookingCalendarView extends StatelessWidget {
     final traineeId = training['trainee_id'] as String?;
     final creatorId = training['creator_id'] as String?;
     // 教練視角顯示學員名稱，學員視角顯示教練名稱
-    final studentName = isCoachView && traineeId != null
-        ? clientNames[traineeId]
-        : null;
-    final coachDisplayName = !isCoachView && creatorId != null
-        ? coachNames[creatorId]
-        : null;
+    final studentName =
+        isCoachView && traineeId != null ? clientNames[traineeId] : null;
+    final coachDisplayName =
+        !isCoachView && creatorId != null ? coachNames[creatorId] : null;
 
     return TrainingPlanCard(
       training: trainingData,
@@ -551,6 +572,92 @@ class BookingCalendarView extends StatelessWidget {
     );
   }
 
+  /// ⭐ v3.9: 我的可上課時段卡片（教練 Tab 用）
+  /// 顯示編輯/刪除按鈕
+  Widget _buildMySlotCard(
+    BuildContext context,
+    AvailabilitySlotWithBooking slot,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final startTime = slot.slot.startTime;
+    final endTime = slot.slot.endTime;
+    final timeStr = '${_formatTime(startTime)} - ${_formatTime(endTime)}';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: Colors.green.withOpacity(0.05),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            // 綠色指示器
+            Container(
+              width: 4,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.green,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // 時鐘圖標
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.schedule,
+                color: Colors.green,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // 內容
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    timeStr,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '可接受預約',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            // 編輯按鈕
+            IconButton(
+              icon: Icon(Icons.edit_outlined, color: colorScheme.primary),
+              onPressed:
+                  onEditMySlot != null ? () => onEditMySlot!(slot) : null,
+              tooltip: '編輯',
+              visualDensity: VisualDensity.compact,
+            ),
+            // 刪除按鈕
+            IconButton(
+              icon: Icon(Icons.delete_outline, color: colorScheme.error),
+              onPressed:
+                  onDeleteMySlot != null ? () => onDeleteMySlot!(slot) : null,
+              tooltip: '刪除',
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// 學員可訓練時段卡片
   /// ⭐ v3.1.1: 根據 priority 區分顏色（preferred=綠色，available=橘色）
   Widget _buildClientSlotCard(
@@ -617,9 +724,10 @@ class BookingCalendarView extends StatelessWidget {
                       children: [
                         Text(
                           clientName,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                         const SizedBox(width: 8),
                         // 優先級標籤

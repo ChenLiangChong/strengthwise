@@ -18,7 +18,8 @@ class StatisticsLocalCacheService {
   /// 快取版本（更新此版本號會觸發清除舊快取）
   /// v3.3: 升級至 v2，支援多元追蹤模式欄位
   /// v3.3+: 升級至 v3，修正時間過濾邏輯（加入 scheduled_date）
-  static const int currentCacheVersion = 3;
+  /// v3.7+: 升級至 v4，確保 trackingMode 正確傳遞 (2026-01-17)
+  static const int currentCacheVersion = 4;
 
   /// 快取有效期（24 小時）
   static const Duration cacheValidDuration = Duration(hours: 24);
@@ -45,9 +46,7 @@ class StatisticsLocalCacheService {
     if (_isInitialized) return;
     _isInitializing = true;
     try {
-      if (!kIsWeb) {
-        await Hive.initFlutter();
-      }
+      // ⭐ v3.7: Hive.initFlutter() 已在 main.dart 統一初始化，這裡不再重複調用
 
       int retryCount = 0;
       const maxRetries = 3;
@@ -173,7 +172,8 @@ class StatisticsLocalCacheService {
       final cachedData = _box!.get(dataKey);
       if (cachedData == null) return null;
 
-      final json = Map<String, dynamic>.from(cachedData as Map);
+      // ⭐ v3.7: 使用遞迴轉換，解決 Hive 嵌套 Map 類型問題
+      final json = _convertToMapStringDynamic(cachedData);
       final data = StatisticsDataJson.fromJson(json);
 
       if (kDebugMode) {
@@ -191,6 +191,35 @@ class StatisticsLocalCacheService {
     }
   }
 
+  /// ⭐ v3.7: 遞迴將 Hive 的 _Map<dynamic, dynamic> 轉換為 Map<String, dynamic>
+  Map<String, dynamic> _convertToMapStringDynamic(dynamic data) {
+    if (data is Map) {
+      return data.map((key, value) {
+        if (value is Map) {
+          return MapEntry(key.toString(), _convertToMapStringDynamic(value));
+        } else if (value is List) {
+          return MapEntry(key.toString(), _convertList(value));
+        } else {
+          return MapEntry(key.toString(), value);
+        }
+      });
+    }
+    return {};
+  }
+
+  /// ⭐ v3.7: 遞迴轉換 List 中的嵌套 Map
+  List<dynamic> _convertList(List<dynamic> list) {
+    return list.map((item) {
+      if (item is Map) {
+        return _convertToMapStringDynamic(item);
+      } else if (item is List) {
+        return _convertList(item);
+      } else {
+        return item;
+      }
+    }).toList();
+  }
+
   /// 儲存統計數據到快取
   Future<void> cacheStatistics(
     String userId,
@@ -206,7 +235,8 @@ class StatisticsLocalCacheService {
     try {
       final json = data.toJson();
       await _box!.put(dataKey, json);
-      await _box!.put(lastUpdateKey, DateTimeUtils.formatToUtcIso(DateTime.now()));
+      await _box!
+          .put(lastUpdateKey, DateTimeUtils.formatToUtcIso(DateTime.now()));
 
       if (kDebugMode) {
         print('[STATISTICS_CACHE] 💾 已儲存：${timeRange.displayName}');
@@ -257,25 +287,27 @@ class StatisticsLocalCacheService {
       return {'initialized': false};
     }
 
-    final dataKeys = _box!.keys
-        .where((k) => k.toString().startsWith(_dataPrefix))
-        .toList();
+    final dataKeys =
+        _box!.keys.where((k) => k.toString().startsWith(_dataPrefix)).toList();
 
     return {
       'initialized': true,
       'version': _box!.get(_versionKey, defaultValue: 0),
       'cachedRanges': dataKeys.length,
-      'keys': dataKeys.map((k) => k.toString().replaceFirst(_dataPrefix, '')).toList(),
+      'keys': dataKeys
+          .map((k) => k.toString().replaceFirst(_dataPrefix, ''))
+          .toList(),
     };
   }
 
   /// ⚡ 預熱：獲取所有快取的時間範圍（用於啟動時載入到記憶體）
-  Future<Map<TimeRange, StatisticsData>> getAllCachedStatistics(String userId) async {
+  Future<Map<TimeRange, StatisticsData>> getAllCachedStatistics(
+      String userId) async {
     await _ensureInitialized();
     if (_box == null) return {};
 
     final result = <TimeRange, StatisticsData>{};
-    
+
     for (final timeRange in TimeRange.values) {
       if (await isCacheValidAsync(userId, timeRange)) {
         final data = getCachedStatistics(userId, timeRange);

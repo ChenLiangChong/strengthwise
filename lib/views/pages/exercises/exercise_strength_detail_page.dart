@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../models/statistics_model.dart';
 import '../../../models/tracking_mode.dart';
 import '../../../models/favorite_exercise_model.dart';
-import '../../../controllers/exercise_controller.dart';
+import '../../../controllers/interfaces/i_exercise_controller.dart';
 import '../../../controllers/interfaces/i_statistics_controller.dart';
 import '../../../services/service_locator.dart';
 import '../../../utils/notification_utils.dart';
@@ -49,8 +49,8 @@ class _ExerciseStrengthDetailPageState
   // ⭐ MVVM 重構：改用 Controller
   final IStatisticsController _statisticsController =
       serviceLocator<IStatisticsController>();
-  final ExerciseController _exerciseController =
-      serviceLocator<ExerciseController>();
+  final IExerciseController _exerciseController =
+      serviceLocator<IExerciseController>();
 
   ExerciseStrengthProgress? _progress;
   bool _isLoading = true;

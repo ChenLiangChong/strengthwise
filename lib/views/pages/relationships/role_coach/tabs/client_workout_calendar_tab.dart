@@ -1,4 +1,6 @@
 // ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
+// ✅ v3.9: Realtime + EventBus 訂閱（學員可訓練時間跨用戶更新）
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +8,9 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:strengthwise/controllers/client_management_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
+import 'package:strengthwise/controllers/realtime_controller.dart'; // ⭐ v3.9
+import 'package:strengthwise/controllers/event_bus_controller.dart'; // ⭐ v3.9
+import 'package:strengthwise/services/core/app_event_bus.dart'; // ⭐ v3.9
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/models/workout_record/workout_record.dart';
@@ -41,18 +46,62 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
   // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
   late final IAuthController _authController;
   late final IWorkoutController _workoutController;
+  late final RealtimeController _realtimeController; // ⭐ v3.9
+  
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
   CalendarFormat _calendarFormat = CalendarFormat.month;
+  
+  // ⭐ v3.9: Realtime 訂閱 ID
+  String? _realtimeSubscriptionId;
+  
+  // ⭐ v3.9: EventBus 訂閱（DELETE 事件）
+  late final EventBusController _eventBusController;
+  StreamSubscription<AppEvent>? _availabilitySubscription;
 
   @override
   void initState() {
     super.initState();
     _authController = serviceLocator<IAuthController>();
     _workoutController = serviceLocator<IWorkoutController>();
+    _realtimeController = serviceLocator<RealtimeController>(); // ⭐ v3.9
+    _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.9
 
     // 初始化時載入當月數據
     _loadMonthData(_focusedDay);
+    
+    // ⭐ v3.9: 訂閱學員可訓練時間變更（Realtime + EventBus）
+    _realtimeSubscriptionId = _realtimeController.subscribeToClientAvailability(
+      clientId: widget.clientId,
+      onUpdate: _onRealtimeUpdate,
+    );
+    _availabilitySubscription = _eventBusController.availabilityEvents.listen(_onAvailabilityEvent);
+  }
+  
+  /// ⭐ v3.9: Realtime 更新回調（INSERT/UPDATE 事件）
+  void _onRealtimeUpdate() {
+    if (!mounted) return;
+    if (kDebugMode) {
+      debugPrint('[ClientCalendarTab] ⚡ Realtime INSERT/UPDATE: 學員偏好更新');
+    }
+    _loadMonthData(_focusedDay);
+  }
+  
+  /// ⭐ v3.9: EventBus 時段事件回調（DELETE 事件 - 增量刪除）
+  void _onAvailabilityEvent(AppEvent event) {
+    if (!mounted) return;
+    
+    if (event.type == AppEventType.clientAvailabilityDeleted) {
+      final deletedId = event.entityId;
+      if (deletedId != null && event.userId == widget.clientId) {
+        if (kDebugMode) {
+          debugPrint('[ClientCalendarTab] ⚡ EventBus DELETE: 學員偏好刪除 id=$deletedId');
+        }
+        // ⭐ v3.9: 增量刪除，不需要全量刷新
+        final controller = context.read<ClientManagementController>();
+        controller.removeClientAvailabilityById(deletedId);
+      }
+    }
   }
 
   /// 載入當月數據
@@ -76,6 +125,16 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
       startDate: firstDay,
       endDate: lastDay,
     );
+  }
+
+  @override
+  void dispose() {
+    // ⭐ v3.9: 取消訂閱
+    if (_realtimeSubscriptionId != null) {
+      _realtimeController.unsubscribe(_realtimeSubscriptionId!);
+    }
+    _availabilitySubscription?.cancel();
+    super.dispose();
   }
 
   /// 創建訓練計畫（直接打開編輯器）⭐

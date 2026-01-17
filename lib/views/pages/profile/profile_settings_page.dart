@@ -364,6 +364,25 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     }
   }
 
+  /// ⭐ v3.7: 統一的 URL 啟動方法，帶錯誤處理
+  Future<void> _launchUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('無法開啟連結，請稍後再試')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('開啟連結失敗: $e')),
+        );
+      }
+    }
+  }
+
   /// ⭐ v2.9: 首次開啟教練模式時引導填寫教練檔案
   void _promptCoachProfileSetup(BuildContext context) {
     showDialog(
@@ -562,13 +581,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                           subtitle: const Text('了解我們如何保護您的資料'),
                           trailing: const Icon(Icons.open_in_new),
                           contentPadding: EdgeInsets.zero,
-                          onTap: () async {
-                            // 隱私政策 URL
-                            const url = 'https://docs.google.com/document/d/1Ja2MFOnwQQ0pnDr89BoORFAUKZ3xPhJyxGyLLjwlres/view';
-                            if (await canLaunchUrl(Uri.parse(url))) {
-                              await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-                            }
-                          },
+                          onTap: () => _launchUrl(
+                            'https://docs.google.com/document/d/1Ja2MFOnwQQ0pnDr89BoORFAUKZ3xPhJyxGyLLjwlres/view',
+                          ),
                         ),
                         ListTile(
                           leading: Icon(
@@ -579,13 +594,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                           subtitle: const Text('服務使用條款與規範'),
                           trailing: const Icon(Icons.open_in_new),
                           contentPadding: EdgeInsets.zero,
-                          onTap: () async {
-                            // 使用條款 URL
-                            const url = 'https://docs.google.com/document/d/1zWVeLFMCa6QVxHixd1VpDHq3S-bTqoH9zjLdl8K4VYw/view';
-                            if (await canLaunchUrl(Uri.parse(url))) {
-                              await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-                            }
-                          },
+                          onTap: () => _launchUrl(
+                            'https://docs.google.com/document/d/1zWVeLFMCa6QVxHixd1VpDHq3S-bTqoH9zjLdl8K4VYw/view',
+                          ),
                         ),
 
                         // 刪除帳號區塊（放在最後）

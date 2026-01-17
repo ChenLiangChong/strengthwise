@@ -1,8 +1,9 @@
 // ============================================================
-// Supabase Edge Function: push-notify ⭐ v3.0-C
+// Supabase Edge Function: push-notify ⭐ v3.9
 // ============================================================
 // 用途：發送 FCM 推播通知（使用 HTTP v1 API）
-// 觸發：Database Webhook（appointments 表變更）
+// 觸發：Database Webhook（多表變更）
+// 支援：appointments, availability_slots, client_availability, workout_plans
 // ============================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -12,6 +13,10 @@ import {
   getUserTokens,
   cleanupInvalidTokens,
 } from "../_shared/fcm.ts";
+import {
+  generateNotificationContent,
+  generateRoute,
+} from "../_shared/notification_types.ts";
 
 // CORS 標頭
 const corsHeaders = {
@@ -20,60 +25,335 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// 通知類型
-type NotificationType =
-  | "new_appointment"
-  | "appointment_confirmed"
-  | "appointment_rejected"
-  | "appointment_cancelled"
-  | "session_reminder"
-  | "readiness_submitted";
-
-// 通知內容生成
-function getNotificationContent(
-  type: NotificationType,
-  data: Record<string, unknown>
-): { title: string; body: string } {
-  switch (type) {
-    case "new_appointment":
-      return {
-        title: "📅 新預約請求",
-        body: `學員預約了 ${data.date} ${data.time} 的課程`,
-      };
-    case "appointment_confirmed":
-      return {
-        title: "✅ 預約已確認",
-        body: `${data.coachName} 教練已確認您的預約`,
-      };
-    case "appointment_rejected":
-      return {
-        title: "❌ 預約被拒絕",
-        body: `${data.coachName} 教練無法在此時段上課`,
-      };
-    case "appointment_cancelled":
-      return {
-        title: "🚫 預約已取消",
-        body: `${data.cancelledBy} 取消了 ${data.date} 的課程`,
-      };
-    case "session_reminder":
-      return {
-        title: "⏰ 課程提醒",
-        body: `1 小時後有課程，請準備好！`,
-      };
-    case "readiness_submitted":
-      return {
-        title: "📋 學員已填寫問卷",
-        body: `${data.clientName} 已完成課前問卷`,
-      };
-    default:
-      return {
-        title: "StrengthWise",
-        body: "您有新的通知",
-      };
-  }
+// 通知處理結果
+interface NotificationResult {
+  type: string | null;
+  targetUserId: string | null;
+  data: Record<string, unknown>;
 }
 
+// ============================================================
+// 表格處理器
+// ============================================================
+
+/**
+ * 處理 appointments 表變更
+ */
+async function handleAppointments(
+  supabase: ReturnType<typeof createClient>,
+  type: string,
+  record: Record<string, unknown>,
+  oldRecord: Record<string, unknown> | null
+): Promise<NotificationResult> {
+  const result: NotificationResult = { type: null, targetUserId: null, data: {} };
+
+  // 解析時間
+  const timeRange = record.time_range as string;
+  const startMatch = timeRange?.match(/\["([^"]+)"/);
+  const startTime = startMatch ? new Date(startMatch[1]) : new Date();
+  const dateStr = `${startTime.getMonth() + 1}/${startTime.getDate()}`;
+  const timeStr = `${startTime.getHours()}:${startTime.getMinutes().toString().padStart(2, "0")}`;
+
+  if (type === "INSERT" && record.status === "requested") {
+    // 新預約 → 通知教練
+    result.type = "new_appointment";
+    result.targetUserId = record.coach_id as string;
+    result.data = {
+      date: dateStr,
+      time: timeStr,
+      appointmentId: record.id,
+    };
+  } else if (type === "UPDATE") {
+    const oldStatus = oldRecord?.status;
+    const newStatus = record.status;
+
+    if (oldStatus === "requested" && newStatus === "confirmed") {
+      // 確認預約 → 通知學員
+      result.type = "appointment_confirmed";
+      result.targetUserId = record.client_id as string;
+
+      const { data: coach } = await supabase
+        .from("users")
+        .select("display_name")
+        .eq("id", record.coach_id)
+        .single();
+
+      result.data = {
+        coachName: coach?.display_name || "教練",
+        appointmentId: record.id,
+      };
+    } else if (oldStatus === "requested" && newStatus === "rejected") {
+      // 拒絕預約 → 通知學員
+      result.type = "appointment_rejected";
+      result.targetUserId = record.client_id as string;
+
+      const { data: coach } = await supabase
+        .from("users")
+        .select("display_name")
+        .eq("id", record.coach_id)
+        .single();
+
+      result.data = {
+        coachName: coach?.display_name || "教練",
+        appointmentId: record.id,
+      };
+    } else if (newStatus === "cancelled") {
+      // 取消預約 → 通知對方
+      const cancelledById = record.cancelled_by as string;
+      const isCoachCancelled = cancelledById === record.coach_id;
+      
+      result.targetUserId = isCoachCancelled
+        ? (record.client_id as string)   // 教練取消 → 通知學員
+        : (record.coach_id as string);   // 學員取消 → 通知教練
+
+      const { data: canceller } = await supabase
+        .from("users")
+        .select("display_name")
+        .eq("id", cancelledById)
+        .single();
+
+      result.type = "appointment_cancelled";
+      result.data = {
+        cancelledBy: canceller?.display_name || "用戶",
+        // ⭐ v3.9: 添加角色標記，客戶端用於判斷跳轉目標
+        cancelled_by: isCoachCancelled ? "coach" : "client",
+        date: dateStr,
+        appointmentId: record.id,
+      };
+    }
+  }
+
+  return result;
+}
+
+/**
+ * 處理 availability_slots 表變更（教練時段）
+ */
+async function handleAvailabilitySlots(
+  supabase: ReturnType<typeof createClient>,
+  type: string,
+  record: Record<string, unknown>
+): Promise<NotificationResult[]> {
+  const results: NotificationResult[] = [];
+  const coachId = record.coach_id as string;
+
+  // 獲取教練名稱
+  const { data: coach } = await supabase
+    .from("users")
+    .select("display_name")
+    .eq("id", coachId)
+    .single();
+
+  const coachName = coach?.display_name || "教練";
+
+  // 獲取該教練的所有活躍學員
+  const { data: relationships } = await supabase
+    .from("coaching_relationships")
+    .select("client_id")
+    .eq("coach_id", coachId)
+    .eq("status", "active");
+
+  if (!relationships || relationships.length === 0) {
+    console.log("[push-notify] No active clients for coach:", coachId);
+    return results;
+  }
+
+  // 根據事件類型決定通知類型
+  // ⭐ v3.9: DELETE 不推播
+  let notificationType: string;
+  switch (type) {
+    case "INSERT":
+      notificationType = "coach_slot_created";
+      break;
+    case "UPDATE":
+      notificationType = "coach_slot_updated";
+      break;
+    case "DELETE":
+      // 刪除不推播
+      console.log("[push-notify] Skipping DELETE for availability_slots");
+      return results;
+    default:
+      return results;
+  }
+
+  // 為每個學員創建通知
+  for (const rel of relationships) {
+    results.push({
+      type: notificationType,
+      targetUserId: rel.client_id,
+      data: {
+        coachId,
+        coachName,
+        slotId: record.id,
+      },
+    });
+  }
+
+  return results;
+}
+
+/**
+ * 處理 client_availability 表變更（學員可訓練時間）
+ */
+async function handleClientAvailability(
+  supabase: ReturnType<typeof createClient>,
+  type: string,
+  record: Record<string, unknown>
+): Promise<NotificationResult[]> {
+  const results: NotificationResult[] = [];
+  const clientId = record.client_id as string;
+
+  // 獲取學員名稱
+  const { data: client } = await supabase
+    .from("users")
+    .select("display_name")
+    .eq("id", clientId)
+    .single();
+
+  const clientName = client?.display_name || "學員";
+
+  // 獲取該學員的所有活躍教練
+  const { data: relationships } = await supabase
+    .from("coaching_relationships")
+    .select("coach_id")
+    .eq("client_id", clientId)
+    .eq("status", "active");
+
+  if (!relationships || relationships.length === 0) {
+    console.log("[push-notify] No active coaches for client:", clientId);
+    return results;
+  }
+
+  // 根據事件類型決定通知類型
+  // ⭐ v3.9: DELETE 不推播
+  let notificationType: string;
+  switch (type) {
+    case "INSERT":
+      notificationType = "client_availability_created";
+      break;
+    case "UPDATE":
+      notificationType = "client_availability_updated";
+      break;
+    case "DELETE":
+      // 刪除不推播
+      console.log("[push-notify] Skipping DELETE for client_availability");
+      return results;
+    default:
+      return results;
+  }
+
+  // 為每個教練創建通知
+  for (const rel of relationships) {
+    results.push({
+      type: notificationType,
+      targetUserId: rel.coach_id,
+      data: {
+        clientId,
+        clientName,
+        availabilityId: record.id,
+      },
+    });
+  }
+
+  return results;
+}
+
+/**
+ * 處理 workout_plans 表變更（訓練計畫）
+ * 
+ * 只有教練為學員創建/更新時才推播給學員
+ * 學員自己創建的不推播（creator_id = trainee_id）
+ */
+async function handleWorkoutPlans(
+  supabase: ReturnType<typeof createClient>,
+  type: string,
+  record: Record<string, unknown>,
+  oldRecord: Record<string, unknown> | null
+): Promise<NotificationResult> {
+  const result: NotificationResult = { type: null, targetUserId: null, data: {} };
+
+  const traineeId = record.trainee_id as string;
+  const creatorId = record.creator_id as string;
+
+  // 自己創建的訓練計畫不推播
+  if (!traineeId || !creatorId || traineeId === creatorId) {
+    console.log("[push-notify] Skipping workout_plan: self-created");
+    return result;
+  }
+
+  // 獲取教練名稱
+  const { data: coach } = await supabase
+    .from("users")
+    .select("display_name")
+    .eq("id", creatorId)
+    .single();
+
+  const coachName = coach?.display_name || "教練";
+
+  // 解析日期
+  const scheduledDate = record.scheduled_date as string;
+  const date = scheduledDate 
+    ? new Date(scheduledDate).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" })
+    : "";
+
+  // 根據事件類型決定通知類型（只處理 INSERT 和 DELETE）
+  switch (type) {
+    case "INSERT":
+      result.type = "workout_plan_created";
+      result.targetUserId = traineeId;
+      result.data = {
+        coachName,
+        date,
+        workoutId: record.id,
+      };
+      break;
+
+    case "UPDATE":
+      // 更新不推播（Realtime 處理）
+      console.log("[push-notify] Skipping UPDATE for workout_plans");
+      break;
+
+    case "DELETE":
+      // 刪除訓練計畫 → 通知學員
+      // 注意：DELETE 時 record 為空，需要用 oldRecord
+      const oldTraineeId = oldRecord?.trainee_id as string;
+      const oldCreatorId = oldRecord?.creator_id as string;
+      
+      // 自己刪除自己的不推播
+      if (!oldTraineeId || !oldCreatorId || oldTraineeId === oldCreatorId) {
+        console.log("[push-notify] Skipping DELETE: self-created workout");
+        break;
+      }
+
+      // 獲取刪除者（教練）名稱
+      const { data: deletor } = await supabase
+        .from("users")
+        .select("display_name")
+        .eq("id", oldCreatorId)
+        .single();
+
+      const oldScheduledDate = oldRecord?.scheduled_date as string;
+      const oldDate = oldScheduledDate 
+        ? new Date(oldScheduledDate).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" })
+        : "";
+
+      result.type = "workout_plan_deleted";
+      result.targetUserId = oldTraineeId;
+      result.data = {
+        coachName: deletor?.display_name || "教練",
+        date: oldDate,
+        workoutId: oldRecord?.id,
+      };
+      break;
+  }
+
+  return result;
+}
+
+// ============================================================
 // 主處理函數
+// ============================================================
+
 serve(async (req) => {
   // 處理 CORS preflight
   if (req.method === "OPTIONS") {
@@ -94,144 +374,121 @@ serve(async (req) => {
 
     const { type, table, record, old_record } = payload;
 
-    // 只處理 appointments 表的變更
-    if (table !== "appointments") {
-      return new Response(
-        JSON.stringify({ message: "Not an appointments event" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // 根據表名分發處理
+    let notifications: NotificationResult[] = [];
 
-    let notificationType: NotificationType | null = null;
-    let targetUserId: string | null = null;
-    let notificationData: Record<string, unknown> = {};
+    switch (table) {
+      case "appointments":
+        const appointmentResult = await handleAppointments(
+          supabase,
+          type,
+          record,
+          old_record
+        );
+        if (appointmentResult.type) {
+          notifications.push(appointmentResult);
+        }
+        break;
 
-    // 根據事件類型決定通知
-    if (type === "INSERT" && record.status === "requested") {
-      // 新預約 → 通知教練
-      notificationType = "new_appointment";
-      targetUserId = record.coach_id;
+      case "availability_slots":
+        // 處理所有事件：INSERT, UPDATE, DELETE
+        notifications = await handleAvailabilitySlots(supabase, type, record);
+        break;
 
-      // 解析時間
-      const timeRange = record.time_range;
-      const startMatch = timeRange?.match(/\["([^"]+)"/);
-      const startTime = startMatch ? new Date(startMatch[1]) : new Date();
+      case "client_availability":
+        // 處理所有事件：INSERT, UPDATE, DELETE
+        notifications = await handleClientAvailability(supabase, type, record);
+        break;
 
-      notificationData = {
-        date: `${startTime.getMonth() + 1}/${startTime.getDate()}`,
-        time: `${startTime.getHours()}:${startTime.getMinutes().toString().padStart(2, "0")}`,
-        appointmentId: record.id,
-      };
-    } else if (type === "UPDATE") {
-      const oldStatus = old_record?.status;
-      const newStatus = record.status;
+      case "workout_plans":
+        // 處理教練為學員創建/更新訓練計畫
+        const workoutResult = await handleWorkoutPlans(
+          supabase,
+          type,
+          record,
+          old_record
+        );
+        if (workoutResult.type) {
+          notifications.push(workoutResult);
+        }
+        break;
 
-      if (oldStatus === "requested" && newStatus === "confirmed") {
-        // 確認預約 → 通知學員
-        notificationType = "appointment_confirmed";
-        targetUserId = record.client_id;
-
-        // 獲取教練名稱
-        const { data: coach } = await supabase
-          .from("users")
-          .select("display_name")
-          .eq("id", record.coach_id)
-          .single();
-
-        notificationData = {
-          coachName: coach?.display_name || "教練",
-          appointmentId: record.id,
-        };
-      } else if (oldStatus === "requested" && newStatus === "rejected") {
-        // 拒絕預約 → 通知學員
-        notificationType = "appointment_rejected";
-        targetUserId = record.client_id;
-
-        const { data: coach } = await supabase
-          .from("users")
-          .select("display_name")
-          .eq("id", record.coach_id)
-          .single();
-
-        notificationData = {
-          coachName: coach?.display_name || "教練",
-          appointmentId: record.id,
-        };
-      } else if (newStatus === "cancelled") {
-        // 取消預約 → 通知對方
-        const cancelledBy = record.cancelled_by;
-
-        // 通知對方
-        targetUserId =
-          cancelledBy === record.coach_id
-            ? record.client_id
-            : record.coach_id;
-
-        const { data: canceller } = await supabase
-          .from("users")
-          .select("display_name")
-          .eq("id", cancelledBy)
-          .single();
-
-        // 解析時間
-        const timeRange = record.time_range;
-        const startMatch = timeRange?.match(/\["([^"]+)"/);
-        const startTime = startMatch ? new Date(startMatch[1]) : new Date();
-
-        notificationType = "appointment_cancelled";
-        notificationData = {
-          cancelledBy: canceller?.display_name || "用戶",
-          date: `${startTime.getMonth() + 1}/${startTime.getDate()}`,
-          appointmentId: record.id,
-        };
-      }
+      default:
+        return new Response(
+          JSON.stringify({ message: `Unsupported table: ${table}` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
     }
 
     // 沒有需要發送的通知
-    if (!notificationType || !targetUserId) {
+    if (notifications.length === 0) {
       return new Response(
-        JSON.stringify({ message: "No notification needed" }),
+        JSON.stringify({ message: "No notifications to send" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 獲取目標用戶的 FCM Tokens（從 user_devices 表）
-    const tokens = await getUserTokens(supabase, targetUserId);
+    // 發送所有通知
+    let totalSuccess = 0;
+    let totalFailure = 0;
+    const allInvalidTokens: string[] = [];
 
-    if (tokens.length === 0) {
-      console.log("[push-notify] No FCM tokens for user:", targetUserId);
-      return new Response(
-        JSON.stringify({ message: "No FCM tokens for target user" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    for (const notification of notifications) {
+      if (!notification.type || !notification.targetUserId) continue;
+
+      // 獲取目標用戶的 FCM Tokens
+      const tokens = await getUserTokens(supabase, notification.targetUserId);
+
+      if (tokens.length === 0) {
+        console.log("[push-notify] No FCM tokens for user:", notification.targetUserId);
+        continue;
+      }
+
+      // 生成通知內容
+      const content = generateNotificationContent(
+        notification.type,
+        notification.data
       );
+
+      if (!content) {
+        console.log("[push-notify] Unknown notification type:", notification.type);
+        continue;
+      }
+
+      // 生成跳轉路由
+      const route = generateRoute(notification.type, notification.data);
+
+      // 發送 FCM 通知
+      const result = await sendFcmNotification(tokens, content.title, content.body, {
+        type: notification.type,
+        route: route || "",
+        ...Object.fromEntries(
+          Object.entries(notification.data).map(([k, v]) => [k, String(v)])
+        ),
+      });
+
+      totalSuccess += result.success;
+      totalFailure += result.failure;
+      allInvalidTokens.push(...result.invalidTokens);
     }
-
-    // 生成通知內容
-    const { title, body } = getNotificationContent(
-      notificationType,
-      notificationData
-    );
-
-    // 發送 FCM 通知（HTTP v1 API）
-    const result = await sendFcmNotification(tokens, title, body, {
-      type: notificationType,
-      appointmentId: record.id,
-    });
 
     // 清理無效 Tokens
-    if (result.invalidTokens.length > 0) {
-      await cleanupInvalidTokens(supabase, result.invalidTokens);
+    if (allInvalidTokens.length > 0) {
+      await cleanupInvalidTokens(supabase, allInvalidTokens);
     }
 
-    console.log("[push-notify] Notification sent:", result);
+    console.log("[push-notify] Summary:", {
+      notifications: notifications.length,
+      success: totalSuccess,
+      failure: totalFailure,
+    });
 
     return new Response(
       JSON.stringify({
-        success: result.success > 0,
-        sent: result.success,
-        failed: result.failure,
-        type: notificationType,
-        targetUserId,
+        success: totalSuccess > 0,
+        notifications: notifications.length,
+        sent: totalSuccess,
+        failed: totalFailure,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

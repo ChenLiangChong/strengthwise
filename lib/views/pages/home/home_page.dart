@@ -34,6 +34,8 @@ import 'package:strengthwise/views/widgets/quick_action_bar.dart';
 import 'package:strengthwise/views/widgets/collapsible_section.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/coach_hub_page.dart';
 import 'package:strengthwise/views/pages/relationships/role_client/client_hub_page.dart';
+import 'package:strengthwise/common_widgets/dialogs/reason_input_dialog.dart'; // ⭐ v3.9
+// RealtimeController 訂閱已移至 AuthController 全局處理 ⭐ v3.9
 import 'package:strengthwise/views/pages/scheduling/appointments/coach_slots_management_page.dart';
 import 'package:strengthwise/views/pages/scheduling/availability/client_availability_page.dart';
 import 'package:strengthwise/views/pages/workout/execution/plan_editor_page.dart';
@@ -105,6 +107,7 @@ class _HomePageState extends State<HomePage> {
     _profileController.addListener(_onProfileChanged);
 
     // ⭐ v3.5: 訂閱首頁相關事件（訓練創建/刪除/完成、預約變更）
+    // ⭐ v3.9: 跨用戶預約 Realtime 已由 AuthController 全局訂閱，會發布到 EventBus
     _eventSubscription = _eventBusController.homePageEvents.listen(_onAppEvent);
 
     // ⚡ 優先載入首頁關鍵數據，完成後才預載入其他
@@ -249,6 +252,7 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     _profileController.removeListener(_onProfileChanged);
     _eventSubscription?.cancel(); // ⭐ v3.5: 取消事件訂閱
+    // ⭐ v3.9: 預約 Realtime 已由 AuthController 全局管理，無需頁面級取消
     super.dispose();
   }
 
@@ -1440,58 +1444,15 @@ class _HomePageState extends State<HomePage> {
   /// 拒絕預約
   /// ⭐ v3.1.1: 必須填寫拒絕原因
   /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作，事件由 Controller 自動發布
+  /// ⭐ v3.9: 使用 ReasonInputDialog 避免 Controller dispose 問題
   Future<void> _rejectAppointment(AppointmentModel appointment) async {
-    final reasonController = TextEditingController();
-
-    final reason = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('拒絕預約'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('請說明拒絕原因：'),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: reasonController,
-                    decoration: const InputDecoration(
-                      hintText: '例如：該時段已滿、時間無法配合...',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
-                    autofocus: true,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, null),
-                  child: const Text('取消'),
-                ),
-                FilledButton(
-                  onPressed: reasonController.text.trim().isEmpty
-                      ? null
-                      : () =>
-                          Navigator.pop(context, reasonController.text.trim()),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.error,
-                  ),
-                  child: const Text('拒絕'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+    final reason = await ReasonInputDialog.show(
+      context,
+      title: '拒絕預約',
+      hintText: '例如：該時段已滿、時間無法配合...',
+      cancelText: '取消',
+      confirmText: '拒絕',
     );
-
-    reasonController.dispose();
 
     if (reason == null || reason.isEmpty) return;
 

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/favorite_exercise_model.dart';
 import 'package:strengthwise/models/statistics/time_range.dart';
-import 'package:strengthwise/controllers/exercise_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_exercise_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_statistics_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
@@ -38,8 +38,8 @@ class ExerciseSelectionNavigator extends StatefulWidget {
 class _ExerciseSelectionNavigatorState
     extends State<ExerciseSelectionNavigator> {
   // ⭐ MVVM 重構：改用 Controller
-  final ExerciseController _exerciseController =
-      serviceLocator<ExerciseController>();
+  final IExerciseController _exerciseController =
+      serviceLocator<IExerciseController>();
   final IStatisticsController _statisticsController =
       serviceLocator<IStatisticsController>();
 
@@ -110,6 +110,7 @@ class _ExerciseSelectionNavigatorState
           totalSets: e.totalSets,
           isFavorite: favoriteIds.contains(e.exerciseId),
           isCustom: e.isCustom,
+          trackingMode: e.trackingMode, // ⭐ v3.7+: 傳遞追蹤模式
         );
       }).toList();
 
@@ -155,7 +156,8 @@ class _ExerciseSelectionNavigatorState
 
   /// 獲取第 2 層：身體部位列表（客戶端過濾）
   List<String> _getBodyParts() {
-    final filtered = _filterByTrainingType(_allExercises, _selectedTrainingType);
+    final filtered =
+        _filterByTrainingType(_allExercises, _selectedTrainingType);
     final partsSet = <String>{};
 
     for (var exercise in filtered) {
@@ -172,7 +174,8 @@ class _ExerciseSelectionNavigatorState
     var filtered = _filterByTrainingType(_allExercises, _selectedTrainingType);
 
     if (_selectedBodyPart != null) {
-      filtered = filtered.where((e) => e.bodyPart == _selectedBodyPart).toList();
+      filtered =
+          filtered.where((e) => e.bodyPart == _selectedBodyPart).toList();
     }
 
     return filtered;
@@ -255,6 +258,7 @@ class _ExerciseSelectionNavigatorState
             totalSets: e.totalSets,
             isFavorite: _favoriteIds.contains(e.exerciseId),
             isCustom: e.isCustom,
+            trackingMode: e.trackingMode, // ⭐ v3.7+: 傳遞追蹤模式
           );
         }
         return e;

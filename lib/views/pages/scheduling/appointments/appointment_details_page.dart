@@ -14,6 +14,7 @@ import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appoint
 import 'package:strengthwise/views/pages/scheduling/appointments/session_record_page.dart';
 import 'package:strengthwise/views/pages/session/session_mode_page.dart';
 import 'package:strengthwise/controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/common_widgets/dialogs/reason_input_dialog.dart'; // ⭐ v3.9
 
 /// 預約詳情頁面 - Phase 2
 ///
@@ -155,56 +156,14 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
 
   Future<void> _cancelAppointment() async {
     // ⭐ v3.1.1: 必須填寫取消原因
-    final reasonController = TextEditingController();
-    
-    final reason = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('取消預約'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('請說明取消原因：'),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: reasonController,
-                    decoration: const InputDecoration(
-                      hintText: '例如：時間無法配合、臨時有事...',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
-                    autofocus: true,
-                    onChanged: (_) => setState(() {}), // 更新按鈕狀態
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, null),
-                  child: const Text('返回'),
-                ),
-                FilledButton(
-                  onPressed: reasonController.text.trim().isEmpty
-                      ? null
-                      : () => Navigator.pop(context, reasonController.text.trim()),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.red,
-                  ),
-                  child: const Text('確定取消'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+    // ⭐ v3.9: 使用 ReasonInputDialog 避免 Controller dispose 問題
+    final reason = await ReasonInputDialog.show(
+      context,
+      title: '取消預約',
+      hintText: '例如：時間無法配合、臨時有事...',
+      cancelText: '返回',
+      confirmText: '確定取消',
     );
-
-    reasonController.dispose();
 
     if (reason != null && reason.isNotEmpty && mounted) {
       final userId = _authController.user?.uid;

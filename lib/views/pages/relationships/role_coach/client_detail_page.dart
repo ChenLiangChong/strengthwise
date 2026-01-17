@@ -1,6 +1,7 @@
 // ✅ 已響應式改造 (Phase 0) - Tab 子組件處理
 // ✅ v3.2: Coach Mark 引導
 // ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
+// ✅ v3.9: Realtime 訂閱移至 ClientWorkoutCalendarTab（頁面級訂閱）
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
@@ -53,6 +54,8 @@ class _ClientDetailPageState extends State<ClientDetailPage>
 
     // 選中學員（載入詳細資料）
     _controller.selectClient(widget.clientId);
+    
+    // ⭐ v3.9: Realtime 訂閱已移至 ClientWorkoutCalendarTab（Tab 2）
     
     // ⭐ v3.2: 檢查 Coach Mark 引導
     WidgetsBinding.instance.addPostFrameCallback((_) {

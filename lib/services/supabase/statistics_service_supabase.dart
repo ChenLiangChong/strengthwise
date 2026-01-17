@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import '../../models/statistics_model.dart';
 import '../../models/exercise_model.dart';
 import '../../models/favorite_exercise_model.dart';
+import '../../models/tracking_mode.dart'; // v3.7+: 防禦性處理需要
 import '../../utils/datetime_utils.dart';
 import '../interfaces/i_statistics_service.dart';
 import '../interfaces/i_exercise_service.dart';
 import '../core/error_handling_service.dart';
+import '../core/app_event_bus.dart';  // ⭐ v3.7: 事件匯流排
 import '../cache/statistics_local_cache_service.dart';
 import 'statistics/statistics_cache_manager.dart';
 import 'statistics/statistics_data_loader.dart';
@@ -57,6 +60,14 @@ class StatisticsServiceSupabase implements IStatisticsService {
   late final CompletionRateCalculator _completionRateCalculator;
   late final StrengthProgressCalculator _strengthProgressCalculator;
 
+  // ⭐ v3.7: 事件訂閱（自動清除快取）
+  // ignore: unused_field - Singleton 永遠不會被 dispose，訂閱會一直存在
+  StreamSubscription<AppEvent>? _eventSubscription;
+
+  // ⭐ v3.7: 防抖機制（避免連續事件觸發多次預載入）
+  Timer? _preloadDebounceTimer;
+  static const Duration _preloadDebounceDelay = Duration(milliseconds: 500);
+
   StatisticsServiceSupabase({
     required SupabaseClient supabase,
     required ErrorHandlingService errorService,
@@ -85,6 +96,93 @@ class StatisticsServiceSupabase implements IStatisticsService {
     _completionRateCalculator = CompletionRateCalculator();
     _strengthProgressCalculator =
         StrengthProgressCalculator(exerciseCache: _exerciseCache);
+
+    // ⭐ v3.7: 訂閱訓練相關事件，自動清除快取
+    _subscribeToWorkoutEvents();
+  }
+
+  /// ⭐ v3.7: 訂閱訓練相關事件
+  ///
+  /// 當訓練資料變更時（勾選/取消勾選 set、更新重量等），自動清除該用戶的快取。
+  /// 這樣統計頁面重新進入時會載入最新資料。
+  void _subscribeToWorkoutEvents() {
+    final eventBus = AppEventBus();
+    _eventSubscription = eventBus.where([
+      AppEventType.workoutCreated,
+      AppEventType.workoutUpdated,
+      AppEventType.workoutDeleted,
+      AppEventType.workoutCompleted,
+    ]).listen(_onWorkoutEvent);
+  }
+
+  /// ⭐ v3.7: 處理訓練事件
+  void _onWorkoutEvent(AppEvent event) {
+    final userId = event.userId;
+    if (userId == null) return;
+
+    if (_kStatisticsDebugLog) {
+      debugPrint('[STATISTICS_SERVICE] 📥 收到訓練事件: ${event.type}, userId: $userId');
+    }
+
+    // 清除該用戶的快取並在背景預載入
+    _clearUserCacheAndPreload(userId);
+  }
+
+  /// ⭐ v3.7: 清除特定用戶的快取並在背景預載入（帶防抖）
+  void _clearUserCacheAndPreload(String userId) {
+    // 1. 立即清除記憶體快取
+    _cacheManager.clearUserCache(userId);
+
+    // 2. 清除 ExerciseWithRecord 快取（如果是該用戶的）
+    if (_cachedExercisesUserId == userId) {
+      _cachedExercisesWithRecords = null;
+      _cachedExercisesUserId = null;
+      _cachedExercisesTimestamp = null;
+    }
+
+    // 3. 清除本地 Hive 快取
+    _localCacheService?.clearUserCache(userId);
+
+    // 4. ⭐ v3.7: 清除動作分類快取（確保重新載入最新的 trackingMode）
+    _exerciseCache.clear();
+
+    if (_kStatisticsDebugLog) {
+      debugPrint('[STATISTICS_SERVICE] 🗑️ 已清除用戶快取: $userId');
+    }
+
+    // ⭐ v3.7: 使用防抖機制預載入（避免連續事件觸發多次計算）
+    // 取消之前的 Timer，重新計時
+    _preloadDebounceTimer?.cancel();
+    _preloadDebounceTimer = Timer(_preloadDebounceDelay, () {
+      _backgroundPreloadStatistics(userId);
+    });
+  }
+
+  /// ⭐ v3.7: 背景預載入統計（不阻塞主線程）
+  ///
+  /// 使用 preloadAllTimeRanges 一次查詢 + 多時間範圍計算，
+  /// 這樣用戶切換時間範圍時也不需要重新查詢。
+  void _backgroundPreloadStatistics(String userId) {
+    // 使用 Future.microtask 確保不阻塞當前操作
+    Future.microtask(() async {
+      try {
+        if (_kStatisticsDebugLog) {
+          debugPrint('[STATISTICS_SERVICE] 🔄 背景預載入所有時間範圍: $userId');
+        }
+
+        // ⭐ 使用現有的預載入邏輯（一次查詢 + 多時間範圍計算）
+        await preloadAllTimeRanges(userId);
+
+        if (_kStatisticsDebugLog) {
+          debugPrint('[STATISTICS_SERVICE] ✅ 背景預載入完成: $userId');
+        }
+      } catch (e) {
+        // 背景預載入失敗不影響主流程
+        if (_kStatisticsDebugLog) {
+          debugPrint('[STATISTICS_SERVICE] ⚠️ 背景預載入失敗: $e');
+        }
+      }
+    });
   }
 
   @override
@@ -777,6 +875,14 @@ class StatisticsServiceSupabase implements IStatisticsService {
             ? !_cachedSystemExerciseIds!.contains(stat.exerciseId)
             : false;
 
+        // ⭐ v3.7+: 防禦性處理 trackingMode（舊快取可能沒有此欄位）
+        TrackingMode trackingMode;
+        try {
+          trackingMode = exercise.trackingMode;
+        } catch (_) {
+          trackingMode = TrackingMode.weightReps;
+        }
+
         results.add(ExerciseWithRecord(
           exerciseId: stat.exerciseId,
           exerciseName: stat.exerciseName,
@@ -787,6 +893,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
           maxWeight: stat.maxWeight,
           totalSets: stat.totalSets,
           isCustom: isCustom,
+          trackingMode: trackingMode,
         ));
       }
 
@@ -961,23 +1068,6 @@ class StatisticsServiceSupabase implements IStatisticsService {
   }
 
   // ========== 私有輔助方法 ==========
-
-  /// 獲取動作詳細信息（內部使用）
-  Future<Exercise?> _getExerciseInfo(String exerciseId) async {
-    if (_exerciseCache.containsKey(exerciseId)) {
-      return _exerciseCache[exerciseId];
-    }
-
-    try {
-      final exercise = await _exerciseService.getExerciseById(exerciseId);
-      if (exercise != null) {
-        _exerciseCache[exerciseId] = exercise;
-      }
-      return exercise;
-    } catch (e) {
-      return null;
-    }
-  }
 
   /// 查詢已完成的訓練（轉換為統一格式）
   Future<List<dynamic>> _getCompletedWorkouts(

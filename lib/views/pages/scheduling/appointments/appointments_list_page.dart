@@ -20,6 +20,7 @@ import 'package:strengthwise/common_widgets/loading/skeleton_loader.dart';
 // ⭐ P3: Master-Detail 支援
 import 'package:strengthwise/views/shared/layouts/master_detail_layout.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appointment_details_content.dart';
+import 'package:strengthwise/common_widgets/dialogs/reason_input_dialog.dart'; // ⭐ v3.9
 
 /// 預約列表頁面 - Phase 2
 ///
@@ -319,57 +320,14 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
     required String title,
     required String hintText,
   }) async {
-    final reasonController = TextEditingController();
-    
-    final reason = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text(title),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('請說明原因：'),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: reasonController,
-                    decoration: InputDecoration(
-                      hintText: hintText,
-                      border: const OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
-                    autofocus: true,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, null),
-                  child: const Text('返回'),
-                ),
-                FilledButton(
-                  onPressed: reasonController.text.trim().isEmpty
-                      ? null
-                      : () => Navigator.pop(context, reasonController.text.trim()),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.red,
-                  ),
-                  child: const Text('確定'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+    // ⭐ v3.9: 使用共用 ReasonInputDialog 避免 Controller dispose 問題
+    return ReasonInputDialog.show(
+      context,
+      title: title,
+      hintText: hintText,
+      cancelText: '返回',
+      confirmText: '確定',
     );
-
-    reasonController.dispose();
-    return reason;
   }
 
   /// 建立臨時課程（教練專用）⭐ v3.0

@@ -2,7 +2,7 @@
 
 > 專案文檔索引
 
-**最後更新**：2026-01-12
+**最後更新**：2026-01-17
 
 ---
 
@@ -42,6 +42,7 @@
 
 | 文檔 | 說明 |
 |------|------|
+| [planning/SYNC_ARCHITECTURE_SPEC.md](planning/SYNC_ARCHITECTURE_SPEC.md) | v4.0 同步架構規格（EventBus/Realtime/FCM）⭐ |
 | [planning/HOME_BOOKING_UX_SPEC.md](planning/HOME_BOOKING_UX_SPEC.md) | v3.1-B 首頁 + 行事曆 UX |
 | [planning/TESTING_STRATEGY.md](planning/TESTING_STRATEGY.md) | 測試策略（564 個通過）|
 | [planning/PRODUCTION_LAUNCH_GUIDE.md](planning/PRODUCTION_LAUNCH_GUIDE.md) | 生產環境發布指南 |
@@ -81,6 +82,7 @@
 | 了解技術架構 | `PROJECT_OVERVIEW.md` |
 | 查資料庫結構 | `DATABASE_SUPABASE.md` |
 | 查 UI 規範 | `UI_DEVELOPER_GUIDE.md` |
+| 查同步機制（EventBus/Realtime/FCM） | `planning/SYNC_ARCHITECTURE_SPEC.md` |
 | 查訓練權限邏輯 | `planning/archived/TRAINING_PERMISSION_MATRIX.md` |
 | 部署應用 | `DEPLOYMENT_GUIDE.md` |
 | 配置推播通知 | `FCM_SETUP_GUIDE.md` |

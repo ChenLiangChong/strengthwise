@@ -15,10 +15,14 @@ import 'services/core/theme_service.dart';
 import 'services/core/network_status_service.dart';
 import 'views/widgets/offline_banner.dart';
 import 'services/interfaces/i_notification_service.dart'; // 基礎設施服務，保留
+import 'services/notification/notification_router.dart'; // ⭐ v3.9: 通知路由
 import 'controllers/interfaces/i_auth_controller.dart'; // ⭐ v3.6: MVVM
 import 'controllers/interfaces/i_statistics_controller.dart'; // ⭐ v3.6: MVVM
 import 'controllers/theme_controller.dart';
 import 'themes/app_theme.dart';
+
+/// ⭐ v3.9: 全局 Navigator Key，用於通知點擊導航
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// 應用程式入口
 void main() {
@@ -110,13 +114,14 @@ Future<void> _initializeHive() async {
     await Hive.initFlutter();
 
     // ⚡ 並行打開所有 Box（只開不讀，極快）
+    // ⭐ v3.7: 修正 Box 名稱，與 LocalCacheService 對齊
     await Future.wait([
       Hive.openBox('user_cache'),
       Hive.openBox('relationship_cache'),
       Hive.openBox('statistics_cache'),
-      Hive.openBox('workout_plan_cache'),
-      Hive.openBox('exercise_cache'),
-      Hive.openBox('onboarding_status'), // ⭐ v3.2: Onboarding 狀態
+      Hive.openBox('workout_plans_cache'),  // 修正：對齊 WorkoutPlanLocalCacheService
+      Hive.openBox('exercises_cache'),       // 修正：對齊 ExerciseLocalCacheService
+      Hive.openBox('onboarding_status'),     // ⭐ v3.2: Onboarding 狀態
     ]);
 
     final duration = DateTime.now().difference(startTime);
@@ -222,7 +227,8 @@ void _warmupStatisticsCache() {
 ///
 /// 1. 初始化 NotificationService
 /// 2. 如果用戶已登入，自動保存 FCM Token
-/// 3. 設置 Token 變化監聽
+/// 3. 設置 Token 變化監聯
+/// 4. ⭐ v3.9: 設置通知點擊導航回調
 Future<void> _initializeFCM() async {
   try {
     // 只在 Android/iOS 上初始化
@@ -235,6 +241,10 @@ Future<void> _initializeFCM() async {
 
     final notificationService = serviceLocator<INotificationService>();
     await notificationService.initialize();
+
+    // ⭐ v3.9: 設置通知點擊導航回調
+    final notificationRouter = NotificationRouter(navigatorKey: navigatorKey);
+    notificationService.setOnNotificationTap(notificationRouter.handleNotificationTap);
 
     // ⭐ v3.6: MVVM 重構 - 透過 Controller 檢查登入狀態
     final authController = serviceLocator<IAuthController>();
@@ -319,6 +329,9 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'StrengthWise',
             debugShowCheckedModeBanner: false,
+            
+            // ⭐ v3.9: 全局導航 Key，用於通知點擊導航
+            navigatorKey: navigatorKey,
 
             // ========================================
             // Kinetic 設計系統主題（支援粉色主題 🌸）

@@ -2,121 +2,61 @@
 
 > 下一步計劃、當前版本、未來規劃
 
-**當前版本**：v3.6（2026-01-15 完成）  
-**上一版本**：v3.5（2026-01-15 完成）  
+**當前版本**：v4.0（2026-01-17 完成）  
+**上一版本**：v3.9（2026-01-17 完成）  
 **維護者**：StrengthWise 開發團隊
 
 ---
 
 ## 📋 目錄
 
-- [v3.6 已完成](#v36-已完成)
+- [已完成版本](#已完成版本)
 - [未來計劃](#未來計劃)
 - [已完成功能](#已完成功能)
 
 ---
 
-## v3.6 已完成
+## 已完成版本
 
-> MVVM 純架構重構 - View 層完全透過 Controller 操作
+### ✅ v3.9 跨用戶即時同步 + FCM 完善（已完成）
 
-### 完成項目
+> 詳細說明：[VERSION_HISTORY.md](archived/VERSION_HISTORY.md#v39-跨用戶即時同步--fcm-完善2026-01-17-完成)
 
-| 項目 | 說明 |
-|------|------|
-| ✅ MVVM 100% 合規 | View 層不再直接調用 Service（含 CUD 和 Query）|
-| ✅ Controller 介面擴展 | 新增純查詢方法，支援 View 層數據獲取 |
-| ✅ IStatisticsController 擴展 | 新增 6 個查詢方法（getStrengthProgress 等）|
-| ✅ IWorkoutController 擴展 | 新增 getRecordById、getCoachCreatedPlans 等 |
-| ✅ 全專案 Service 調用清理 | 60+ 個 View 檔案的 Service 調用改為 Controller |
+- Realtime 跨用戶同步（4 個表：availability_slots、client_availability、appointments、workout_plans）
+- FCM 推播完善（NotificationRouter、workout_plans 通知）
+- EventBus 擴展（9 個新事件類型）
+- BookingPage Tab 1 顯示教練自己的可上課時段
+- 增量刪除優化 + ReasonInputDialog 共用組件
 
-### 架構成果
+### ✅ v3.8 時間輸入 UX 優化（已完成）
 
-```
-View Layer → Controller Layer → Service Layer
-    ↑              ↑                 ↑
-  只負責 UI      業務邏輯         數據存取
-              + 事件發布        + 快取管理
-              + 狀態管理        + 本地持久化
-```
+> 詳細說明：[VERSION_HISTORY.md](archived/VERSION_HISTORY.md#v38-時間輸入-ux-優化2026-01-17-完成)
 
-### 修改檔案（重點）
+- TimeInputField 通用組件（分鐘:秒數雙欄位輸入）
+- 訓練執行計時器（每 Set 倒數計時，自動完成 + 震動）
+- 模板編輯優化（移除休息時間欄位）
 
-| 類型 | 檔案數 | 說明 |
-|------|--------|------|
-| Controller 介面 | 8+ | 新增純查詢方法到 Interface |
-| View 層 | 60+ | Service 調用改為 Controller 調用 |
-| main.dart | 1 | 使用 IAuthController/IStatisticsController |
+### ✅ v3.7 快取架構統一（已完成）
 
-### 擴展的 Controller 介面
+> 詳細說明：[VERSION_HISTORY.md](archived/VERSION_HISTORY.md#v37-快取架構統一--di-優化--bug-修復2026-01-17-完成)
 
-| Controller | 新增方法 |
-|------------|---------|
-| `IStatisticsController` | `getStrengthProgress()`, `getExercisesWithRecords()`, `clearStatisticsCache()`, `warmupFromLocalCache()`, `preloadAllTimeRanges()`, `getStatistics()` |
-| `IWorkoutController` | `getRecordById()`, `getCoachCreatedPlans()`, `getTodayPlans()`, `getUserTemplates()` |
-| `ProfileController` | `getCurrentUserProfile()`, `getUserProfile()`, `upsertCoachAssessmentNote()` |
-| `CoachingRelationshipController` | `getCoachClientsWithRelationship()`, `hasActiveCoach()` |
-| `AppointmentController` | `getUserAppointments()` |
+- 快取統一到 Service 層（Workout、Booking、Note、Custom Exercise）
+- Controller Singleton 優化（ExerciseController、AuthController）
+- Hive 解析修復、Box 名稱對齊
+- 重複卡片 Bug、setState during build 修復
+- Android 11+ URL 啟動支援
 
----
+### ✅ v3.6 MVVM 純架構重構（已完成）
 
-## ✅ v3.5 MVVM CUD 事件修復（已完成）
+- MVVM 100% 合規（View 不再直接調用 Service）
+- Controller 介面擴展（IStatisticsController、IWorkoutController 等）
+- 60+ 個 View 檔案的 Service 調用改為 Controller
 
-> View 層 CUD 操作改為透過 Controller，事件由 Controller 統一發布
+### ✅ v3.5 MVVM CUD 事件修復（已完成）
 
-### 已修復項目
-
-| 檔案 | 原違規操作 | 修復方案 |
-|------|----------|---------|
-| `home_page.dart` | `_appointmentService.confirmAppointment()` | → `AppointmentController.confirmAppointment()` |
-| `home_page.dart` | `_appointmentService.cancelAppointment()` | → `AppointmentController.rejectAppointment()` |
-| `home_page.dart` | `_workoutService.deleteRecord()` | → `WorkoutController.deleteRecord()` |
-| `booking_page.dart` | `_appointmentService.createAppointment()` | → `AppointmentController.createAppointment()` |
-| `booking_page.dart` | `_workoutService.deleteRecord()` | → `WorkoutController.deleteRecord()` |
-| `training_page.dart` | `_workoutService.createRecord()` | → `WorkoutController.createRecord()` |
-| `template_editor_page.dart` | `_workoutService.createTemplate()` | → `WorkoutController.createTemplate()` |
-| `template_editor_page.dart` | `_workoutService.updateTemplate()` | → `WorkoutController.updateTemplate()` |
-| `plan_editor_page.dart` | `_workoutService.createTemplate()` | → `WorkoutController.createTemplate()` |
-| `plan_editor_page.dart` | `_workoutService.create/updateRecord()` | → `WorkoutController.create/updateRecord()` |
-| `adhoc_session_dialog.dart` | `_appointmentService.createAdHocSession()` | → `AppointmentController.createAdHocSession()` |
-| `client_workout_calendar_tab.dart` | `_workoutService.deleteRecord()` | → `WorkoutController.deleteRecord()` |
-| `template_management_page.dart` | `_workoutService.createRecord()` | → `WorkoutController.createRecord()` |
-
-### Controller 事件發布
-
-| Controller | 已內建事件 |
-|------------|----------|
-| `AppointmentController` | confirm/reject/cancel/complete/create/createAdHocSession 事件 |
-| `WorkoutController` | template CUD + workout record CUD 事件 |
-| `ClientManagementController` | workout CUD 事件 |
-| `BodyDataController` | bodyDataUpdated 事件 |
-
-### 額外修復項目（第二輪）
-
-| 檔案 | 原違規操作 | 修復方案 |
-|------|----------|---------|
-| `health_assessment_page.dart` | `_healthService.create/updateAssessment()` | → `ProfileController.create/updateHealthAssessment()` |
-| `health_assessment_page.dart` | `_injuryNoteService.delete/upsertNote()` | → `ProfileController.delete/upsertInjuryNote()` |
-| `favorite_exercises_list.dart` | `_favoritesService.removeFavorite()` | → `ExerciseController.removeFavorite()` |
-| `exercise_selection_navigator.dart` | `_favoritesService.add/removeFavorite()` | → `ExerciseController.add/removeFavorite()` |
-| `exercise_strength_detail_page.dart` | `_favoritesService.add/removeFavorite()` | → `ExerciseController.add/removeFavorite()` |
-| `client_management_page.dart` | `_relationshipService.deleteRelationship()` | → `CoachingRelationshipController.deleteRelationship()` |
-| `coach_display_preferences_page.dart` | `_preferencesService.updatePreferences()` | → `CoachProfileController.updateDisplayPreferences()` |
-| `booking_page.dart` | `_clientAvailabilityService.createAvailability()` | → `ClientAvailabilityController.createAvailability()` |
-
-### Controller 方法擴展
-
-| Controller | 新增方法 |
-|------------|---------|
-| `ExerciseController` | `addFavorite()`, `removeFavorite()` |
-| `ProfileController` | `createHealthAssessment()`, `updateHealthAssessment()`, `deleteInjuryNote()`, `upsertInjuryNote()` |
-| `CoachProfileController` | `updateDisplayPreferences()` |
-
-### 架構優化成果
-
-1. **事件發布集中**：所有需要跨頁面刷新的事件發布邏輯在 Controller 層統一處理
-2. **維護簡化**：修改事件邏輯只需修改 Controller
-3. **一致性保證**：透過 Controller 操作自動發布事件，不會遺漏
+- View 層 CUD 操作改為透過 Controller
+- 事件由 Controller 統一發布（AppEventBus）
+- 13 個 View 檔案修復
 
 ---
 
@@ -127,9 +67,17 @@ View Layer → Controller Layer → Service Layer
 | 優先級 | 項目 | 說明 |
 |--------|------|------|
 | 高 | Beta 測試準備 | 招募測試用戶、生產環境配置、性能驗證（perf-2~6）|
+| 高 | App 版本檢查 | 設定頁顯示版本號、檢查更新、強制更新機制（Supabase app_config 表）|
 | 中 | 訓練計劃模板市場 | 教練分享、學員訂閱 |
 | 低 | 社群功能 | 動態分享、排行榜 |
 | 低 | AI 功能 | 語音筆記（Whisper）、智能建議（GPT-4）|
+
+### 架構優化（非緊急）
+
+| 優先級 | 項目 | 說明 |
+|--------|------|------|
+| 低 | 統一 LocalCacheManager | 建立 Hive 快取統一入口，集中管理 5 個 LocalCacheService |
+| 低 | Controller 接口統一 | 12 個 Controller 缺少接口（Profile、Coaching、Appointment、EventBus、SessionNote 等），涉及 62 處 View 調用 |
 
 ### 教練公開檔案未來擴展
 
@@ -160,7 +108,11 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 | v3.3 | TrackingMode 統計適配、PR 修復、Migrations 整理 |
 | v3.4 | 傷病教練備註顯示、模板儲存優化 |
 | v3.5 | MVVM CUD 事件修復（Controller 統一發布事件）|
-| **v3.6** | **MVVM 純架構重構（View 完全透過 Controller）** |
+| v3.6 | MVVM 純架構重構（View 完全透過 Controller）|
+| v3.7 | 快取架構統一 + DI 優化 + Bug 修復 |
+| v3.8 | 時間輸入 UX 優化 + 訓練執行計時器 |
+| v3.9 | 跨用戶即時同步 + FCM 完善 + BookingPage 優化 |
+| **v4.0** | **v3.9 進版（里程碑版本）** |
 
 **詳細版本歷史**：[archived/VERSION_HISTORY.md](archived/VERSION_HISTORY.md)  
 **技術架構**：[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)  
@@ -172,9 +124,11 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 
 | 項目 | 狀態 |
 |------|------|
-| v1.0-v3.6 | ✅ 100% |
+| v1.0-v4.0 | ✅ 100% |
 | 代碼品質 | ✅ 0 linter errors |
 | MVVM 架構 | ✅ 100% 合規 |
+| 快取架構 | ✅ Service 層統一管理 |
+| Realtime 同步 | ✅ 跨用戶即時同步 |
 
 **下一步重點**：
 1. Beta 測試準備
@@ -182,8 +136,10 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 
 ---
 
-> ✅ **v3.6 完成**（2026-01-15）：MVVM 純架構重構
+> ✅ **v4.0 完成**（2026-01-17）：跨用戶即時同步 + FCM 完善 + BookingPage 優化
 >
-> 📱 **Google Play**：內部測試已發布（v1.0.0），等待 Google 審核
+> 📱 **Google Play**：v1.1.0+15（2026-01-17 發布）
+>
+> 🌐 **Web**：v1.1.0（2026-01-17 發布）
 >
 > 🤖 **CI/CD**：GitHub Actions 已配置（analyze + test + build）

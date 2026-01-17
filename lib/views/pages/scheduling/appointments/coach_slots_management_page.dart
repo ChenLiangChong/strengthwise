@@ -1,5 +1,8 @@
 // ✅ 已響應式改造 (Phase 0) - SlotCalendarView 組件處理
 // ✅ v3.2: Coach Mark 引導
+// ✅ v3.9: Realtime + EventBus 訂閱（學員查看教練時段）
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
@@ -9,6 +12,8 @@ import 'package:strengthwise/controllers/availability_slot_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/controllers/appointment_controller.dart';
 import 'package:strengthwise/controllers/event_bus_controller.dart'; // ⭐ v3.5
+import 'package:strengthwise/controllers/realtime_controller.dart'; // ⭐ v3.9
+import 'package:strengthwise/services/core/app_event_bus.dart'; // ⭐ v3.9
 import 'package:strengthwise/models/availability_slot_model.dart';
 import 'package:strengthwise/models/appointment_model.dart';
 import 'package:strengthwise/services/interfaces/i_availability_slot_service.dart';
@@ -53,6 +58,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
   late final IAuthController _authController;
   late final AppointmentController _appointmentController;
   late final EventBusController _eventBusController; // ⭐ v3.5
+  late final RealtimeController _realtimeController; // ⭐ v3.9
 
   String? _currentUserId;
   DateTime _selectedDate = DateTime.now();
@@ -61,6 +67,12 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
   // ⭐ v3.2: Coach Mark 引導
   final GlobalKey _fabKey = GlobalKey();
   bool _coachMarkShown = false;
+  
+  // ⭐ v3.9: Realtime 訂閱 ID（學員查看教練時段時使用）
+  String? _realtimeSubscriptionId;
+  
+  // ⭐ v3.9: EventBus 訂閱（DELETE 事件）
+  StreamSubscription<AppEvent>? _availabilitySubscription;
 
   @override
   void initState() {
@@ -69,12 +81,63 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
     _authController = serviceLocator<IAuthController>();
     _appointmentController = serviceLocator<AppointmentController>();
     _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.5
+    _realtimeController = serviceLocator<RealtimeController>(); // ⭐ v3.9
     _initializeAndLoad();
+    
+    // ⭐ v3.9: 學員查看教練時段 → 訂閱 Realtime + EventBus
+    _subscribeRealtimeIfNeeded();
+    _subscribeEventBusIfNeeded();
     
     // ⭐ v3.2: 檢查 Coach Mark 引導
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkCoachMark();
     });
+  }
+  
+  /// ⭐ v3.9: 如果是學員查看教練時段，訂閱 Realtime
+  void _subscribeRealtimeIfNeeded() {
+    // 只有學員查看模式（isViewMode=true 且有 coachId）才需要 Realtime
+    if (widget.isViewMode && widget.coachId != null) {
+      if (kDebugMode) {
+        debugPrint('[CoachSlotsPage] 🔴 訂閱教練時段 Realtime: ${widget.coachId}');
+      }
+      _realtimeSubscriptionId = _realtimeController.subscribeToCoachSlots(
+        coachId: widget.coachId!,
+        onUpdate: _onRealtimeUpdate,
+      );
+    }
+  }
+  
+  /// ⭐ v3.9: Realtime 更新回調（INSERT 事件）
+  void _onRealtimeUpdate() {
+    if (!mounted) return;
+    if (kDebugMode) {
+      debugPrint('[CoachSlotsPage] ⚡ Realtime INSERT: 教練時段更新');
+    }
+    _loadSlots();
+  }
+  
+  /// ⭐ v3.9: 訂閱 EventBus（DELETE 事件）
+  void _subscribeEventBusIfNeeded() {
+    if (widget.isViewMode && widget.coachId != null) {
+      _availabilitySubscription = _eventBusController.availabilityEvents.listen(_onAvailabilityEvent);
+    }
+  }
+  
+  /// ⭐ v3.9: EventBus 時段事件回調（DELETE 事件 - 增量刪除）
+  void _onAvailabilityEvent(AppEvent event) {
+    if (!mounted) return;
+    
+    if (event.type == AppEventType.availabilitySlotDeleted) {
+      final deletedId = event.entityId;
+      if (deletedId != null && event.userId == widget.coachId) {
+        if (kDebugMode) {
+          debugPrint('[CoachSlotsPage] ⚡ EventBus DELETE: 教練時段刪除 id=$deletedId');
+        }
+        // ⭐ v3.9: 增量刪除，不需要全量刷新
+        _slotController.removeSlotById(deletedId);
+      }
+    }
   }
   
   // ⭐ v3.2: 檢查是否顯示 Coach Mark
@@ -121,6 +184,11 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
 
   @override
   void dispose() {
+    // ⭐ v3.9: 取消訂閱
+    if (_realtimeSubscriptionId != null) {
+      _realtimeController.unsubscribe(_realtimeSubscriptionId!);
+    }
+    _availabilitySubscription?.cancel();
     _slotController.clearAll();
     super.dispose();
   }

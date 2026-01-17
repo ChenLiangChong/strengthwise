@@ -48,12 +48,22 @@ enum AppEventType {
   /// 身體數據更新（體重、體脂等）
   bodyDataUpdated,
 
-  // ==================== 教練時段（未來擴展）====================
+  // ==================== 教練時段 ⭐ v3.9 ====================
   /// 教練新增可預約時段
   availabilitySlotCreated,
 
   /// 教練刪除可預約時段
   availabilitySlotDeleted,
+
+  // ==================== 學員可訓練時間 ⭐ v3.9 ====================
+  /// 學員新增可訓練時間
+  clientAvailabilityCreated,
+
+  /// 學員更新可訓練時間
+  clientAvailabilityUpdated,
+
+  /// 學員刪除可訓練時間
+  clientAvailabilityDeleted,
 
   // ==================== 關係（未來擴展）====================
   /// 建立教練學員關係
@@ -358,6 +368,122 @@ class AppEventBus {
       entityId: templateId,
       userId: userId,
       timestamp: DateTime.now(),
+    ));
+  }
+
+  /// 便捷方法：發布預約重新安排事件 ⭐ v3.9
+  void publishAppointmentRescheduled({
+    required String appointmentId,
+    required String coachId,
+    required String clientId,
+  }) {
+    publish(AppEvent(
+      type: AppEventType.appointmentRescheduled,
+      entityId: appointmentId,
+      timestamp: DateTime.now(),
+      metadata: {
+        'coachId': coachId,
+        'clientId': clientId,
+      },
+    ));
+  }
+
+  /// 便捷方法：發布關係建立事件 ⭐ v3.9
+  void publishRelationshipCreated({
+    required String relationshipId,
+    required String coachId,
+    required String clientId,
+  }) {
+    publish(AppEvent(
+      type: AppEventType.relationshipCreated,
+      entityId: relationshipId,
+      timestamp: DateTime.now(),
+      metadata: {
+        'coachId': coachId,
+        'clientId': clientId,
+      },
+    ));
+  }
+
+  /// 便捷方法：發布教練時段建立事件 ⭐ v3.9
+  void publishAvailabilitySlotCreated({
+    required String slotId,
+    required String coachId,
+  }) {
+    publish(AppEvent(
+      type: AppEventType.availabilitySlotCreated,
+      entityId: slotId,
+      userId: coachId,
+      timestamp: DateTime.now(),
+    ));
+  }
+
+  /// 便捷方法：發布教練時段刪除事件 ⭐ v3.9
+  void publishAvailabilitySlotDeleted({
+    required String slotId,
+    required String coachId,
+  }) {
+    publish(AppEvent(
+      type: AppEventType.availabilitySlotDeleted,
+      entityId: slotId,
+      userId: coachId,
+      timestamp: DateTime.now(),
+    ));
+  }
+
+  /// 便捷方法：發布學員可訓練時間建立事件 ⭐ v3.9
+  void publishClientAvailabilityCreated({
+    required String availabilityId,
+    required String clientId,
+  }) {
+    publish(AppEvent(
+      type: AppEventType.clientAvailabilityCreated,
+      entityId: availabilityId,
+      userId: clientId,
+      timestamp: DateTime.now(),
+    ));
+  }
+
+  /// 便捷方法：發布學員可訓練時間更新事件 ⭐ v3.9
+  void publishClientAvailabilityUpdated({
+    required String availabilityId,
+    required String clientId,
+  }) {
+    publish(AppEvent(
+      type: AppEventType.clientAvailabilityUpdated,
+      entityId: availabilityId,
+      userId: clientId,
+      timestamp: DateTime.now(),
+    ));
+  }
+
+  /// 便捷方法：發布學員可訓練時間刪除事件 ⭐ v3.9
+  void publishClientAvailabilityDeleted({
+    required String availabilityId,
+    required String clientId,
+  }) {
+    publish(AppEvent(
+      type: AppEventType.clientAvailabilityDeleted,
+      entityId: availabilityId,
+      userId: clientId,
+      timestamp: DateTime.now(),
+    ));
+  }
+
+  /// 便捷方法：發布課程筆記更新事件 ⭐ v3.9
+  void publishSessionNoteUpdated({
+    required String noteId,
+    required String coachId,
+    required String clientId,
+  }) {
+    publish(AppEvent(
+      type: AppEventType.sessionNoteUpdated,
+      entityId: noteId,
+      timestamp: DateTime.now(),
+      metadata: {
+        'coachId': coachId,
+        'clientId': clientId,
+      },
     ));
   }
 

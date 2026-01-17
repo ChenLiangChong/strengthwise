@@ -1,6 +1,7 @@
 // ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:strengthwise/common_widgets/time_picker/time_input_field.dart';
 import 'package:strengthwise/models/workout_exercise_model.dart';
 import 'package:strengthwise/models/tracking_mode.dart'; // v3.2+
 import 'package:strengthwise/utils/responsive/responsive.dart';
@@ -618,13 +619,11 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
           const SizedBox(width: 8),
           Expanded(
             flex: 3,
-            child: _buildNumberInputField(
+            child: _buildTimeInputField(
               context,
               colorScheme,
               setIndex,
-              'time',
-              value: (targetTime ?? 0).toString(),
-              hintText: 'sec',
+              value: targetTime,
               isEditable: isEditable,
             ),
           ),
@@ -648,13 +647,11 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
         return [
           Expanded(
             flex: 6,
-            child: _buildNumberInputField(
+            child: _buildTimeInputField(
               context,
               colorScheme,
               setIndex,
-              'time',
-              value: (targetTime ?? 0).toString(),
-              hintText: 'sec',
+              value: targetTime,
               isEditable: isEditable,
             ),
           ),
@@ -676,13 +673,11 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
           const SizedBox(width: 8),
           Expanded(
             flex: 3,
-            child: _buildNumberInputField(
+            child: _buildTimeInputField(
               context,
               colorScheme,
               setIndex,
-              'time',
-              value: (targetTime ?? 0).toString(),
-              hintText: 'sec',
+              value: targetTime,
               isEditable: isEditable,
             ),
           ),
@@ -705,13 +700,11 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
           const SizedBox(width: 8),
           Expanded(
             flex: 3,
-            child: _buildNumberInputField(
+            child: _buildTimeInputField(
               context,
               colorScheme,
               setIndex,
-              'time',
-              value: (targetTime ?? 0).toString(),
-              hintText: 'sec',
+              value: targetTime,
               isEditable: isEditable,
             ),
           ),
@@ -849,6 +842,24 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
     // 通過 onBatchUpdate 傳遞完整的更新資訊
     // 由於我們需要知道是哪一組，需要擴展回調
     widget.onBatchUpdate({'setIndex': setIndex, ...currentTarget});
+  }
+
+  /// ⭐ v3.7+: 時間輸入欄位（mm:ss 格式）
+  Widget _buildTimeInputField(
+    BuildContext context,
+    ColorScheme colorScheme,
+    int setIndex, {
+    required int? value,
+    required bool isEditable,
+  }) {
+    return TimeInputField(
+      value: value,
+      enabled: isEditable,
+      onChanged: (seconds) {
+        _updateSetTarget(setIndex, 'time', seconds ?? 0);
+      },
+      minWidth: 60,
+    );
   }
 
   /// v3.2+ 根據追蹤模式格式化目標顯示

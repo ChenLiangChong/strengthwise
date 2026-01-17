@@ -1,5 +1,6 @@
 // ✅ 已響應式改造 (Phase 0) - 表單頁，複雜操作不約束
 import 'package:flutter/material.dart';
+import 'package:strengthwise/common_widgets/time_picker/time_input_field.dart';
 import 'package:strengthwise/models/workout_template_model.dart';
 import 'package:strengthwise/models/workout_exercise_model.dart'
     as exercise_models;
@@ -256,204 +257,21 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
 
   /// 編輯訓練動作設置（簡化設定）
   /// v3.2+ 根據 trackingMode 顯示不同欄位
-  void _editExerciseSettings(int index) {
+  /// v3.7+ 使用獨立 Dialog Widget 支援 TimeInputField
+  void _editExerciseSettings(int index) async {
     final exercise = _exercises[index];
-    final trackingMode = exercise.trackingMode;
-
-    final setsController =
-        TextEditingController(text: exercise.sets.toString());
-    final repsController =
-        TextEditingController(text: exercise.reps.toString());
-    final weightController =
-        TextEditingController(text: exercise.weight.toString());
-    final restTimeController =
-        TextEditingController(text: exercise.restTime.toString());
-    final notesController = TextEditingController(text: exercise.notes);
-    // v3.2+ 新增控制器
-    final timeController =
-        TextEditingController(text: (exercise.time ?? 0).toString());
-    final distanceController =
-        TextEditingController(text: (exercise.distance ?? 0).toString());
-    final caloriesController =
-        TextEditingController(text: (exercise.calories ?? 0).toString());
-
-    showDialog(
+    
+    final result = await showDialog<exercise_models.WorkoutExercise>(
       context: context,
-      barrierDismissible: false, // 修復：防止點擊外部關閉
-      builder: (context) => AlertDialog(
-        title: Text('編輯 ${exercise.name}'), // 使用完整 name
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 組數（所有模式都需要）
-              TextField(
-                controller: setsController,
-                decoration: const InputDecoration(
-                  labelText: '目標組數',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 10),
-              // v3.2+ 根據 trackingMode 顯示對應欄位
-              ..._buildTrackingModeFields(
-                trackingMode,
-                repsController,
-                weightController,
-                timeController,
-                distanceController,
-                caloriesController,
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: restTimeController,
-                decoration: const InputDecoration(
-                  labelText: '休息時間 (秒)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: notesController,
-                decoration: const InputDecoration(
-                  labelText: '備註',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final sets = int.tryParse(setsController.text);
-              final restTime = int.tryParse(restTimeController.text);
-
-              if (sets == null || restTime == null) {
-                NotificationUtils.showWarning(context, '請輸入有效的數值');
-                return;
-              }
-
-              // v3.2+ 根據 trackingMode 解析欄位
-              final reps = trackingMode.needsReps
-                  ? int.tryParse(repsController.text) ?? 0
-                  : 0;
-              final weight = trackingMode.needsWeight
-                  ? double.tryParse(weightController.text) ?? 0.0
-                  : 0.0;
-              final time = trackingMode.needsTime
-                  ? int.tryParse(timeController.text)
-                  : null;
-              final distance = trackingMode.needsDistance
-                  ? double.tryParse(distanceController.text)
-                  : null;
-              final calories = trackingMode.needsCalories
-                  ? double.tryParse(caloriesController.text)
-                  : null;
-
-              setState(() {
-                _exercises[index] = exercise.copyWith(
-                  sets: sets,
-                  reps: reps,
-                  weight: weight,
-                  restTime: restTime,
-                  notes: notesController.text,
-                  time: time,
-                  distance: distance,
-                  calories: calories,
-                  setTargets: null, // 模板不儲存詳細的每組設定
-                );
-              });
-
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(),
-            child: const Text('保存'),
-          ),
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (context) => _TemplateExerciseEditDialog(exercise: exercise),
     );
-  }
-
-  /// v3.2+ 根據追蹤模式構建輸入欄位
-  List<Widget> _buildTrackingModeFields(
-    TrackingMode trackingMode,
-    TextEditingController repsController,
-    TextEditingController weightController,
-    TextEditingController timeController,
-    TextEditingController distanceController,
-    TextEditingController caloriesController,
-  ) {
-    final fields = <Widget>[];
     
-    if (trackingMode.needsWeight) {
-      fields.add(TextField(
-        controller: weightController,
-        decoration: const InputDecoration(
-          labelText: '建議重量 (kg)',
-          border: OutlineInputBorder(),
-        ),
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      ));
-      fields.add(const SizedBox(height: 10));
+    if (result != null && mounted) {
+      setState(() {
+        _exercises[index] = result;
+      });
     }
-    
-    if (trackingMode.needsReps) {
-      fields.add(TextField(
-        controller: repsController,
-        decoration: const InputDecoration(
-          labelText: '目標次數',
-          border: OutlineInputBorder(),
-        ),
-        keyboardType: TextInputType.number,
-      ));
-      fields.add(const SizedBox(height: 10));
-    }
-    
-    if (trackingMode.needsTime) {
-      fields.add(TextField(
-        controller: timeController,
-        decoration: const InputDecoration(
-          labelText: '時間 (秒)',
-          border: OutlineInputBorder(),
-        ),
-        keyboardType: TextInputType.number,
-      ));
-      fields.add(const SizedBox(height: 10));
-    }
-    
-    if (trackingMode.needsDistance) {
-      fields.add(TextField(
-        controller: distanceController,
-        decoration: const InputDecoration(
-          labelText: '距離 (公尺)',
-          border: OutlineInputBorder(),
-        ),
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      ));
-      fields.add(const SizedBox(height: 10));
-    }
-    
-    if (trackingMode.needsCalories) {
-      fields.add(TextField(
-        controller: caloriesController,
-        decoration: const InputDecoration(
-          labelText: '卡路里 (kcal)',
-          border: OutlineInputBorder(),
-        ),
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      ));
-      fields.add(const SizedBox(height: 10));
-    }
-    
-    return fields;
   }
 
   /// 移除訓練動作
@@ -466,46 +284,34 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
   /// ⭐ v3.4: 根據 trackingMode 構建動作摘要顯示
   String _buildExerciseSummary(exercise_models.WorkoutExercise exercise) {
     final sets = exercise.sets;
-    final restTime = exercise.restTime;
     final trackingMode = exercise.trackingMode;
 
-    String mainInfo;
     switch (trackingMode) {
       case TrackingMode.weightReps:
-        mainInfo = '$sets 組 × ${exercise.reps} 次 @ ${exercise.weight} kg';
-        break;
+        return '$sets 組 × ${exercise.reps} 次 @ ${exercise.weight} kg';
       case TrackingMode.weightTime:
-        mainInfo = '$sets 組 × ${exercise.weight} kg × ${exercise.time ?? 30} 秒';
-        break;
+        return '$sets 組 × ${exercise.weight} kg × ${exercise.time ?? 30} 秒';
       case TrackingMode.repsOnly:
-        mainInfo = '$sets 組 × ${exercise.reps} 次';
-        break;
+        return '$sets 組 × ${exercise.reps} 次';
       case TrackingMode.timeOnly:
-        mainInfo = '$sets 組 × ${exercise.time ?? 30} 秒';
-        break;
+        return '$sets 組 × ${exercise.time ?? 30} 秒';
       case TrackingMode.repsTime:
-        mainInfo = '$sets 組 × ${exercise.reps} 次 × ${exercise.time ?? 5} 秒';
-        break;
+        return '$sets 組 × ${exercise.reps} 次 × ${exercise.time ?? 5} 秒';
       case TrackingMode.distanceTime:
         final distance = exercise.distance ?? 0;
         final distanceStr = distance >= 1000 
             ? '${(distance / 1000).toStringAsFixed(1)} km' 
             : '${distance.toInt()} m';
-        mainInfo = '$sets 組 × $distanceStr / ${_formatTime(exercise.time ?? 0)}';
-        break;
+        return '$sets 組 × $distanceStr / ${_formatTime(exercise.time ?? 0)}';
       case TrackingMode.distanceOnly:
         final distance = exercise.distance ?? 0;
         final distanceStr = distance >= 1000 
             ? '${(distance / 1000).toStringAsFixed(1)} km' 
             : '${distance.toStringAsFixed(1)} m';
-        mainInfo = '$sets 組 × $distanceStr';
-        break;
+        return '$sets 組 × $distanceStr';
       case TrackingMode.calories:
-        mainInfo = '$sets 組 × ${exercise.calories?.toInt() ?? 0} 卡';
-        break;
+        return '$sets 組 × ${exercise.calories?.toInt() ?? 0} 卡';
     }
-
-    return '$mainInfo | 休息 ${restTime}s';
   }
 
   /// 格式化時間（秒 → mm:ss）
@@ -708,5 +514,195 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
               ),
             ),
     );
+  }
+}
+
+/// ⭐ v3.7+: 模板動作編輯對話框
+/// 
+/// 獨立的 StatefulWidget，支援 TimeInputField
+class _TemplateExerciseEditDialog extends StatefulWidget {
+  final exercise_models.WorkoutExercise exercise;
+
+  const _TemplateExerciseEditDialog({required this.exercise});
+
+  @override
+  State<_TemplateExerciseEditDialog> createState() => _TemplateExerciseEditDialogState();
+}
+
+class _TemplateExerciseEditDialogState extends State<_TemplateExerciseEditDialog> {
+  late TextEditingController _setsController;
+  late TextEditingController _repsController;
+  late TextEditingController _weightController;
+  late TextEditingController _distanceController;
+  late TextEditingController _caloriesController;
+  late TextEditingController _notesController;
+  int? _timeValue;
+
+  @override
+  void initState() {
+    super.initState();
+    _setsController = TextEditingController(text: widget.exercise.sets.toString());
+    _repsController = TextEditingController(text: widget.exercise.reps.toString());
+    _weightController = TextEditingController(text: widget.exercise.weight.toString());
+    _distanceController = TextEditingController(text: (widget.exercise.distance ?? 0).toString());
+    _caloriesController = TextEditingController(text: (widget.exercise.calories ?? 0).toString());
+    _notesController = TextEditingController(text: widget.exercise.notes);
+    _timeValue = widget.exercise.time;
+  }
+
+  @override
+  void dispose() {
+    _setsController.dispose();
+    _repsController.dispose();
+    _weightController.dispose();
+    _distanceController.dispose();
+    _caloriesController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final trackingMode = widget.exercise.trackingMode;
+    
+    return AlertDialog(
+      title: Text('編輯 ${widget.exercise.name}'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _setsController,
+              decoration: const InputDecoration(
+                labelText: '目標組數',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 10),
+            ..._buildTrackingModeFields(trackingMode),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _notesController,
+              decoration: const InputDecoration(
+                labelText: '備註',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        ElevatedButton(
+          onPressed: _onSave,
+          child: const Text('保存'),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildTrackingModeFields(TrackingMode trackingMode) {
+    final fields = <Widget>[];
+    
+    if (trackingMode.needsWeight) {
+      fields.add(TextField(
+        controller: _weightController,
+        decoration: const InputDecoration(
+          labelText: '建議重量 (kg)',
+          border: OutlineInputBorder(),
+        ),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      ));
+      fields.add(const SizedBox(height: 10));
+    }
+    
+    if (trackingMode.needsReps) {
+      fields.add(TextField(
+        controller: _repsController,
+        decoration: const InputDecoration(
+          labelText: '目標次數',
+          border: OutlineInputBorder(),
+        ),
+        keyboardType: TextInputType.number,
+      ));
+      fields.add(const SizedBox(height: 10));
+    }
+    
+    if (trackingMode.needsTime) {
+      fields.add(TimeInputField(
+        value: _timeValue,
+        onChanged: (seconds) => setState(() => _timeValue = seconds),
+        useOutlineBorder: true,
+        labelText: '時間',
+      ));
+      fields.add(const SizedBox(height: 10));
+    }
+    
+    if (trackingMode.needsDistance) {
+      fields.add(TextField(
+        controller: _distanceController,
+        decoration: const InputDecoration(
+          labelText: '距離 (公尺)',
+          border: OutlineInputBorder(),
+        ),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      ));
+      fields.add(const SizedBox(height: 10));
+    }
+    
+    if (trackingMode.needsCalories) {
+      fields.add(TextField(
+        controller: _caloriesController,
+        decoration: const InputDecoration(
+          labelText: '卡路里 (kcal)',
+          border: OutlineInputBorder(),
+        ),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      ));
+      fields.add(const SizedBox(height: 10));
+    }
+    
+    return fields;
+  }
+
+  void _onSave() {
+    final sets = int.tryParse(_setsController.text);
+    
+    if (sets == null) {
+      NotificationUtils.showWarning(context, '請輸入有效的組數');
+      return;
+    }
+
+    final trackingMode = widget.exercise.trackingMode;
+    final reps = trackingMode.needsReps
+        ? int.tryParse(_repsController.text) ?? 0
+        : 0;
+    final weight = trackingMode.needsWeight
+        ? double.tryParse(_weightController.text) ?? 0.0
+        : 0.0;
+    final distance = trackingMode.needsDistance
+        ? double.tryParse(_distanceController.text)
+        : null;
+    final calories = trackingMode.needsCalories
+        ? double.tryParse(_caloriesController.text)
+        : null;
+
+    final updatedExercise = widget.exercise.copyWith(
+      sets: sets,
+      reps: reps,
+      weight: weight,
+      notes: _notesController.text,
+      time: _timeValue,
+      distance: distance,
+      calories: calories,
+      setTargets: null, // 模板不儲存詳細的每組設定
+    );
+
+    Navigator.pop(context, updatedExercise);
   }
 }

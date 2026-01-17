@@ -7,14 +7,17 @@ import 'session_note/session_note_state_manager.dart';
 import 'session_note/session_note_query_manager.dart';
 import 'session_note/session_note_crud_operations.dart';
 import 'session_note/session_note_storage_operations.dart';
+import 'event_bus_controller.dart'; // ⭐ v3.9: EventBus
 
 /// SessionNoteController - Phase 3 課程筆記控制器
 ///
 /// 管理課程筆記的創建、查詢、更新、刪除以及 Storage 檔案上傳
 /// 遵循完全解耦架構（透過 Interface 注入依賴）+ 子模組化設計
+/// ⭐ v3.9: 統一發布筆記事件（Controller 層負責事件發布）
 class SessionNoteController extends ChangeNotifier {
   final ISessionNoteService _noteService;
   final ErrorHandlingService _errorService;
+  final EventBusController _eventBusController; // ⭐ v3.9: EventBus
 
   // 子模組
   late final SessionNoteStateManager _state;
@@ -25,6 +28,7 @@ class SessionNoteController extends ChangeNotifier {
   SessionNoteController(
     this._noteService,
     this._errorService,
+    this._eventBusController, // ⭐ v3.9: EventBus
   ) {
     _state = SessionNoteStateManager();
     _query = SessionNoteQueryManager(_noteService, _state);
@@ -171,23 +175,47 @@ class SessionNoteController extends ChangeNotifier {
   // ============================================================================
 
   /// 創建新筆記
+  /// ⭐ v3.9: 操作成功後自動發布事件
   Future<SessionNoteModel?> createNote(SessionNoteModel note) async {
     SessionNoteModel? createdNote;
     
     await _executeOperation(() async {
       createdNote = await _crud.createNote(note);
     }, '創建筆記失敗');
+
+    // ⭐ v3.9: 發布筆記更新事件
+    final coachId = createdNote?.coachId;
+    final clientId = createdNote?.clientId;
+    if (createdNote != null && coachId != null && clientId != null) {
+      _eventBusController.publishSessionNoteUpdated(
+        noteId: createdNote!.id,
+        coachId: coachId,
+        clientId: clientId,
+      );
+    }
     
     return createdNote;
   }
 
   /// 更新筆記內容
+  /// ⭐ v3.9: 操作成功後自動發布事件
   Future<SessionNoteModel?> updateNote(SessionNoteModel note) async {
     SessionNoteModel? updatedNote;
     
     await _executeOperation(() async {
       updatedNote = await _crud.updateNote(note);
     }, '更新筆記失敗');
+
+    // ⭐ v3.9: 發布筆記更新事件
+    final coachId = updatedNote?.coachId;
+    final clientId = updatedNote?.clientId;
+    if (updatedNote != null && coachId != null && clientId != null) {
+      _eventBusController.publishSessionNoteUpdated(
+        noteId: updatedNote!.id,
+        coachId: coachId,
+        clientId: clientId,
+      );
+    }
     
     return updatedNote;
   }
@@ -204,13 +232,33 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 刪除筆記
+  /// ⭐ v3.9: 操作成功後自動發布事件
   Future<bool> deleteNote(String noteId) async {
     bool success = false;
+
+    // 先從現有筆記中獲取資訊用於事件發布
+    SessionNoteModel? note;
+    try {
+      note = _state.notes.firstWhere((n) => n.id == noteId);
+    } catch (_) {
+      // 如果找不到，note 保持 null
+    }
     
     await _executeOperation(() async {
       await _crud.deleteNote(noteId);
       success = true;
     }, '刪除筆記失敗');
+
+    // ⭐ v3.9: 發布筆記更新事件
+    final coachId = note?.coachId;
+    final clientId = note?.clientId;
+    if (success && coachId != null && coachId.isNotEmpty && clientId != null) {
+      _eventBusController.publishSessionNoteUpdated(
+        noteId: noteId,
+        coachId: coachId,
+        clientId: clientId,
+      );
+    }
     
     return success;
   }
@@ -387,37 +435,43 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 生成 Signed URL（24 小時有效）
+  /// ⭐ v3.7: 不使用 _executeOperation，避免在 build 過程中觸發 notifyListeners
   Future<String?> generateSignedUrl({
     required String bucket,
     required String path,
   }) async {
-    String? url;
-    
-    await _executeOperation(() async {
-      url = await _storage.generateSignedUrl(
+    try {
+      return await _storage.generateSignedUrl(
         bucket: bucket,
         path: path,
       );
-    }, '生成存取網址失敗');
-    
-    return url;
+    } catch (e) {
+      _errorService.logError(
+        '生成存取網址失敗: $e',
+        type: 'SessionNoteControllerError',
+      );
+      return null;
+    }
   }
 
   /// 根據元素類型生成 Signed URL
+  /// ⭐ v3.7: 不使用 _executeOperation，避免在 build 過程中觸發 notifyListeners
   Future<String?> generateSignedUrlByElementType({
     required String elementType,
     required String path,
   }) async {
-    String? url;
-    
-    await _executeOperation(() async {
-      url = await _storage.generateSignedUrlByElementType(
+    try {
+      return await _storage.generateSignedUrlByElementType(
         elementType: elementType,
         path: path,
       );
-    }, '生成存取網址失敗');
-    
-    return url;
+    } catch (e) {
+      _errorService.logError(
+        '生成存取網址失敗: $e',
+        type: 'SessionNoteControllerError',
+      );
+      return null;
+    }
   }
 
   /// 刪除 Storage 檔案

@@ -57,11 +57,33 @@ import '../cache/relationship_local_cache_service.dart';
 import '../core/error_handling_service.dart';
 import '../notification/notification_service.dart';
 import '../realtime/session_realtime_service.dart';
+import '../realtime/realtime_subscription_manager.dart';
 import '../core/onboarding_service.dart';
 
 /// 服務註冊器
 ///
 /// 負責將所有服務註冊到服務定位器
+///
+/// ### 註冊策略
+///
+/// 所有 Service 統一使用 **LazySingleton**（首次使用時創建，全局共享）
+///
+/// ### 設計原則（v3.7+）
+///
+/// 1. **Service 層負責數據快取和持久化**
+///    - 本地快取服務（Hive）：StatisticsLocalCacheService、UserLocalCacheService 等
+///    - 業務服務快取：WorkoutService、StatisticsService 內部快取
+///
+/// 2. **Controller 層透過 Interface 使用 Service**
+///    - 依賴反轉：Controller 依賴 IWorkoutService，不是 WorkoutServiceSupabase
+///    - 支援測試時 Mock
+///
+/// 3. **快取策略**
+///    ```
+///    啟動時：Hive → 記憶體（預熱，讓用戶立即看到數據）
+///    查詢時：記憶體 → Hive → Supabase（效能優先）
+///    寫入時：Supabase → Hive + 記憶體（同步更新）
+///    ```
 class ServiceRegistry {
   /// 註冊所有服務層（懶加載單例）
   static void registerServices(GetIt serviceLocator) {
@@ -90,6 +112,7 @@ class ServiceRegistry {
     _registerNotificationService(serviceLocator);
     _registerSessionRealtimeService(serviceLocator);
     _registerOnboardingService(serviceLocator);
+    _registerRealtimeSubscriptionManager(serviceLocator);
   }
 
   /// ⚡ 註冊本地快取服務（Phase 2 持久化優化）
@@ -425,6 +448,17 @@ class ServiceRegistry {
     if (!serviceLocator.isRegistered<OnboardingService>()) {
       serviceLocator.registerLazySingleton<OnboardingService>(
         () => OnboardingService(),
+      );
+    }
+  }
+
+  /// ⭐ v3.9: 註冊 Realtime 訂閱管理器
+  static void _registerRealtimeSubscriptionManager(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<RealtimeSubscriptionManager>()) {
+      serviceLocator.registerLazySingleton<RealtimeSubscriptionManager>(
+        () => RealtimeSubscriptionManager(
+          supabase: Supabase.instance.client,
+        ),
       );
     }
   }

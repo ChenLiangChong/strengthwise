@@ -21,14 +21,30 @@ import 'package:strengthwise/views/pages/profile/widgets/profile_logout_button.d
 /// 個人檔案頁面
 ///
 /// 響應式設計：子組件已適配多尺寸螢幕
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
   @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  late final ProfileController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = serviceLocator<ProfileController>();
+    // ⭐ v3.7 修復：延遲到第一幀後載入，避免在 build 過程中呼叫 notifyListeners
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.loadUserProfile();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // ⭐ v3.2 修復：使用 .value 避免自動 dispose 單例 controller
     return ChangeNotifierProvider.value(
-      value: serviceLocator<ProfileController>()..loadUserProfile(),
+      value: _controller,
       child: const _ProfilePageContent(),
     );
   }

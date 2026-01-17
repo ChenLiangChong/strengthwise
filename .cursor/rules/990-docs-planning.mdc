@@ -9,6 +9,7 @@ globs: "docs/planning/**"
 
 ```
 docs/planning/
+├── SYNC_ARCHITECTURE_SPEC.md       ← v4.0 同步架構規格 ⭐ 新增
 ├── HOME_BOOKING_UX_SPEC.md         ← v3.1-B 首頁+行事曆 UX 🔄 開發中
 ├── BETA_RECRUITMENT_DESIGN.md      ← v3.4 Beta 招募設計 🔄 活躍
 ├── TESTING_STRATEGY.md             ← v3.1 測試策略 🔄 活躍

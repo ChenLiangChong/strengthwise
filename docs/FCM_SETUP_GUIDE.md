@@ -1,9 +1,24 @@
-# FCM 推播通知完整配置 ⭐ v3.0-C
+# FCM 推播通知完整配置 ⭐ v4.0
 
 > Firebase Cloud Messaging (HTTP v1 API) + Supabase Edge Functions 配置指南
 
 **建立日期**：2026-01-05  
-**目標版本**：v3.0-C（即時通訊）
+**最後更新**：2026-01-17（v4.0 - 新增 workout_plans 通知）  
+**目標版本**：v4.0（跨用戶即時同步）
+
+---
+
+## 📚 相關架構文檔
+
+> **⭐ 重要**：FCM 是 StrengthWise 三層同步架構的一部分。開發前請先閱讀：
+> 
+> **[SYNC_ARCHITECTURE_SPEC.md](planning/SYNC_ARCHITECTURE_SPEC.md)** - 完整同步架構規格
+> 
+> | 機制 | 用途 | 本文檔涵蓋 |
+> |------|------|-----------|
+> | EventBus | 個人本地同步 | ❌ |
+> | Realtime | 跨用戶實時同步 | ❌ |
+> | **FCM** | **跨用戶推播通知** | ✅ |
 
 ---
 
@@ -154,6 +169,44 @@ supabase functions list
 
 **Headers：**（同上）
 
+### Webhook 3：教練時段通知 ⭐ v3.9
+
+| 欄位 | 值 |
+|------|-----|
+| **名稱** | `push_notify_availability_slots` |
+| **表** | `availability_slots` |
+| **事件** | ✅ INSERT, ✅ UPDATE |
+| **HTTP 方法** | POST |
+| **URL** | `https://你的專案ID.supabase.co/functions/v1/push-notify` |
+
+**Headers：**（同上）
+
+### Webhook 4：學員可訓練時間通知 ⭐ v3.9
+
+| 欄位 | 值 |
+|------|-----|
+| **名稱** | `push_notify_client_availability` |
+| **表** | `client_availability` |
+| **事件** | ✅ INSERT, ✅ UPDATE |
+| **HTTP 方法** | POST |
+| **URL** | `https://你的專案ID.supabase.co/functions/v1/push-notify` |
+
+**Headers：**（同上）
+
+### Webhook 5：訓練計畫通知 ⭐ v3.9
+
+| 欄位 | 值 |
+|------|-----|
+| **名稱** | `push_notify_workout_plans` |
+| **表** | `workout_plans` |
+| **事件** | ✅ INSERT, ✅ DELETE |
+| **HTTP 方法** | POST |
+| **URL** | `https://你的專案ID.supabase.co/functions/v1/push-notify` |
+
+**Headers：**（同上）
+
+> **注意**：workout_plans 不需要 UPDATE 事件（只通知新增和刪除）
+
 ---
 
 ## 步驟 5：設置定時任務（pg_cron）
@@ -223,22 +276,28 @@ curl -X POST \
 
 ## ✅ 完成檢查清單
 
-### 後端配置 ✅ 2026-01-05 完成
+### 後端配置 ✅ 2026-01-17 更新
 
 - [x] `google-services.json` 已放到 `android/app/`
 - [x] Android Gradle 配置已更新
 - [x] Migration 033 執行成功（`user_devices` 表）
 - [x] Supabase Secrets 已設置（FCM_PROJECT_ID, FCM_CLIENT_EMAIL, FCM_PRIVATE_KEY）
 - [x] Edge Functions 部署成功（push-notify, session-reminder, readiness-notify）
-- [x] Webhooks 已創建（push_notify_appointments, readiness_notify）
+- [x] Webhooks 已創建：
+  - [x] `push_notify_appointments`（預約通知）
+  - [x] `readiness_notify`（問卷通知）
+  - [x] `push_notify_availability_slots`（教練時段通知）⭐ v3.9
+  - [x] `push_notify_client_availability`（學員可訓練時間通知）⭐ v3.9
+  - [x] `push_notify_workout_plans`（訓練計畫通知）⭐ v3.9
 - [x] pg_cron 定時任務已創建（每 5 分鐘執行）
+- [x] NotificationRouter 導航已實現 ⭐ v3.9
 
-### App 端測試 ⏳
+### App 端測試 ✅ v3.9
 
-- [ ] 登入時 Token 保存到 `user_devices`
-- [ ] 預約狀態變更收到推播
-- [ ] 課前 1hr 收到提醒
-- [ ] 點擊通知跳轉正確
+- [x] 登入時 Token 保存到 `user_devices`
+- [x] 預約狀態變更收到推播
+- [x] 課前 1hr 收到提醒
+- [x] 點擊通知跳轉正確（首頁/行事曆/教練中心/學員中心）
 
 ---
 
@@ -317,15 +376,36 @@ await notificationService.removeTokenFromDatabase(userId);
 
 ## 📎 相關文件
 
+### 架構文檔
+
+| 文件 | 說明 |
+|------|------|
+| `docs/planning/SYNC_ARCHITECTURE_SPEC.md` | **同步架構規格**（EventBus/Realtime/FCM 決策）⭐ v4.0 |
+
+### Flutter 端
+
 | 文件 | 說明 |
 |------|------|
 | `lib/services/interfaces/i_notification_service.dart` | 服務接口 |
 | `lib/services/notification/notification_service.dart` | 服務實作 |
+| `lib/services/notification/notification_router.dart` | 通知點擊導航 ⭐ v3.9 |
+
+### Edge Functions
+
+| 文件 | 說明 |
+|------|------|
 | `supabase/functions/_shared/fcm.ts` | FCM HTTP v1 API 共用模組 |
-| `supabase/functions/push-notify/index.ts` | 預約通知 Edge Function |
+| `supabase/functions/_shared/notification_types.ts` | 通知類型定義 ⭐ v3.9 |
+| `supabase/functions/push-notify/index.ts` | 預約/時段/訓練通知 Edge Function |
 | `supabase/functions/session-reminder/index.ts` | 課前提醒 Edge Function |
 | `supabase/functions/readiness-notify/index.ts` | 問卷通知 Edge Function |
-| `migrations/033_user_devices.sql` | 資料庫遷移 |
+
+### 資料庫
+
+| 文件 | 說明 |
+|------|------|
+| `migrations/033_user_devices.sql` | 用戶設備表遷移 |
+| `migrations/33_enable_realtime_availability.sql` | Realtime 配置 ⭐ v3.9 |
 
 ---
 

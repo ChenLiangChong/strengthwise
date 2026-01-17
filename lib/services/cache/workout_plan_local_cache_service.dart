@@ -38,9 +38,7 @@ class WorkoutPlanLocalCacheService {
     _isInitializing = true;
 
     try {
-      if (!kIsWeb) {
-        await Hive.initFlutter();
-      }
+      // ⭐ v3.7: Hive.initFlutter() 已在 main.dart 統一初始化，這裡不再重複調用
 
       int retryCount = 0;
       const maxRetries = 3;
@@ -160,8 +158,9 @@ class WorkoutPlanLocalCacheService {
       if (cachedData == null) return null;
 
       final plansList = (cachedData as List).cast<Map>();
+      // ⭐ v3.7: 使用遞迴轉換，解決 Hive 嵌套 Map 類型問題
       final plans = plansList
-          .map((json) => WorkoutRecord.fromJson(Map<String, dynamic>.from(json)))
+          .map((json) => WorkoutRecord.fromJson(_convertToMapStringDynamic(json)))
           .toList();
 
       if (kDebugMode) {
@@ -189,7 +188,8 @@ class WorkoutPlanLocalCacheService {
       if (cachedData == null) return null;
 
       final timestamps = <String, DateTime>{};
-      final map = Map<String, dynamic>.from(cachedData as Map);
+      // ⭐ v3.7: 使用遞迴轉換，解決 Hive 類型問題
+      final map = _convertToMapStringDynamic(cachedData);
       for (var entry in map.entries) {
         timestamps[entry.key] = DateTimeUtils.parseIsoTimestamp(entry.value as String);
       }
@@ -201,6 +201,35 @@ class WorkoutPlanLocalCacheService {
       }
       return null;
     }
+  }
+
+  /// ⭐ v3.7: 遞迴將 Hive 的 _Map<dynamic, dynamic> 轉換為 Map<String, dynamic>
+  Map<String, dynamic> _convertToMapStringDynamic(dynamic data) {
+    if (data is Map) {
+      return data.map((key, value) {
+        if (value is Map) {
+          return MapEntry(key.toString(), _convertToMapStringDynamic(value));
+        } else if (value is List) {
+          return MapEntry(key.toString(), _convertList(value));
+        } else {
+          return MapEntry(key.toString(), value);
+        }
+      });
+    }
+    return {};
+  }
+
+  /// ⭐ v3.7: 遞迴轉換 List 中的嵌套 Map
+  List<dynamic> _convertList(List<dynamic> list) {
+    return list.map((item) {
+      if (item is Map) {
+        return _convertToMapStringDynamic(item);
+      } else if (item is List) {
+        return _convertList(item);
+      } else {
+        return item;
+      }
+    }).toList();
   }
 
   /// 更新單個計劃的快取

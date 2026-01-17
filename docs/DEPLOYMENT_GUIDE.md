@@ -45,12 +45,29 @@ flutter build web --release
 build/web/
 ```
 
-### Vercel 部署（待完成）
+### Vercel 部署
 
-1. 安裝 Vercel CLI：`npm i -g vercel`
-2. 切換到 build/web：`cd build/web`
-3. 部署：`vercel --prod`
-4. 更新 Google OAuth JavaScript Origins
+**專案資訊**：
+
+| 項目 | 值 |
+|------|-----|
+| 專案名稱 | `app-strengthwise-beta` |
+| 正式 URL | https://app-strengthwise-beta.vercel.app |
+| 最後部署 | 2026-01-17（v1.1.0）|
+
+**部署步驟**：
+
+```bash
+# 1. 建置 Web
+flutter build web --release
+
+# 2. 部署到 Vercel
+cd build/web
+vercel --prod
+```
+
+**Google OAuth JavaScript Origins**（已配置）：
+- `https://app-strengthwise-beta.vercel.app`
 
 ### PWA 安裝引導
 

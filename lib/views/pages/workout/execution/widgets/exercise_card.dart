@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:strengthwise/common_widgets/time_picker/time_input_field.dart';
 import 'package:strengthwise/models/tracking_mode.dart';
 import 'package:strengthwise/themes/app_theme.dart';
+import 'package:strengthwise/utils/notification_utils.dart'; // v3.7+: SnackBar 提示
 
 /// 動作卡片數據模型
 /// v3.2+ 新增 trackingMode 支援不同追蹤模式
@@ -697,6 +700,12 @@ class _SetInputRowState extends State<SetInputRow> {
   late FocusNode _field1FocusNode;
   late FocusNode _field2FocusNode;
 
+  // ⭐ v3.7+: 運動倒數計時器狀態
+  Timer? _setTimer;
+  bool _isTimerRunning = false;
+  int _remainingSeconds = 0;
+  int _elapsedSeconds = 0; // 已消耗時間（用於動態調整）
+
   @override
   void initState() {
     super.initState();
@@ -828,6 +837,17 @@ class _SetInputRowState extends State<SetInputRow> {
         }
         break;
     }
+
+    // ⭐ v3.7+: 處理 time 變化，動態調整計時器
+    if (widget.trackingMode.needsTime && widget.time != oldWidget.time) {
+      _handleTimeChange(widget.time);
+    }
+
+    // ⭐ v3.7+: 如果取消完成狀態，重置計時器
+    if (oldWidget.isCompleted && !widget.isCompleted) {
+      _remainingSeconds = 0;
+      _elapsedSeconds = 0;
+    }
   }
 
   /// 格式化數字，移除不必要的小數點和零
@@ -842,11 +862,245 @@ class _SetInputRowState extends State<SetInputRow> {
 
   @override
   void dispose() {
+    _setTimer?.cancel(); // ⭐ v3.7+: 清理計時器
     _field1Controller.dispose();
     _field2Controller.dispose();
     _field1FocusNode.dispose();
     _field2FocusNode.dispose();
     super.dispose();
+  }
+
+  // ==================== v3.7+: 運動倒數計時器 ====================
+
+  /// 獲取當前設定的目標時間（秒）
+  int get _targetSeconds => widget.time ?? 0;
+
+  /// 開始計時
+  void _startTimer() {
+    if (_targetSeconds <= 0) {
+      NotificationUtils.showWarning(context, '請先設定時間');
+      return;
+    }
+
+    // 如果是暫停後繼續，使用剩餘時間；否則使用目標時間
+    if (_remainingSeconds <= 0) {
+      _remainingSeconds = _targetSeconds;
+      _elapsedSeconds = 0;
+    }
+
+    setState(() {
+      _isTimerRunning = true;
+    });
+
+    _setTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        _remainingSeconds--;
+        _elapsedSeconds++;
+
+        if (_remainingSeconds <= 0) {
+          _onTimerComplete();
+        }
+      });
+    });
+  }
+
+  /// 暫停計時
+  void _pauseTimer() {
+    _setTimer?.cancel();
+    _setTimer = null;
+    setState(() {
+      _isTimerRunning = false;
+    });
+  }
+
+  /// 計時完成
+  void _onTimerComplete() {
+    _setTimer?.cancel();
+    _setTimer = null;
+
+    setState(() {
+      _isTimerRunning = false;
+      _remainingSeconds = 0;
+    });
+
+    // 震動提醒（連續震動）
+    _vibrateOnComplete();
+
+    // 自動打勾完成
+    HapticFeedback.mediumImpact();
+    widget.onComplete();
+  }
+
+  /// 震動提醒（1 秒連續震動）
+  Future<void> _vibrateOnComplete() async {
+    for (int i = 0; i < 5; i++) {
+      HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+  }
+
+  /// 切換計時器狀態
+  void _toggleTimer() {
+    if (_isTimerRunning) {
+      _pauseTimer();
+    } else {
+      _startTimer();
+    }
+  }
+
+  /// 當外部 time 值改變時，動態調整計時器
+  /// 
+  /// ⭐ v3.7+: 計時中修改時間會自動暫停，避免在 build 中呼叫 setState
+  void _handleTimeChange(int? newTime) {
+    if (!_isTimerRunning && _remainingSeconds == 0 && _elapsedSeconds == 0) {
+      // 未開始計時，不需要處理
+      return;
+    }
+
+    // 計時中修改時間 → 暫停計時器，讓用戶輸入完後手動繼續
+    if (_isTimerRunning) {
+      _setTimer?.cancel();
+      _setTimer = null;
+      _isTimerRunning = false;
+    }
+
+    final newTarget = newTime ?? 0;
+    if (newTarget <= 0) {
+      // 時間被清空，重置計時器狀態
+      _remainingSeconds = 0;
+      _elapsedSeconds = 0;
+      return;
+    }
+
+    // 動態調整剩餘時間 = 新目標 - 已消耗時間
+    final newRemaining = newTarget - _elapsedSeconds;
+    if (newRemaining <= 0) {
+      // 已經超過新目標時間，重置為 0（用戶需要手動打勾或重新開始）
+      _remainingSeconds = 0;
+    } else {
+      _remainingSeconds = newRemaining;
+    }
+  }
+
+  /// 格式化秒數為 mm:ss
+  String _formatTime(int seconds) {
+    final mins = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '$mins:${secs.toString().padLeft(2, '0')}';
+  }
+
+  /// 構建計時按鈕（只顯示播放/暫停圖標）
+  Widget _buildTimerButton(BuildContext context, ColorScheme colorScheme) {
+    final isRunning = _isTimerRunning;
+    final isPaused = !isRunning && _remainingSeconds > 0 && _elapsedSeconds > 0;
+
+    return SizedBox(
+      width: 40,
+      height: AppTheme.minTouchTarget,
+      child: Center(
+        child: GestureDetector(
+          onTap: widget.isEditable ? _toggleTimer : null,
+          child: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: isRunning
+                  ? colorScheme.primary.withOpacity(0.15)
+                  : isPaused
+                      ? colorScheme.tertiary.withOpacity(0.15)
+                      : colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isRunning
+                    ? colorScheme.primary
+                    : isPaused
+                        ? colorScheme.tertiary
+                        : colorScheme.outline.withOpacity(0.5),
+                width: 1.5,
+              ),
+            ),
+            child: Center(
+              child: Icon(
+                isRunning ? Icons.pause : Icons.play_arrow,
+                color: isRunning
+                    ? colorScheme.primary
+                    : isPaused
+                        ? colorScheme.tertiary
+                        : colorScheme.onSurfaceVariant,
+                size: 18,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// ⭐ v3.7+: 構建倒數計時器進度條（顯示在 set row 下方）
+  Widget _buildCountdownBar(BuildContext context, ColorScheme colorScheme) {
+    final targetSeconds = widget.time ?? 0;
+    if (targetSeconds <= 0) return const SizedBox.shrink();
+
+    final progress = targetSeconds > 0 
+        ? (_elapsedSeconds / targetSeconds).clamp(0.0, 1.0)
+        : 0.0;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 40, right: 40, top: 4, bottom: 8),
+      child: Column(
+        children: [
+          // 進度條
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                _isTimerRunning ? colorScheme.primary : colorScheme.tertiary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          // 倒數時間
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _isTimerRunning ? Icons.timer : Icons.timer_outlined,
+                size: 14,
+                color: _isTimerRunning 
+                    ? colorScheme.primary 
+                    : colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${_formatTime(_remainingSeconds)} / ${_formatTime(targetSeconds)}',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: _isTimerRunning
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 是否顯示倒數計時器（計時中或暫停中）
+  bool get _showCountdown {
+    return widget.trackingMode.needsTime && 
+           !widget.isCompleted && 
+           (_isTimerRunning || (_remainingSeconds > 0 && _elapsedSeconds > 0));
   }
 
   @override
@@ -855,126 +1109,149 @@ class _SetInputRowState extends State<SetInputRow> {
     final colorScheme = theme.colorScheme;
     final isEditable = widget.isEditable && !widget.isCompleted;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingXs),
-      child: Row(
-        children: [
-          // ========================================
-          // 組數序號（佔 15%）
-          // ========================================
-          SizedBox(
-            width: 40,
-            child: Center(
-              child: Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: widget.isActive
-                      ? colorScheme.primary.withOpacity(0.1)
-                      : colorScheme.surface,
-                  shape: BoxShape.circle,
-                  border: widget.isActive
-                      ? Border.all(color: colorScheme.primary, width: 2)
-                      : null,
-                ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // ========================================
+        // Set 資料行
+        // ========================================
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingXs),
+          child: Row(
+            children: [
+              // ========================================
+              // 組數序號（佔 15%）
+              // ========================================
+              SizedBox(
+                width: 40,
                 child: Center(
-                  child: Text(
-                    '${widget.setNumber}',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 14,
-                      fontWeight:
-                          widget.isActive ? FontWeight.bold : FontWeight.normal,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
                       color: widget.isActive
-                          ? colorScheme.primary
-                          : colorScheme.onSurface.withOpacity(
-                              widget.isCompleted ? 0.4 : 0.7,
-                            ),
+                          ? colorScheme.primary.withOpacity(0.1)
+                          : colorScheme.surface,
+                      shape: BoxShape.circle,
+                      border: widget.isActive
+                          ? Border.all(color: colorScheme.primary, width: 2)
+                          : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${widget.setNumber}',
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 14,
+                          fontWeight:
+                              widget.isActive ? FontWeight.bold : FontWeight.normal,
+                          color: widget.isActive
+                              ? colorScheme.primary
+                              : colorScheme.onSurface.withOpacity(
+                                  widget.isCompleted ? 0.4 : 0.7,
+                                ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
 
-          const SizedBox(width: AppTheme.spacingSm),
+              const SizedBox(width: AppTheme.spacingSm),
 
-          // ========================================
-          // 上一組參考數據（固定寬度，保持對齊）
-          // ========================================
-          SizedBox(
-            width: 60,
-            child: Center(
-              child: widget.previousData != null
-                  ? Text(
-                      widget.previousData!,
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 12,
-                        color: colorScheme.onSurface.withOpacity(0.4),
-                        fontStyle: FontStyle.italic,
-                      ),
-                      textAlign: TextAlign.center,
-                    )
-                  : Text(
-                      '-',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 12,
-                        color: colorScheme.onSurface.withOpacity(0.2),
-                      ),
-                    ),
-            ),
-          ),
-          const SizedBox(width: AppTheme.spacingSm),
-
-          // ========================================
-          // v3.2+ 根據追蹤模式顯示輸入欄位
-          // ========================================
-          ..._buildTrackingModeInputs(context, isEditable),
-
-          const SizedBox(width: AppTheme.spacingSm),
-
-          // ========================================
-          // 完成勾選按鈕（佔 15%）
-          // ========================================
-          SizedBox(
-            width: 40,
-            height: AppTheme.minTouchTarget,
-            child: Center(
-              child: GestureDetector(
-                onTap: widget.isEditable
-                    ? () {
-                        // 觸覺回饋
-                        HapticFeedback.mediumImpact();
-                        widget.onComplete();
-                      }
-                    : null,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: widget.isCompleted
-                        ? const Color(0xFF10B981) // Success 綠色
-                        : colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: widget.isCompleted
-                        ? null
-                        : Border.all(
-                            color: colorScheme.outline,
-                            width: 2,
+              // ========================================
+              // 上一組參考數據（固定寬度，保持對齊）
+              // ========================================
+              SizedBox(
+                width: 60,
+                child: Center(
+                  child: widget.previousData != null
+                      ? Text(
+                          widget.previousData!,
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 12,
+                            color: colorScheme.onSurface.withOpacity(0.4),
+                            fontStyle: FontStyle.italic,
                           ),
-                  ),
-                  child: widget.isCompleted
-                      ? const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 20,
+                          textAlign: TextAlign.center,
                         )
-                      : null,
+                      : Text(
+                          '-',
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 12,
+                            color: colorScheme.onSurface.withOpacity(0.2),
+                          ),
+                        ),
                 ),
               ),
-            ),
+              const SizedBox(width: AppTheme.spacingSm),
+
+              // ========================================
+              // v3.2+ 根據追蹤模式顯示輸入欄位
+              // ========================================
+              ..._buildTrackingModeInputs(context, isEditable),
+
+              const SizedBox(width: AppTheme.spacingSm),
+
+              // ========================================
+              // ⭐ v3.7+: 運動計時按鈕（僅 needsTime 模式）
+              // ========================================
+              if (widget.trackingMode.needsTime && !widget.isCompleted)
+                _buildTimerButton(context, colorScheme),
+
+              // ========================================
+              // 完成勾選按鈕（佔 15%）
+              // ========================================
+              SizedBox(
+                width: 40,
+                height: AppTheme.minTouchTarget,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: widget.isEditable
+                        ? () {
+                            // ⭐ v3.7+: 如果計時中，先停止計時
+                            if (_isTimerRunning) {
+                              _pauseTimer();
+                            }
+                            // 觸覺回饋
+                            HapticFeedback.mediumImpact();
+                            widget.onComplete();
+                          }
+                        : null,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: widget.isCompleted
+                            ? const Color(0xFF10B981) // Success 綠色
+                            : colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: widget.isCompleted
+                            ? null
+                            : Border.all(
+                                color: colorScheme.outline,
+                                width: 2,
+                              ),
+                      ),
+                      child: widget.isCompleted
+                          ? const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 20,
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        // ========================================
+        // ⭐ v3.7+: 倒數計時器（顯示在 set row 下方）
+        // ========================================
+        if (_showCountdown)
+          _buildCountdownBar(context, colorScheme),
+      ],
     );
   }
 
@@ -1044,20 +1321,19 @@ class _SetInputRowState extends State<SetInputRow> {
           const SizedBox(width: AppTheme.spacingSm),
           Expanded(
             flex: 3,
-            child: _buildNumberInput(
-              controller: _field2Controller,
-              focusNode: _field2FocusNode,
-              hintText: 'sec',
-              enabled: isEditable,
-              isCompleted: widget.isCompleted,
-              onChanged: (value) {
+            child: TimeInputField(
+              value: widget.time,
+              onChanged: (seconds) {
+                // 更新 controller 以保持同步
+                _field2Controller.text = seconds?.toString() ?? '';
                 widget.onUpdate(
                   weight: double.tryParse(_field1Controller.text),
-                  time: int.tryParse(value),
+                  time: seconds,
                 );
               },
-              onSubmitted: (_) => FocusScope.of(context).unfocus(),
-              textInputAction: TextInputAction.done,
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              focusNode: _field2FocusNode,
             ),
           ),
         ];
@@ -1083,17 +1359,15 @@ class _SetInputRowState extends State<SetInputRow> {
         return [
           Expanded(
             flex: 6,
-            child: _buildNumberInput(
-              controller: _field1Controller,
-              focusNode: _field1FocusNode,
-              hintText: 'sec',
+            child: TimeInputField(
+              value: widget.time,
+              onChanged: (seconds) {
+                _field1Controller.text = seconds?.toString() ?? '';
+                widget.onUpdate(time: seconds);
+              },
               enabled: isEditable,
               isCompleted: widget.isCompleted,
-              onChanged: (value) {
-                widget.onUpdate(time: int.tryParse(value));
-              },
-              onSubmitted: (_) => FocusScope.of(context).unfocus(),
-              textInputAction: TextInputAction.done,
+              focusNode: _field1FocusNode,
             ),
           ),
         ];
@@ -1120,20 +1394,18 @@ class _SetInputRowState extends State<SetInputRow> {
           const SizedBox(width: AppTheme.spacingSm),
           Expanded(
             flex: 3,
-            child: _buildNumberInput(
-              controller: _field2Controller,
-              focusNode: _field2FocusNode,
-              hintText: 'sec',
-              enabled: isEditable,
-              isCompleted: widget.isCompleted,
-              onChanged: (value) {
+            child: TimeInputField(
+              value: widget.time,
+              onChanged: (seconds) {
+                _field2Controller.text = seconds?.toString() ?? '';
                 widget.onUpdate(
                   reps: int.tryParse(_field1Controller.text),
-                  time: int.tryParse(value),
+                  time: seconds,
                 );
               },
-              onSubmitted: (_) => FocusScope.of(context).unfocus(),
-              textInputAction: TextInputAction.done,
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              focusNode: _field2FocusNode,
             ),
           ),
         ];
@@ -1160,20 +1432,18 @@ class _SetInputRowState extends State<SetInputRow> {
           const SizedBox(width: AppTheme.spacingSm),
           Expanded(
             flex: 3,
-            child: _buildNumberInput(
-              controller: _field2Controller,
-              focusNode: _field2FocusNode,
-              hintText: 'sec',
-              enabled: isEditable,
-              isCompleted: widget.isCompleted,
-              onChanged: (value) {
+            child: TimeInputField(
+              value: widget.time,
+              onChanged: (seconds) {
+                _field2Controller.text = seconds?.toString() ?? '';
                 widget.onUpdate(
                   distance: double.tryParse(_field1Controller.text),
-                  time: int.tryParse(value),
+                  time: seconds,
                 );
               },
-              onSubmitted: (_) => FocusScope.of(context).unfocus(),
-              textInputAction: TextInputAction.done,
+              enabled: isEditable,
+              isCompleted: widget.isCompleted,
+              focusNode: _field2FocusNode,
             ),
           ),
         ];

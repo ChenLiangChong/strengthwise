@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/favorite_exercise_model.dart';
 import 'package:strengthwise/models/statistics_model.dart';
-import 'package:strengthwise/controllers/exercise_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_exercise_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'widgets/favorite_list_header.dart';
@@ -35,8 +35,8 @@ class FavoriteExercisesList extends StatefulWidget {
 
 class _FavoriteExercisesListState extends State<FavoriteExercisesList> {
   // ⭐ v3.6: MVVM 重構 - 透過 Controller 查詢
-  final ExerciseController _exerciseController =
-      serviceLocator<ExerciseController>();
+  final IExerciseController _exerciseController =
+      serviceLocator<IExerciseController>();
 
   List<FavoriteExercise> _favorites = [];
   Map<String, ExerciseStrengthProgress> _progressMap = {};
