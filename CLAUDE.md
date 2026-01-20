@@ -1,4 +1,4 @@
-# StrengthWise - AI Agent 開發指南
+# StrengthWise - Claude Code 開發指南
 
 > AI 程式碼助手開發規範索引
 
@@ -12,7 +12,7 @@
 
 | 類型 | 位置 | 用途 |
 |------|------|------|
-| **硬性規則** | `.cursor/rules/*.mdc` | AI 必須遵守的規定 |
+| **硬性規則** | `.claude/rules/*.md` | AI 必須遵守的規定 |
 | **詳細說明** | `docs/*.md` | 背景、範例、參考 |
 
 ---
@@ -34,62 +34,63 @@
 
 | 檔案 | 用途 |
 |------|------|
-| `000-core-persona.mdc` | AI 人格、認知立場、溝通協議 |
-| `001-project-context.mdc` | 專案資訊、技術棧、版本狀態 |
-| `900-documentation-index.mdc` | 文檔索引與查閱指南 |
-| `999-documentation-maintenance.mdc` | 文檔維護規則 |
+| `000-core-persona.md` | AI 人格、認知立場、溝通協議 |
+| `001-project-context.md` | 專案資訊、技術棧、版本狀態 |
+| `900-documentation-index.md` | 文檔索引與查閱指南 |
+| `999-documentation-maintenance.md` | 文檔維護規則 |
 
 ### Flutter/Dart 規則
 
 | 檔案 | Glob | 用途 |
 |------|------|------|
-| `100-flutter-dart-standards.mdc` | `**/*.dart` | 編碼標準、命名規範 |
-| `110-flutter-architecture.mdc` | `lib/**/*.dart` | Clean Architecture、依賴注入 |
-| `120-flutter-state-management.mdc` | `lib/controllers/**` | Provider、ChangeNotifier |
-| `130-flutter-ui-widgets.mdc` | `lib/views/**` | UI 組件、主題系統 |
+| `100-flutter-dart-standards.md` | `**/*.dart` | 編碼標準、命名規範 |
+| `110-flutter-architecture.md` | `lib/**/*.dart` | Clean Architecture、依賴注入 |
+| `120-flutter-state-management.md` | `lib/controllers/**` | Provider、ChangeNotifier |
+| `130-flutter-ui-widgets.md` | `lib/views/**` | UI 組件、主題系統 |
 
 ### 資料庫規則
 
 | 檔案 | Glob | 用途 |
 |------|------|------|
-| `200-database-supabase.mdc` | `lib/models/**`, `lib/services/**` | Supabase 操作規範 |
-| `210-datetime-utils.mdc` | `**/*.dart` | 時間處理統一規範 |
-| `220-query-optimization.mdc` | `lib/services/**` | 查詢效能優化 |
-| `230-migrations-guide.mdc` | `migrations/**` | Migration 執行順序 |
+| `200-database-supabase.md` | `lib/models/**`, `lib/services/**` | Supabase 操作規範 |
+| `210-datetime-utils.md` | `**/*.dart` | 時間處理統一規範 |
+| `220-query-optimization.md` | `lib/services/**` | 查詢效能優化 |
+| `230-migrations-guide.md` | `migrations/**` | Migration 執行順序 |
 
 ### UI/UX 規則
 
 | 檔案 | Glob | 用途 |
 |------|------|------|
-| `300-ui-ux-design.mdc` | `lib/views/**`, `lib/themes/**` | Kinetic 設計系統 |
-| `305-ui-ux-pro-max.mdc` | `lib/views/**` | AI 設計智慧資料庫整合 |
+| `300-ui-ux-design.md` | `lib/views/**`, `lib/themes/**` | Kinetic 設計系統 |
+| `305-ui-ux-pro-max.md` | `lib/views/**` | AI 設計智慧資料庫整合 |
 
 ### 工作流程規則
 
 | 檔案 | Glob | 用途 |
 |------|------|------|
-| `800-testing-workflow.mdc` | `test/**` | 測試策略、驗收標準 |
-| `810-python-scripts.mdc` | `scripts/**` | Python 工具使用 |
-| `820-deployment.mdc` | `android/**`, `ios/**` | 部署流程 |
+| `800-testing-workflow.md` | `test/**` | 測試策略、驗收標準 |
+| `810-python-scripts.md` | `scripts/**` | Python 工具使用 |
+| `820-deployment.md` | `android/**`, `ios/**` | 部署流程 |
 
 ### 業務邏輯規則
 
 | 檔案 | Glob | 用途 |
 |------|------|------|
-| `910-domain-health-assessment.mdc` | `lib/**/health_assessment/**` | 健康評估系統 |
+| `910-domain-health-assessment.md` | `lib/**/health_assessment/**` | 健康評估系統 |
 
 ### 文檔維護規則
 
 | 檔案 | 用途 |
 |------|------|
-| `920-docs-database.mdc` | DATABASE_SUPABASE.md 維護 |
-| `930-docs-ui.mdc` | UI 文檔維護 |
-| `940-docs-development.mdc` | DEVELOPMENT_STATUS.md 維護 |
-| `950-docs-saas.mdc` | SAAS_PLATFORM_ROADMAP.md 維護 |
-| `960-docs-health-assessment.mdc` | HEALTH_ASSESSMENT_SYSTEM.md 維護 |
-| `965-docs-fcm-setup.mdc` | FCM_SETUP_GUIDE.md 維護 |
-| `970-docs-readme.mdc` | docs/README.md 維護 |
-| `980-docs-project-overview.mdc` | PROJECT_OVERVIEW.md 維護 |
+| `920-docs-database.md` | DATABASE_SUPABASE.md 維護 |
+| `930-docs-ui.md` | UI 文檔維護 |
+| `940-docs-development.md` | DEVELOPMENT_STATUS.md 維護 |
+| `950-docs-saas.md` | SAAS_PLATFORM_ROADMAP.md 維護 |
+| `960-docs-health-assessment.md` | HEALTH_ASSESSMENT_SYSTEM.md 維護 |
+| `965-docs-fcm-setup.md` | FCM_SETUP_GUIDE.md 維護 |
+| `970-docs-readme.md` | docs/README.md 維護 |
+| `980-docs-project-overview.md` | PROJECT_OVERVIEW.md 維護 |
+| `990-docs-planning.md` | docs/planning/*.md 維護 |
 
 ---
 
@@ -131,9 +132,6 @@
 | 資源 | 用途 |
 |------|------|
 | `.shared/ui-ux-pro-max/` | UI/UX 設計智慧資料庫 |
-| `.cursor/commands/ui-ux-pro-max.md` | Cursor 指令入口 |
-
-**使用方式**：在 Cursor 中輸入 `/ui-ux-pro-max` 開始使用
 
 ---
 
@@ -149,8 +147,8 @@
 
 | 變更類型 | 更新位置 |
 |---------|---------|
-| 新增硬性規定 | `.cursor/rules/*.mdc` |
+| 新增硬性規定 | `.claude/rules/*.md` |
 | 功能說明/範例 | `docs/*.md` |
 | 版本記錄 | `docs/DEVELOPMENT_STATUS.md` |
 
-詳見：`.cursor/rules/999-documentation-maintenance.mdc`
+詳見：`.claude/rules/999-documentation-maintenance.md`

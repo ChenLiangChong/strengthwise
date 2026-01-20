@@ -28,12 +28,18 @@ alwaysApply: true
 
 | 主題 | 檔案路徑 | 何時使用 |
 |---|----|----|
+| **同步架構** | `docs/planning/SYNC_ARCHITECTURE_SPEC.md` | EventBus、Realtime、FCM 決策 ⭐ v4.0 |
 | **首頁 + 行事曆** | `docs/planning/HOME_BOOKING_UX_SPEC.md` | 首頁改造、行事曆 Tab、快捷按鈕 |
 | **Beta 招募** | `docs/planning/BETA_RECRUITMENT_DESIGN.md` | Beta 測試招募設計 |
+| **測試策略** | `docs/planning/TESTING_STRATEGY.md` | Google Play 上架測試計劃 |
+| **生產發布** | `docs/planning/PRODUCTION_LAUNCH_GUIDE.md` | 生產環境發布準備 |
+| **虛擬學員** | `docs/planning/VIRTUAL_CLIENT_SPEC.md` | 虛擬學員測試功能 |
 | **健康評估** | `docs/HEALTH_ASSESSMENT_SYSTEM.md` | PAR-Q+ 問卷、風險評估 |
 | **SaaS 路線圖** | `docs/SAAS_PLATFORM_ROADMAP.md` | 未來計劃 |
-| **功能規劃（活躍）** | `docs/planning/*.md` | 開發中的功能規格書 |
 | **功能規劃（歸檔）** | `docs/planning/archived/*.md` | 已完成的功能規格書 |
+| **架構評審 v4.0** | `docs/planning/archived/ARCHITECTURE_REVIEW_V4.md` | 架構優化報告 ✅ |
+| **自訂動作改進** | `docs/planning/archived/CUSTOM_EXERCISE_IMPROVEMENTS.md` | 自訂動作功能 ✅ |
+| **運動分類分析** | `docs/planning/archived/EXERCISE_CLASSIFICATION_ANALYSIS.md` | 運動分類系統 ✅ |
 | **TrackingMode** | `docs/planning/archived/TRACKING_MODE_SPEC.md` | 多追蹤模式適配 ✅ |
 | **Session Mode** | `docs/planning/archived/SESSION_MODE_SPEC.md` | 教練上課模式 ✅ |
 | **訓練權限** | `docs/planning/archived/TRAINING_PERMISSION_MATRIX.md` | 訓練權限矩陣 ✅ |
@@ -65,6 +71,7 @@ alwaysApply: true
 | 資料庫設計 | `DATABASE_SUPABASE.md` |
 | 時間處理方式 | `DATETIME_UTILS_GUIDE.md` |
 | UI 設計規範 | `UI_DEVELOPER_GUIDE.md` |
+| 同步機制（EventBus/Realtime/FCM） | `docs/planning/SYNC_ARCHITECTURE_SPEC.md` |
 | 首頁 + 行事曆 UX | `docs/planning/HOME_BOOKING_UX_SPEC.md` |
 | 部署流程 | `DEPLOYMENT_GUIDE.md` |
 | 推播通知配置 | `FCM_SETUP_GUIDE.md` |

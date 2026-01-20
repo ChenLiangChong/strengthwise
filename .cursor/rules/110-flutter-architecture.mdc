@@ -45,7 +45,17 @@ final service = WorkoutServiceSupabase();
 | 層級 | 方式 | 生命週期 |
 |------|------|----------|
 | Service | `LazySingleton` | 全局共享 |
-| Controller | `Factory` | 每次新實例 |
+| Controller（大多數）| `Factory` | 頁面級狀態 |
+| Controller（全局共享）| `LazySingleton` | 避免多次訂閱 |
+| Controller（參數化）| `FactoryParam` | 按需創建 |
+
+### Controller 註冊策略（v4.0）
+
+| 類型 | Controllers | 原因 |
+|------|------------|------|
+| **LazySingleton** | EventBus, Auth, Exercise, Profile, BodyData, Realtime, Theme | 全局共享狀態，避免多次訂閱 |
+| **Factory** | 其他 18 個 Controller | 頁面級狀態，快取由 Service 層管理 |
+| **FactoryParam** | SessionMode, Readiness | 需傳入參數 |
 
 ## 🚀 新功能流程
 

@@ -9,13 +9,16 @@ globs: "docs/planning/**"
 
 ```
 docs/planning/
-├── SYNC_ARCHITECTURE_SPEC.md       ← v4.0 同步架構規格 ⭐ 新增
+├── SYNC_ARCHITECTURE_SPEC.md       ← v4.0 同步架構規格 ⭐
 ├── HOME_BOOKING_UX_SPEC.md         ← v3.1-B 首頁+行事曆 UX 🔄 開發中
-├── BETA_RECRUITMENT_DESIGN.md      ← v3.4 Beta 招募設計 🔄 活躍
-├── TESTING_STRATEGY.md             ← v3.1 測試策略 🔄 活躍
-├── PRODUCTION_LAUNCH_GUIDE.md      ← v3.1 生產環境發布 🔄 活躍
-├── [功能名稱]_SPEC.md              ← 未來功能規劃
-└── archived/                       ← 📦 已完成的規格書
+├── BETA_RECRUITMENT_DESIGN.md      ← Beta 招募設計 🔄 活躍
+├── TESTING_STRATEGY.md             ← 測試策略 🔄 活躍
+├── PRODUCTION_LAUNCH_GUIDE.md      ← 生產環境發布 🔄 活躍
+├── VIRTUAL_CLIENT_SPEC.md          ← 虛擬學員功能 📋 規劃
+└── archived/                       ← 📦 已完成的規格書（11 個）
+    ├── ARCHITECTURE_REVIEW_V4.md   ← v4.0 架構評審 ✅
+    ├── CUSTOM_EXERCISE_IMPROVEMENTS.md ← 自訂動作改進 ✅
+    ├── EXERCISE_CLASSIFICATION_ANALYSIS.md ← 運動分類分析 ✅
     ├── TRACKING_MODE_SPEC.md       ← v3.3 TrackingMode 適配 ✅
     ├── DATA_FLOW_ANALYSIS.md       ← v3.1-E 性能優化 ✅
     ├── SESSION_MODE_SPEC.md        ← v3.1-SM 教練上課模式 ✅
