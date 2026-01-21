@@ -1,7 +1,7 @@
 // ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/session_mode_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_session_mode_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_statistics_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/models/statistics_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
@@ -37,7 +37,7 @@ class _SessionStatisticsTabState extends State<SessionStatisticsTab> {
 
   /// ⭐ v3.6: 透過 Controller 查詢
   Future<void> _loadStatistics() async {
-    final controller = context.read<SessionModeController>();
+    final controller = context.read<ISessionModeController>();
     final clientId = controller.clientId;
 
     setState(() => _isLoading = true);
@@ -65,7 +65,7 @@ class _SessionStatisticsTabState extends State<SessionStatisticsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.read<SessionModeController>();
+    final controller = context.read<ISessionModeController>();
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -74,7 +74,8 @@ class _SessionStatisticsTabState extends State<SessionStatisticsTab> {
       return const SkeletonStatistics();
     }
 
-    if (_data == null) {
+    final data = _data;
+    if (data == null) {
       return _buildEmptyState(colorScheme);
     }
 
@@ -99,18 +100,18 @@ class _SessionStatisticsTabState extends State<SessionStatisticsTab> {
 
           // 訓練頻率（複用現有組件）
           FrequencyCard(
-            frequency: _data!.frequency,
+            frequency: data.frequency,
             timeRange: TimeRange.sevenDays,
           ),
           const SizedBox(height: 16),
 
           // 訓練量趨勢（複用現有組件）
-          VolumeTrendChart(history: _data!.volumeHistory),
+          VolumeTrendChart(history: data.volumeHistory),
           const SizedBox(height: 16),
 
           // 個人記錄（複用現有組件）
-          if (_data!.personalRecords.isNotEmpty) ...[
-            PersonalRecordsCard(records: _data!.personalRecords),
+          if (data.personalRecords.isNotEmpty) ...[
+            PersonalRecordsCard(records: data.personalRecords),
             const SizedBox(height: 16),
           ],
 
@@ -150,7 +151,8 @@ class _SessionStatisticsTabState extends State<SessionStatisticsTab> {
   }
 
   Widget _buildQuickSummary(ColorScheme colorScheme) {
-    final data = _data!;
+    final data = _data;
+    if (data == null) return const SizedBox.shrink();
     final theme = Theme.of(context);
 
     return Container(

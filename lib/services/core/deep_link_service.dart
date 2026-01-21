@@ -97,14 +97,14 @@ class DeepLinkService {
   /// 偵錯日誌
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[DEEP_LINK_SERVICE] $message');
+      debugPrint('[DEEP_LINK_SERVICE] $message');
     }
   }
 
   /// 錯誤日誌
   void _logError(String message) {
     if (kDebugMode) {
-      print('[DEEP_LINK_SERVICE ERROR] $message');
+      debugPrint('[DEEP_LINK_SERVICE ERROR] $message');
     }
   }
 }

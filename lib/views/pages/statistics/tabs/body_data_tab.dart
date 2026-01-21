@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../controllers/body_data_controller.dart';
+import '../../../../controllers/interfaces/i_body_data_controller.dart';
 import '../../../../controllers/interfaces/i_auth_controller.dart';
-import '../../../../controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
+import '../../../../controllers/interfaces/i_profile_controller.dart'; // ⭐ v3.6: MVVM
 import '../../../../services/service_locator.dart';
 import '../../profile/body_data_page.dart';
 
 /// 身體數據 Tab 頁面
 ///
 /// 顯示體重、體脂、BMI 等身體數據趨勢
-class BodyDataTab extends StatelessWidget {
+class BodyDataTab extends StatefulWidget {
   /// 用戶 ID
   final String userId;
 
@@ -19,13 +19,42 @@ class BodyDataTab extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<BodyDataTab> createState() => _BodyDataTabState();
+}
+
+class _BodyDataTabState extends State<BodyDataTab> {
+  late final IBodyDataController _bodyDataController;
+  late final IAuthController _authController;
+
+  @override
+  void initState() {
+    super.initState();
+    _bodyDataController = serviceLocator<IBodyDataController>();
+    _authController = serviceLocator<IAuthController>();
+
+    // ⭐ 使用 addPostFrameCallback 確保 context 已就緒
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _bodyDataController.loadRecords(widget.userId);
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant BodyDataTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // ⭐ 當 userId 變更時重新載入
+    if (oldWidget.userId != widget.userId) {
+      _bodyDataController.loadRecords(widget.userId);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final authController = serviceLocator<IAuthController>();
-    
-    return ChangeNotifierProvider(
-      create: (_) =>
-          serviceLocator<BodyDataController>()..loadRecords(userId),
-      child: Consumer<BodyDataController>(
+    // ⭐ 使用 .value 避免 dispose singleton（BodyDataController 是 LazySingleton）
+    return ChangeNotifierProvider.value(
+      value: _bodyDataController,
+      child: Consumer<IBodyDataController>(
         builder: (context, controller, child) {
           if (controller.isLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -165,7 +194,7 @@ class BodyDataTab extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: () async {
                       // ⭐ v3.6: MVVM 重構 - 透過 Controller 獲取
-                      final profileController = serviceLocator<ProfileController>();
+                      final profileController = serviceLocator<IProfileController>();
                       final userProfile =
                           await profileController.getCurrentUserProfile();
 
@@ -181,7 +210,7 @@ class BodyDataTab extends StatelessWidget {
                       );
 
                       // 返回後重新載入數據
-                      final user = authController.user;
+                      final user = _authController.user;
                       if (user != null) {
                         controller.loadRecords(user.uid);
                       }
@@ -209,7 +238,7 @@ class BodyDataTab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -242,4 +271,3 @@ class BodyDataTab extends StatelessWidget {
     return '${date.year}/${date.month}/${date.day}';
   }
 }
-

@@ -2,7 +2,7 @@
 // ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/client_management_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_client_management_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/user/user_model.dart';
@@ -41,13 +41,13 @@ class ClientDetailContent extends StatefulWidget {
 class _ClientDetailContentState extends State<ClientDetailContent>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late ClientManagementController _controller;
+  late IClientManagementController _controller;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _controller = serviceLocator<ClientManagementController>();
+    _controller = serviceLocator<IClientManagementController>();
     _controller.selectClient(widget.clientId);
   }
 
@@ -103,7 +103,7 @@ class _ClientDetailContentState extends State<ClientDetailContent>
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return ChangeNotifierProvider<ClientManagementController>.value(
+    return ChangeNotifierProvider<IClientManagementController>.value(
       value: _controller,
       child: Column(
         children: [

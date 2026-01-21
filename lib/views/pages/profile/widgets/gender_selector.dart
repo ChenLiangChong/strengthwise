@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use - Radio API 待遷移到 RadioGroup
+
 import 'package:flutter/material.dart';
 
 /// 性別選擇元件

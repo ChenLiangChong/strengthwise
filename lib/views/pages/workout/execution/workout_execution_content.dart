@@ -607,7 +607,7 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
     final trackingMode = exercise.trackingMode;
     
     // 🔍 DEBUG: 確認傳入的 trackingMode
-    print('[DEBUG] 添加動作: ${exercise.name}, trackingMode: $trackingMode');
+    debugPrint('[DEBUG] 添加動作: ${exercise.name}, trackingMode: $trackingMode');
     
     // 重置控制器預設值
     _newExerciseSetsController.text = '3';

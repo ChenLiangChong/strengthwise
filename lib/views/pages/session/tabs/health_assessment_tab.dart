@@ -1,9 +1,9 @@
 // ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/session_mode_controller.dart';
-import 'package:strengthwise/controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
-import 'package:strengthwise/controllers/coach_profile_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_session_mode_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_coach_profile_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
 import 'package:strengthwise/models/coach_display_preferences_model.dart';
 import 'package:strengthwise/models/coach_assessment_note_model.dart';
@@ -30,8 +30,8 @@ class HealthAssessmentTab extends StatefulWidget {
 
 class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
   // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
-  late final ProfileController _profileController;
-  late final CoachProfileController _coachProfileController;
+  late final IProfileController _profileController;
+  late final ICoachProfileController _coachProfileController;
   late final IAuthController _authController;
 
   HealthAssessmentModel? _healthAssessment;
@@ -46,8 +46,8 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
   @override
   void initState() {
     super.initState();
-    _profileController = serviceLocator<ProfileController>(); // ⭐ v3.6: MVVM
-    _coachProfileController = serviceLocator<CoachProfileController>(); // ⭐ v3.6: MVVM
+    _profileController = serviceLocator<IProfileController>(); // ⭐ v3.6: MVVM
+    _coachProfileController = serviceLocator<ICoachProfileController>(); // ⭐ v3.6: MVVM
     _authController = serviceLocator<IAuthController>();
 
     // 延遲載入，等待 context 可用
@@ -57,7 +57,7 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
   }
 
   Future<void> _loadData() async {
-    final controller = context.read<SessionModeController>();
+    final controller = context.read<ISessionModeController>();
     final clientId = controller.clientId;
     final currentUserId = _coachId;
     final isCoachMode = controller.isCoachMode;
@@ -144,7 +144,7 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
       return const SkeletonSessionMode();
     }
 
-    final controller = context.read<SessionModeController>();
+    final controller = context.read<ISessionModeController>();
     final isCoachMode = controller.isCoachMode;
 
     // 標題：教練看學員名，學員看自己
@@ -187,7 +187,7 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
   }
 
   /// 空狀態：區分教練和學員
-  Widget _buildEmptyState(SessionModeController controller, bool isCoachMode) {
+  Widget _buildEmptyState(ISessionModeController controller, bool isCoachMode) {
     if (isCoachMode) {
       // 教練可以建立評估
       return EmptyHealthAssessmentCard(
@@ -245,7 +245,7 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
   }
 
   /// 編輯健康評估
-  void _navigateToEdit(SessionModeController controller) {
+  void _navigateToEdit(ISessionModeController controller) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -263,7 +263,7 @@ class _HealthAssessmentTabState extends State<HealthAssessmentTab> {
   }
 
   /// 新建健康評估
-  void _navigateToCreate(SessionModeController controller) {
+  void _navigateToCreate(ISessionModeController controller) {
     Navigator.push(
       context,
       MaterialPageRoute(

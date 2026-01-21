@@ -741,7 +741,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
       final Map<String, _ExerciseRecordData> exerciseStats = {};
 
       if (_kStatisticsDebugLog) {
-        print('[GET_EXERCISES] 查詢到 ${workoutPlans.length} 個訓練計劃');
+        debugPrint('[GET_EXERCISES] 查詢到 ${workoutPlans.length} 個訓練計劃');
       }
 
       for (var planData in workoutPlans) {
@@ -836,7 +836,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
             (systemResponse as List).map((e) => e['id'] as String).toSet();
 
         if (_kStatisticsDebugLog) {
-          print(
+          debugPrint(
               '[STATISTICS] 批量查詢系統動作：${allExerciseIds.length} 個動作 ID，${_cachedSystemExerciseIds!.length} 個是系統動作');
         }
       }
@@ -854,11 +854,11 @@ class StatisticsServiceSupabase implements IStatisticsService {
           _exerciseCache.addAll(exercises);
 
           if (_kStatisticsDebugLog) {
-            print('[GET_EXERCISES] ⚡ 批量載入 ${exercises.length} 個動作分類');
+            debugPrint('[GET_EXERCISES] ⚡ 批量載入 ${exercises.length} 個動作分類');
           }
         } catch (e) {
           if (_kStatisticsDebugLog) {
-            print('[GET_EXERCISES] ⚠️ 批量載入動作分類失敗: $e');
+            debugPrint('[GET_EXERCISES] ⚠️ 批量載入動作分類失敗: $e');
           }
         }
       }
@@ -934,12 +934,12 @@ class StatisticsServiceSupabase implements IStatisticsService {
       }
 
       if (_kStatisticsDebugLog) {
-        print('[GET_EXERCISES] 返回 ${filtered.length} 個動作');
+        debugPrint('[GET_EXERCISES] 返回 ${filtered.length} 個動作');
         if (timeRange != null) {
-          print('   過濾條件 - 時間範圍: ${timeRange.displayName}');
+          debugPrint('   過濾條件 - 時間範圍: ${timeRange.displayName}');
         }
-        if (trainingType != null) print('   過濾條件 - 訓練類型: $trainingType');
-        if (bodyPart != null) print('   過濾條件 - 身體部位: $bodyPart');
+        if (trainingType != null) debugPrint('   過濾條件 - 訓練類型: $trainingType');
+        if (bodyPart != null) debugPrint('   過濾條件 - 身體部位: $bodyPart');
       }
 
       return filtered;
@@ -1128,7 +1128,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
   /// 輔助方法：記錄調試信息
   void _logDebug(String message) {
     if (kDebugMode && _kStatisticsDebugLog) {
-      print('[STATISTICS_SERVICE] $message');
+      debugPrint('[STATISTICS_SERVICE] $message');
     }
   }
 }

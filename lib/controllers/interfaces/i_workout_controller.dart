@@ -1,6 +1,6 @@
 import '../../models/workout_template_model.dart';
 import '../../models/workout_record_model.dart';
-import '../../models/workout_record/workout_record.dart'; // ⭐ v3.6: MVVM
+// ⭐ v3.6: MVVM
 import '../../models/exercise_history_record.dart'; // ⭐ v3.6: MVVM
 
 /// 訓練計畫控制器接口

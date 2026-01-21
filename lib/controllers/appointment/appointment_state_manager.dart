@@ -136,8 +136,9 @@ class AppointmentStateManager extends ChangeNotifier {
     }
 
     // 更新選中的預約
-    if (_selectedAppointment?.id == appointmentId) {
-      _selectedAppointment = _selectedAppointment!.copyWith(status: newStatus);
+    final selected = _selectedAppointment;
+    if (selected?.id == appointmentId && selected != null) {
+      _selectedAppointment = selected.copyWith(status: newStatus);
     }
 
     notifyListeners();

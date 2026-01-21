@@ -60,16 +60,25 @@ class BodyDataRecordsList extends StatelessWidget {
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
-                                  if (record.bmi != null) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'BMI ${record.bmi!.toStringAsFixed(1)}',
-                                      style: textTheme.bodySmall?.copyWith(
-                                        color: _getBMIColor(record.bmi!),
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                  if (record.bmi != null)
+                                    Builder(
+                                      builder: (context) {
+                                        final bmi = record.bmi!;
+                                        return Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'BMI ${bmi.toStringAsFixed(1)}',
+                                              style: textTheme.bodySmall?.copyWith(
+                                                color: _getBMIColor(bmi),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
                                     ),
-                                  ],
                                 ],
                               ),
                             ),
@@ -94,11 +103,15 @@ class BodyDataRecordsList extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (record.bmi != null)
-                            Chip(
-                              label:
-                                  Text('BMI ${record.bmi!.toStringAsFixed(1)}'),
-                              backgroundColor: _getBMIColor(record.bmi!)
-                                  .withValues(alpha: 0.2),
+                            Builder(
+                              builder: (context) {
+                                final bmi = record.bmi!;
+                                return Chip(
+                                  label: Text('BMI ${bmi.toStringAsFixed(1)}'),
+                                  backgroundColor: _getBMIColor(bmi)
+                                      .withValues(alpha: 0.2),
+                                );
+                              },
                             ),
                           IconButton(
                             icon: const Icon(Icons.delete_outline),

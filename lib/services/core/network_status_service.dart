@@ -2,6 +2,7 @@
 //
 // 偵測網路連線狀態，提供即時狀態更新
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
@@ -35,6 +36,16 @@ class NetworkStatusService extends ChangeNotifier {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
+    // ⚠️ Windows 平台的 connectivity_plus 有已知 bug，跳過監聽
+    if (Platform.isWindows) {
+      _isOnline = true;
+      _isInitialized = true;
+      if (kDebugMode) {
+        debugPrint('[NetworkStatus] ⚠️ Windows 平台跳過網路監聽（已知問題）');
+      }
+      return;
+    }
+
     try {
       // 取得當前網路狀態
       final results = await _connectivity.checkConnectivity();
@@ -46,11 +57,11 @@ class NetworkStatusService extends ChangeNotifier {
       _isInitialized = true;
 
       if (kDebugMode) {
-        print('[NetworkStatus] ✅ 初始化完成，當前狀態: ${_isOnline ? "在線" : "離線"}');
+        debugPrint('[NetworkStatus] ✅ 初始化完成，當前狀態: ${_isOnline ? "在線" : "離線"}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[NetworkStatus] ⚠️ 初始化失敗: $e');
+        debugPrint('[NetworkStatus] ⚠️ 初始化失敗: $e');
       }
       // 初始化失敗時預設為在線（避免誤報）
       _isOnline = true;
@@ -70,7 +81,7 @@ class NetworkStatusService extends ChangeNotifier {
     // 狀態變化時通知監聽者
     if (wasOnline != _isOnline) {
       if (kDebugMode) {
-        print('[NetworkStatus] 🔄 狀態變更: ${_isOnline ? "在線" : "離線"} ($primaryResult)');
+        debugPrint('[NetworkStatus] 🔄 狀態變更: ${_isOnline ? "在線" : "離線"} ($primaryResult)');
       }
       notifyListeners();
     }
@@ -78,13 +89,16 @@ class NetworkStatusService extends ChangeNotifier {
 
   /// 手動檢查網路狀態
   Future<bool> checkConnectivity() async {
+    // Windows 平台跳過檢查
+    if (Platform.isWindows) return true;
+
     try {
       final results = await _connectivity.checkConnectivity();
       _updateStatus(results);
       return _isOnline;
     } catch (e) {
       if (kDebugMode) {
-        print('[NetworkStatus] ⚠️ 檢查連線失敗: $e');
+        debugPrint('[NetworkStatus] ⚠️ 檢查連線失敗: $e');
       }
       return true; // 錯誤時預設在線
     }

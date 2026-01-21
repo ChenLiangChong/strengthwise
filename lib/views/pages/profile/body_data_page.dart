@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/body_data_controller.dart';
-import 'package:strengthwise/controllers/event_bus_controller.dart'; // ⭐ v3.5
+import 'package:strengthwise/controllers/interfaces/i_body_data_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_event_bus_controller.dart'; // ⭐ v3.5
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/body_data_record.dart';
 import 'package:strengthwise/models/user_model.dart';
@@ -28,8 +28,8 @@ class BodyDataPage extends StatefulWidget {
 }
 
 class _BodyDataPageState extends State<BodyDataPage> {
-  late final BodyDataController _controller;
-  late final EventBusController _eventBusController; // ⭐ v3.5
+  late final IBodyDataController _controller;
+  late final IEventBusController _eventBusController; // ⭐ v3.5
   DateTime _selectedStartDate =
       DateTime.now().subtract(const Duration(days: 30));
   DateTime _selectedEndDate = DateTime.now();
@@ -37,8 +37,8 @@ class _BodyDataPageState extends State<BodyDataPage> {
   @override
   void initState() {
     super.initState();
-    _controller = serviceLocator<BodyDataController>();
-    _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.5
+    _controller = serviceLocator<IBodyDataController>();
+    _eventBusController = serviceLocator<IEventBusController>(); // ⭐ v3.5
     _loadData();
   }
 
@@ -49,9 +49,10 @@ class _BodyDataPageState extends State<BodyDataPage> {
   }
 
   Future<void> _loadData() async {
-    if (widget.userProfile != null) {
+    final profile = widget.userProfile;
+    if (profile != null) {
       await _controller.loadRecords(
-        widget.userProfile!.uid,
+        profile.uid,
         startDate: _selectedStartDate,
         endDate: _selectedEndDate,
       );
@@ -63,7 +64,7 @@ class _BodyDataPageState extends State<BodyDataPage> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return ChangeNotifierProvider<BodyDataController>.value(
+    return ChangeNotifierProvider<IBodyDataController>.value(
       value: _controller,
       child: Scaffold(
         appBar: AppBar(
@@ -76,13 +77,14 @@ class _BodyDataPageState extends State<BodyDataPage> {
             ),
           ],
         ),
-        body: Consumer<BodyDataController>(
+        body: Consumer<IBodyDataController>(
           builder: (context, controller, child) {
             if (controller.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            if (controller.error != null) {
+            final error = controller.error;
+            if (error != null) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -90,7 +92,7 @@ class _BodyDataPageState extends State<BodyDataPage> {
                     Icon(Icons.error_outline,
                         size: 64, color: colorScheme.error),
                     const SizedBox(height: 16),
-                    Text(controller.error!, style: textTheme.bodyLarge),
+                    Text(error, style: textTheme.bodyLarge),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: _loadData,
@@ -121,6 +123,10 @@ class _BodyDataPageState extends State<BodyDataPage> {
             }
 
             // ✅ 內容區域限制最大寬度
+            final latestRecord = controller.latestRecord;
+            if (latestRecord == null) {
+              return const SizedBox.shrink();
+            }
             return Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600),
@@ -128,7 +134,7 @@ class _BodyDataPageState extends State<BodyDataPage> {
                   padding: context.pagePadding,
                   children: [
                     // 最新數據卡片
-                    LatestBodyDataCard(record: controller.latestRecord!),
+                    LatestBodyDataCard(record: latestRecord),
                     SizedBox(height: context.spacing.md),
                     // 體重趨勢圖表
                     WeightTrendChart(records: controller.records),
@@ -228,7 +234,10 @@ class _BodyDataPageState extends State<BodyDataPage> {
       ),
     );
 
-    if (result == true) {
+    if (!mounted) return;
+
+    final profile = widget.userProfile;
+    if (result == true && profile != null) {
       // 🐛 修復：驗證體重必填
       if (weightController.text.isEmpty) {
         NotificationUtils.showError(context, '請輸入體重');
@@ -260,12 +269,12 @@ class _BodyDataPageState extends State<BodyDataPage> {
       }
 
       final success = await _controller.createRecord(
-        userId: widget.userProfile!.uid,
+        userId: profile.uid,
         recordDate: selectedDate,
         weight: weight,
         bodyFat: bodyFat,
         muscleMass: muscleMass,
-        heightCm: widget.userProfile!.height,
+        heightCm: profile.height,
         notes: notesController.text.isEmpty ? null : notesController.text,
       );
 
@@ -275,7 +284,7 @@ class _BodyDataPageState extends State<BodyDataPage> {
           NotificationUtils.showSuccess(context, '成功新增身體數據記錄');
           // ⭐ v3.5: 發布身體數據更新事件（觸發統計頁面自動刷新）
           _eventBusController.publishBodyDataUpdated(
-            userId: widget.userProfile!.uid,
+            userId: profile.uid,
           );
         } else {
           NotificationUtils.showError(context, '新增記錄失敗');
@@ -311,7 +320,8 @@ class _BodyDataPageState extends State<BodyDataPage> {
       ),
     );
 
-    if (confirm == true) {
+    final profile = widget.userProfile;
+    if (confirm == true && profile != null) {
       final success = await _controller.deleteRecord(record.id);
       if (mounted) {
         if (success) {
@@ -319,7 +329,7 @@ class _BodyDataPageState extends State<BodyDataPage> {
           NotificationUtils.showSuccess(context, '已刪除記錄');
           // ⭐ v3.5: 發布身體數據更新事件（觸發統計頁面自動刷新）
           _eventBusController.publishBodyDataUpdated(
-            userId: widget.userProfile!.uid,
+            userId: profile.uid,
           );
         } else {
           NotificationUtils.showError(context, '刪除記錄失敗');

@@ -231,14 +231,14 @@ class FavoritesService implements IFavoritesService {
   /// 記錄調試信息
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[FAVORITES] $message');
+      debugPrint('[FAVORITES] $message');
     }
   }
 
   /// 記錄錯誤信息
   void _logError(String message) {
     if (kDebugMode) {
-      print('[FAVORITES ERROR] $message');
+      debugPrint('[FAVORITES ERROR] $message');
     }
     
     _errorService.logError(message, type: 'FavoritesService');

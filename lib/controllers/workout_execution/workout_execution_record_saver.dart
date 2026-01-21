@@ -32,11 +32,11 @@ class WorkoutExecutionRecordSaver {
   }) async {
     try {
       if (kDebugMode) {
-        print('[RecordSaver] 保存訓練記錄: $workoutRecordId');
-        print('[RecordSaver] 動作數量: ${exerciseRecords.length}');
-        print('[RecordSaver] 動作列表:');
+        debugPrint('[RecordSaver] 保存訓練記錄: $workoutRecordId');
+        debugPrint('[RecordSaver] 動作數量: ${exerciseRecords.length}');
+        debugPrint('[RecordSaver] 動作列表:');
         for (var i = 0; i < exerciseRecords.length; i++) {
-          print('[RecordSaver]   ${i + 1}. ${exerciseRecords[i].exerciseName}');
+          debugPrint('[RecordSaver]   ${i + 1}. ${exerciseRecords[i].exerciseName}');
         }
       }
       
@@ -75,12 +75,12 @@ class WorkoutExecutionRecordSaver {
         }
         
         if (kDebugMode) {
-          print('[RecordSaver] 訓練記錄更新成功');
+          debugPrint('[RecordSaver] 訓練記錄更新成功');
         }
       } else {
         // 創建新記錄
         if (kDebugMode) {
-          print('[RecordSaver] 警告：找不到現有記錄，創建新記錄');
+          debugPrint('[RecordSaver] 警告：找不到現有記錄，創建新記錄');
         }
         
         final newRecord = WorkoutRecord(
@@ -104,7 +104,7 @@ class WorkoutExecutionRecordSaver {
         await _workoutService.createRecord(newRecord);
         
         if (kDebugMode) {
-          print('[RecordSaver] 新訓練記錄創建成功');
+          debugPrint('[RecordSaver] 新訓練記錄創建成功');
         }
       }
       
@@ -115,8 +115,8 @@ class WorkoutExecutionRecordSaver {
       return true;
     } catch (e, stackTrace) {
       if (kDebugMode) {
-        print('[RecordSaver] 保存訓練記錄失敗: $e');
-        print('[RecordSaver] Stack trace: $stackTrace');
+        debugPrint('[RecordSaver] 保存訓練記錄失敗: $e');
+        debugPrint('[RecordSaver] Stack trace: $stackTrace');
       }
       
       if (context != null && context.mounted) {

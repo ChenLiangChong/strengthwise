@@ -78,33 +78,33 @@ class ExerciseLocalCacheService {
       while (retryCount < maxRetries) {
         try {
           _box = await Hive.openBox(_boxName);
-          print('[EXERCISE_CACHE] 本地快取初始化完成');
+          debugPrint('[EXERCISE_CACHE] 本地快取初始化完成');
           return;
         } catch (e) {
           retryCount++;
-          print('[EXERCISE_CACHE] 初始化失敗 (第 $retryCount/$maxRetries 次): $e');
+          debugPrint('[EXERCISE_CACHE] 初始化失敗 (第 $retryCount/$maxRetries 次): $e');
 
           // 如果是鎖文件問題，嘗試刪除並重試
           if (e.toString().contains('lock failed') ||
               e.toString().contains('already open')) {
-            print('[EXERCISE_CACHE] 檢測到鎖文件問題，嘗試清理...');
+            debugPrint('[EXERCISE_CACHE] 檢測到鎖文件問題，嘗試清理...');
 
             try {
               // 嘗試刪除舊的 Box（如果存在）
               if (await Hive.boxExists(_boxName)) {
                 await Hive.deleteBoxFromDisk(_boxName);
-                print('[EXERCISE_CACHE] 已刪除舊的快取檔案');
+                debugPrint('[EXERCISE_CACHE] 已刪除舊的快取檔案');
               }
 
               // 等待一小段時間後重試
               await Future.delayed(Duration(milliseconds: 500 * retryCount));
             } catch (cleanupError) {
-              print('[EXERCISE_CACHE] 清理失敗: $cleanupError');
+              debugPrint('[EXERCISE_CACHE] 清理失敗: $cleanupError');
             }
           }
 
           if (retryCount >= maxRetries) {
-            print('[EXERCISE_CACHE] ⚠️ 初始化失敗，將使用無快取模式');
+            debugPrint('[EXERCISE_CACHE] ⚠️ 初始化失敗，將使用無快取模式');
             // 不拋出錯誤，讓服務在無快取模式下運行
             _box = null;
             return;
@@ -112,7 +112,7 @@ class ExerciseLocalCacheService {
         }
       }
     } catch (e) {
-      print('[EXERCISE_CACHE] 初始化過程發生錯誤: $e');
+      debugPrint('[EXERCISE_CACHE] 初始化過程發生錯誤: $e');
       // 不拋出錯誤，讓服務在無快取模式下運行
       _box = null;
     }
@@ -129,9 +129,9 @@ class ExerciseLocalCacheService {
 
     if (isValid) {
       final lastUpdate = _box!.get(_lastUpdateKey);
-      print('[EXERCISE_CACHE] 快取有效（版本 $cachedVersion，上次更新: $lastUpdate）');
+      debugPrint('[EXERCISE_CACHE] 快取有效（版本 $cachedVersion，上次更新: $lastUpdate）');
     } else {
-      print('[EXERCISE_CACHE] 快取無效或已過期（版本 $cachedVersion）');
+      debugPrint('[EXERCISE_CACHE] 快取無效或已過期（版本 $cachedVersion）');
     }
 
     return isValid;
@@ -142,7 +142,7 @@ class ExerciseLocalCacheService {
     if (_box == null) throw Exception('Hive Box 未初始化');
 
     try {
-      print('[EXERCISE_CACHE] 開始保存 ${exercises.length} 個動作到本地...');
+      debugPrint('[EXERCISE_CACHE] 開始保存 ${exercises.length} 個動作到本地...');
 
       // 將 Exercise 物件轉換為 JSON Map（使用 Supabase 格式）
       final exercisesMaps = exercises.map((e) {
@@ -179,9 +179,9 @@ class ExerciseLocalCacheService {
       await _box!
           .put(_lastUpdateKey, DateTimeUtils.formatToUtcIso(DateTime.now()));
 
-      print('[EXERCISE_CACHE] ✅ 成功保存到本地（${_getDataSize(exercisesMaps)}）');
+      debugPrint('[EXERCISE_CACHE] ✅ 成功保存到本地（${_getDataSize(exercisesMaps)}）');
     } catch (e) {
-      print('[EXERCISE_CACHE] 保存失敗: $e');
+      debugPrint('[EXERCISE_CACHE] 保存失敗: $e');
       rethrow;
     }
   }
@@ -191,11 +191,11 @@ class ExerciseLocalCacheService {
     if (_box == null) throw Exception('Hive Box 未初始化');
 
     try {
-      print('[EXERCISE_CACHE] 從本地載入動作...');
+      debugPrint('[EXERCISE_CACHE] 從本地載入動作...');
 
       final exercisesMaps = _box!.get(_exercisesKey) as List?;
       if (exercisesMaps == null || exercisesMaps.isEmpty) {
-        print('[EXERCISE_CACHE] 本地無資料');
+        debugPrint('[EXERCISE_CACHE] 本地無資料');
         return [];
       }
 
@@ -207,11 +207,11 @@ class ExerciseLocalCacheService {
       final exercises = await _parseInIsolate(maps);
 
       final duration = DateTime.now().difference(startTime);
-      print(
+      debugPrint(
           '[EXERCISE_CACHE] ✅ 成功從本地載入 ${exercises.length} 個動作（Isolate 解析耗時 ${duration.inMilliseconds}ms）');
       return exercises;
     } catch (e) {
-      print('[EXERCISE_CACHE] 載入失敗: $e');
+      debugPrint('[EXERCISE_CACHE] 載入失敗: $e');
       return [];
     }
   }
@@ -221,7 +221,7 @@ class ExerciseLocalCacheService {
     if (_box == null) return;
 
     await _box!.clear();
-    print('[EXERCISE_CACHE] 快取已清除');
+    debugPrint('[EXERCISE_CACHE] 快取已清除');
   }
 
   /// 獲取快取資訊

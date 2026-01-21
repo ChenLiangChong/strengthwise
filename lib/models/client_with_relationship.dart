@@ -18,8 +18,9 @@ class ClientWithRelationship {
 
   /// 顯示名稱（優先使用 user，否則使用名稱快照）
   String get displayName {
-    if (user != null) {
-      return user!.displayName ?? user!.email;
+    final u = user;
+    if (u != null) {
+      return u.displayName ?? u.email;
     }
     // 學員被刪除，使用名稱快照
     return relationship.clientName ?? '未知學員';

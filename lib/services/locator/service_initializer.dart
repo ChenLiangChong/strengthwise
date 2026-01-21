@@ -25,7 +25,7 @@ class ServiceInitializer {
     ], eagerError: false); // 即使某個失敗，其他繼續
 
     if (kDebugMode) {
-      print('服務定位器設置完成 - Supabase 模式');
+      debugPrint('服務定位器設置完成 - Supabase 模式');
     }
   }
 
@@ -33,7 +33,7 @@ class ServiceInitializer {
   static Future<void> _initializeAuthService(GetIt serviceLocator) async {
     try {
       if (kDebugMode) {
-        print('初始化認證服務...');
+        debugPrint('初始化認證服務...');
       }
 
       final authService = serviceLocator<IAuthService>();
@@ -43,12 +43,12 @@ class ServiceInitializer {
         );
 
         if (kDebugMode) {
-          print('認證服務初始化完成');
+          debugPrint('認證服務初始化完成');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('初始化認證服務失敗: $e');
+        debugPrint('初始化認證服務失敗: $e');
       }
       // 記錄錯誤但不拋出
       serviceLocator<ErrorHandlingService>().logError('初始化認證服務失敗: $e');
@@ -62,30 +62,30 @@ class ServiceInitializer {
         final bookingService = serviceLocator<IBookingService>();
         if (!bookingService.isInitialized) {
           if (kDebugMode) {
-            print('初始化關鍵服務: 預約服務');
+            debugPrint('初始化關鍵服務: 預約服務');
           }
 
           // ⚡ 優化：完全異步，不等待（避免卡頓）
           // 預約服務初始化移到背景執行，不阻塞主線程
           unawaited(bookingService.initialize().then((_) {
             if (kDebugMode) {
-              print('預約服務背景初始化完成');
+              debugPrint('預約服務背景初始化完成');
             }
           }).catchError((e) {
             if (kDebugMode) {
-              print('預約服務背景初始化失敗: $e');
+              debugPrint('預約服務背景初始化失敗: $e');
             }
             serviceLocator<ErrorHandlingService>().logError('預約服務背景初始化失敗: $e');
           }));
           
           if (kDebugMode) {
-            print('預約服務已啟動背景初始化（不阻塞 UI）');
+            debugPrint('預約服務已啟動背景初始化（不阻塞 UI）');
           }
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('啟動預約服務初始化失敗: $e');
+        debugPrint('啟動預約服務初始化失敗: $e');
       }
       serviceLocator<ErrorHandlingService>().logError('啟動預約服務初始化失敗: $e');
     }
@@ -95,7 +95,7 @@ class ServiceInitializer {
   static Future<void> _initializeExerciseService(GetIt serviceLocator) async {
     try {
       if (kDebugMode) {
-        print('初始化運動服務...');
+        debugPrint('初始化運動服務...');
       }
 
       final exerciseService = serviceLocator<IExerciseService>();
@@ -105,12 +105,12 @@ class ServiceInitializer {
         );
 
         if (kDebugMode) {
-          print('運動服務初始化完成');
+          debugPrint('運動服務初始化完成');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('初始化運動服務失敗: $e');
+        debugPrint('初始化運動服務失敗: $e');
       }
       // 記錄錯誤但不拋出
       serviceLocator<ErrorHandlingService>().logError('初始化運動服務失敗: $e');
@@ -124,7 +124,7 @@ class ServiceInitializer {
       // 例如關閉數據庫連接、取消訂閱等
     } catch (e) {
       if (kDebugMode) {
-        print('清理服務資源時出錯: $e');
+        debugPrint('清理服務資源時出錯: $e');
       }
     }
   }

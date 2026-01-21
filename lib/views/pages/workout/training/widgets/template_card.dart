@@ -36,7 +36,7 @@ class TemplateCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: InkWell(
         onTap: onTap,

@@ -22,7 +22,7 @@ class ExercisesPage extends StatefulWidget {
   const ExercisesPage({super.key});
 
   @override
-  _ExercisesPageState createState() => _ExercisesPageState();
+  State<ExercisesPage> createState() => _ExercisesPageState();
 }
 
 class _ExercisesPageState extends State<ExercisesPage> {
@@ -107,7 +107,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
   }
 
   void _logDebug(String message) {
-    print('[動作瀏覽] $message');
+    debugPrint('[動作瀏覽] $message');
   }
 
   /// 第1層：載入訓練類型
@@ -473,6 +473,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     );
 
     if (selectedExercise != null && context.mounted) {
+      // ignore: use_build_context_synchronously - context.mounted 已檢查
       Navigator.pop(context, selectedExercise);
     }
   }
@@ -694,6 +695,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
           ),
         );
         if (selectedExercise != null && context.mounted) {
+          // ignore: use_build_context_synchronously - context.mounted 已檢查
           Navigator.pop(context, selectedExercise);
         }
       },

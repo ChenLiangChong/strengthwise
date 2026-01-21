@@ -29,7 +29,7 @@ class ProfileDetailCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Padding(
         padding: context.cardPadding,
@@ -59,7 +59,7 @@ class ProfileDetailCard extends StatelessWidget {
               Container(
                 padding: EdgeInsets.all(context.spacing.sm),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -92,7 +92,7 @@ class ProfileDetailCard extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(context.spacing.sm),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(

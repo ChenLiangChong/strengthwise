@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import '../services/core/theme_service.dart';
 import '../themes/app_theme_mode.dart';
 import '../themes/app_theme.dart';
+import 'interfaces/i_theme_controller.dart';
 
 /// 主題控制器
 ///
 /// 負責管理應用程式的主題狀態，並通知 UI 更新
 /// 繼承 ChangeNotifier 實現響應式狀態管理
 /// 支援四種模式：Light、Dark、Rose、System
-class ThemeController extends ChangeNotifier {
+class ThemeController extends ChangeNotifier implements IThemeController {
   final ThemeService _themeService;
   AppThemeMode _themeMode = AppThemeMode.system;
   bool _isInitialized = false;
@@ -22,9 +23,11 @@ class ThemeController extends ChangeNotifier {
   }
 
   /// 當前主題模式
+  @override
   AppThemeMode get themeMode => _themeMode;
 
   /// 是否已初始化
+  @override
   bool get isInitialized => _isInitialized;
 
   /// 從本地存儲加載主題設定
@@ -48,6 +51,7 @@ class ThemeController extends ChangeNotifier {
   /// - mode: 要設定的主題模式
   ///
   /// 會同時更新記憶體狀態和持久化存儲
+  @override
   Future<void> setThemeMode(AppThemeMode mode) async {
     if (_themeMode == mode) {
       return; // 相同模式，不需要更新
@@ -66,21 +70,25 @@ class ThemeController extends ChangeNotifier {
   }
 
   /// 切換到淺色模式
+  @override
   Future<void> setLightMode() async {
     await setThemeMode(AppThemeMode.light);
   }
 
   /// 切換到深色模式
+  @override
   Future<void> setDarkMode() async {
     await setThemeMode(AppThemeMode.dark);
   }
 
   /// 切換到粉色模式 🌸
+  @override
   Future<void> setRoseMode() async {
     await setThemeMode(AppThemeMode.rose);
   }
 
   /// 跟隨系統模式
+  @override
   Future<void> setSystemMode() async {
     await setThemeMode(AppThemeMode.system);
   }
@@ -88,6 +96,7 @@ class ThemeController extends ChangeNotifier {
   /// 切換主題（淺色 → 深色 → 粉色 → 淺色）
   ///
   /// 如果當前是 System 模式，會切換到 Light 模式
+  @override
   Future<void> toggleTheme(BuildContext context) async {
     switch (_themeMode) {
       case AppThemeMode.system:
@@ -106,6 +115,7 @@ class ThemeController extends ChangeNotifier {
   }
 
   /// 重置到預設值（跟隨系統）
+  @override
   Future<void> resetToDefault() async {
     await _themeService.clearThemeMode();
     _themeMode = AppThemeMode.system;
@@ -114,6 +124,7 @@ class ThemeController extends ChangeNotifier {
   }
 
   /// 獲取當前主題模式的顯示名稱
+  @override
   String get themeModeName {
     switch (_themeMode) {
       case AppThemeMode.light:
@@ -128,6 +139,7 @@ class ThemeController extends ChangeNotifier {
   }
 
   /// 獲取當前主題模式的圖標
+  @override
   IconData get themeModeIcon {
     switch (_themeMode) {
       case AppThemeMode.light:
@@ -144,6 +156,7 @@ class ThemeController extends ChangeNotifier {
   /// 獲取當前主題對應的 ThemeData
   ///
   /// 用於 MaterialApp.theme 屬性
+  @override
   ThemeData getThemeData(Brightness platformBrightness) {
     switch (_themeMode) {
       case AppThemeMode.light:
@@ -160,8 +173,10 @@ class ThemeController extends ChangeNotifier {
   }
 
   /// 獲取當前是否為自訂主題（非 system）
+  @override
   bool get isCustomTheme => _themeMode != AppThemeMode.system;
 
   /// 獲取當前是否為粉色主題
+  @override
   bool get isRoseTheme => _themeMode == AppThemeMode.rose;
 }

@@ -1,6 +1,8 @@
 // ✅ 已響應式改造 (Phase 0)
 // ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 // ✅ v3.7: MVVM 修復 - Supabase.auth → AuthController
+// ignore_for_file: deprecated_member_use - RadioListTile API 待遷移到 RadioGroup
+
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/health_assessment_models.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
@@ -8,7 +10,7 @@ import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/injury_coach_note_model.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
-import 'package:strengthwise/controllers/profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:uuid/uuid.dart';
 
@@ -58,7 +60,7 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
 
   // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
   // ⭐ v3.7: 新增 AuthController 取代直接訪問 Supabase.auth
-  late final ProfileController _profileController;
+  late final IProfileController _profileController;
   late final IAuthController _authController;
   late final ErrorHandlingService _errorService;
   final _uuid = const Uuid();
@@ -125,7 +127,7 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
     super.initState();
     // ⭐ v3.6: MVVM 重構
     // ⭐ v3.7: 新增 AuthController
-    _profileController = serviceLocator<ProfileController>();
+    _profileController = serviceLocator<IProfileController>();
     _authController = serviceLocator<IAuthController>();
     _errorService = serviceLocator<ErrorHandlingService>();
     _loadExistingData();
@@ -204,23 +206,25 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
       _selectedEquipment.addAll(assessment.equipmentAccess);
 
       // 訓練目標
-      if (assessment.trainingGoals != null) {
-        _primaryGoal = assessment.trainingGoals!.primary;
+      final trainingGoals = assessment.trainingGoals;
+      if (trainingGoals != null) {
+        _primaryGoal = trainingGoals.primary;
         _targetKgController.text =
-            assessment.trainingGoals!.targetKg?.toString() ?? '';
+            trainingGoals.targetKg?.toString() ?? '';
         _timeframeMonthsController.text =
-            assessment.trainingGoals!.timeframeMonths?.toString() ?? '';
-        _goalNotesController.text = assessment.trainingGoals!.notes ?? '';
+            trainingGoals.timeframeMonths?.toString() ?? '';
+        _goalNotesController.text = trainingGoals.notes ?? '';
       }
 
       // 緊急聯絡人
-      if (assessment.emergencyContact != null) {
+      final emergencyContact = assessment.emergencyContact;
+      if (emergencyContact != null) {
         _emergencyNameController.text =
-            assessment.emergencyContact!['name'] ?? '';
+            emergencyContact['name'] ?? '';
         _emergencyPhoneController.text =
-            assessment.emergencyContact!['phone'] ?? '';
+            emergencyContact['phone'] ?? '';
         _emergencyRelationshipController.text =
-            assessment.emergencyContact!['relationship'] ?? '';
+            emergencyContact['relationship'] ?? '';
       }
     });
   }
@@ -848,10 +852,10 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: theme.colorScheme.errorContainer.withOpacity(0.3),
+              color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: theme.colorScheme.error.withOpacity(0.5),
+                color: theme.colorScheme.error.withValues(alpha: 0.5),
               ),
             ),
             child: Row(
@@ -953,7 +957,7 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -1029,14 +1033,29 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
             // 傷病資訊
             const SizedBox(height: 8),
             Text('狀態：${injury.status.label}'),
-            if (injury.diagnosis != null && injury.diagnosis!.isNotEmpty)
-              Text('醫療診斷：${injury.diagnosis}'),
-            if (injury.limitations != null && injury.limitations!.isNotEmpty)
-              Text('功能限制：${injury.limitations}'),
-            if (injury.occurredDate != null)
-              Text(
-                '發生日期：${injury.occurredDate!.year} 年 ${injury.occurredDate!.month} 月',
-              ),
+            Builder(builder: (context) {
+              final diagnosis = injury.diagnosis;
+              if (diagnosis != null && diagnosis.isNotEmpty) {
+                return Text('醫療診斷：$diagnosis');
+              }
+              return const SizedBox.shrink();
+            }),
+            Builder(builder: (context) {
+              final limitations = injury.limitations;
+              if (limitations != null && limitations.isNotEmpty) {
+                return Text('功能限制：$limitations');
+              }
+              return const SizedBox.shrink();
+            }),
+            Builder(builder: (context) {
+              final occurredDate = injury.occurredDate;
+              if (occurredDate != null) {
+                return Text(
+                  '發生日期：${occurredDate.year} 年 ${occurredDate.month} 月',
+                );
+              }
+              return const SizedBox.shrink();
+            }),
 
             // 教練備註區
             // 學員模式：顯示所有教練備註（唯讀）
@@ -1125,9 +1144,9 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
       key: ValueKey('note_$injurySite'), // 強制每個傷病獨立
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.5)),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1781,10 +1800,10 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: theme.colorScheme.primary.withOpacity(0.3),
+              color: theme.colorScheme.primary.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
@@ -1812,10 +1831,10 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.3),
+              color: theme.colorScheme.outline.withValues(alpha: 0.3),
             ),
           ),
           child: Row(

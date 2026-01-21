@@ -2,8 +2,8 @@
 // ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
-import 'package:strengthwise/controllers/appointment_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_appointment_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 // ⭐ v3.5: 事件由 Controller 統一發布，View 不需要直接使用 EventBusController
 import 'package:strengthwise/services/core/error_handling_service.dart';
@@ -46,9 +46,9 @@ class AppointmentsListPage extends StatefulWidget {
 }
 
 class _AppointmentsListPageState extends State<AppointmentsListPage> {
-  late final AppointmentController _appointmentController;
+  late final IAppointmentController _appointmentController;
   late final IAuthController _authController;
-  late final ProfileController _profileController; // ⭐ v3.6: MVVM
+  late final IProfileController _profileController; // ⭐ v3.6: MVVM
   late final ErrorHandlingService _errorService;
 
   AppointmentStatus? _selectedStatus;
@@ -65,9 +65,9 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
   }
 
   void _initializeControllers() {
-    _appointmentController = serviceLocator<AppointmentController>();
+    _appointmentController = serviceLocator<IAppointmentController>();
     _authController = serviceLocator<IAuthController>();
-    _profileController = serviceLocator<ProfileController>(); // ⭐ v3.6: MVVM
+    _profileController = serviceLocator<IProfileController>(); // ⭐ v3.6: MVVM
     _errorService = serviceLocator<ErrorHandlingService>();
     _appointmentController.addListener(_onControllerUpdate);
   }
@@ -82,19 +82,20 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
     setState(() => _isLoading = true);
 
     try {
-      _currentUser = _authController.user;
-      if (_currentUser == null) {
+      final user = _authController.user;
+      if (user == null) {
         throw Exception('未登入');
       }
+      _currentUser = user;
 
       if (widget.isCoachMode) {
         await _appointmentController.loadCoachAppointments(
-          coachId: _currentUser!.uid,
+          coachId: user.uid,
           status: _selectedStatus,
         );
       } else {
         await _appointmentController.loadClientAppointments(
-          clientId: _currentUser!.uid,
+          clientId: user.uid,
           status: _selectedStatus,
         );
       }
@@ -204,7 +205,8 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
     AppointmentModel appointment,
     String action,
   ) async {
-    if (_currentUser == null) return;
+    final user = _currentUser;
+    if (user == null) return;
 
     try {
       bool success = false;
@@ -224,7 +226,7 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
           
           success = await _appointmentController.cancelAppointment(
             appointmentId: appointment.id,
-            cancelledBy: _currentUser!.uid,
+            cancelledBy: user.uid,
             reason: fullCancelReason,
           );
           break;
@@ -254,7 +256,7 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
           
           success = await _appointmentController.rejectAppointment(
             appointmentId: appointment.id,
-            cancelledBy: _currentUser!.uid,
+            cancelledBy: user.uid,
             reason: fullRejectReason,
           );
           break;
@@ -333,9 +335,10 @@ class _AppointmentsListPageState extends State<AppointmentsListPage> {
   /// 建立臨時課程（教練專用）⭐ v3.0
   /// ⭐ v3.1.1: 創建後自動跳轉到 Session Mode
   Future<void> _onCreateAdHocSession() async {
-    if (_currentUser == null) return;
+    final user = _currentUser;
+    if (user == null) return;
 
-    final result = await AdHocSessionDialog.show(context, _currentUser!.uid);
+    final result = await AdHocSessionDialog.show(context, user.uid);
     if (result != null && mounted) {
       // ⭐ v3.1.1: 跳轉到 Session Mode
       Navigator.push(

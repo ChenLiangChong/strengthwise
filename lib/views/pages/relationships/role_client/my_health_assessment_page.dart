@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/models/health_assessment/health_assessment_model.dart';
 import 'package:strengthwise/models/injury_coach_note_model.dart';
-import 'package:strengthwise/controllers/profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/profile/health_assessment_detail_page.dart';
@@ -32,7 +32,7 @@ class MyHealthAssessmentPage extends StatefulWidget {
 
 class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
   // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
-  late final ProfileController _profileController;
+  late final IProfileController _profileController;
 
   HealthAssessmentModel? _healthAssessment;
   Map<String, List<InjuryCoachNoteModel>> _injuryCoachNotes = {};
@@ -41,7 +41,7 @@ class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
   @override
   void initState() {
     super.initState();
-    _profileController = serviceLocator<ProfileController>();
+    _profileController = serviceLocator<IProfileController>();
     _loadHealthAssessment();
   }
 
@@ -187,10 +187,10 @@ class _MyHealthAssessmentPageState extends State<MyHealthAssessmentPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: theme.colorScheme.primary.withOpacity(0.3),
+          color: theme.colorScheme.primary.withValues(alpha: 0.3),
         ),
       ),
       child: Row(

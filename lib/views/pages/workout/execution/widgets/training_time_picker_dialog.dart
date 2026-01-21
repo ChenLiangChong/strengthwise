@@ -76,7 +76,7 @@ class _TrainingTimePickerDialogState extends State<TrainingTimePickerDialog> {
                             return Container(
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: selectedHour == index ? Colors.blue.withOpacity(0.1) : Colors.transparent,
+                                color: selectedHour == index ? Colors.blue.withValues(alpha: 0.1) : Colors.transparent,
                               ),
                               child: Text(
                                 index.toString().padLeft(2, '0'),
@@ -121,7 +121,7 @@ class _TrainingTimePickerDialogState extends State<TrainingTimePickerDialog> {
                                 height: 80,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: selectedMinute == 0 ? Colors.blue.withOpacity(0.1) : Colors.transparent,
+                                  color: selectedMinute == 0 ? Colors.blue.withValues(alpha: 0.1) : Colors.transparent,
                                   border: Border(
                                     bottom: BorderSide(color: Theme.of(context).colorScheme.outline),
                                   ),
@@ -145,7 +145,7 @@ class _TrainingTimePickerDialogState extends State<TrainingTimePickerDialog> {
                                 height: 80,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: selectedMinute == 30 ? Colors.blue.withOpacity(0.1) : Colors.transparent,
+                                  color: selectedMinute == 30 ? Colors.blue.withValues(alpha: 0.1) : Colors.transparent,
                                 ),
                                 child: Text(
                                   '30',

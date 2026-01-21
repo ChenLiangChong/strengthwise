@@ -43,6 +43,18 @@ class AppTheme {
   static const Color errorRed =
       Color(0xFFEF4444); // [決策] Tailwind Red-500 - 激情警示
 
+  // 語意色彩 (Semantic Colors) - Success / Warning
+  static const Color successLight = Color(0xFF10B981); // Emerald-500
+  static const Color successDark = Color(0xFF34D399); // Emerald-400
+  static const Color warningLight = Color(0xFFF59E0B); // Amber-500
+  static const Color warningDark = Color(0xFFFBBF24); // Amber-400
+
+  // SOAP 筆記專用色彩
+  static const Color soapSubjective = Color(0xFF3B82F6); // Blue-500
+  static const Color soapObjective = Color(0xFF10B981); // Emerald-500
+  static const Color soapAssessment = Color(0xFFF59E0B); // Amber-500
+  static const Color soapPlan = Color(0xFF8B5CF6); // Violet-500
+
   // ---------------------------------------------------------------------------
   // Rose Theme Colors (UI/UX Pro Max 推薦配色)
   // ---------------------------------------------------------------------------
@@ -605,6 +617,36 @@ class AppTheme {
   /// 判斷當前是否為深色模式
   static bool isDarkMode(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark;
+  }
+
+  /// 獲取成功色彩（根據當前主題）
+  static Color getSuccessColor(BuildContext context) {
+    return isDarkMode(context) ? successDark : successLight;
+  }
+
+  /// 獲取警告色彩（根據當前主題）
+  static Color getWarningColor(BuildContext context) {
+    return isDarkMode(context) ? warningDark : warningLight;
+  }
+
+  /// 獲取紅綠燈顏色（用於 Readiness 相關組件）
+  ///
+  /// [level] 1-5 的數值，1=差，5=好
+  static Color getTrafficLightColorByLevel(int level) {
+    switch (level) {
+      case 1:
+        return errorRed; // 紅色
+      case 2:
+        return warningLight; // 警告橘色
+      case 3:
+        return const Color(0xFFFBBF24); // 警告黃色
+      case 4:
+        return successDark; // 成功淺綠
+      case 5:
+        return successLight; // 成功綠色
+      default:
+        return warningLight;
+    }
   }
 
   // ---------------------------------------------------------------------------

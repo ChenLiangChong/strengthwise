@@ -5,7 +5,7 @@ import 'package:strengthwise/models/workout_template_model.dart';
 import 'package:strengthwise/models/workout_record_model.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/controllers/event_bus_controller.dart'; // ⭐ v3.5
+import 'package:strengthwise/controllers/interfaces/i_event_bus_controller.dart'; // ⭐ v3.5
 import 'package:strengthwise/services/core/app_event_bus.dart'; // ⭐ v3.5
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
@@ -28,7 +28,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
   late final IWorkoutController _workoutController;
   late final IAuthController _authController;
   late final ErrorHandlingService _errorService;
-  late final EventBusController _eventBusController; // ⭐ v3.5
+  late final IEventBusController _eventBusController; // ⭐ v3.5
 
   StreamSubscription<AppEvent>? _eventSubscription; // ⭐ v3.5
   List<WorkoutTemplate> _templates = [];
@@ -42,7 +42,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
     _workoutController = serviceLocator<IWorkoutController>();
     _authController = serviceLocator<IAuthController>();
     _errorService = serviceLocator<ErrorHandlingService>();
-    _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.5
+    _eventBusController = serviceLocator<IEventBusController>(); // ⭐ v3.5
 
     // ⭐ v3.5: 訂閱模板相關事件
     _eventSubscription = _eventBusController.templateEvents.listen(_onAppEvent);
@@ -194,7 +194,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
         throw Exception('未登入');
       }
 
-      print(
+      debugPrint(
           '[TemplateManagement] 從模板創建訓練: ${template.title}，時間: $trainingStart - $trainingEnd');
 
       // 從模板創建動作記錄
@@ -238,7 +238,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
         );
       }
     } catch (e) {
-      print('[TemplateManagement] 從模板創建訓練失敗: $e');
+      debugPrint('[TemplateManagement] 從模板創建訓練失敗: $e');
       if (mounted) {
         _errorService.handleError(context, e);
       }
@@ -266,6 +266,7 @@ class _TemplateManagementPageState extends State<TemplateManagementPage> {
                 await _loadTemplates(forceRefresh: true);
 
                 if (mounted) {
+                  // ignore: use_build_context_synchronously - mounted 已檢查
                   NotificationUtils.showSuccess(context, '模板已創建');
                 }
               }

@@ -87,7 +87,7 @@ class SupabaseService {
     if (kDebugMode) {
       // 只記錄關鍵訊息
       if (message.contains('成功') || message.contains('失敗')) {
-        print('[SUPABASE] $message');
+        debugPrint('[SUPABASE] $message');
       }
     }
   }
@@ -95,7 +95,7 @@ class SupabaseService {
   /// 記錄錯誤資訊
   static void _logError(String message) {
     if (kDebugMode) {
-      print('[SUPABASE ERROR] $message');
+      debugPrint('[SUPABASE ERROR] $message');
     }
   }
 }

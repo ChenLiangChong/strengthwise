@@ -16,14 +16,14 @@ import 'package:strengthwise/views/pages/session/session_mode_page.dart';
 import 'package:strengthwise/controllers/interfaces/i_booking_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart'; // ⭐ v3.5: MVVM
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_event_bus_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_appointment_controller.dart'; // ⭐ v3.5: MVVM 重構
+import 'package:strengthwise/controllers/interfaces/i_client_availability_controller.dart'; // ⭐ v3.5: MVVM
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_availability_slot_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_realtime_controller.dart'; // ⭐ v3.9
 import 'package:strengthwise/controllers/booking_controller.dart';
-import 'package:strengthwise/controllers/profile_controller.dart';
-import 'package:strengthwise/controllers/event_bus_controller.dart';
-import 'package:strengthwise/controllers/appointment_controller.dart'; // ⭐ v3.5: MVVM 重構
-import 'package:strengthwise/controllers/client_availability_controller.dart'; // ⭐ v3.5: MVVM
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart'; // ⭐ v3.6: MVVM
-import 'package:strengthwise/controllers/availability_slot_controller.dart'; // ⭐ v3.6: MVVM
-import 'package:strengthwise/controllers/realtime_controller.dart'; // ⭐ v3.9
 import 'package:strengthwise/services/interfaces/i_availability_slot_service.dart'; // ⭐ 保留：類型定義
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
@@ -54,7 +54,7 @@ class BookingPage extends StatefulWidget {
   });
 
   @override
-  _BookingPageState createState() => _BookingPageState();
+  State<BookingPage> createState() => _BookingPageState();
 }
 
 class _BookingPageState extends State<BookingPage>
@@ -62,15 +62,15 @@ class _BookingPageState extends State<BookingPage>
   late final IBookingController _controller;
   late final IWorkoutController _workoutController; // ⭐ v3.5: MVVM
   late final IAuthController _authController;
-  late final ProfileController _profileController;
-  late final CoachingRelationshipController
+  late final IProfileController _profileController;
+  late final ICoachingRelationshipController
       _relationshipController; // ⭐ v3.6: MVVM
-  late final AvailabilitySlotController _slotController; // ⭐ v3.6: MVVM
-  late final ClientAvailabilityController
+  late final IAvailabilitySlotController _slotController; // ⭐ v3.6: MVVM
+  late final IClientAvailabilityController
       _clientAvailabilityController; // ⭐ v3.5: MVVM
-  late final EventBusController _eventBusController; // ⭐ v3.5
-  late final AppointmentController _appointmentController; // ⭐ v3.5: MVVM 重構
-  late final RealtimeController _realtimeController; // ⭐ v3.9
+  late final IEventBusController _eventBusController; // ⭐ v3.5
+  late final IAppointmentController _appointmentController; // ⭐ v3.5: MVVM 重構
+  late final IRealtimeController _realtimeController; // ⭐ v3.9
   final ErrorHandlingService _errorService =
       serviceLocator<ErrorHandlingService>();
 
@@ -144,17 +144,17 @@ class _BookingPageState extends State<BookingPage>
     _controller = widget.controller ?? BookingController();
     _workoutController = serviceLocator<IWorkoutController>(); // ⭐ v3.5: MVVM
     _authController = serviceLocator<IAuthController>();
-    _profileController = serviceLocator<ProfileController>();
+    _profileController = serviceLocator<IProfileController>();
     _relationshipController =
-        serviceLocator<CoachingRelationshipController>(); // ⭐ v3.6: MVVM
+        serviceLocator<ICoachingRelationshipController>(); // ⭐ v3.6: MVVM
     _slotController =
-        serviceLocator<AvailabilitySlotController>(); // ⭐ v3.6: MVVM
+        serviceLocator<IAvailabilitySlotController>(); // ⭐ v3.6: MVVM
     _clientAvailabilityController =
-        serviceLocator<ClientAvailabilityController>(); // ⭐ v3.5: MVVM
-    _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.5
+        serviceLocator<IClientAvailabilityController>(); // ⭐ v3.5: MVVM
+    _eventBusController = serviceLocator<IEventBusController>(); // ⭐ v3.5
     _appointmentController =
-        serviceLocator<AppointmentController>(); // ⭐ v3.5: MVVM 重構
-    _realtimeController = serviceLocator<RealtimeController>(); // ⭐ v3.9
+        serviceLocator<IAppointmentController>(); // ⭐ v3.5: MVVM 重構
+    _realtimeController = serviceLocator<IRealtimeController>(); // ⭐ v3.9
 
     // ⭐ v3.5: 訂閱行事曆相關事件
     _eventSubscription = _eventBusController.calendarEvents.listen(_onAppEvent);
@@ -254,11 +254,14 @@ class _BookingPageState extends State<BookingPage>
       final coaches = await _relationshipController
           .getClientCoachesWithRelationship(userId);
       _hasCoach = coaches.isNotEmpty;
-      _coachIds =
-          coaches.where((c) => c.user != null).map((c) => c.user!.uid).toList();
+      _coachIds = coaches
+          .where((c) => c.user != null)
+          .map((c) => c.user!.uid) // Safe: filtered by where
+          .toList();
       _coachNames = {
-        for (var c in coaches.where((c) => c.user != null))
-          c.user!.uid: c.user!.displayName ?? c.user?.email ?? '未知教練'
+        for (var c in coaches)
+          if (c.user != null)
+            c.user!.uid: c.user!.displayName ?? c.user!.email
       };
 
       // ⭐ v3.9: 訂閱所有教練的時段 Realtime（教練修改時學員即時看到）
@@ -274,12 +277,13 @@ class _BookingPageState extends State<BookingPage>
             .getCoachClientsWithRelationship(userId);
         _clientIds = clients
             .where((c) => c.user != null)
-            .map((c) => c.user!.uid)
+            .map((c) => c.user!.uid) // Safe: filtered by where
             .toList();
         // ⭐ v3.1.1: 建立學員名稱映射
         _clientNames = {
-          for (var c in clients.where((c) => c.user != null))
-            c.user!.uid: c.user!.displayName ?? c.user?.email ?? '學員'
+          for (var c in clients)
+            if (c.user != null)
+              c.user!.uid: c.user!.displayName ?? c.user!.email
         };
 
         // ⭐ v3.9: 訂閱所有學員的可訓練時間 Realtime
@@ -289,13 +293,14 @@ class _BookingPageState extends State<BookingPage>
       // 初始化 TabController（只有教練才有兩個 Tab）
       if (mounted) {
         setState(() {
-          _tabController = TabController(
+          final tabController = TabController(
             length: _isCoach ? 2 : 1,
             vsync: this,
             initialIndex: _isCoach ? widget.initialTabIndex.clamp(0, 1) : 0,
           );
-          _currentTabIndex = _tabController!.index;
-          _tabController!.addListener(_onTabChanged);
+          _tabController = tabController;
+          _currentTabIndex = tabController.index;
+          tabController.addListener(_onTabChanged);
         });
       }
     } catch (e) {
@@ -304,9 +309,10 @@ class _BookingPageState extends State<BookingPage>
   }
 
   void _onTabChanged() {
-    if (_tabController != null && mounted) {
+    final tabController = _tabController;
+    if (tabController != null && mounted) {
       setState(() {
-        _currentTabIndex = _tabController!.index;
+        _currentTabIndex = tabController.index;
         _updateSelectedDayData();
       });
 
@@ -411,17 +417,9 @@ class _BookingPageState extends State<BookingPage>
 
       // 按日期分組（合併所有教練的時段）
       final slotsByDate = <DateTime, List<AvailabilitySlotWithBooking>>{};
-      // ignore: unused_local_variable
-      int totalSlots = 0;
-      // ignore: unused_local_variable
-      int bookedCount = 0;
 
       // 載入每個教練的時段
       for (final coachId in _coachIds) {
-        // ignore: unused_local_variable
-        final coachName = _coachNames[coachId] ?? '未知教練';
-        // debugPrint('[BOOKING PAGE] 📋 載入教練 $coachName ($coachId) 的時段...');
-
         // ⭐ v3.6: 透過 Controller 查詢
         final slots = await _slotController.getAvailableSlots(
           coachId: coachId,
@@ -429,20 +427,12 @@ class _BookingPageState extends State<BookingPage>
           endDate: endDate,
         );
 
-        totalSlots += slots.length;
-
         for (var slot in slots) {
+          // 只顯示未被預約的時段
+          if (slot.isBooked) continue;
+
           final date = slot.slot.startTime;
           final day = DateTime(date.year, date.month, date.day);
-
-          // debugPrint(
-          //     '[BOOKING PAGE]   🕐 [$coachName] ${slot.slot.startTime} - ${slot.slot.endTime}, isBooked=${slot.isBooked}');
-
-          // 只顯示未被預約的時段
-          if (slot.isBooked) {
-            bookedCount++;
-            continue;
-          }
 
           if (slotsByDate[day] == null) {
             slotsByDate[day] = [];
@@ -990,8 +980,9 @@ class _BookingPageState extends State<BookingPage>
       // ⭐ v3.1 修復：查詢「只有預約沒有訓練計畫」的課程
       // 收集已有訓練計畫的 appointment IDs
       final plansWithAppointment = plans
-          .where((p) => p.appointmentId != null && p.appointmentId!.isNotEmpty)
-          .map((p) => p.appointmentId!)
+          .map((p) => p.appointmentId)
+          .where((id) => id != null && id.isNotEmpty)
+          .cast<String>()
           .toSet();
 
       // Tab 1「我的」：查詢學員的已確認預約
@@ -1379,6 +1370,7 @@ class _BookingPageState extends State<BookingPage>
         // ⭐ v3.5: 透過 Controller 創建可訓練時段
         final created =
             await _clientAvailabilityController.createAvailability(result);
+        if (!mounted) return;
         if (created != null) {
           NotificationUtils.showSuccess(context, '可訓練時段已新增');
           // 重新載入數據

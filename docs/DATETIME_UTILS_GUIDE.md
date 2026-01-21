@@ -2,7 +2,7 @@
 
 > 統一時間轉換工具 API 參考
 
-**最後更新**：2026-01-05
+**最後更新**：2026-01-19
 
 ---
 
@@ -58,6 +58,7 @@ if (DateTimeUtils.isWithinUtcDateRange(trainingDate, startDate, endDate)) {
 | `isSameUtcDate()` | 檢查是否為同一天 | `bool` |
 | `isWithinUtcDateRange()` | 檢查是否在日期範圍內 | `bool` |
 | `localDateToUtcDate()` | 本地日期轉 UTC 日期 | `DateTime` |
+| `formatToDateOnly()` | 格式化為日期字串（YYYY-MM-DD）| `String` |
 
 ---
 

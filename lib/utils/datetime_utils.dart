@@ -40,7 +40,7 @@ class DateTimeUtils {
   /// 範例：
   /// ```dart
   /// final dt = DateTimeUtils.parsePostgresTimestamp("2025-12-15 09:00:00+00");
-  /// print(dt); // 2025-12-15T17:00:00.000+08:00（本地時間，UTC+8）
+  /// debugPrint(dt); // 2025-12-15T17:00:00.000+08:00（本地時間，UTC+8）
   /// ```
   ///
   /// 如果需要 UTC 時間，使用 [parsePostgresTimestampUtc]
@@ -55,7 +55,7 @@ class DateTimeUtils {
   /// 範例：
   /// ```dart
   /// final dt = DateTimeUtils.parsePostgresTimestampUtc("2025-12-15 09:00:00+00");
-  /// print(dt); // 2025-12-15T09:00:00.000Z（UTC 時間）
+  /// debugPrint(dt); // 2025-12-15T09:00:00.000Z（UTC 時間）
   /// ```
   static DateTime parsePostgresTimestampUtc(String timestamp) {
     // 步驟 1：移除引號並修剪空白
@@ -87,7 +87,7 @@ class DateTimeUtils {
   /// 範例：
   /// ```dart
   /// final dt = DateTimeUtils.parseIsoTimestamp("2025-12-15T09:00:00.000Z");
-  /// print(dt); // 2025-12-15T17:00:00.000+08:00（本地時間，UTC+8）
+  /// debugPrint(dt); // 2025-12-15T17:00:00.000+08:00（本地時間，UTC+8）
   /// ```
   static DateTime parseIsoTimestamp(String timestamp) {
     return DateTime.parse(timestamp).toLocal();
@@ -101,7 +101,7 @@ class DateTimeUtils {
   /// ```dart
   /// final local = DateTime(2025, 12, 15, 17, 0);  // 本地時間 17:00
   /// final utcStr = DateTimeUtils.formatToUtcIso(local);
-  /// print(utcStr); // "2025-12-15T09:00:00.000Z"（UTC）
+  /// debugPrint(utcStr); // "2025-12-15T09:00:00.000Z"（UTC）
   /// ```
   static String formatToUtcIso(DateTime localTime) {
     return localTime.toUtc().toIso8601String();
@@ -126,8 +126,8 @@ class DateTimeUtils {
   /// final range = DateTimeUtils.parseTstzRange(
   ///   "[2025-12-15 09:00:00+00,2025-12-15 10:00:00+00)"
   /// );
-  /// print(range['start']); // 2025-12-15T17:00:00.000+08:00（本地時間）
-  /// print(range['end']);   // 2025-12-15T18:00:00.000+08:00
+  /// debugPrint(range['start']); // 2025-12-15T17:00:00.000+08:00（本地時間）
+  /// debugPrint(range['end']);   // 2025-12-15T18:00:00.000+08:00
   /// ```
   ///
   /// 如果需要 UTC 時間，使用 [parseTstzRangeUtc]
@@ -148,8 +148,8 @@ class DateTimeUtils {
   /// final range = DateTimeUtils.parseTstzRangeUtc(
   ///   "[2025-12-15 09:00:00+00,2025-12-15 10:00:00+00)"
   /// );
-  /// print(range['start']); // 2025-12-15T09:00:00.000Z（UTC）
-  /// print(range['end']);   // 2025-12-15T10:00:00.000Z
+  /// debugPrint(range['start']); // 2025-12-15T09:00:00.000Z（UTC）
+  /// debugPrint(range['end']);   // 2025-12-15T10:00:00.000Z
   /// ```
   static Map<String, DateTime> parseTstzRangeUtc(String tstzRange) {
     // 移除外層引號
@@ -182,7 +182,7 @@ class DateTimeUtils {
   /// final start = DateTime.utc(2025, 12, 15, 9, 0);
   /// final end = DateTime.utc(2025, 12, 15, 10, 0);
   /// final range = DateTimeUtils.formatToTstzRange(start, end);
-  /// print(range); // "[2025-12-15T09:00:00.000Z,2025-12-15T10:00:00.000Z)"
+  /// debugPrint(range); // "[2025-12-15T09:00:00.000Z,2025-12-15T10:00:00.000Z)"
   /// ```
   static String formatToTstzRange(DateTime start, DateTime end) {
     final startStr = start.toUtc().toIso8601String();
@@ -201,11 +201,11 @@ class DateTimeUtils {
   ///
   /// final dbTime = DateTime.parse('2025-12-27T16:00:45Z');
   /// final utcDate = DateTimeUtils.getUtcDate(dbTime);
-  /// print(utcDate); // 2025-12-27 00:00:00.000Z ✅ 正確
+  /// debugPrint(utcDate); // 2025-12-27 00:00:00.000Z ✅ 正確
   ///
   /// // 如果直接用 toLocal()：
   /// final localDate = dbTime.toLocal();
-  /// print(localDate); // 2025-12-28 00:00:45 ❌ 日期錯誤
+  /// debugPrint(localDate); // 2025-12-28 00:00:45 ❌ 日期錯誤
   /// ```
   static DateTime getUtcDate(DateTime dateTime) {
     final utc = dateTime.toUtc();
@@ -225,7 +225,7 @@ class DateTimeUtils {
   /// final date2 = DateTime.parse('2025-12-28T08:00:00Z');
   ///
   /// final result = DateTimeUtils.compareUtcDates(date1, date2);
-  /// print(result); // -1 (date1 在 date2 之前)
+  /// debugPrint(result); // -1 (date1 在 date2 之前)
   /// ```
   static int compareUtcDates(DateTime date1, DateTime date2) {
     final utcDate1 = getUtcDate(date1);
@@ -240,7 +240,7 @@ class DateTimeUtils {
   /// final dt1 = DateTime.parse('2025-12-27T16:00:00Z');
   /// final dt2 = DateTime.parse('2025-12-27T23:59:59Z');
   ///
-  /// print(DateTimeUtils.isSameUtcDate(dt1, dt2)); // true
+  /// debugPrint(DateTimeUtils.isSameUtcDate(dt1, dt2)); // true
   /// ```
   static bool isSameUtcDate(DateTime date1, DateTime date2) {
     return compareUtcDates(date1, date2) == 0;
@@ -254,7 +254,7 @@ class DateTimeUtils {
   /// final start = DateTime.parse('2025-12-28T00:00:00Z');
   /// final end = DateTime.parse('2025-12-29T00:00:00Z');
   ///
-  /// print(DateTimeUtils.isWithinUtcDateRange(target, start, end)); // true
+  /// debugPrint(DateTimeUtils.isWithinUtcDateRange(target, start, end)); // true
   /// ```
   static bool isWithinUtcDateRange(
     DateTime target,
@@ -277,7 +277,7 @@ class DateTimeUtils {
   /// // 用戶選擇：2025-12-28（本地時間）
   /// final localDate = DateTime(2025, 12, 28);
   /// final utcDate = DateTimeUtils.localDateToUtcDate(localDate);
-  /// print(utcDate); // 2025-12-28 00:00:00.000Z（UTC）
+  /// debugPrint(utcDate); // 2025-12-28 00:00:00.000Z（UTC）
   ///
   /// // 注意：這裡不是時區轉換，而是將本地日期「解釋」為 UTC 日期
   /// ```
@@ -291,7 +291,7 @@ class DateTimeUtils {
   /// ```dart
   /// final date = DateTime(2026, 1, 10, 19, 30);
   /// final dateStr = DateTimeUtils.formatToDateOnly(date);
-  /// print(dateStr); // "2026-01-10"
+  /// debugPrint(dateStr); // "2026-01-10"
   /// ```
   static String formatToDateOnly(DateTime date) {
     final year = date.year.toString();

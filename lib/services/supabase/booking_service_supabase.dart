@@ -547,14 +547,14 @@ class BookingServiceSupabase implements IBookingService {
   /// 記錄調試信息
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[BOOKING] $message');
+      debugPrint('[BOOKING] $message');
     }
   }
   
   /// 記錄錯誤信息
   void _logError(String message) {
     if (kDebugMode) {
-      print('[BOOKING ERROR] $message');
+      debugPrint('[BOOKING ERROR] $message');
     }
     
     _errorService.logError(message);

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:strengthwise/common_widgets/time_picker/time_input_field.dart';
 import 'package:strengthwise/models/workout_exercise_model.dart';
 import 'package:strengthwise/models/tracking_mode.dart'; // v3.2+
+import 'package:strengthwise/themes/app_theme.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/workout/execution/widgets/set_edit_dialog.dart';
 
@@ -128,37 +129,6 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
     super.dispose();
   }
 
-  /// 當輸入欄位編輯完成時觸發批量更新
-  void _onFieldEditingComplete() {
-    final mode = widget.exercise.trackingMode;
-    final values = <String, dynamic>{};
-
-    if (mode.needsReps) {
-      values['reps'] =
-          int.tryParse(_repsController.text) ?? widget.exercise.reps;
-    }
-    if (mode.needsWeight) {
-      values['weight'] =
-          double.tryParse(_weightController.text) ?? widget.exercise.weight;
-    }
-    if (mode.needsTime) {
-      values['time'] =
-          int.tryParse(_timeController.text) ?? widget.exercise.time ?? 0;
-    }
-    if (mode.needsDistance) {
-      values['distance'] = double.tryParse(_distanceController.text) ??
-          widget.exercise.distance ??
-          0;
-    }
-    if (mode.needsCalories) {
-      values['calories'] = double.tryParse(_caloriesController.text) ??
-          widget.exercise.calories ??
-          0;
-    }
-
-    widget.onBatchUpdate(values);
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -279,7 +249,7 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
-          color: colorScheme.onSurface.withOpacity(0.4),
+          color: colorScheme.onSurface.withValues(alpha: 0.4),
           letterSpacing: 1,
         ),
       ),
@@ -309,7 +279,7 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
               onPressed: canAdd ? () => widget.onAdjustSets(1) : null,
               style: TextButton.styleFrom(
                 minimumSize: const Size.fromHeight(40),
-                backgroundColor: colorScheme.primary.withOpacity(0.1),
+                backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -335,7 +305,7 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
               style: TextButton.styleFrom(
                 minimumSize: const Size.fromHeight(40),
                 backgroundColor:
-                    colorScheme.error.withOpacity(canRemove ? 0.1 : 0.05),
+                    colorScheme.error.withValues(alpha: canRemove ? 0.1 : 0.05),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -347,13 +317,13 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
                       size: 18,
                       color: canRemove
                           ? colorScheme.error
-                          : colorScheme.error.withOpacity(0.3)),
+                          : colorScheme.error.withValues(alpha: 0.3)),
                   const SizedBox(width: 4),
                   Text('減少',
                       style: TextStyle(
                           color: canRemove
                               ? colorScheme.error
-                              : colorScheme.error.withOpacity(0.3),
+                              : colorScheme.error.withValues(alpha: 0.3),
                           fontWeight: FontWeight.w600)),
                 ],
               ),
@@ -389,7 +359,7 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
                   Text(
                     '${exercise.equipment} | ${exercise.bodyParts.join(", ")}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurface.withOpacity(0.6),
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                   ),
                 ],
@@ -419,7 +389,7 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
             IconButton(
               icon: const Icon(Icons.delete_outline),
               iconSize: 24,
-              color: colorScheme.error.withOpacity(0.7),
+              color: colorScheme.error.withValues(alpha: 0.7),
               onPressed: widget.onDelete,
               tooltip: '刪除動作',
             ),
@@ -498,9 +468,6 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
 
     final isCompleted = widget.completedSets?.contains(setIndex) ?? false;
 
-    // 獲取 PREV 數據
-    final prevRecord = widget.previousRecords?[setIndex];
-    final hasPrev = prevRecord != null;
     final isEditable = !widget.isSessionMode && !widget.readOnly;
 
     return Padding(
@@ -516,7 +483,7 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
+                        color: AppTheme.successLight,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: const Icon(Icons.check,
@@ -773,12 +740,12 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
         hintStyle: TextStyle(
           fontFamily: 'JetBrains Mono',
           fontSize: 14,
-          color: colorScheme.onSurface.withOpacity(0.3),
+          color: colorScheme.onSurface.withValues(alpha: 0.3),
         ),
         filled: true,
         fillColor: isEditable
             ? colorScheme.surface
-            : colorScheme.surface.withOpacity(0.3),
+            : colorScheme.surface.withValues(alpha: 0.3),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
@@ -786,7 +753,7 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
-            color: colorScheme.outline.withOpacity(0.5),
+            color: colorScheme.outline.withValues(alpha: 0.5),
             width: 1,
           ),
         ),
@@ -862,64 +829,6 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
     );
   }
 
-  /// v3.2+ 根據追蹤模式格式化目標顯示
-  String _formatSetTarget(
-    TrackingMode mode,
-    int reps,
-    double weight,
-    int? time,
-    double? distance,
-    double? calories,
-  ) {
-    switch (mode) {
-      case TrackingMode.weightReps:
-        return '$reps 次 × ${TrackingModeFormatter.formatWeight(weight)}';
-      case TrackingMode.weightTime:
-        return '${TrackingModeFormatter.formatWeight(weight)} × ${TrackingModeFormatter.formatTime(time ?? 0)}';
-      case TrackingMode.repsOnly:
-        return TrackingModeFormatter.formatReps(reps);
-      case TrackingMode.timeOnly:
-        return TrackingModeFormatter.formatTime(time ?? 0);
-      case TrackingMode.repsTime:
-        return '${TrackingModeFormatter.formatReps(reps)} × ${TrackingModeFormatter.formatTime(time ?? 0)}';
-      case TrackingMode.distanceTime:
-        return '${TrackingModeFormatter.formatDistance(distance ?? 0)} / ${TrackingModeFormatter.formatTime(time ?? 0)}';
-      case TrackingMode.distanceOnly:
-        return TrackingModeFormatter.formatDistance(distance ?? 0);
-      case TrackingMode.calories:
-        return TrackingModeFormatter.formatCalories(calories ?? 0);
-    }
-  }
-
-  /// v3.2+ 根據追蹤模式格式化 PREV 記錄
-  String _formatPrevRecord(TrackingMode mode, Map<String, dynamic> record) {
-    switch (mode) {
-      case TrackingMode.weightReps:
-        return '${record['reps']} × ${record['weight']} kg';
-      case TrackingMode.weightTime:
-        final time = record['time'] as int? ?? 0;
-        return '${record['weight']} kg × ${TrackingModeFormatter.formatTime(time)}';
-      case TrackingMode.repsOnly:
-        return '${record['reps']} 次';
-      case TrackingMode.timeOnly:
-        final time = record['time'] as int? ?? 0;
-        return TrackingModeFormatter.formatTime(time);
-      case TrackingMode.repsTime:
-        final time = record['time'] as int? ?? 0;
-        return '${record['reps']} 次 × ${TrackingModeFormatter.formatTime(time)}';
-      case TrackingMode.distanceTime:
-        final distance = (record['distance'] as num?)?.toDouble() ?? 0;
-        final time = record['time'] as int? ?? 0;
-        return '${TrackingModeFormatter.formatDistance(distance)} / ${TrackingModeFormatter.formatTime(time)}';
-      case TrackingMode.distanceOnly:
-        final distance = (record['distance'] as num?)?.toDouble() ?? 0;
-        return TrackingModeFormatter.formatDistance(distance);
-      case TrackingMode.calories:
-        final calories = (record['calories'] as num?)?.toDouble() ?? 0;
-        return TrackingModeFormatter.formatCalories(calories);
-    }
-  }
-
   /// 打勾框
   Widget _buildCheckbox(
     BuildContext context,
@@ -935,7 +844,7 @@ class _PlanExerciseCardState extends State<PlanExerciseCard> {
               HapticFeedback.lightImpact();
               widget.onSetCompleted?.call(setIndex, value ?? false);
             },
-      activeColor: const Color(0xFF10B981),
+      activeColor: AppTheme.successLight,
       side: BorderSide(
         color: widget.canMarkSet
             ? colorScheme.outline

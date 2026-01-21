@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../controllers/theme_controller.dart';
+import '../../../../controllers/interfaces/i_theme_controller.dart';
 import '../../../../themes/app_theme_mode.dart';
 
 /// 主題切換組件
@@ -12,7 +12,7 @@ class ProfileThemeSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeController = Provider.of<ThemeController>(context);
+    final themeController = Provider.of<IThemeController>(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Column(

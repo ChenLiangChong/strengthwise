@@ -93,7 +93,7 @@ class TopNotificationBuilder {
     String message, {
     Duration? duration,
   }) {
-    final warningColor = Theme.of(context).colorScheme.tertiary.withOpacity(0.9);
+    final warningColor = Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.9);
 
     ElegantNotification(
       title: const Text(
@@ -147,7 +147,7 @@ class TopNotificationBuilder {
           fontSize: NotificationConfig.achievementContentFontSize,
           color: isDark 
               ? const Color(0xFF334155) 
-              : Colors.white.withOpacity(0.9),
+              : Colors.white.withValues(alpha: 0.9),
         ),
       ),
       icon: Icon(
@@ -194,7 +194,7 @@ class TopNotificationBuilder {
       width: MediaQuery.of(context).size.width * NotificationConfig.systemWidth,
       toastDuration: NotificationConfig.systemDuration,
       borderRadius: BorderRadius.circular(20),
-      background: statusColor.withOpacity(0.95),
+      background: statusColor.withValues(alpha: 0.95),
       height: NotificationConfig.systemHeight,
       showProgressIndicator: false,
     ).show(context);

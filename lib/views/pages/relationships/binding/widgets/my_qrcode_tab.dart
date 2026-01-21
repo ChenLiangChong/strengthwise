@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 
 /// 我的 QR Code Tab（共用 Widget）
@@ -33,7 +33,7 @@ class _MyQRCodeTabState extends State<MyQRCodeTab> {
   }
 
   Future<void> _generateQRCode() async {
-    final controller = serviceLocator<CoachingRelationshipController>();
+    final controller = serviceLocator<ICoachingRelationshipController>();
     try {
       final qrData = await controller.generateMyQRData(widget.currentRole);
       if (mounted) {
@@ -113,7 +113,7 @@ class _MyQRCodeTabState extends State<MyQRCodeTab> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(
-                color: colorScheme.outline.withOpacity(0.2),
+                color: colorScheme.outline.withValues(alpha: 0.2),
               ),
             ),
             child: Container(
@@ -128,7 +128,7 @@ class _MyQRCodeTabState extends State<MyQRCodeTab> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: colorScheme.shadow.withOpacity(0.1),
+                          color: colorScheme.shadow.withValues(alpha: 0.1),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -175,7 +175,7 @@ class _MyQRCodeTabState extends State<MyQRCodeTab> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
-                color: colorScheme.outline.withOpacity(0.2),
+                color: colorScheme.outline.withValues(alpha: 0.2),
               ),
             ),
             child: Padding(

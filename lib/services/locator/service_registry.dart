@@ -319,6 +319,7 @@ class ServiceRegistry {
       serviceLocator.registerLazySingleton<ISessionNoteService>(
         () => SessionNoteServiceSupabase(
           Supabase.instance.client,
+          serviceLocator<ErrorHandlingService>(),
         ),
       );
     }
@@ -330,6 +331,7 @@ class ServiceRegistry {
       serviceLocator.registerLazySingleton<IClientAvailabilityService>(
         () => ClientAvailabilityServiceSupabase(
           Supabase.instance.client,
+          serviceLocator<ErrorHandlingService>(),
         ),
       );
     }
@@ -341,6 +343,7 @@ class ServiceRegistry {
       serviceLocator.registerLazySingleton<IDrawingService>(
         () => DrawingServiceSupabase(
           Supabase.instance.client,
+          serviceLocator<ErrorHandlingService>(),
         ),
       );
     }
@@ -352,6 +355,7 @@ class ServiceRegistry {
       serviceLocator.registerLazySingleton<IInviteCodeService>(
         () => InviteCodeServiceSupabase(
           Supabase.instance.client,
+          serviceLocator<ErrorHandlingService>(),
         ),
       );
     }

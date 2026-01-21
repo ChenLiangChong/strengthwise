@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
-import 'package:strengthwise/controllers/coach_management_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coach_management_controller.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/user/user_model.dart';
@@ -38,7 +38,7 @@ class CoachDetailPage extends StatefulWidget {
 class _CoachDetailPageState extends State<CoachDetailPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late CoachManagementController _controller;
+  late ICoachManagementController _controller;
   
   // ⭐ v3.2: Coach Mark 引導
   final GlobalKey _tabBarKey = GlobalKey();
@@ -49,7 +49,7 @@ class _CoachDetailPageState extends State<CoachDetailPage>
     super.initState();
     _tabController = TabController(
         length: 3, vsync: this); // 4 → 3（移除預約 Tab，改到 BookingPage）
-    _controller = serviceLocator<CoachManagementController>();
+    _controller = serviceLocator<ICoachManagementController>();
 
     // 選中教練（載入詳細資料）
     _controller.selectCoach(widget.coachId, widget.clientId);
@@ -114,7 +114,7 @@ class _CoachDetailPageState extends State<CoachDetailPage>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<CoachManagementController>.value(
+    return ChangeNotifierProvider<ICoachManagementController>.value(
       value: _controller,
       child: Scaffold(
         appBar: AppBar(

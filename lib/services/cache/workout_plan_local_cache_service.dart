@@ -50,13 +50,13 @@ class WorkoutPlanLocalCacheService {
           _isInitialized = true;
           _isInitializing = false;
           if (kDebugMode) {
-            print('[WORKOUT_CACHE] 本地快取初始化完成');
+            debugPrint('[WORKOUT_CACHE] 本地快取初始化完成');
           }
           return;
         } catch (e) {
           retryCount++;
           if (kDebugMode) {
-            print('[WORKOUT_CACHE] 初始化失敗 (第 $retryCount/$maxRetries 次): $e');
+            debugPrint('[WORKOUT_CACHE] 初始化失敗 (第 $retryCount/$maxRetries 次): $e');
           }
 
           if (e.toString().contains('lock failed') ||
@@ -68,14 +68,14 @@ class WorkoutPlanLocalCacheService {
               await Future.delayed(Duration(milliseconds: 500 * retryCount));
             } catch (cleanupError) {
               if (kDebugMode) {
-                print('[WORKOUT_CACHE] 清理失敗: $cleanupError');
+                debugPrint('[WORKOUT_CACHE] 清理失敗: $cleanupError');
               }
             }
           }
 
           if (retryCount >= maxRetries) {
             if (kDebugMode) {
-              print('[WORKOUT_CACHE] ⚠️ 初始化失敗，將使用無快取模式');
+              debugPrint('[WORKOUT_CACHE] ⚠️ 初始化失敗，將使用無快取模式');
             }
             _box = null;
             _isInitialized = true;
@@ -86,7 +86,7 @@ class WorkoutPlanLocalCacheService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[WORKOUT_CACHE] 初始化過程發生錯誤: $e');
+        debugPrint('[WORKOUT_CACHE] 初始化過程發生錯誤: $e');
       }
       _box = null;
       _isInitialized = true;
@@ -101,7 +101,7 @@ class WorkoutPlanLocalCacheService {
     final cachedVersion = _box!.get(_versionKey, defaultValue: 0);
     if (cachedVersion != currentCacheVersion) {
       if (kDebugMode) {
-        print('[WORKOUT_CACHE] 快取版本不符，清除舊快取');
+        debugPrint('[WORKOUT_CACHE] 快取版本不符，清除舊快取');
       }
       _box!.clear();
       _box!.put(_versionKey, currentCacheVersion);
@@ -137,11 +137,11 @@ class WorkoutPlanLocalCacheService {
       await _box!.put(timestampsKey, timestamps);
 
       if (kDebugMode) {
-        print('[WORKOUT_CACHE] 💾 已快取 ${plansToCache.length} 個訓練計劃');
+        debugPrint('[WORKOUT_CACHE] 💾 已快取 ${plansToCache.length} 個訓練計劃');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[WORKOUT_CACHE] ⚠️ 儲存失敗：$e');
+        debugPrint('[WORKOUT_CACHE] ⚠️ 儲存失敗：$e');
       }
     }
   }
@@ -164,13 +164,13 @@ class WorkoutPlanLocalCacheService {
           .toList();
 
       if (kDebugMode) {
-        print('[WORKOUT_CACHE] 📦 從快取載入 ${plans.length} 個訓練計劃');
+        debugPrint('[WORKOUT_CACHE] 📦 從快取載入 ${plans.length} 個訓練計劃');
       }
 
       return plans;
     } catch (e) {
       if (kDebugMode) {
-        print('[WORKOUT_CACHE] ⚠️ 解析快取失敗：$e');
+        debugPrint('[WORKOUT_CACHE] ⚠️ 解析快取失敗：$e');
       }
       return null;
     }
@@ -197,7 +197,7 @@ class WorkoutPlanLocalCacheService {
       return timestamps;
     } catch (e) {
       if (kDebugMode) {
-        print('[WORKOUT_CACHE] ⚠️ 解析時間戳失敗：$e');
+        debugPrint('[WORKOUT_CACHE] ⚠️ 解析時間戳失敗：$e');
       }
       return null;
     }
@@ -254,7 +254,7 @@ class WorkoutPlanLocalCacheService {
       await cacheActivePlans(userId, existingPlans);
     } catch (e) {
       if (kDebugMode) {
-        print('[WORKOUT_CACHE] ⚠️ 更新單個計劃失敗：$e');
+        debugPrint('[WORKOUT_CACHE] ⚠️ 更新單個計劃失敗：$e');
       }
     }
   }
@@ -270,11 +270,11 @@ class WorkoutPlanLocalCacheService {
       await cacheActivePlans(userId, existingPlans);
 
       if (kDebugMode) {
-        print('[WORKOUT_CACHE] 🗑️ 已移除計劃：$planId');
+        debugPrint('[WORKOUT_CACHE] 🗑️ 已移除計劃：$planId');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[WORKOUT_CACHE] ⚠️ 移除計劃失敗：$e');
+        debugPrint('[WORKOUT_CACHE] ⚠️ 移除計劃失敗：$e');
       }
     }
   }
@@ -291,7 +291,7 @@ class WorkoutPlanLocalCacheService {
     await _box!.delete(timestampsKey);
 
     if (kDebugMode) {
-      print('[WORKOUT_CACHE] 🗑️ 已清除用戶快取：$userId');
+      debugPrint('[WORKOUT_CACHE] 🗑️ 已清除用戶快取：$userId');
     }
   }
 

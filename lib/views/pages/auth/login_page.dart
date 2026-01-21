@@ -16,7 +16,7 @@ class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  _LoginPageState createState() => _LoginPageState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
@@ -66,6 +66,8 @@ class _LoginPageState extends State<LoginPage> {
       if (success && mounted) {
         // ✅ 檢查用戶是否完成個人資料設置（MVVM：透過 Controller）
         final isProfileCompleted = await _authController.isProfileCompleted();
+
+        if (!mounted) return;
 
         if (!isProfileCompleted) {
           // 首次登入，跳轉到個人資料設定頁面

@@ -7,17 +7,18 @@ import 'availability_slot/availability_slot_state_manager.dart';
 import 'availability_slot/availability_slot_query_manager.dart';
 import 'availability_slot/availability_slot_operations.dart';
 import 'availability_slot/availability_slot_batch_operations.dart';
-import 'event_bus_controller.dart'; // ⭐ v3.9: EventBus
+import 'interfaces/i_event_bus_controller.dart'; // ⭐ v3.9: EventBus
+import 'interfaces/i_availability_slot_controller.dart';
 
 /// AvailabilitySlotController - Phase 2 時段管理控制器
 ///
 /// 管理教練的可用時段設定、查詢、修改等業務邏輯
 /// 遵循完全解耦架構（透過 Interface 注入依賴）+ 子模組化設計
 /// ⭐ v3.9: 統一發布時段事件（Controller 層負責事件發布）
-class AvailabilitySlotController extends ChangeNotifier {
+class AvailabilitySlotController extends ChangeNotifier implements IAvailabilitySlotController {
   final IAvailabilitySlotService _slotService;
   final ErrorHandlingService _errorService;
-  final EventBusController _eventBusController; // ⭐ v3.9: EventBus
+  final IEventBusController _eventBusController; // ⭐ v3.9: EventBus
 
   // 子模組
   late final AvailabilitySlotStateManager _state;
@@ -43,14 +44,23 @@ class AvailabilitySlotController extends ChangeNotifier {
   // 狀態訪問（委託給 StateManager）
   // ============================================================================
 
+  @override
   bool get isLoading => _state.isLoading;
+  @override
   String? get errorMessage => _state.errorMessage;
+  @override
   List<AvailabilitySlotModel> get slots => _state.slots;
+  @override
   List<AvailabilitySlotModel> get recurringSlots => _state.recurringSlots;
+  @override
   List<AvailabilitySlotModel> get oneTimeSlots => _state.oneTimeSlots;
+  @override
   List<AvailabilitySlotWithBooking> get availableSlots => _state.availableSlots;
+  @override
   AvailabilitySlotModel? get selectedSlot => _state.selectedSlot;
+  @override
   DateTime? get queryStartDate => _state.queryStartDate;
+  @override
   DateTime? get queryEndDate => _state.queryEndDate;
 
   // ============================================================================
@@ -58,6 +68,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   // ============================================================================
 
   /// 載入教練的所有時段
+  @override
   Future<void> loadCoachSlots(
     String coachId, {
     DateTime? startDate,
@@ -74,6 +85,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   }
 
   /// 載入週期性時段和單次時段（分開）
+  @override
   Future<void> loadSlotsByType(String coachId) async {
     await _executeOperation(
       () => _query.loadSlotsByType(coachId),
@@ -82,6 +94,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   }
 
   /// 查詢特定日期的時段
+  @override
   Future<void> loadSlotsByDate({
     required String coachId,
     required DateTime date,
@@ -93,6 +106,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   }
 
   /// 選擇時段（用於顯示詳情）
+  @override
   Future<void> selectSlot(String slotId) async {
     _state.clearError();
     try {
@@ -103,12 +117,14 @@ class AvailabilitySlotController extends ChangeNotifier {
   }
 
   /// 清除選中的時段
+  @override
   void clearSelectedSlot() {
     _state.setSelectedSlot(null);
   }
 
   /// ⭐ v3.9: 增量刪除時段（本地）
   /// 用於 Realtime DELETE 事件的增量處理
+  @override
   void removeSlotById(String slotId) {
     _state.removeSlot(slotId);
     if (kDebugMode) {
@@ -117,6 +133,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   }
 
   /// 檢查時段是否已被預約
+  @override
   Future<bool> checkSlotBooked(String slotId) async {
     try {
       return await _query.checkSlotBooked(slotId);
@@ -136,6 +153,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   /// 從 UI 數據創建單次時段
   /// 
   /// 此方法接收 UI 層的原始數據，封裝業務邏輯
+  @override
   Future<bool> createSingleSlotFromUI({
     required String coachId,
     required DateTime date,
@@ -161,6 +179,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   /// 從 UI 數據創建週期性時段
   /// 
   /// 此方法接收 UI 層的原始數據，封裝 RRULE 生成邏輯
+  @override
   Future<bool> createRecurringSlotFromUI({
     required String coachId,
     required DateTime date,
@@ -187,6 +206,7 @@ class AvailabilitySlotController extends ChangeNotifier {
 
   /// 創建單次時段（原始方法）
   /// ⭐ v3.9: 操作成功後自動發布事件
+  @override
   Future<bool> createSlot(AvailabilitySlotModel slot) async {
     final success = await _executeOperation(() async {
       await _operations.createSlot(slot);
@@ -206,6 +226,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   }
 
   /// 創建週期性時段
+  @override
   Future<bool> createRecurringSlot({
     required String coachId,
     required DateTime startTime,
@@ -227,6 +248,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   }
 
   /// 創建覆蓋時段（如休假日）
+  @override
   Future<bool> createOverrideSlot({
     required String coachId,
     required DateTime startTime,
@@ -250,6 +272,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   // ============================================================================
 
   /// 更新時段
+  @override
   Future<bool> updateSlot(
     String slotId,
     AvailabilitySlotModel slot,
@@ -263,6 +286,7 @@ class AvailabilitySlotController extends ChangeNotifier {
 
   /// 刪除時段
   /// ⭐ v3.9: 操作成功後自動發布事件
+  @override
   Future<bool> deleteSlot(String slotId) async {
     // 先獲取時段資訊（用於事件發布和重新載入）
     AvailabilitySlotModel? slot;
@@ -294,6 +318,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   }
 
   /// 批量刪除時段
+  @override
   Future<int> deleteSlotsBatch(List<String> slotIds) async {
     _state.setLoading(true);
     _state.clearError();
@@ -310,6 +335,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   }
 
   /// 刪除覆蓋時段
+  @override
   Future<bool> deleteOverrideSlot(String slotId) async {
     return await _executeOperation(
       () => _operations.deleteOverrideSlot(slotId),
@@ -318,6 +344,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   }
 
   /// 刪除特定週的所有時段
+  @override
   Future<int> deleteWeekSlots({
     required String coachId,
     required DateTime weekStart,
@@ -346,6 +373,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   // ============================================================================
 
   /// 載入可預約時段（排除已被預約的）
+  @override
   Future<void> loadAvailableSlots({
     required String coachId,
     required DateTime startDate,
@@ -366,6 +394,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   // ============================================================================
 
   /// 批量創建時段
+  @override
   Future<int> createBatchSlots(List<AvailabilitySlotModel> slots) async {
     _state.setLoading(true);
     _state.clearError();
@@ -386,6 +415,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   }
 
   /// 複製一週的時段到下一週
+  @override
   Future<int> copyWeekSlots({
     required String coachId,
     required DateTime sourceWeekStart,
@@ -443,11 +473,12 @@ class AvailabilitySlotController extends ChangeNotifier {
     );
 
     if (kDebugMode) {
-      print('❌ AvailabilitySlotController Error: $message - $error');
+      debugPrint('❌ AvailabilitySlotController Error: $message - $error');
     }
   }
 
   /// 清除所有狀態
+  @override
   void clearAll() {
     _state.clearAll();
   }
@@ -460,6 +491,7 @@ class AvailabilitySlotController extends ChangeNotifier {
   /// ⭐ v3.6 MVVM 重構
   ///
   /// 用於行事曆頁面等需要直接獲取數據的場景
+  @override
   Future<List<AvailabilitySlotWithBooking>> getAvailableSlots({
     required String coachId,
     required DateTime startDate,

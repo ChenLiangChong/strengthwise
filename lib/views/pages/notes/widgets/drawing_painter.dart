@@ -9,16 +9,17 @@ class DrawingPainter extends CustomPainter {
   
   @override
   void paint(Canvas canvas, Size size) {
-    if (points == null || points!.isEmpty) return;
-    
-    for (final point in points!) {
+    final pts = points;
+    if (pts == null || pts.isEmpty) return;
+
+    for (final point in pts) {
       canvas.drawCircle(point.offset, point.strokeWidth / 2, point.paint);
-      
+
       // 如果點超過一個，則繪製線段連接它們
-      for (int i = 0; i < points!.length - 1; i++) {
-        if (i < points!.length - 1) {
-          final p1 = points![i];
-          final p2 = points![i + 1];
+      for (int i = 0; i < pts.length - 1; i++) {
+        if (i < pts.length - 1) {
+          final p1 = pts[i];
+          final p2 = pts[i + 1];
           canvas.drawLine(p1.offset, p2.offset, p1.paint);
         }
       }

@@ -9,7 +9,7 @@ import '../../mocks/mock_services.dart';
 
 /// WorkoutService 測試
 ///
-/// P2 優先級 - 10 個測試案例
+/// P2 優先級 - 30 個測試案例（原 10 個 + 補充 20 個）
 /// 參考：docs/planning/TESTING_STRATEGY.md #P2
 void main() {
   late MockWorkoutService mockService;
@@ -264,6 +264,423 @@ void main() {
 
         // Assert
         expect(result.id, 'template-001');
+      });
+    });
+
+    // =========================================================================
+    // 補充測試：getUserPlans 進階場景
+    // =========================================================================
+    group('getUserPlans - 進階場景', () {
+      test('按日期範圍篩選', () async {
+        // Arrange
+        when(() => mockService.getUserPlans(
+              startDate: any(named: 'startDate'),
+              endDate: any(named: 'endDate'),
+            )).thenAnswer((_) async => [testRecord]);
+
+        // Act
+        final result = await mockService.getUserPlans(
+          startDate: DateTime(2025, 12, 1),
+          endDate: DateTime(2025, 12, 31),
+        );
+
+        // Assert
+        expect(result.length, 1);
+      });
+
+      test('教練查詢學員計劃', () async {
+        // Arrange
+        final traineeRecord = WorkoutRecord(
+          id: 'record-002',
+          workoutPlanId: 'plan-002',
+          userId: 'coach-001',
+          traineeId: 'trainee-001',
+          title: '學員訓練',
+          date: DateTime(2025, 12, 15),
+          exerciseRecords: [],
+          createdAt: DateTime.now(),
+        );
+        when(() => mockService.getUserPlans(userId: 'trainee-001'))
+            .thenAnswer((_) async => [traineeRecord]);
+
+        // Act
+        final result = await mockService.getUserPlans(userId: 'trainee-001');
+
+        // Assert
+        expect(result.length, 1);
+        expect(result[0].traineeId, 'trainee-001');
+      });
+
+      test('Cursor 分頁正確返回', () async {
+        // Arrange
+        when(() => mockService.getUserPlans(
+              cursor: any(named: 'cursor'),
+              limit: 20,
+            )).thenAnswer((_) async => [testRecord]);
+
+        // Act
+        final result = await mockService.getUserPlans(
+          cursor: '2025-12-14T00:00:00Z',
+          limit: 20,
+        );
+
+        // Assert
+        expect(result, isNotEmpty);
+      });
+    });
+
+    // =========================================================================
+    // 補充測試：getTemplateById
+    // =========================================================================
+    group('getTemplateById', () {
+      test('找到模板時返回 Model', () async {
+        // Arrange
+        when(() => mockService.getTemplateById('template-001'))
+            .thenAnswer((_) async => testTemplate);
+
+        // Act
+        final result = await mockService.getTemplateById('template-001');
+
+        // Assert
+        expect(result, isNotNull);
+        expect(result!.id, 'template-001');
+      });
+
+      test('找不到模板時返回 null', () async {
+        // Arrange
+        when(() => mockService.getTemplateById('not-exist'))
+            .thenAnswer((_) async => null);
+
+        // Act
+        final result = await mockService.getTemplateById('not-exist');
+
+        // Assert
+        expect(result, isNull);
+      });
+    });
+
+    // =========================================================================
+    // 補充測試：updateTemplate
+    // =========================================================================
+    group('updateTemplate', () {
+      test('正常更新模板', () async {
+        // Arrange
+        when(() => mockService.updateTemplate(any()))
+            .thenAnswer((_) async => true);
+
+        // Act
+        final result = await mockService.updateTemplate(testTemplate);
+
+        // Assert
+        expect(result, isTrue);
+      });
+
+      test('模板不存在時更新失敗', () async {
+        // Arrange
+        final nonExistTemplate = WorkoutTemplate(
+          id: 'not-exist',
+          userId: 'user-001',
+          title: '不存在的模板',
+          description: '',
+          planType: 'custom',
+          exercises: [],
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        when(() => mockService.updateTemplate(any()))
+            .thenAnswer((_) async => false);
+
+        // Act
+        final result = await mockService.updateTemplate(nonExistTemplate);
+
+        // Assert
+        expect(result, isFalse);
+      });
+    });
+
+    // =========================================================================
+    // 補充測試：deleteTemplate
+    // =========================================================================
+    group('deleteTemplate', () {
+      test('正常刪除模板', () async {
+        // Arrange
+        when(() => mockService.deleteTemplate('template-001'))
+            .thenAnswer((_) async => true);
+
+        // Act
+        final result = await mockService.deleteTemplate('template-001');
+
+        // Assert
+        expect(result, isTrue);
+        verify(() => mockService.deleteTemplate('template-001')).called(1);
+      });
+
+      test('刪除後確認模板不存在', () async {
+        // Arrange
+        when(() => mockService.deleteTemplate('template-001'))
+            .thenAnswer((_) async => true);
+        when(() => mockService.getTemplateById('template-001'))
+            .thenAnswer((_) async => null);
+
+        // Act
+        await mockService.deleteTemplate('template-001');
+        final result = await mockService.getTemplateById('template-001');
+
+        // Assert
+        expect(result, isNull);
+      });
+    });
+
+    // =========================================================================
+    // 補充測試：getUserRecords
+    // =========================================================================
+    group('getUserRecords', () {
+      test('正常返回用戶記錄', () async {
+        // Arrange
+        when(() => mockService.getUserRecords())
+            .thenAnswer((_) async => [testRecord]);
+
+        // Act
+        final result = await mockService.getUserRecords();
+
+        // Assert
+        expect(result.length, 1);
+      });
+
+      test('Cursor 分頁', () async {
+        // Arrange
+        when(() => mockService.getUserRecords(
+              cursor: any(named: 'cursor'),
+              limit: 10,
+            )).thenAnswer((_) async => [testRecord]);
+
+        // Act
+        final result = await mockService.getUserRecords(
+          cursor: '2025-12-14T00:00:00Z',
+          limit: 10,
+        );
+
+        // Assert
+        expect(result, isNotEmpty);
+      });
+
+      test('空結果返回空列表', () async {
+        // Arrange
+        when(() => mockService.getUserRecords()).thenAnswer((_) async => []);
+
+        // Act
+        final result = await mockService.getUserRecords();
+
+        // Assert
+        expect(result, isEmpty);
+      });
+    });
+
+    // =========================================================================
+    // 補充測試：getCoachCreatedPlans
+    // =========================================================================
+    group('getCoachCreatedPlans', () {
+      test('正常查詢教練建立的計劃', () async {
+        // Arrange
+        when(() => mockService.getCoachCreatedPlans(
+              coachId: 'coach-001',
+              clientIds: ['client-001', 'client-002'],
+            )).thenAnswer((_) async => [testRecord]);
+
+        // Act
+        final result = await mockService.getCoachCreatedPlans(
+          coachId: 'coach-001',
+          clientIds: ['client-001', 'client-002'],
+        );
+
+        // Assert
+        expect(result, isNotEmpty);
+      });
+
+      test('多學員查詢', () async {
+        // Arrange
+        final records = [
+          testRecord,
+          WorkoutRecord(
+            id: 'record-002',
+            workoutPlanId: 'plan-002',
+            userId: 'coach-001',
+            traineeId: 'client-002',
+            title: '學員 2 訓練',
+            date: DateTime(2025, 12, 16),
+            exerciseRecords: [],
+            createdAt: DateTime.now(),
+          ),
+        ];
+        when(() => mockService.getCoachCreatedPlans(
+              coachId: 'coach-001',
+              clientIds: ['client-001', 'client-002'],
+            )).thenAnswer((_) async => records);
+
+        // Act
+        final result = await mockService.getCoachCreatedPlans(
+          coachId: 'coach-001',
+          clientIds: ['client-001', 'client-002'],
+        );
+
+        // Assert
+        expect(result.length, 2);
+      });
+
+      test('空學員列表返回空結果', () async {
+        // Arrange
+        when(() => mockService.getCoachCreatedPlans(
+              coachId: 'coach-001',
+              clientIds: [],
+            )).thenAnswer((_) async => []);
+
+        // Act
+        final result = await mockService.getCoachCreatedPlans(
+          coachId: 'coach-001',
+          clientIds: [],
+        );
+
+        // Assert
+        expect(result, isEmpty);
+      });
+    });
+
+    // =========================================================================
+    // 補充測試：createRecordFromTemplate
+    // =========================================================================
+    group('createRecordFromTemplate', () {
+      test('正常從模板建立記錄', () async {
+        // Arrange
+        when(() => mockService.createRecordFromTemplate('template-001'))
+            .thenAnswer((_) async => testRecord);
+
+        // Act
+        final result =
+            await mockService.createRecordFromTemplate('template-001');
+
+        // Assert
+        expect(result.id, isNotEmpty);
+      });
+
+      test('模板不存在時拋出異常', () async {
+        // Arrange
+        when(() => mockService.createRecordFromTemplate('not-exist'))
+            .thenThrow(Exception('Template not found'));
+
+        // Act & Assert
+        expect(
+          () => mockService.createRecordFromTemplate('not-exist'),
+          throwsException,
+        );
+      });
+    });
+
+    // =========================================================================
+    // 補充測試：checkTimeOverlap 進階場景
+    // =========================================================================
+    group('checkTimeOverlap - 進階場景', () {
+      test('有重疊返回重疊記錄', () async {
+        // Arrange
+        when(() => mockService.checkTimeOverlap(
+              traineeId: 'user-001',
+              startTime: any(named: 'startTime'),
+              endTime: any(named: 'endTime'),
+            )).thenAnswer((_) async => [testRecord]);
+
+        // Act
+        final result = await mockService.checkTimeOverlap(
+          traineeId: 'user-001',
+          startTime: DateTime(2025, 12, 15, 10, 0),
+          endTime: DateTime(2025, 12, 15, 11, 0),
+        );
+
+        // Assert
+        expect(result.length, 1);
+      });
+
+      test('部分重疊也被檢測', () async {
+        // Arrange - 10:30-11:30 與 10:00-11:00 部分重疊
+        when(() => mockService.checkTimeOverlap(
+              traineeId: 'user-001',
+              startTime: DateTime(2025, 12, 15, 10, 30),
+              endTime: DateTime(2025, 12, 15, 11, 30),
+            )).thenAnswer((_) async => [testRecord]);
+
+        // Act
+        final result = await mockService.checkTimeOverlap(
+          traineeId: 'user-001',
+          startTime: DateTime(2025, 12, 15, 10, 30),
+          endTime: DateTime(2025, 12, 15, 11, 30),
+        );
+
+        // Assert
+        expect(result, isNotEmpty);
+      });
+
+      test('排除自身記錄', () async {
+        // Arrange
+        when(() => mockService.checkTimeOverlap(
+              traineeId: 'user-001',
+              startTime: any(named: 'startTime'),
+              endTime: any(named: 'endTime'),
+              excludeRecordId: 'record-001',
+            )).thenAnswer((_) async => []);
+
+        // Act
+        final result = await mockService.checkTimeOverlap(
+          traineeId: 'user-001',
+          startTime: DateTime(2025, 12, 15, 10, 0),
+          endTime: DateTime(2025, 12, 15, 11, 0),
+          excludeRecordId: 'record-001',
+        );
+
+        // Assert
+        expect(result, isEmpty);
+      });
+    });
+
+    // =========================================================================
+    // 補充測試：clearUserCache
+    // =========================================================================
+    group('clearUserCache', () {
+      test('清除指定用戶快取', () {
+        // Arrange
+        when(() => mockService.clearUserCache(userId: 'user-001'))
+            .thenReturn(null);
+
+        // Act & Assert
+        expect(
+          () => mockService.clearUserCache(userId: 'user-001'),
+          returnsNormally,
+        );
+        verify(() => mockService.clearUserCache(userId: 'user-001')).called(1);
+      });
+
+      test('清除當前用戶快取', () {
+        // Arrange
+        when(() => mockService.clearUserCache()).thenReturn(null);
+
+        // Act & Assert
+        expect(() => mockService.clearUserCache(), returnsNormally);
+        verify(() => mockService.clearUserCache()).called(1);
+      });
+    });
+
+    // =========================================================================
+    // 補充測試：clearUserPlansCache
+    // =========================================================================
+    group('clearUserPlansCache', () {
+      test('清除用戶計劃快取', () {
+        // Arrange
+        when(() => mockService.clearUserPlansCache('user-001'))
+            .thenReturn(null);
+
+        // Act & Assert
+        expect(
+          () => mockService.clearUserPlansCache('user-001'),
+          returnsNormally,
+        );
+        verify(() => mockService.clearUserPlansCache('user-001')).called(1);
       });
     });
   });

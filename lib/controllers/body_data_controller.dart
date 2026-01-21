@@ -5,16 +5,17 @@ import '../services/interfaces/i_user_service.dart';
 import '../services/core/error_handling_service.dart';
 import 'body_data/body_data_cache_manager.dart';
 import 'body_data/body_data_operation_helper.dart';
-import 'event_bus_controller.dart'; // ⭐ v3.5
+import 'interfaces/i_event_bus_controller.dart'; // ⭐ v3.5
+import 'interfaces/i_body_data_controller.dart';
 
 /// 身體數據控制器
 /// 遵循 MVVM 架構，處理身體數據相關業務邏輯
 /// ⭐ v3.5: 統一發布身體數據事件（Controller 層負責事件發布）
-class BodyDataController extends ChangeNotifier {
+class BodyDataController extends ChangeNotifier implements IBodyDataController {
   final IBodyDataService _bodyDataService;
   final IUserService _userService;
   final ErrorHandlingService? _errorService;
-  final EventBusController _eventBusController; // ⭐ v3.5
+  final IEventBusController _eventBusController; // ⭐ v3.5
 
   // 子模組
   late final BodyDataCacheManager _cacheManager;
@@ -26,7 +27,7 @@ class BodyDataController extends ChangeNotifier {
     required IBodyDataService bodyDataService,
     required IUserService userService,
     ErrorHandlingService? errorService,
-    required EventBusController eventBusController, // ⭐ v3.5
+    required IEventBusController eventBusController, // ⭐ v3.5
   })  : _bodyDataService = bodyDataService,
         _userService = userService,
         _errorService = errorService,
@@ -36,13 +37,19 @@ class BodyDataController extends ChangeNotifier {
   }
 
   // Getters
+  @override
   List<BodyDataRecord> get records => _cacheManager.records;
+  @override
   BodyDataRecord? get latestRecord => _cacheManager.latestRecord;
+  @override
   bool get isLoading => _isLoading;
+  @override
   String? get error => _error;
+  @override
   bool get hasRecords => _cacheManager.hasRecords;
 
   /// 載入用戶的身體數據記錄
+  @override
   Future<void> loadRecords(String userId, {DateTime? startDate, DateTime? endDate}) async {
     try {
       _isLoading = true;
@@ -69,6 +76,7 @@ class BodyDataController extends ChangeNotifier {
   }
 
   /// 載入最新記錄
+  @override
   Future<void> loadLatestRecord(String userId) async {
     try {
       _isLoading = true;
@@ -95,6 +103,7 @@ class BodyDataController extends ChangeNotifier {
   /// 🆕 邏輯：
   /// - 如果當日已有記錄：更新現有記錄
   /// - 如果當日無記錄：新增記錄
+  @override
   Future<bool> createRecord({
     required String userId,
     required DateTime recordDate,
@@ -179,6 +188,7 @@ class BodyDataController extends ChangeNotifier {
 
   /// 更新記錄
   /// ⭐ v3.5: 操作成功後自動發布事件
+  @override
   Future<bool> updateRecord(BodyDataRecord record, {double? heightCm}) async {
     try {
       // 使用助手類重新計算 BMI
@@ -205,6 +215,7 @@ class BodyDataController extends ChangeNotifier {
 
   /// 刪除記錄
   /// ⭐ v3.5: 操作成功後自動發布事件
+  @override
   Future<bool> deleteRecord(String recordId) async {
     try {
       // ⭐ v3.5: 先取得 userId 用於發布事件
@@ -234,6 +245,7 @@ class BodyDataController extends ChangeNotifier {
   }
 
   /// 獲取指定期間的平均體重
+  @override
   Future<double?> getAverageWeight(String userId, DateTime startDate, DateTime endDate) async {
     try {
       return await _bodyDataService.getAverageWeight(
@@ -248,6 +260,7 @@ class BodyDataController extends ChangeNotifier {
   }
 
   /// 清除錯誤訊息
+  @override
   void clearError() {
     _error = null;
     notifyListeners();

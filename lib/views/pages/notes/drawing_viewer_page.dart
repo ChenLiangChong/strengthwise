@@ -70,7 +70,7 @@ class _DrawingViewerPageState extends State<DrawingViewerPage> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
             child: Row(
               children: [
                 Icon(Icons.info_outline, size: 16, color: Colors.blue[300]),
@@ -131,7 +131,7 @@ class _DrawingViewerPageState extends State<DrawingViewerPage> {
               color: Colors.grey[850],
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 4,
                   offset: const Offset(0, -2),
                 ),

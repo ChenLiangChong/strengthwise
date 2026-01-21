@@ -118,9 +118,10 @@ class _ExerciseStrengthDetailPageState
       });
     } catch (e) {
       // v3.3+ 如果有傳入的基本數據，顯示簡化視圖而不是錯誤
-      if (widget.exerciseData != null) {
-        final basicProgress = _createBasicProgress(widget.exerciseData!);
-        final isFavorite = widget.exerciseData!.isFavorite;
+      final exerciseData = widget.exerciseData;
+      if (exerciseData != null) {
+        final basicProgress = _createBasicProgress(exerciseData);
+        final isFavorite = exerciseData.isFavorite;
         
         setState(() {
           _progress = basicProgress;
@@ -156,7 +157,8 @@ class _ExerciseStrengthDetailPageState
   /// 切換收藏狀態
   /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作
   Future<void> _toggleFavorite() async {
-    if (_progress == null) return;
+    final progress = _progress;
+    if (progress == null) return;
 
     try {
       bool success;
@@ -175,8 +177,8 @@ class _ExerciseStrengthDetailPageState
         success = await _exerciseController.addFavorite(
           userId: widget.userId,
           exerciseId: widget.exerciseId,
-          exerciseName: _progress!.exerciseName,
-          bodyPart: _progress!.bodyPart,
+          exerciseName: progress.exerciseName,
+          bodyPart: progress.bodyPart,
         );
         if (success && mounted) {
           NotificationUtils.showSuccess(context, '已添加收藏');
@@ -252,12 +254,13 @@ class _ExerciseStrengthDetailPageState
       );
     }
 
-    if (_progress == null) {
+    final progress = _progress;
+    if (progress == null) {
       return const Center(child: Text('沒有數據'));
     }
 
     // v3.3+ 根據追蹤模式決定顯示內容
-    final isWeightBased = _progress!.isWeightBasedMode;
+    final isWeightBased = progress.isWeightBasedMode;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -269,25 +272,25 @@ class _ExerciseStrengthDetailPageState
             _buildNonWeightModeHeader(),
             const SizedBox(height: 16),
           ],
-          
+
           // v3.3+ 重訓模式才顯示統計卡片
           if (isWeightBased) ...[
-            StatisticsCard(progress: _progress!),
+            StatisticsCard(progress: progress),
             const SizedBox(height: 16),
 
             // v3.3+ 有詳細歷史記錄才顯示圖表和 PR
-            if (_hasDetailedHistory && _progress!.history.isNotEmpty) ...[
+            if (_hasDetailedHistory && progress.history.isNotEmpty) ...[
               // 力量進步曲線
-              StrengthChart(history: _progress!.history),
+              StrengthChart(history: progress.history),
               const SizedBox(height: 16),
 
               // PR 記錄
               PRRecordsCard(
-                prRecords: _progress!.history.where((p) => p.isPR).toList(),
+                prRecords: progress.history.where((p) => p.isPR).toList(),
               ),
               const SizedBox(height: 16),
             ],
-            
+
             // v3.3+ 無詳細歷史記錄時顯示提示
             if (!_hasDetailedHistory) ...[
               _buildNoHistoryHint(),
@@ -296,8 +299,8 @@ class _ExerciseStrengthDetailPageState
           ],
 
           // 歷史記錄（有記錄才顯示）
-          if (_hasDetailedHistory && _progress!.history.isNotEmpty)
-            TrainingHistoryCard(history: _progress!.history)
+          if (_hasDetailedHistory && progress.history.isNotEmpty)
+            TrainingHistoryCard(history: progress.history)
           else if (!_hasDetailedHistory)
             _buildBasicInfoCard(),
         ],
@@ -382,7 +385,7 @@ class _ExerciseStrengthDetailPageState
   
   /// v3.3+ 非重訓模式的標題提示
   Widget _buildNonWeightModeHeader() {
-    final trackingMode = _progress!.trackingMode;
+    final trackingMode = _progress?.trackingMode ?? TrackingMode.weightReps;
     
     return Card(
       child: Padding(

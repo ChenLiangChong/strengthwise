@@ -1,15 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:strengthwise/services/realtime/realtime_subscription_manager.dart';
 import 'package:strengthwise/services/service_locator.dart';
+import 'interfaces/i_realtime_controller.dart';
 
 /// Realtime 訂閱控制器 ⭐ v3.9
 ///
 /// 提供 Realtime 訂閱的輔助方法
-/// 
+///
 /// 設計原則：
 /// - **頁面級訂閱**：各頁面自己管理訂閱生命週期
 /// - **只訂閱「看別人資料」**：自己的操作透過 EventBus 處理
-/// 
+///
 /// 使用範例：
 /// ```dart
 /// // 在 initState 中訂閱
@@ -17,11 +18,11 @@ import 'package:strengthwise/services/service_locator.dart';
 ///   coachId: widget.coachId,
 ///   onUpdate: _refreshData,
 /// );
-/// 
+///
 /// // 在 dispose 中取消
 /// _realtimeController.unsubscribe(_subscriptionId);
 /// ```
-class RealtimeController extends ChangeNotifier {
+class RealtimeController extends ChangeNotifier implements IRealtimeController {
   final RealtimeSubscriptionManager _realtimeManager;
 
   RealtimeController({
@@ -30,6 +31,7 @@ class RealtimeController extends ChangeNotifier {
             realtimeManager ?? serviceLocator<RealtimeSubscriptionManager>();
 
   /// 當前訂閱數量
+  @override
   int get subscriptionCount => _realtimeManager.subscriptionCount;
 
   // ============================================================================
@@ -39,6 +41,7 @@ class RealtimeController extends ChangeNotifier {
   /// 訂閱教練的可預約時段變更
   ///
   /// 返回訂閱 ID，用於取消訂閱
+  @override
   String subscribeToCoachSlots({
     required String coachId,
     required VoidCallback onUpdate,
@@ -59,6 +62,7 @@ class RealtimeController extends ChangeNotifier {
   /// 訂閱學員的可訓練時間變更
   ///
   /// 返回訂閱 ID，用於取消訂閱
+  @override
   String subscribeToClientAvailability({
     required String clientId,
     required VoidCallback onUpdate,
@@ -81,6 +85,7 @@ class RealtimeController extends ChangeNotifier {
   /// 教練為學員創建訓練計畫時，學員會收到通知
   ///
   /// 返回訂閱 ID，用於取消訂閱
+  @override
   String subscribeToUserWorkoutPlans({
     required String userId,
     required VoidCallback onUpdate,
@@ -104,6 +109,7 @@ class RealtimeController extends ChangeNotifier {
   /// 教練：收到學員新預約/取消的通知
   ///
   /// 返回訂閱 ID，用於取消訂閱
+  @override
   String subscribeToUserAppointments({
     required String userId,
     required VoidCallback onUpdate,
@@ -122,6 +128,7 @@ class RealtimeController extends ChangeNotifier {
   // ============================================================================
 
   /// 取消特定訂閱
+  @override
   void unsubscribe(String subscriptionId) {
     if (kDebugMode) {
       debugPrint('[RealtimeController] 取消訂閱: $subscriptionId');
@@ -130,6 +137,7 @@ class RealtimeController extends ChangeNotifier {
   }
 
   /// 取消所有訂閱（通常不需要）
+  @override
   void unsubscribeAll() {
     if (kDebugMode) {
       debugPrint('[RealtimeController] 取消所有訂閱');

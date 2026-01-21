@@ -123,7 +123,7 @@ class UnifiedCalendar extends StatelessWidget {
                   color: colorScheme.onSurfaceVariant,
                 ),
                 weekendStyle: context.responsive.labelSmall.copyWith(
-                  color: colorScheme.error.withOpacity(0.8),
+                  color: colorScheme.error.withValues(alpha: 0.8),
                 ),
               ),
 
@@ -191,7 +191,7 @@ class UnifiedCalendar extends StatelessWidget {
 
                     // 今天：淡背景（不干擾標記點）
                     todayDecoration: BoxDecoration(
-                      color: colorScheme.primaryContainer.withOpacity(0.3),
+                      color: colorScheme.primaryContainer.withValues(alpha: 0.3),
                       shape: BoxShape.circle,
                     ),
                     todayTextStyle: TextStyle(
@@ -201,7 +201,7 @@ class UnifiedCalendar extends StatelessWidget {
 
                     // ⭐ 選中日期：邊框式（標記點完全清晰可見）
                     selectedDecoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(0.15),
+                      color: colorScheme.primary.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: colorScheme.primary,
@@ -278,7 +278,7 @@ class UnifiedCalendar extends StatelessWidget {
         '${day.day}',
         style: TextStyle(
           color: isOutside
-              ? colorScheme.onSurface.withOpacity(0.3)
+              ? colorScheme.onSurface.withValues(alpha: 0.3)
               : colorScheme.onSurface,
           fontWeight:
               isToday || isSelected ? FontWeight.bold : FontWeight.normal,
@@ -295,7 +295,7 @@ class UnifiedCalendar extends StatelessWidget {
     if (isToday && !isSelected) {
       // ⭐ 未選中的今天：只有在沒有 BackgroundLayer 背景色時，才顯示今天的背景色
       if (backgroundColor == null) {
-        finalBackgroundColor = colorScheme.primaryContainer.withOpacity(0.5);
+        finalBackgroundColor = colorScheme.primaryContainer.withValues(alpha: 0.5);
       }
       // 如果已經有背景色（例如偏好時段），就保留它，不覆蓋
     } else if (isSelected) {

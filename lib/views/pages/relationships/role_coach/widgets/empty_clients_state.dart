@@ -19,20 +19,20 @@ class EmptyClientsState extends StatelessWidget {
             Icon(
               Icons.people_outline,
               size: 80.scaled(context), // ⭐ 響應式圖標
-              color: colorScheme.primary.withOpacity(0.3),
+              color: colorScheme.primary.withValues(alpha: 0.3),
             ),
             SizedBox(height: context.spacing.lg), // ⭐ 響應式間距
             Text(
               '還沒有學員',
               style: context.responsive.titleLarge.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
               ), // ⭐ 響應式文字
             ),
             SizedBox(height: context.spacing.md), // ⭐ 響應式間距
             Text(
               '點擊右下角「+」按鈕開始邀請學員',
               style: context.responsive.bodyMedium.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.4),
+                color: colorScheme.onSurface.withValues(alpha: 0.4),
               ), // ⭐ 響應式文字
               textAlign: TextAlign.center,
             ),

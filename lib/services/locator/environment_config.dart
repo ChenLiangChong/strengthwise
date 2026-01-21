@@ -20,7 +20,7 @@ class EnvironmentConfig {
     _currentEnvironment = env;
     
     if (kDebugMode) {
-      print('應用環境設置為: $_currentEnvironment');
+      debugPrint('應用環境設置為: $_currentEnvironment');
     }
   }
 

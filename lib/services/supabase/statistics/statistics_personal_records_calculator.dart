@@ -136,7 +136,7 @@ class PersonalRecordsCalculator {
 
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[PERSONAL_RECORDS] $message');
+      debugPrint('[PERSONAL_RECORDS] $message');
     }
   }
 }

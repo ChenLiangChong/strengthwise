@@ -1,6 +1,7 @@
 // ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/readiness/daily_readiness_model.dart';
+import 'package:strengthwise/themes/app_theme.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 
 /// 學員狀態卡（課前問卷結果）
@@ -323,11 +324,11 @@ class _ReadinessCardState extends State<ReadinessCard> {
   Color _getTrafficLightColor(TrafficLight light) {
     switch (light) {
       case TrafficLight.red:
-        return const Color(0xFFEF4444); // Error
+        return AppTheme.errorRed;
       case TrafficLight.amber:
-        return const Color(0xFFF59E0B); // Warning
+        return AppTheme.warningLight;
       case TrafficLight.green:
-        return const Color(0xFF10B981); // Success
+        return AppTheme.successLight;
     }
   }
 

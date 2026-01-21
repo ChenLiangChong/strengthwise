@@ -1,3 +1,5 @@
+import 'package:strengthwise/utils/datetime_utils.dart';
+
 /// 邀請碼模型（簡化版）
 ///
 /// 教練生成邀請碼邀請學員遠端綁定
@@ -29,8 +31,8 @@ class InviteCodeModel {
     return InviteCodeModel(
       code: json['code'] as String,
       coachId: json['coach_id'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      expiresAt: DateTime.parse(json['expires_at'] as String),
+      createdAt: DateTimeUtils.parseIsoTimestamp(json['created_at'] as String),
+      expiresAt: DateTimeUtils.parseIsoTimestamp(json['expires_at'] as String),
     );
   }
 
@@ -39,8 +41,8 @@ class InviteCodeModel {
     return {
       'code': code,
       'coach_id': coachId,
-      'created_at': createdAt.toUtc().toIso8601String(),
-      'expires_at': expiresAt.toUtc().toIso8601String(),
+      'created_at': DateTimeUtils.formatToUtcIso(createdAt),
+      'expires_at': DateTimeUtils.formatToUtcIso(expiresAt),
     };
   }
 

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:strengthwise/models/coaching_relationship_model.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart'; // ⭐ v3.6: MVVM
 
 /// 教練選擇區域組件
 class CoachSelectorSection extends StatefulWidget {
@@ -23,14 +23,14 @@ class CoachSelectorSection extends StatefulWidget {
 }
 
 class _CoachSelectorSectionState extends State<CoachSelectorSection> {
-  late final ProfileController _profileController; // ⭐ v3.6: MVVM
+  late final IProfileController _profileController; // ⭐ v3.6: MVVM
   final Map<String, UserModel> _coachProfiles = {}; // 快取教練資料
   bool _isLoadingProfiles = true;
 
   @override
   void initState() {
     super.initState();
-    _profileController = serviceLocator<ProfileController>(); // ⭐ v3.6: MVVM
+    _profileController = serviceLocator<IProfileController>(); // ⭐ v3.6: MVVM
     _loadCoachProfiles();
   }
 

@@ -2,7 +2,7 @@
 // ⭐ v3.2: 重置功能引導
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
@@ -29,12 +29,12 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  late final ProfileController _controller;
+  late final IProfileController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = serviceLocator<ProfileController>();
+    _controller = serviceLocator<IProfileController>();
     // ⭐ v3.7 修復：延遲到第一幀後載入，避免在 build 過程中呼叫 notifyListeners
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _controller.loadUserProfile();
@@ -43,7 +43,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
+    return ChangeNotifierProvider<IProfileController>.value(
       value: _controller,
       child: const _ProfilePageContent(),
     );
@@ -55,7 +55,7 @@ class _ProfilePageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<ProfileController>();
+    final controller = context.watch<IProfileController>();
     final colorScheme = Theme.of(context).colorScheme;
     final padding = context.pagePadding;
 
@@ -173,7 +173,7 @@ class _ProfilePageContent extends StatelessWidget {
   Widget _buildMenuSection(
     BuildContext context,
     ColorScheme colorScheme,
-    ProfileController controller,
+    IProfileController controller,
   ) {
     return Column(
       children: [

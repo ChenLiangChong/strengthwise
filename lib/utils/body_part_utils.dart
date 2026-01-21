@@ -40,7 +40,7 @@ class BodyPartUtils {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: getBodyPartColor(context, bodyPart).withOpacity(0.1),
+        color: getBodyPartColor(context, bodyPart).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(

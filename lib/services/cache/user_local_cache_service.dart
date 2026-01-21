@@ -54,13 +54,13 @@ class UserLocalCacheService {
           _isInitialized = true;
           _isInitializing = false;
           if (kDebugMode) {
-            print('[USER_CACHE] 本地快取初始化完成');
+            debugPrint('[USER_CACHE] 本地快取初始化完成');
           }
           return;
         } catch (e) {
           retryCount++;
           if (kDebugMode) {
-            print('[USER_CACHE] 初始化失敗 (第 $retryCount/$maxRetries 次): $e');
+            debugPrint('[USER_CACHE] 初始化失敗 (第 $retryCount/$maxRetries 次): $e');
           }
 
           if (e.toString().contains('lock failed') ||
@@ -72,14 +72,14 @@ class UserLocalCacheService {
               await Future.delayed(Duration(milliseconds: 500 * retryCount));
             } catch (cleanupError) {
               if (kDebugMode) {
-                print('[USER_CACHE] 清理失敗: $cleanupError');
+                debugPrint('[USER_CACHE] 清理失敗: $cleanupError');
               }
             }
           }
 
           if (retryCount >= maxRetries) {
             if (kDebugMode) {
-              print('[USER_CACHE] ⚠️ 初始化失敗，將使用無快取模式');
+              debugPrint('[USER_CACHE] ⚠️ 初始化失敗，將使用無快取模式');
             }
             _box = null;
             _isInitialized = true;
@@ -90,7 +90,7 @@ class UserLocalCacheService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[USER_CACHE] 初始化過程發生錯誤: $e');
+        debugPrint('[USER_CACHE] 初始化過程發生錯誤: $e');
       }
       _box = null;
       _isInitialized = true;
@@ -105,7 +105,7 @@ class UserLocalCacheService {
     final cachedVersion = _box!.get(_versionKey, defaultValue: 0);
     if (cachedVersion != currentCacheVersion) {
       if (kDebugMode) {
-        print('[USER_CACHE] 快取版本不符，清除舊快取');
+        debugPrint('[USER_CACHE] 快取版本不符，清除舊快取');
       }
       _box!.clear();
       _box!.put(_versionKey, currentCacheVersion);
@@ -143,7 +143,7 @@ class UserLocalCacheService {
     final isValid = now.difference(lastUpdate) < cacheValidDuration;
 
     if (kDebugMode && isValid) {
-      print('[USER_CACHE] ✅ 快取有效：$userId');
+      debugPrint('[USER_CACHE] ✅ 快取有效：$userId');
     }
 
     return isValid;
@@ -164,13 +164,13 @@ class UserLocalCacheService {
       final user = UserModel.fromMap(json);
 
       if (kDebugMode) {
-        print('[USER_CACHE] 📦 從快取載入用戶：${user.displayName ?? user.email}');
+        debugPrint('[USER_CACHE] 📦 從快取載入用戶：${user.displayName ?? user.email}');
       }
 
       return user;
     } catch (e) {
       if (kDebugMode) {
-        print('[USER_CACHE] ⚠️ 解析快取失敗：$e');
+        debugPrint('[USER_CACHE] ⚠️ 解析快取失敗：$e');
       }
       // 解析失敗，刪除損壞的快取
       _box!.delete(userKey);
@@ -231,11 +231,11 @@ class UserLocalCacheService {
       await _box!.put(lastUpdateKey, DateTimeUtils.formatToUtcIso(DateTime.now()));
 
       if (kDebugMode) {
-        print('[USER_CACHE] 💾 已儲存用戶：${user.displayName ?? user.email}');
+        debugPrint('[USER_CACHE] 💾 已儲存用戶：${user.displayName ?? user.email}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[USER_CACHE] ⚠️ 儲存失敗：$e');
+        debugPrint('[USER_CACHE] ⚠️ 儲存失敗：$e');
       }
     }
   }
@@ -252,7 +252,7 @@ class UserLocalCacheService {
     await _box!.delete(lastUpdateKey);
 
     if (kDebugMode) {
-      print('[USER_CACHE] 🗑️ 已清除用戶快取：$userId');
+      debugPrint('[USER_CACHE] 🗑️ 已清除用戶快取：$userId');
     }
   }
 
@@ -265,7 +265,7 @@ class UserLocalCacheService {
     await _box!.put(_versionKey, currentCacheVersion);
 
     if (kDebugMode) {
-      print('[USER_CACHE] 🗑️ 已清除所有快取');
+      debugPrint('[USER_CACHE] 🗑️ 已清除所有快取');
     }
   }
 

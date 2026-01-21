@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 
 /// 輸入邀請碼對話框（學員專用）
@@ -43,7 +43,7 @@ class _InputInviteCodeDialogState extends State<InputInviteCodeDialog> {
     final code = _codeController.text.trim();
 
     // 使用 CoachingRelationshipController
-    final controller = serviceLocator<CoachingRelationshipController>();
+    final controller = serviceLocator<ICoachingRelationshipController>();
 
     final success = await controller.useInviteCode(
       code: code,

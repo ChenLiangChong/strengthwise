@@ -57,12 +57,13 @@ class TrainingCalendarGenerator {
       if (totalVolume > 0) {
         if (totalVolume > 10000) {
           intensity = 4;
-        } else if (totalVolume > 7000)
+        } else if (totalVolume > 7000) {
           intensity = 3;
-        else if (totalVolume > 4000)
+        } else if (totalVolume > 4000) {
           intensity = 2;
-        else
+        } else {
           intensity = 1;
+        }
       }
 
       days.add(TrainingCalendarDay(

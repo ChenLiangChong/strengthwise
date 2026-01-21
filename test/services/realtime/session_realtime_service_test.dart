@@ -60,7 +60,9 @@ void main() {
     // P6-307: 枚舉值完整性
     // =========================================================================
     test('NotificationType 枚舉包含所有預期值', () {
-      expect(NotificationType.values.length, 7);
+      // v3.9+ 新增了 7 個通知類型
+      expect(NotificationType.values.length, 14);
+      // 預約相關
       expect(
           NotificationType.values, contains(NotificationType.newAppointment));
       expect(NotificationType.values,
@@ -73,6 +75,24 @@ void main() {
           NotificationType.values, contains(NotificationType.sessionReminder));
       expect(NotificationType.values,
           contains(NotificationType.readinessSubmitted));
+      // 時段相關（v3.9 新增）
+      expect(
+          NotificationType.values, contains(NotificationType.coachSlotCreated));
+      expect(
+          NotificationType.values, contains(NotificationType.coachSlotDeleted));
+      expect(NotificationType.values,
+          contains(NotificationType.clientAvailabilityCreated));
+      expect(NotificationType.values,
+          contains(NotificationType.clientAvailabilityUpdated));
+      // 關係相關（v3.9 新增）
+      expect(NotificationType.values,
+          contains(NotificationType.relationshipCreated));
+      expect(NotificationType.values,
+          contains(NotificationType.relationshipArchived));
+      // 課程筆記（v3.9 新增）
+      expect(NotificationType.values,
+          contains(NotificationType.sessionNoteShared));
+      // 一般通知
       expect(NotificationType.values, contains(NotificationType.general));
     });
 

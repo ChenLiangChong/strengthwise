@@ -152,6 +152,7 @@ class ExerciseServiceSupabase implements IExerciseService {
   }
 
   /// 預載入常用運動資料（背景執行）⚡ 優化版
+  /// ⭐ 效能優化：添加錯誤處理，避免預載入失敗時無聲失敗
   Future<void> _preloadCommonExerciseData() async {
     if (_preloadManager.isPreloading) {
       _logDebug('預載入已在進行中，跳過');
@@ -160,20 +161,31 @@ class ExerciseServiceSupabase implements IExerciseService {
 
     _logDebug('🚀 開始背景預載入所有動作資料...');
 
-    try {
-      // ⚡ 預載入所有動作（不等待，背景執行）
-      unawaited(_preloadManager.preloadAllExercises());
+    // ⚡ 預載入所有動作（不等待，背景執行）
+    // ⭐ 效能優化：添加 catchError 處理異步錯誤
+    unawaited(
+      _preloadManager.preloadAllExercises().catchError((e) {
+        _logError('預載入所有動作失敗: $e');
+      }),
+    );
 
-      // 預載入訓練類型
-      unawaited(getExerciseTypes());
+    // 預載入訓練類型
+    unawaited(
+      getExerciseTypes().catchError((e) {
+        _logError('預載入訓練類型失敗: $e');
+        return <String>[];
+      }),
+    );
 
-      // 預載入身體部位
-      unawaited(getBodyParts());
+    // 預載入身體部位
+    unawaited(
+      getBodyParts().catchError((e) {
+        _logError('預載入身體部位失敗: $e');
+        return <String>[];
+      }),
+    );
 
-      _logDebug('✅ 預載入任務已啟動（背景執行）');
-    } catch (e) {
-      _logError('預載入常用運動資料失敗: $e');
-    }
+    _logDebug('✅ 預載入任務已啟動（背景執行）');
   }
 
   @override
@@ -680,14 +692,14 @@ class ExerciseServiceSupabase implements IExerciseService {
   /// 記錄除錯資訊
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[EXERCISE_SUPABASE] $message');
+      debugPrint('[EXERCISE_SUPABASE] $message');
     }
   }
 
   /// 記錄錯誤資訊
   void _logError(String message) {
     if (kDebugMode) {
-      print('[EXERCISE_SUPABASE ERROR] $message');
+      debugPrint('[EXERCISE_SUPABASE ERROR] $message');
     }
 
     // 使用錯誤處理服務（如果可用）

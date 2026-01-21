@@ -1,8 +1,10 @@
 // ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/readiness_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_readiness_controller.dart';
 import 'package:strengthwise/models/readiness/daily_readiness_model.dart';
+import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/themes/app_theme.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/readiness/widgets/emoji_slider.dart';
 
@@ -28,8 +30,8 @@ class ReadinessFormPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ReadinessController(appointmentId: appointmentId),
+    return ChangeNotifierProvider<IReadinessController>(
+      create: (_) => serviceLocator<IReadinessController>(param1: appointmentId),
       child: _ReadinessFormContent(
         coachName: coachName,
         sessionTime: sessionTime,
@@ -57,7 +59,7 @@ class _ReadinessFormContent extends StatelessWidget {
         title: const Text('課前準備度調查'),
         centerTitle: true,
       ),
-      body: Consumer<ReadinessController>(
+      body: Consumer<IReadinessController>(
         builder: (context, controller, child) {
           if (controller.isLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -273,7 +275,7 @@ class _ReadinessFormContent extends StatelessWidget {
 
   /// 備註輸入欄位
   Widget _buildNotesField(
-      BuildContext context, ReadinessController controller) {
+      BuildContext context, IReadinessController controller) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -318,7 +320,7 @@ class _ReadinessFormContent extends StatelessWidget {
 
   /// 預覽結果卡片
   Widget _buildPreviewCard(
-      BuildContext context, ReadinessController controller) {
+      BuildContext context, IReadinessController controller) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -430,11 +432,11 @@ class _ReadinessFormContent extends StatelessWidget {
   Color _getTrafficLightColor(TrafficLight light) {
     switch (light) {
       case TrafficLight.red:
-        return const Color(0xFFEF4444); // Error 紅色
+        return AppTheme.errorRed;
       case TrafficLight.amber:
-        return const Color(0xFFF59E0B); // Warning 橘色
+        return AppTheme.warningLight;
       case TrafficLight.green:
-        return const Color(0xFF10B981); // Success 綠色
+        return AppTheme.successLight;
     }
   }
 
@@ -445,7 +447,7 @@ class _ReadinessFormContent extends StatelessWidget {
   }
 
   Future<void> _submitForm(
-      BuildContext context, ReadinessController controller) async {
+      BuildContext context, IReadinessController controller) async {
     try {
       await controller.submitReadiness();
 

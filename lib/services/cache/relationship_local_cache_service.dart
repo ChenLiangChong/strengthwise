@@ -54,13 +54,13 @@ class RelationshipLocalCacheService {
           _isInitialized = true;
           _isInitializing = false;
           if (kDebugMode) {
-            print('[RELATIONSHIP_CACHE] 本地快取初始化完成');
+            debugPrint('[RELATIONSHIP_CACHE] 本地快取初始化完成');
           }
           return;
         } catch (e) {
           retryCount++;
           if (kDebugMode) {
-            print('[RELATIONSHIP_CACHE] 初始化失敗 (第 $retryCount/$maxRetries 次): $e');
+            debugPrint('[RELATIONSHIP_CACHE] 初始化失敗 (第 $retryCount/$maxRetries 次): $e');
           }
 
           if (e.toString().contains('lock failed') ||
@@ -72,14 +72,14 @@ class RelationshipLocalCacheService {
               await Future.delayed(Duration(milliseconds: 500 * retryCount));
             } catch (cleanupError) {
               if (kDebugMode) {
-                print('[RELATIONSHIP_CACHE] 清理失敗: $cleanupError');
+                debugPrint('[RELATIONSHIP_CACHE] 清理失敗: $cleanupError');
               }
             }
           }
 
           if (retryCount >= maxRetries) {
             if (kDebugMode) {
-              print('[RELATIONSHIP_CACHE] ⚠️ 初始化失敗，將使用無快取模式');
+              debugPrint('[RELATIONSHIP_CACHE] ⚠️ 初始化失敗，將使用無快取模式');
             }
             _box = null;
             _isInitialized = true;
@@ -90,7 +90,7 @@ class RelationshipLocalCacheService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[RELATIONSHIP_CACHE] 初始化過程發生錯誤: $e');
+        debugPrint('[RELATIONSHIP_CACHE] 初始化過程發生錯誤: $e');
       }
       _box = null;
       _isInitialized = true;
@@ -105,7 +105,7 @@ class RelationshipLocalCacheService {
     final cachedVersion = _box!.get(_versionKey, defaultValue: 0);
     if (cachedVersion != currentCacheVersion) {
       if (kDebugMode) {
-        print('[RELATIONSHIP_CACHE] 快取版本不符，清除舊快取');
+        debugPrint('[RELATIONSHIP_CACHE] 快取版本不符，清除舊快取');
       }
       _box!.clear();
       _box!.put(_versionKey, currentCacheVersion);
@@ -139,13 +139,13 @@ class RelationshipLocalCacheService {
           .toList();
 
       if (kDebugMode) {
-        print('[RELATIONSHIP_CACHE] 📦 從快取載入 ${relationships.length} 個學員關係');
+        debugPrint('[RELATIONSHIP_CACHE] 📦 從快取載入 ${relationships.length} 個學員關係');
       }
 
       return relationships;
     } catch (e) {
       if (kDebugMode) {
-        print('[RELATIONSHIP_CACHE] ⚠️ 解析快取失敗：$e');
+        debugPrint('[RELATIONSHIP_CACHE] ⚠️ 解析快取失敗：$e');
       }
       _box!.delete(cacheKey);
       return null;
@@ -184,11 +184,11 @@ class RelationshipLocalCacheService {
       await _box!.put(lastUpdateKey, DateTimeUtils.formatToUtcIso(DateTime.now()));
 
       if (kDebugMode) {
-        print('[RELATIONSHIP_CACHE] 💾 已儲存 ${relationships.length} 個學員關係');
+        debugPrint('[RELATIONSHIP_CACHE] 💾 已儲存 ${relationships.length} 個學員關係');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[RELATIONSHIP_CACHE] ⚠️ 儲存失敗：$e');
+        debugPrint('[RELATIONSHIP_CACHE] ⚠️ 儲存失敗：$e');
       }
     }
   }
@@ -220,13 +220,13 @@ class RelationshipLocalCacheService {
           .toList();
 
       if (kDebugMode) {
-        print('[RELATIONSHIP_CACHE] 📦 從快取載入 ${relationships.length} 個教練關係');
+        debugPrint('[RELATIONSHIP_CACHE] 📦 從快取載入 ${relationships.length} 個教練關係');
       }
 
       return relationships;
     } catch (e) {
       if (kDebugMode) {
-        print('[RELATIONSHIP_CACHE] ⚠️ 解析快取失敗：$e');
+        debugPrint('[RELATIONSHIP_CACHE] ⚠️ 解析快取失敗：$e');
       }
       _box!.delete(cacheKey);
       return null;
@@ -265,11 +265,11 @@ class RelationshipLocalCacheService {
       await _box!.put(lastUpdateKey, DateTimeUtils.formatToUtcIso(DateTime.now()));
 
       if (kDebugMode) {
-        print('[RELATIONSHIP_CACHE] 💾 已儲存 ${relationships.length} 個教練關係');
+        debugPrint('[RELATIONSHIP_CACHE] 💾 已儲存 ${relationships.length} 個教練關係');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[RELATIONSHIP_CACHE] ⚠️ 儲存失敗：$e');
+        debugPrint('[RELATIONSHIP_CACHE] ⚠️ 儲存失敗：$e');
       }
     }
   }
@@ -297,7 +297,7 @@ class RelationshipLocalCacheService {
     }
 
     if (kDebugMode) {
-      print('[RELATIONSHIP_CACHE] 🗑️ 已清除教練快取：$coachId');
+      debugPrint('[RELATIONSHIP_CACHE] 🗑️ 已清除教練快取：$coachId');
     }
   }
 
@@ -320,7 +320,7 @@ class RelationshipLocalCacheService {
     }
 
     if (kDebugMode) {
-      print('[RELATIONSHIP_CACHE] 🗑️ 已清除學員快取：$clientId');
+      debugPrint('[RELATIONSHIP_CACHE] 🗑️ 已清除學員快取：$clientId');
     }
   }
 
@@ -349,7 +349,7 @@ class RelationshipLocalCacheService {
     await _box!.put(_versionKey, currentCacheVersion);
 
     if (kDebugMode) {
-      print('[RELATIONSHIP_CACHE] 🗑️ 已清除所有快取');
+      debugPrint('[RELATIONSHIP_CACHE] 🗑️ 已清除所有快取');
     }
   }
 

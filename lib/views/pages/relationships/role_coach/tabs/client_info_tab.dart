@@ -6,10 +6,10 @@ import 'package:strengthwise/models/health_assessment/health_assessment_model.da
 import 'package:strengthwise/models/coach_display_preferences_model.dart';
 import 'package:strengthwise/models/coach_assessment_note_model.dart';
 import 'package:strengthwise/models/injury_coach_note_model.dart';
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/controllers/profile_controller.dart';
-import 'package:strengthwise/controllers/coach_profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coach_profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/profile/health_assessment_detail_page.dart';
@@ -33,10 +33,10 @@ class ClientInfoTab extends StatefulWidget {
 
 class _ClientInfoTabState extends State<ClientInfoTab> {
   // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
-  late final CoachingRelationshipController _coachingController;
+  late final ICoachingRelationshipController _coachingController;
   late final IAuthController _authController;
-  late final ProfileController _profileController;
-  late final CoachProfileController _coachProfileController;
+  late final IProfileController _profileController;
+  late final ICoachProfileController _coachProfileController;
 
   // ignore: unused_field - 用於未來功能擴展
   CoachingRelationshipModel? _relationship;
@@ -54,10 +54,10 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
   void initState() {
     super.initState();
     // ⭐ v3.6: MVVM 重構 - 只使用 Controller
-    _coachingController = serviceLocator<CoachingRelationshipController>();
+    _coachingController = serviceLocator<ICoachingRelationshipController>();
     _authController = serviceLocator<IAuthController>();
-    _profileController = serviceLocator<ProfileController>();
-    _coachProfileController = serviceLocator<CoachProfileController>();
+    _profileController = serviceLocator<IProfileController>();
+    _coachProfileController = serviceLocator<ICoachProfileController>();
     _loadRelationship();
     _loadHealthAssessment();
     _loadDisplayPreferences();
@@ -586,7 +586,7 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
     }
 
     final relationshipController =
-        serviceLocator<CoachingRelationshipController>();
+        serviceLocator<ICoachingRelationshipController>();
     final relationship = await relationshipController.getRelationshipByUsers(
       coachId,
       widget.client.uid,
@@ -738,7 +738,7 @@ class _ClientInfoTabState extends State<ClientInfoTab> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),

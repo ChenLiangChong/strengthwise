@@ -14,7 +14,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   
   if (kDebugMode) {
-    print('[NotificationService] 背景訊息: ${message.messageId}');
+    debugPrint('[NotificationService] 背景訊息: ${message.messageId}');
   }
 }
 
@@ -85,8 +85,8 @@ class NotificationService implements INotificationService {
       // 6. 設置通知點擊處理
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
         if (kDebugMode) {
-          print('[NotificationService] 📲 onMessageOpenedApp 觸發！');
-          print('[NotificationService] 📲 message.data: ${message.data}');
+          debugPrint('[NotificationService] 📲 onMessageOpenedApp 觸發！');
+          debugPrint('[NotificationService] 📲 message.data: ${message.data}');
         }
         _handleNotificationTap(message);
       });
@@ -94,11 +94,11 @@ class NotificationService implements INotificationService {
       // 7. 檢查是否從通知啟動（⭐ 暫存，等待回調設置後處理）
       final initialMessage = await _messaging.getInitialMessage();
       if (kDebugMode) {
-        print('[NotificationService] 🔍 initialMessage: ${initialMessage?.data}');
+        debugPrint('[NotificationService] 🔍 initialMessage: ${initialMessage?.data}');
       }
       if (initialMessage != null) {
         if (kDebugMode) {
-          print('[NotificationService] 📲 從通知啟動 App！暫存等待回調');
+          debugPrint('[NotificationService] 📲 從通知啟動 App！暫存等待回調');
         }
         // ⭐ 暫存而不是立即處理（因為此時 _onNotificationTap 還沒設置）
         _pendingInitialMessage = initialMessage;
@@ -107,7 +107,7 @@ class NotificationService implements INotificationService {
       _isInitialized = true;
 
       if (kDebugMode) {
-        print('[NotificationService] ✅ 初始化完成');
+        debugPrint('[NotificationService] ✅ 初始化完成');
       }
     } catch (e) {
       _errorService.logError('初始化通知服務失敗: $e',
@@ -155,7 +155,7 @@ class NotificationService implements INotificationService {
   /// 處理前景訊息
   void _handleForegroundMessage(RemoteMessage message) {
     if (kDebugMode) {
-      print('[NotificationService] 前景訊息: ${message.notification?.title}');
+      debugPrint('[NotificationService] 前景訊息: ${message.notification?.title}');
     }
 
     // 顯示本地通知
@@ -174,7 +174,7 @@ class NotificationService implements INotificationService {
   /// 處理通知點擊
   void _handleNotificationTap(RemoteMessage message) {
     if (kDebugMode) {
-      print('[NotificationService] 通知點擊: ${message.data}');
+      debugPrint('[NotificationService] 通知點擊: ${message.data}');
     }
 
     _onNotificationTap?.call(message.data);
@@ -183,7 +183,7 @@ class NotificationService implements INotificationService {
   /// 處理本地通知點擊
   void _onLocalNotificationTap(NotificationResponse response) {
     if (kDebugMode) {
-      print('[NotificationService] 本地通知點擊: ${response.payload}');
+      debugPrint('[NotificationService] 本地通知點擊: ${response.payload}');
     }
 
     // 解析 payload 並調用回調
@@ -208,13 +208,13 @@ class NotificationService implements INotificationService {
         }
         
         if (kDebugMode) {
-          print('[NotificationService] 解析後的 payload: $data');
+          debugPrint('[NotificationService] 解析後的 payload: $data');
         }
         
         _onNotificationTap?.call(data);
       } catch (e) {
         if (kDebugMode) {
-          print('[NotificationService] 解析 payload 失敗: $e');
+          debugPrint('[NotificationService] 解析 payload 失敗: $e');
         }
         _onNotificationTap?.call({'payload': response.payload});
       }
@@ -226,7 +226,7 @@ class NotificationService implements INotificationService {
     try {
       final token = await _messaging.getToken();
       if (kDebugMode) {
-        print('[NotificationService] FCM Token: ${token?.substring(0, 20)}...');
+        debugPrint('[NotificationService] FCM Token: ${token?.substring(0, 20)}...');
       }
       return token;
     } catch (e) {
@@ -253,7 +253,7 @@ class NotificationService implements INotificationService {
       });
 
       if (kDebugMode) {
-        print('[NotificationService] ✅ FCM Token 已保存到 user_devices');
+        debugPrint('[NotificationService] ✅ FCM Token 已保存到 user_devices');
       }
     } catch (e) {
       _errorService.logError('保存 FCM Token 失敗: $e',
@@ -274,7 +274,7 @@ class NotificationService implements INotificationService {
       });
 
       if (kDebugMode) {
-        print('[NotificationService] ✅ FCM Token 已從 user_devices 移除');
+        debugPrint('[NotificationService] ✅ FCM Token 已從 user_devices 移除');
       }
     } catch (e) {
       _errorService.logError('移除 FCM Token 失敗: $e',
@@ -287,7 +287,7 @@ class NotificationService implements INotificationService {
     _tokenSubscription?.cancel();
     _tokenSubscription = _messaging.onTokenRefresh.listen((newToken) {
       if (kDebugMode) {
-        print('[NotificationService] Token 已更新');
+        debugPrint('[NotificationService] Token 已更新');
       }
       saveTokenToDatabase(userId, newToken);
     });
@@ -363,7 +363,7 @@ class NotificationService implements INotificationService {
           settings.authorizationStatus == AuthorizationStatus.provisional;
 
       if (kDebugMode) {
-        print('[NotificationService] 權限狀態: ${settings.authorizationStatus}');
+        debugPrint('[NotificationService] 權限狀態: ${settings.authorizationStatus}');
       }
 
       return granted;
@@ -393,7 +393,7 @@ class NotificationService implements INotificationService {
     // ⭐ 如果有暫存的冷啟動通知，現在處理它
     if (_pendingInitialMessage != null) {
       if (kDebugMode) {
-        print('[NotificationService] 📲 處理暫存的冷啟動通知: ${_pendingInitialMessage!.data}');
+        debugPrint('[NotificationService] 📲 處理暫存的冷啟動通知: ${_pendingInitialMessage!.data}');
       }
       _handleNotificationTap(_pendingInitialMessage!);
       _pendingInitialMessage = null; // 清除暫存

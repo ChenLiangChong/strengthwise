@@ -48,7 +48,7 @@ class PersonalRecordsCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.1),
+                    color: Colors.amber.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.emoji_events,
@@ -80,21 +80,21 @@ class PersonalRecordsCard extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Colors.amber.withOpacity(0.1),
+                            Colors.amber.withValues(alpha: 0.1),
                             Theme.of(context)
                                 .colorScheme
                                 .primary
-                                .withOpacity(0.05),
+                                .withValues(alpha: 0.05),
                           ],
                         )
                       : null,
                   border: Border.all(
                     color: pr.isNew
-                        ? Colors.amber.withOpacity(0.3)
+                        ? Colors.amber.withValues(alpha: 0.3)
                         : Theme.of(context)
                             .colorScheme
                             .onSurfaceVariant
-                            .withOpacity(0.2),
+                            .withValues(alpha: 0.2),
                     width: pr.isNew ? 2 : 1,
                   ),
                   borderRadius: BorderRadius.circular(12),
@@ -106,7 +106,7 @@ class PersonalRecordsCard extends StatelessWidget {
                       height: 40,
                       decoration: BoxDecoration(
                         color:
-                            _getBodyPartColor(context, pr.bodyPart).withOpacity(0.1),
+                            _getBodyPartColor(context, pr.bodyPart).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -162,7 +162,7 @@ class PersonalRecordsCard extends StatelessWidget {
                                     horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: _getBodyPartColor(context, pr.bodyPart)
-                                      .withOpacity(0.1),
+                                      .withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(

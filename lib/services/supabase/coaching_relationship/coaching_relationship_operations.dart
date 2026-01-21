@@ -115,7 +115,7 @@ class CoachingRelationshipOperations {
   Future<void> deleteRelationship(String relationshipId) async {
     await _supabase.from('coaching_relationships').update({
       'status': 'archived',
-      'updated_at': DateTime.now().toUtc().toIso8601String(),
+      'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
     }).eq('id', relationshipId);
   }
 

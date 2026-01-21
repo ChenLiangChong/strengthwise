@@ -5,8 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/interfaces/i_statistics_controller.dart';
+import 'package:strengthwise/models/statistics_model.dart'; // ⭐ 效能優化：Selector 需要
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/controllers/event_bus_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_event_bus_controller.dart';
 import 'package:strengthwise/services/core/app_event_bus.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
@@ -53,7 +54,7 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
   late IStatisticsController _controller;
   late IAuthController _authController;
   late TabController _tabController;
-  late EventBusController _eventBusController; // ⭐ v3.5
+  late IEventBusController _eventBusController; // ⭐ v3.5
 
   // ⭐ v3.5: 事件訂閱
   StreamSubscription<AppEvent>? _eventSubscription;
@@ -63,7 +64,7 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
     super.initState();
     _controller = serviceLocator<IStatisticsController>();
     _authController = serviceLocator<IAuthController>();
-    _eventBusController = serviceLocator<EventBusController>();
+    _eventBusController = serviceLocator<IEventBusController>();
     _tabController = TabController(length: 6, vsync: this);
 
     // ⚡ 智能初始化（檢查是否已預載入）
@@ -179,57 +180,63 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
   }
 
   /// 構建僅 Body 部分（用於嵌入其他頁面的 Tab）
+  /// ⭐ 效能優化：使用 Selector 細化重建範圍
   Widget _buildBodyOnly(String targetUserId) {
-    return Consumer<IStatisticsController>(
-      builder: (context, controller, _) {
-        // ⚡ 載入中使用骨架屏
-        if (controller.isLoading) {
-          return const SkeletonStatistics();
-        }
+    return Column(
+      children: [
+        // ⭐ 效能優化：TimeRangeSelector 只在 timeRange 變化時重建
+        Selector<IStatisticsController, TimeRange>(
+          selector: (_, controller) => controller.timeRange,
+          builder: (context, timeRange, _) {
+            final controller = context.read<IStatisticsController>();
+            return TimeRangeSelector(
+              currentRange: timeRange,
+              onRangeChanged: (range) => controller.changeTimeRange(range),
+            );
+          },
+        ),
+        // ⭐ 效能優化：TabBarView 只在必要時重建
+        Expanded(
+          child: Selector<IStatisticsController, _StatisticsState>(
+            selector: (_, controller) => _StatisticsState(
+              isLoading: controller.isLoading,
+              errorMessage: controller.errorMessage,
+              data: controller.statisticsData,
+              timeRange: controller.timeRange,
+            ),
+            builder: (context, state, _) {
+              final controller = context.read<IStatisticsController>();
 
-        // 錯誤狀態
-        if (controller.errorMessage != null) {
-          return _buildErrorState(controller, targetUserId);
-        }
+              // ⚡ 載入中使用骨架屏
+              if (state.isLoading) {
+                return const SkeletonStatistics();
+              }
 
-        // 無數據
-        final data = controller.statisticsData;
-        if (data == null || !data.hasData) {
-          return Column(
-            children: [
-              // 🐛 修復：即使沒有數據，也顯示時間範圍選擇器
-              TimeRangeSelector(
-                currentRange: controller.timeRange,
-                onRangeChanged: (range) => controller.changeTimeRange(range),
-              ),
-              const Expanded(
-                child: EmptyStateWidget(
+              // 錯誤狀態
+              if (state.errorMessage != null) {
+                return _buildErrorState(controller, targetUserId);
+              }
+
+              // 無數據
+              final data = state.data;
+              if (data == null || !data.hasData) {
+                return const EmptyStateWidget(
                   icon: Icons.fitness_center,
                   title: '這個時間範圍還沒有訓練記錄',
                   subtitle: '試試切換到其他時間範圍，或開始訓練吧！',
-                ),
-              ),
-            ],
-          );
-        }
+                );
+              }
 
-        // 正常顯示
-        return Column(
-          children: [
-            TimeRangeSelector(
-              currentRange: controller.timeRange,
-              onRangeChanged: (range) => controller.changeTimeRange(range),
-            ),
-            Expanded(
-              child: TabBarView(
+              // 正常顯示
+              return TabBarView(
                 controller: _tabController,
-                physics: const AlwaysScrollableScrollPhysics(), // ⭐ 確保支援滑動
+                physics: const AlwaysScrollableScrollPhysics(),
                 children: [
                   OverviewTab(data: data, controller: controller),
                   StrengthProgressTab(
                     userId: targetUserId,
                     statisticsData: data,
-                    timeRange: controller.timeRange,
+                    timeRange: state.timeRange,
                     onRefresh: () => controller.refreshStatistics(),
                   ),
                   MuscleBalanceTab(data: data),
@@ -237,11 +244,11 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
                   CompletionRateTab(data: data),
                   BodyDataTab(userId: targetUserId),
                 ],
-              ),
-            ),
-          ],
-        );
-      },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -274,4 +281,33 @@ class _StatisticsPageV2State extends State<StatisticsPageV2>
       ),
     );
   }
+}
+
+/// ⭐ 效能優化：用於 Selector 的狀態封裝
+/// 只有當這些屬性變化時才會觸發 TabBarView 重建
+class _StatisticsState {
+  final bool isLoading;
+  final String? errorMessage;
+  final StatisticsData? data;
+  final TimeRange timeRange;
+
+  const _StatisticsState({
+    required this.isLoading,
+    required this.errorMessage,
+    required this.data,
+    required this.timeRange,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is _StatisticsState &&
+        other.isLoading == isLoading &&
+        other.errorMessage == errorMessage &&
+        other.data == data &&
+        other.timeRange == timeRange;
+  }
+
+  @override
+  int get hashCode => Object.hash(isLoading, errorMessage, data, timeRange);
 }

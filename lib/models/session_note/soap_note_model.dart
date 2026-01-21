@@ -62,22 +62,32 @@ class SoapNoteModel {
   }
 
   /// 是否為空
-  bool get isEmpty =>
-      (subjective == null || subjective!.isEmpty) &&
-      (objective == null || objective!.isEmpty) &&
-      (assessment == null || assessment!.isEmpty) &&
-      (plan == null || plan!.isEmpty);
+  bool get isEmpty {
+    final s = subjective;
+    final o = objective;
+    final a = assessment;
+    final p = plan;
+    return (s == null || s.isEmpty) &&
+        (o == null || o.isEmpty) &&
+        (a == null || a.isEmpty) &&
+        (p == null || p.isEmpty);
+  }
 
   /// 是否完整（所有欄位都填寫）
-  bool get isComplete =>
-      subjective != null &&
-      subjective!.isNotEmpty &&
-      objective != null &&
-      objective!.isNotEmpty &&
-      assessment != null &&
-      assessment!.isNotEmpty &&
-      plan != null &&
-      plan!.isNotEmpty;
+  bool get isComplete {
+    final s = subjective;
+    final o = objective;
+    final a = assessment;
+    final p = plan;
+    return s != null &&
+        s.isNotEmpty &&
+        o != null &&
+        o.isNotEmpty &&
+        a != null &&
+        a.isNotEmpty &&
+        p != null &&
+        p.isNotEmpty;
+  }
 
   @override
   String toString() {

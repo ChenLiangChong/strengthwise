@@ -96,7 +96,7 @@ class BMITrendChart extends StatelessWidget {
                       dotData: const FlDotData(show: true),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: colorScheme.secondary.withOpacity(0.1),
+                        color: colorScheme.secondary.withValues(alpha: 0.1),
                       ),
                     ),
                   ],

@@ -192,7 +192,7 @@ class CanvasUtils {
         color: color,
         fontSize: fontSize,
         fontWeight: FontWeight.bold,
-        backgroundColor: Colors.white.withOpacity(0.7),
+        backgroundColor: Colors.white.withValues(alpha: 0.7),
       ),
     );
 

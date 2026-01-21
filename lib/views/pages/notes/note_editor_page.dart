@@ -21,7 +21,7 @@ class NoteEditorPage extends StatefulWidget {
   });
 
   @override
-  _NoteEditorPageState createState() => _NoteEditorPageState();
+  State<NoteEditorPage> createState() => _NoteEditorPageState();
 }
 
 class _NoteEditorPageState extends State<NoteEditorPage> {
@@ -47,10 +47,11 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
     _errorService = serviceLocator<ErrorHandlingService>();
 
     // 初始化筆記內容
-    if (widget.note != null) {
-      _titleController.text = widget.note!.title;
-      _contentController.text = widget.note!.textContent;
-      _drawingPoints = widget.note!.drawingPoints;
+    final note = widget.note;
+    if (note != null) {
+      _titleController.text = note.title;
+      _contentController.text = note.textContent;
+      _drawingPoints = note.drawingPoints;
     }
   }
 
@@ -85,12 +86,13 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
         );
       } else {
         // 更新現有筆記
+        final existingNote = widget.note!;
         final updatedNote = Note(
-          id: widget.note!.id,
+          id: existingNote.id,
           title: _titleController.text.trim(),
           textContent: _contentController.text,
           drawingPoints: _drawingPoints,
-          createdAt: widget.note!.createdAt,
+          createdAt: existingNote.createdAt,
           updatedAt: now,
         );
 
@@ -128,12 +130,13 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
     if (!_isDrawing) return;
 
     setState(() {
-      _drawingPoints ??= [];
-      _drawingPoints!.add(DrawingPoint(
+      final points = _drawingPoints ?? [];
+      points.add(DrawingPoint(
         offset: offset,
         color: _currentColor,
         strokeWidth: _currentStrokeWidth,
       ));
+      _drawingPoints = points;
     });
   }
 

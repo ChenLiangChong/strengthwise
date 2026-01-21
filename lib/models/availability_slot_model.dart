@@ -237,13 +237,15 @@ class RecurrenceRule {
   String toRRuleString() {
     final parts = <String>['FREQ=${frequency.name.toUpperCase()}'];
 
-    if (byDay != null && byDay!.isNotEmpty) {
-      final dayStrings = byDay!.map(_dayToString).join(',');
+    final days = byDay;
+    if (days != null && days.isNotEmpty) {
+      final dayStrings = days.map(_dayToString).join(',');
       parts.add('BYDAY=$dayStrings');
     }
 
-    if (until != null) {
-      parts.add('UNTIL=${DateTimeUtils.formatToUtcIso(until!)}');
+    final untilDate = until;
+    if (untilDate != null) {
+      parts.add('UNTIL=${DateTimeUtils.formatToUtcIso(untilDate)}');
     }
 
     return parts.join(';');
@@ -316,8 +318,9 @@ class RecurrenceRule {
   /// 顯示名稱（繁體中文）
   String get displayName {
     final freqName = frequency.displayName;
-    if (byDay != null && byDay!.isNotEmpty) {
-      final dayNames = byDay!.map(_dayToChineseName).join('、');
+    final days = byDay;
+    if (days != null && days.isNotEmpty) {
+      final dayNames = days.map(_dayToChineseName).join('、');
       return '$freqName（$dayNames）';
     }
     return freqName;

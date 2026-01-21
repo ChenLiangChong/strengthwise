@@ -135,8 +135,8 @@ class FavoriteExerciseCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: isPositive
-            ? Theme.of(context).colorScheme.secondary.withOpacity(0.1)
-            : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.1),
+            ? Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1)
+            : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

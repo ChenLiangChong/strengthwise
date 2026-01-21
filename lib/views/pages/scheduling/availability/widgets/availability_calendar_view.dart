@@ -146,7 +146,7 @@ class _AvailabilityCalendarViewState extends State<AvailabilityCalendarView> {
                     Icons.schedule,
                     size: 64,
                     color:
-                        Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -155,7 +155,7 @@ class _AvailabilityCalendarViewState extends State<AvailabilityCalendarView> {
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.5),
+                              .withValues(alpha: 0.5),
                         ),
                   ),
                   const SizedBox(height: 8),
@@ -165,7 +165,7 @@ class _AvailabilityCalendarViewState extends State<AvailabilityCalendarView> {
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.4),
+                              .withValues(alpha: 0.4),
                         ),
                   ),
                 ],

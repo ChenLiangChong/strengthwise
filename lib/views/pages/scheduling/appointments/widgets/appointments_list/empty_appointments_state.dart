@@ -60,8 +60,9 @@ class EmptyAppointmentsState extends StatelessWidget {
   }
 
   String _getTitle() {
-    if (selectedStatus != null) {
-      return '無 ${selectedStatus!.displayName} 的預約';
+    final status = selectedStatus;
+    if (status != null) {
+      return '無 ${status.displayName} 的預約';
     }
     return '尚無預約記錄';
   }

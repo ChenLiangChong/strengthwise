@@ -21,7 +21,7 @@ void main() {
 
     test('Rose 背景色應該是淡粉紅', () {
       // #FFF5F7
-      expect(AppTheme.roseBackground.value, 0xFFFFF5F7);
+      expect(AppTheme.roseBackground.toARGB32(), 0xFFFFF5F7);
     });
 
     test('Rose 主色（primaryContainer）應該略深於背景', () {

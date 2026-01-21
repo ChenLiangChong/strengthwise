@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/delete_account_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_delete_account_controller.dart';
+import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/auth/login_page.dart';
 import 'package:strengthwise/views/pages/profile/widgets/delete_account_dialog.dart';
@@ -32,8 +33,8 @@ class ProfileDeleteAccountButton extends StatelessWidget {
 
   /// 顯示刪除帳號確認對話框
   Future<void> _showDeleteAccountDialog(BuildContext context) async {
-    // 創建 Controller 並注入依賴
-    final controller = DeleteAccountController();
+    // 透過 serviceLocator 取得 Controller
+    final controller = serviceLocator<IDeleteAccountController>();
 
     final success = await showDialog<bool>(
       context: context,

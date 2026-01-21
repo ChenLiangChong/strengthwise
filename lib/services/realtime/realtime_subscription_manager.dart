@@ -22,7 +22,8 @@ class RealtimeSubscriptionManager {
   final Map<String, Timer?> _debounceTimers = {};
 
   /// 防抖延遲時間（毫秒）
-  static const int _debounceMs = 500;
+  /// ⭐ 效能優化：從 500ms 減少到 300ms，加快響應速度
+  static const int _debounceMs = 300;
 
   RealtimeSubscriptionManager({SupabaseClient? supabase})
       : _supabase = supabase ?? Supabase.instance.client;
@@ -34,7 +35,7 @@ class RealtimeSubscriptionManager {
     
     // 設置新的計時器
     _debounceTimers[channelId] = Timer(
-      Duration(milliseconds: _debounceMs),
+      const Duration(milliseconds: _debounceMs),
       callback,
     );
   }

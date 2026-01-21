@@ -18,9 +18,14 @@ import 'package:strengthwise/views/pages/relationships/role_client/client_hub_pa
 /// - 課程筆記 → 不推播
 class NotificationRouter {
   final GlobalKey<NavigatorState> navigatorKey;
-  
+
   /// 待處理的通知（當 navigator 還沒準備好時暫存）
   Map<String, dynamic>? _pendingNotification;
+
+  /// ⭐ v4.3: 追蹤重試 Timer，避免記憶體洩漏
+  Timer? _retryTimer;
+  int _retryCount = 0;
+  static const _maxRetries = 10;
 
   NotificationRouter({required this.navigatorKey});
 
@@ -159,16 +164,19 @@ class NotificationRouter {
   }
 
   /// 延遲重試導航
+  ///
+  /// ⭐ v4.3: 修復記憶體洩漏 - 追蹤並清理 Timer
   void _retryNavigation() {
-    // 延遲 500ms 後重試，最多重試 10 次（5 秒）
-    int retryCount = 0;
-    const maxRetries = 10;
-    
-    Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      retryCount++;
-      
+    // 取消已存在的 Timer（避免多次調用造成多個 Timer）
+    _retryTimer?.cancel();
+    _retryCount = 0;
+
+    _retryTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      _retryCount++;
+
       if (navigatorKey.currentState != null) {
         timer.cancel();
+        _retryTimer = null;
         if (_pendingNotification != null) {
           if (kDebugMode) {
             debugPrint('[NotificationRouter] 重試成功，執行導航');
@@ -178,13 +186,21 @@ class NotificationRouter {
           final type = data['type'] as String?;
           _navigateByType(type, data);
         }
-      } else if (retryCount >= maxRetries) {
+      } else if (_retryCount >= _maxRetries) {
         timer.cancel();
+        _retryTimer = null;
         if (kDebugMode) {
           debugPrint('[NotificationRouter] 重試超時，放棄導航');
         }
         _pendingNotification = null;
       }
     });
+  }
+
+  /// ⭐ v4.3: 清理資源
+  void dispose() {
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _pendingNotification = null;
   }
 }

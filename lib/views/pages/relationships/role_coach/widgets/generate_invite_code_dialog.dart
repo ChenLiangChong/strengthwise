@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart';
 import 'package:strengthwise/models/invite_code_model.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/services/service_locator.dart';
@@ -29,7 +29,7 @@ class GenerateInviteCodeDialog extends StatefulWidget {
 class _GenerateInviteCodeDialogState extends State<GenerateInviteCodeDialog> {
   InviteCodeModel? _inviteCode;
   bool _isGenerating = false;
-  late final CoachingRelationshipController _controller;
+  late final ICoachingRelationshipController _controller;
 
   /// ⭐ 倒數計時器
   Timer? _countdownTimer;
@@ -40,7 +40,7 @@ class _GenerateInviteCodeDialogState extends State<GenerateInviteCodeDialog> {
   @override
   void initState() {
     super.initState();
-    _controller = serviceLocator<CoachingRelationshipController>();
+    _controller = serviceLocator<ICoachingRelationshipController>();
     _generateCode();
   }
 
@@ -207,7 +207,7 @@ class _GenerateInviteCodeDialogState extends State<GenerateInviteCodeDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(

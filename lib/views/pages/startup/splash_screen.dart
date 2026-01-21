@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
+import 'package:strengthwise/themes/app_theme.dart';
 import 'package:strengthwise/views/pages/auth/login_page.dart';
 import 'package:strengthwise/views/pages/home/main_home_page.dart';
 import 'package:strengthwise/views/pages/profile/profile_settings_page.dart'; // ⭐ v3.4
@@ -9,7 +10,7 @@ class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  _SplashScreenState createState() => _SplashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen> {
@@ -38,11 +39,11 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    // ⚡ 等待服務就緒（縮短超時到 1.5 秒）
+    // ⚡ 效能優化：延長超時到 3 秒，避免網路慢時導航失敗
     debugPrint('[SPLASH] ⏳ 等待服務就緒...');
     try {
       await waitForServiceReady().timeout(
-        const Duration(milliseconds: 1500),
+        const Duration(milliseconds: 3000),
         onTimeout: () {
           debugPrint('[SPLASH] ⚠️ 服務就緒超時，嘗試繼續');
         },
@@ -58,6 +59,8 @@ class _SplashScreenState extends State<SplashScreen> {
       debugPrint('[SPLASH] ✅ 服務就緒後導航成功');
       return;
     }
+
+    if (!mounted) return;
 
     // 最終失敗，預設進入登入頁
     debugPrint('[SPLASH] ⚠️ 導航失敗，預設進入登入頁');
@@ -129,8 +132,8 @@ class _SplashScreenState extends State<SplashScreen> {
     final isDarkMode =
         MediaQuery.of(context).platformBrightness == Brightness.dark;
     final backgroundColor = isDarkMode
-        ? const Color(0xFF0F172A) // 深色模式：Deep Slate
-        : const Color(0xFFF1F5F9); // 淺色模式：Slate 50
+        ? AppTheme.slate900 // 深色模式：Deep Slate
+        : AppTheme.slate100; // 淺色模式：Slate 100
 
     return Scaffold(
       backgroundColor: backgroundColor,

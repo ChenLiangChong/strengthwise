@@ -1,7 +1,7 @@
 // ✅ 已響應式改造 (Phase 0) - 全螢幕繪圖頁
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/drawing_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_drawing_controller.dart';
 import 'package:strengthwise/models/drawing_note_model.dart';
 import 'package:strengthwise/views/painters/drawing_canvas_painter.dart';
 import 'package:strengthwise/views/pages/notes/widgets/drawing_toolbar.dart';
@@ -22,7 +22,7 @@ class DrawingCanvasPage extends StatefulWidget {
 }
 
 class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
-  late DrawingController _controller;
+  late IDrawingController _controller;
   final TransformationController _transformationController =
       TransformationController();
   bool _isViewMode = false; // 查看模式（縮放）vs 繪圖模式
@@ -30,7 +30,7 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
   @override
   void initState() {
     super.initState();
-    _controller = context.read<DrawingController>();
+    _controller = context.read<IDrawingController>();
 
     // 載入或創建繪圖
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -56,8 +56,9 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
       );
       debugPrint('[DRAWING_CANVAS] ✅ 創建完成：${_controller.currentDrawing?.id}');
     } else {
-      debugPrint('[DRAWING_CANVAS] ✅ 載入現有繪圖：${_controller.currentDrawing!.id}');
-      debugPrint('[DRAWING_CANVAS] 📋 繪圖的模板類型: ${_controller.currentDrawing!.templateType}');
+      final drawing = _controller.currentDrawing;
+      debugPrint('[DRAWING_CANVAS] ✅ 載入現有繪圖：${drawing?.id}');
+      debugPrint('[DRAWING_CANVAS] 📋 繪圖的模板類型: ${drawing?.templateType}');
     }
   }
 
@@ -111,7 +112,7 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
           ),
         ],
       ),
-      body: Consumer<DrawingController>(
+      body: Consumer<IDrawingController>(
         builder: (context, controller, child) {
           if (controller.isLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -194,7 +195,7 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
                                 Positioned.fill(
                                   child: Image.asset(
                                     _getTemplateAssetPath(
-                                      controller.currentDrawing!.templateType,
+                                      controller.currentDrawing?.templateType ?? widget.templateType,
                                     ),
                                     fit: BoxFit.contain,
                                     filterQuality: FilterQuality.medium,

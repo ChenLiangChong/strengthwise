@@ -169,13 +169,13 @@ class BookingNotificationService {
 
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[BOOKING_NOTIFICATION] $message');
+      debugPrint('[BOOKING_NOTIFICATION] $message');
     }
   }
 
   void _logError(String message) {
     if (kDebugMode) {
-      print('[BOOKING_NOTIFICATION ERROR] $message');
+      debugPrint('[BOOKING_NOTIFICATION ERROR] $message');
     }
   }
 }

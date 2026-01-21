@@ -80,7 +80,7 @@ class ExercisePreloadManager {
 
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[EXERCISE_PRELOAD] $message');
+      debugPrint('[EXERCISE_PRELOAD] $message');
     }
   }
 }

@@ -158,8 +158,8 @@ class _RestTimerWidgetState extends State<RestTimerWidget>
             ),
             decoration: BoxDecoration(
               color: isUrgent 
-                  ? colorScheme.error.withOpacity(0.15)
-                  : colorScheme.primaryContainer.withOpacity(0.8),
+                  ? colorScheme.error.withValues(alpha: 0.15)
+                  : colorScheme.primaryContainer.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isUrgent ? colorScheme.error : colorScheme.primary,

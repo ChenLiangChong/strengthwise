@@ -3,31 +3,37 @@ import 'package:strengthwise/models/readiness/daily_readiness_model.dart';
 import 'package:strengthwise/services/interfaces/i_readiness_service.dart';
 import 'package:strengthwise/services/interfaces/i_auth_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
+import 'interfaces/i_readiness_controller.dart';
 
 /// 課前問卷控制器
 ///
 /// 管理學員問卷填寫狀態與提交邏輯
-class ReadinessController extends ChangeNotifier {
+class ReadinessController extends ChangeNotifier implements IReadinessController {
   final IReadinessService _readinessService;
   final IAuthService _authService;
 
   /// 關聯的預約 ID
+  @override
   final String? appointmentId;
 
   /// 載入中狀態
   bool _isLoading = false;
+  @override
   bool get isLoading => _isLoading;
 
   /// 提交中狀態
   bool _isSubmitting = false;
+  @override
   bool get isSubmitting => _isSubmitting;
 
   /// 當前問卷指標
   ReadinessMetrics _metrics;
+  @override
   ReadinessMetrics get metrics => _metrics;
 
   /// 錯誤訊息
   String? _errorMessage;
+  @override
   String? get errorMessage => _errorMessage;
 
   /// 已存在的問卷 ID（用於更新）
@@ -69,36 +75,42 @@ class ReadinessController extends ChangeNotifier {
   // ============================================================
 
   /// 設置睡眠品質（1-5）
+  @override
   void setSleepQuality(int value) {
     _metrics = _metrics.copyWith(sleepQuality: value.clamp(1, 5));
     notifyListeners();
   }
 
   /// 設置睡眠時數（3-12）
+  @override
   void setSleepHours(double value) {
     _metrics = _metrics.copyWith(sleepHours: value.clamp(3.0, 12.0));
     notifyListeners();
   }
 
   /// 設置肌肉痠痛程度（1-5）
+  @override
   void setSoreness(int value) {
     _metrics = _metrics.copyWith(soreness: value.clamp(1, 5));
     notifyListeners();
   }
 
   /// 設置心理壓力程度（1-5）
+  @override
   void setStress(int value) {
     _metrics = _metrics.copyWith(stress: value.clamp(1, 5));
     notifyListeners();
   }
 
   /// 設置能量水平（1-5）
+  @override
   void setEnergyLevel(int value) {
     _metrics = _metrics.copyWith(energyLevel: value.clamp(1, 5));
     notifyListeners();
   }
 
   /// 設置備註
+  @override
   void setNotes(String value) {
     _metrics = _metrics.copyWith(notes: value.isEmpty ? null : value);
     // 不需要 notifyListeners，TextField 自己管理狀態
@@ -109,11 +121,13 @@ class ReadinessController extends ChangeNotifier {
   // ============================================================
 
   /// 計算預覽分數（用於即時顯示）
+  @override
   Map<String, dynamic> calculatePreviewScore() {
     return _readinessService.calculateReadinessScore(_metrics);
   }
 
   /// 提交問卷
+  @override
   Future<void> submitReadiness() async {
     final currentUser = _authService.getCurrentUser();
     final userId = currentUser?['uid'] as String?; // ⭐ v3.1: 修正 key 名稱

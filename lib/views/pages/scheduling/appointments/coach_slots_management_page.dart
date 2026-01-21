@@ -8,11 +8,11 @@ import 'package:provider/provider.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
-import 'package:strengthwise/controllers/availability_slot_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_availability_slot_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/controllers/appointment_controller.dart';
-import 'package:strengthwise/controllers/event_bus_controller.dart'; // ⭐ v3.5
-import 'package:strengthwise/controllers/realtime_controller.dart'; // ⭐ v3.9
+import 'package:strengthwise/controllers/interfaces/i_appointment_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_event_bus_controller.dart'; // ⭐ v3.5
+import 'package:strengthwise/controllers/interfaces/i_realtime_controller.dart'; // ⭐ v3.9
 import 'package:strengthwise/services/core/app_event_bus.dart'; // ⭐ v3.9
 import 'package:strengthwise/models/availability_slot_model.dart';
 import 'package:strengthwise/models/appointment_model.dart';
@@ -54,11 +54,11 @@ class CoachSlotsManagementPage extends StatefulWidget {
 
 class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
     with CopyWeekSlotsMixin {
-  late final AvailabilitySlotController _slotController;
+  late final IAvailabilitySlotController _slotController;
   late final IAuthController _authController;
-  late final AppointmentController _appointmentController;
-  late final EventBusController _eventBusController; // ⭐ v3.5
-  late final RealtimeController _realtimeController; // ⭐ v3.9
+  late final IAppointmentController _appointmentController;
+  late final IEventBusController _eventBusController; // ⭐ v3.5
+  late final IRealtimeController _realtimeController; // ⭐ v3.9
 
   String? _currentUserId;
   DateTime _selectedDate = DateTime.now();
@@ -77,11 +77,11 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
   @override
   void initState() {
     super.initState();
-    _slotController = serviceLocator<AvailabilitySlotController>();
+    _slotController = serviceLocator<IAvailabilitySlotController>();
     _authController = serviceLocator<IAuthController>();
-    _appointmentController = serviceLocator<AppointmentController>();
-    _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.5
-    _realtimeController = serviceLocator<RealtimeController>(); // ⭐ v3.9
+    _appointmentController = serviceLocator<IAppointmentController>();
+    _eventBusController = serviceLocator<IEventBusController>(); // ⭐ v3.5
+    _realtimeController = serviceLocator<IRealtimeController>(); // ⭐ v3.9
     _initializeAndLoad();
     
     // ⭐ v3.9: 學員查看教練時段 → 訂閱 Realtime + EventBus
@@ -367,7 +367,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
 
   /// 獲取篩選後的時段
   List<AvailabilitySlotModel> _getFilteredSlots(
-      AvailabilitySlotController controller) {
+      IAvailabilitySlotController controller) {
     switch (_selectedFilter) {
       case 'recurring':
         return controller.recurringSlots;
@@ -438,7 +438,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<AvailabilitySlotController>.value(
+    return ChangeNotifierProvider<IAvailabilitySlotController>.value(
       value: _slotController,
       child: Scaffold(
         appBar: _buildAppBar(),
@@ -502,7 +502,7 @@ class _CoachSlotsManagementPageState extends State<CoachSlotsManagementPage>
 
   /// 建構 Body
   Widget _buildBody() {
-    return Consumer<AvailabilitySlotController>(
+    return Consumer<IAvailabilitySlotController>(
       builder: (context, controller, child) {
         // ⚡ 載入中使用骨架屏
         if (controller.isLoading) {

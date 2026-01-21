@@ -1,6 +1,7 @@
 // ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:strengthwise/themes/app_theme.dart';
 
 /// 表情滑桿組件
 ///
@@ -230,21 +231,7 @@ class _EmojiSliderState extends State<EmojiSlider>
 
   /// 根據值取得軌道顏色（使用語意色彩）
   Color _getTrackColor(ColorScheme colorScheme) {
-    // 使用 ColorScheme 語意色彩 + 手動定義的紅綠燈色
-    switch (widget.value) {
-      case 1:
-        return colorScheme.error; // 紅色 - 使用 error
-      case 2:
-        return const Color(0xFFF59E0B); // Warning 橘色
-      case 3:
-        return const Color(0xFFFBBF24); // Warning 黃色
-      case 4:
-        return const Color(0xFF34D399); // Success 淺綠
-      case 5:
-        return const Color(0xFF10B981); // Success 綠色
-      default:
-        return colorScheme.primary;
-    }
+    return AppTheme.getTrafficLightColorByLevel(widget.value);
   }
 
   /// 取得當前值的標籤文字
@@ -296,15 +283,15 @@ class HoursSlider extends StatelessWidget {
     // 計算顏色（根據睡眠時數，使用語意色彩）
     Color trackColor;
     if (value < 5) {
-      trackColor = colorScheme.error; // 紅色
+      trackColor = AppTheme.errorRed;
     } else if (value < 6) {
-      trackColor = const Color(0xFFF59E0B); // Warning 橘色
+      trackColor = AppTheme.warningLight;
     } else if (value < 7) {
-      trackColor = const Color(0xFFFBBF24); // Warning 黃色
+      trackColor = AppTheme.warningDark;
     } else if (value <= 9) {
-      trackColor = const Color(0xFF10B981); // Success 綠色
+      trackColor = AppTheme.successLight;
     } else {
-      trackColor = const Color(0xFF34D399); // Success 淺綠
+      trackColor = AppTheme.successDark;
     }
 
     return Container(
@@ -391,7 +378,7 @@ class HoursSlider extends StatelessWidget {
                 Text(
                   '建議 7-9hr',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF10B981), // Success 綠色
+                    color: AppTheme.successLight,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

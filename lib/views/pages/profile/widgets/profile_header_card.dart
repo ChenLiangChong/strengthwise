@@ -31,7 +31,7 @@ class ProfileHeaderCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Padding(
         padding: context.cardPadding,
@@ -47,7 +47,7 @@ class ProfileHeaderCard extends StatelessWidget {
                       backgroundColor: colorScheme.surfaceContainerHighest,
                       backgroundImage: userProfile?.photoURL != null
                           ? NetworkImage(userProfile!.photoURL!)
-                          : null,
+                          : null,  // Safe: checked above
                       child: userProfile?.photoURL == null
                           ? Icon(Icons.person,
                               size: isMobileSmall ? 36 : 45,
@@ -118,43 +118,47 @@ class ProfileHeaderCard extends StatelessWidget {
                       Wrap(
                         spacing: context.spacing.sm,
                         children: [
-                          if (userProfile?.age != null) ...[
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.cake,
-                                    size: 16, color: colorScheme.onSurfaceVariant),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${userProfile!.age} 歲',
-                                  style: textTheme.bodySmall?.copyWith(
+                          if (userProfile?.age != null)
+                            Builder(builder: (context) {
+                              final age = userProfile!.age!;
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.cake,
+                                      size: 16, color: colorScheme.onSurfaceVariant),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '$age 歲',
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }),
+                          if (userProfile?.gender != null)
+                            Builder(builder: (context) {
+                              final gender = userProfile!.gender!;
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    gender == '男'
+                                        ? Icons.male
+                                        : Icons.female,
+                                    size: 16,
                                     color: colorScheme.onSurfaceVariant,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          if (userProfile?.gender != null) ...[
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  userProfile!.gender == '男'
-                                      ? Icons.male
-                                      : Icons.female,
-                                  size: 16,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  userProfile!.gender!,
-                                  style: textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    gender,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              );
+                            }),
                         ],
                       ),
                       // 個人簡介
@@ -241,7 +245,7 @@ class _RoleBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

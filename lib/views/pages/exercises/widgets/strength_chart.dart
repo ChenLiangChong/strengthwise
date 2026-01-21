@@ -67,7 +67,7 @@ class StrengthChart extends StatelessWidget {
             color: Theme.of(context)
                 .colorScheme
                 .onSurfaceVariant
-                .withOpacity(0.2),
+                .withValues(alpha: 0.2),
             strokeWidth: 1,
           );
         },
@@ -140,7 +140,7 @@ class StrengthChart extends StatelessWidget {
           ),
           belowBarData: BarAreaData(
             show: true,
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
           ),
         ),
       ],

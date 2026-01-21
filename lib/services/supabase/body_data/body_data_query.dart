@@ -38,27 +38,27 @@ class BodyDataQuery {
     try {
       _logDebug('查詢身體數據記錄，userId: $userId');
 
-      dynamic query = _supabase
+      // 使用型別安全的查詢構建（避免 dynamic）
+      var baseQuery = _supabase
           .from('body_data')
           .select(_kBodyDataSelectFields)
           .eq('user_id', userId);
 
+      // 條件過濾：日期範圍
       if (startDate != null) {
-        query =
-            query.gte('record_date', DateTimeUtils.formatToUtcIso(startDate));
+        baseQuery =
+            baseQuery.gte('record_date', DateTimeUtils.formatToUtcIso(startDate));
       }
-
       if (endDate != null) {
-        query = query.lte('record_date', DateTimeUtils.formatToUtcIso(endDate));
+        baseQuery =
+            baseQuery.lte('record_date', DateTimeUtils.formatToUtcIso(endDate));
       }
 
-      query = query.order('record_date', ascending: false);
-
-      if (limit != null) {
-        query = query.limit(limit);
-      }
-
-      final response = await query;
+      // 排序和限制
+      final orderedQuery = baseQuery.order('record_date', ascending: false);
+      final response = limit != null
+          ? await orderedQuery.limit(limit)
+          : await orderedQuery;
       final allRecords = (response as List)
           .map((json) => BodyDataRecord.fromSupabase(json))
           .toList();

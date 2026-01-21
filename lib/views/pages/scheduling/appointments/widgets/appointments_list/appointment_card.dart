@@ -34,7 +34,7 @@ class AppointmentCard extends StatelessWidget {
       elevation: 0, // ⭐ 移除陰影
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
       ),
       child: InkWell(
         onTap: onTap,

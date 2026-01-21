@@ -26,6 +26,23 @@ import '../../controllers/interfaces/i_note_controller.dart';
 import '../../controllers/interfaces/i_workout_controller.dart';
 import '../../controllers/interfaces/i_workout_execution_controller.dart';
 import '../../controllers/interfaces/i_statistics_controller.dart';
+import '../../controllers/interfaces/i_event_bus_controller.dart';
+import '../../controllers/interfaces/i_body_data_controller.dart';
+import '../../controllers/interfaces/i_coaching_relationship_controller.dart';
+import '../../controllers/interfaces/i_appointment_controller.dart';
+import '../../controllers/interfaces/i_availability_slot_controller.dart';
+import '../../controllers/interfaces/i_session_note_controller.dart';
+import '../../controllers/interfaces/i_client_availability_controller.dart';
+import '../../controllers/interfaces/i_drawing_controller.dart';
+import '../../controllers/interfaces/i_client_management_controller.dart';
+import '../../controllers/interfaces/i_coach_management_controller.dart';
+import '../../controllers/interfaces/i_delete_account_controller.dart';
+import '../../controllers/interfaces/i_profile_controller.dart';
+import '../../controllers/interfaces/i_coach_profile_controller.dart';
+import '../../controllers/interfaces/i_realtime_controller.dart';
+import '../../controllers/interfaces/i_theme_controller.dart';
+import '../../controllers/interfaces/i_readiness_controller.dart';
+import '../../controllers/interfaces/i_session_mode_controller.dart';
 
 import '../../controllers/auth_controller.dart';
 import '../../controllers/booking_controller.dart';
@@ -50,7 +67,11 @@ import '../../controllers/delete_account_controller.dart';
 import '../../controllers/profile_controller.dart';
 import '../../controllers/coach_profile_controller.dart';
 import '../../controllers/event_bus_controller.dart';
+import '../../controllers/theme_controller.dart';
+import '../../controllers/readiness_controller.dart';
+import '../../controllers/session_mode_controller.dart';
 import '../interfaces/i_coach_profile_service.dart';
+import '../core/theme_service.dart';
 
 /// 控制器註冊器
 ///
@@ -105,6 +126,9 @@ class ControllerRegistry {
     _registerProfileController(serviceLocator);
     _registerCoachProfileController(serviceLocator);
     _registerRealtimeController(serviceLocator);
+    _registerThemeController(serviceLocator);
+    _registerReadinessController(serviceLocator);
+    _registerSessionModeController(serviceLocator);
   }
 
   /// ⭐ v3.5: 註冊事件匯流排控制器（全局單例）
@@ -112,8 +136,8 @@ class ControllerRegistry {
   /// 作為 AppEventBus（Service 層）和 View 層之間的中間層，
   /// 所有頁面共享同一個實例來接收和發布事件。
   static void _registerEventBusController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<EventBusController>()) {
-      serviceLocator.registerLazySingleton<EventBusController>(
+    if (!serviceLocator.isRegistered<IEventBusController>()) {
+      serviceLocator.registerLazySingleton<IEventBusController>(
         () => EventBusController(),
       );
     }
@@ -190,7 +214,7 @@ class ControllerRegistry {
         () => WorkoutController(
           workoutService: serviceLocator<IWorkoutService>(),
           errorService: serviceLocator<ErrorHandlingService>(),
-          eventBusController: serviceLocator<EventBusController>(), // ⭐ v3.5
+          eventBusController: serviceLocator<IEventBusController>(), // ⭐ v3.5
           authController:
               serviceLocator<IAuthController>(), // ⭐ v3.6: EventBus fallback
         ),
@@ -204,7 +228,7 @@ class ControllerRegistry {
     if (!serviceLocator.isRegistered<IWorkoutExecutionController>()) {
       serviceLocator.registerFactory<IWorkoutExecutionController>(
         () => WorkoutExecutionController(
-          eventBusController: serviceLocator<EventBusController>(),
+          eventBusController: serviceLocator<IEventBusController>(),
         ),
       );
     }
@@ -226,13 +250,13 @@ class ControllerRegistry {
   /// ⭐ v3.5: 注入 EventBusController 用於發布身體數據事件
   /// ⭐ v3.8: 改為 LazySingleton，共享快取避免重複載入
   static void _registerBodyDataController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<BodyDataController>()) {
-      serviceLocator.registerLazySingleton<BodyDataController>(
+    if (!serviceLocator.isRegistered<IBodyDataController>()) {
+      serviceLocator.registerLazySingleton<IBodyDataController>(
         () => BodyDataController(
           bodyDataService: serviceLocator<IBodyDataService>(),
           userService: serviceLocator<IUserService>(),
           errorService: serviceLocator<ErrorHandlingService>(),
-          eventBusController: serviceLocator<EventBusController>(), // ⭐ v3.5
+          eventBusController: serviceLocator<IEventBusController>(), // ⭐ v3.5
         ),
       );
     }
@@ -240,14 +264,14 @@ class ControllerRegistry {
 
   /// 註冊教練-學員關係控制器
   static void _registerCoachingRelationshipController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<CoachingRelationshipController>()) {
-      serviceLocator.registerFactory<CoachingRelationshipController>(
+    if (!serviceLocator.isRegistered<ICoachingRelationshipController>()) {
+      serviceLocator.registerFactory<ICoachingRelationshipController>(
         () => CoachingRelationshipController(
           serviceLocator<ICoachingRelationshipService>(),
           serviceLocator<IUserService>(),
           serviceLocator<IInviteCodeService>(),
           serviceLocator<ErrorHandlingService>(),
-          serviceLocator<EventBusController>(), // ⭐ v3.5: EventBus
+          serviceLocator<IEventBusController>(), // ⭐ v3.5: EventBus
         ),
       );
     }
@@ -256,12 +280,12 @@ class ControllerRegistry {
   /// 註冊預約控制器（Phase 2）
   /// ⭐ v3.5: 注入 EventBusController 用於發布預約事件
   static void _registerAppointmentController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<AppointmentController>()) {
-      serviceLocator.registerFactory<AppointmentController>(
+    if (!serviceLocator.isRegistered<IAppointmentController>()) {
+      serviceLocator.registerFactory<IAppointmentController>(
         () => AppointmentController(
           serviceLocator<IAppointmentService>(),
           serviceLocator<ErrorHandlingService>(),
-          serviceLocator<EventBusController>(), // ⭐ v3.5
+          serviceLocator<IEventBusController>(), // ⭐ v3.5
         ),
       );
     }
@@ -270,12 +294,12 @@ class ControllerRegistry {
   /// 註冊時段控制器（Phase 2）
   /// ⭐ v3.9: 注入 EventBusController 用於發布時段事件
   static void _registerAvailabilitySlotController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<AvailabilitySlotController>()) {
-      serviceLocator.registerFactory<AvailabilitySlotController>(
+    if (!serviceLocator.isRegistered<IAvailabilitySlotController>()) {
+      serviceLocator.registerFactory<IAvailabilitySlotController>(
         () => AvailabilitySlotController(
           serviceLocator<IAvailabilitySlotService>(),
           serviceLocator<ErrorHandlingService>(),
-          serviceLocator<EventBusController>(), // ⭐ v3.9
+          serviceLocator<IEventBusController>(), // ⭐ v3.9
         ),
       );
     }
@@ -284,12 +308,12 @@ class ControllerRegistry {
   /// 註冊課程筆記控制器（Phase 3）
   /// ⭐ v3.9: 注入 EventBusController 用於發布筆記事件
   static void _registerSessionNoteController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<SessionNoteController>()) {
-      serviceLocator.registerFactory<SessionNoteController>(
+    if (!serviceLocator.isRegistered<ISessionNoteController>()) {
+      serviceLocator.registerFactory<ISessionNoteController>(
         () => SessionNoteController(
           serviceLocator<ISessionNoteService>(),
           serviceLocator<ErrorHandlingService>(),
-          serviceLocator<EventBusController>(), // ⭐ v3.9
+          serviceLocator<IEventBusController>(), // ⭐ v3.9
         ),
       );
     }
@@ -297,12 +321,12 @@ class ControllerRegistry {
 
   /// 註冊學員時間偏好控制器（Phase 3）
   static void _registerClientAvailabilityController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<ClientAvailabilityController>()) {
-      serviceLocator.registerFactory<ClientAvailabilityController>(
+    if (!serviceLocator.isRegistered<IClientAvailabilityController>()) {
+      serviceLocator.registerFactory<IClientAvailabilityController>(
         () => ClientAvailabilityController(
           serviceLocator<IClientAvailabilityService>(),
           serviceLocator<ErrorHandlingService>(),
-          serviceLocator<EventBusController>(), // ⭐ v3.5: EventBus
+          serviceLocator<IEventBusController>(), // ⭐ v3.5: EventBus
         ),
       );
     }
@@ -310,8 +334,8 @@ class ControllerRegistry {
 
   /// 註冊繪圖控制器（Phase 4A）
   static void _registerDrawingController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<DrawingController>()) {
-      serviceLocator.registerFactory<DrawingController>(
+    if (!serviceLocator.isRegistered<IDrawingController>()) {
+      serviceLocator.registerFactory<IDrawingController>(
         () => DrawingController(
           serviceLocator<IDrawingService>(),
           serviceLocator<ErrorHandlingService>(),
@@ -323,15 +347,15 @@ class ControllerRegistry {
   /// 註冊學員管理控制器（Phase 4C - 教練端）
   /// ⭐ v3.5: 注入 EventBusController 用於發布訓練計畫 CUD 事件
   static void _registerClientManagementController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<ClientManagementController>()) {
-      serviceLocator.registerFactory<ClientManagementController>(
+    if (!serviceLocator.isRegistered<IClientManagementController>()) {
+      serviceLocator.registerFactory<IClientManagementController>(
         () => ClientManagementController(
           serviceLocator<ICoachingRelationshipService>(),
           serviceLocator<IWorkoutService>(),
           serviceLocator<IClientAvailabilityService>(),
           serviceLocator<IUserService>(),
           serviceLocator<ErrorHandlingService>(),
-          serviceLocator<EventBusController>(), // ⭐ v3.5
+          serviceLocator<IEventBusController>(), // ⭐ v3.5
         ),
       );
     }
@@ -339,8 +363,8 @@ class ControllerRegistry {
 
   /// 註冊教練管理控制器（Phase 4C - 學員端）
   static void _registerCoachManagementController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<CoachManagementController>()) {
-      serviceLocator.registerFactory<CoachManagementController>(
+    if (!serviceLocator.isRegistered<ICoachManagementController>()) {
+      serviceLocator.registerFactory<ICoachManagementController>(
         () => CoachManagementController(
           serviceLocator<ICoachingRelationshipService>(),
           serviceLocator<IWorkoutService>(),
@@ -353,8 +377,8 @@ class ControllerRegistry {
 
   /// 註冊刪除帳號控制器
   static void _registerDeleteAccountController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<DeleteAccountController>()) {
-      serviceLocator.registerFactory<DeleteAccountController>(
+    if (!serviceLocator.isRegistered<IDeleteAccountController>()) {
+      serviceLocator.registerFactory<IDeleteAccountController>(
         () => DeleteAccountController(
           userService: serviceLocator<IUserService>(),
         ),
@@ -371,13 +395,13 @@ class ControllerRegistry {
   /// ⭐ v3.5: 新增 IBodyDataService 依賴，用於同步體重到 body_data
   /// ⭐ v3.5: 新增 EventBusController 依賴，用於發布身體數據更新事件
   static void _registerProfileController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<ProfileController>()) {
-      serviceLocator.registerLazySingleton<ProfileController>(
+    if (!serviceLocator.isRegistered<IProfileController>()) {
+      serviceLocator.registerLazySingleton<IProfileController>(
         () => ProfileController(
           userService: serviceLocator<IUserService>(),
           authService: serviceLocator<IAuthService>(),
           bodyDataService: serviceLocator<IBodyDataService>(),
-          eventBusController: serviceLocator<EventBusController>(),
+          eventBusController: serviceLocator<IEventBusController>(),
         ),
       );
     }
@@ -385,8 +409,8 @@ class ControllerRegistry {
 
   /// 註冊教練公開檔案控制器 ⭐ v2.9
   static void _registerCoachProfileController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<CoachProfileController>()) {
-      serviceLocator.registerFactory<CoachProfileController>(
+    if (!serviceLocator.isRegistered<ICoachProfileController>()) {
+      serviceLocator.registerFactory<ICoachProfileController>(
         () => CoachProfileController(
           profileService: serviceLocator<ICoachProfileService>(),
           authService: serviceLocator<IAuthService>(),
@@ -400,12 +424,74 @@ class ControllerRegistry {
   /// 提供 Realtime 訂閱的輔助方法，供各頁面使用
   /// 使用 LazySingleton 確保全局只有一個實例
   static void _registerRealtimeController(GetIt serviceLocator) {
-    if (!serviceLocator.isRegistered<RealtimeController>()) {
-      serviceLocator.registerLazySingleton<RealtimeController>(
+    if (!serviceLocator.isRegistered<IRealtimeController>()) {
+      serviceLocator.registerLazySingleton<IRealtimeController>(
         () => RealtimeController(
           realtimeManager: serviceLocator<RealtimeSubscriptionManager>(),
         ),
       );
     }
   }
+
+  /// 註冊主題控制器 ⭐ v4.0
+  ///
+  /// 全局單例，管理應用程式主題狀態
+  static void _registerThemeController(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<IThemeController>()) {
+      serviceLocator.registerLazySingleton<IThemeController>(
+        () => ThemeController(ThemeService()),
+      );
+    }
+  }
+
+  /// 註冊課前問卷控制器 ⭐ v4.0
+  ///
+  /// 使用 FactoryParam 支援傳入 appointmentId 參數
+  static void _registerReadinessController(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<IReadinessController>()) {
+      serviceLocator.registerFactoryParam<IReadinessController, String?, void>(
+        (appointmentId, _) => ReadinessController(appointmentId: appointmentId),
+      );
+    }
+  }
+
+  /// 註冊課程模式控制器 ⭐ v4.0
+  ///
+  /// 使用 FactoryParam 支援傳入多個參數
+  static void _registerSessionModeController(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<ISessionModeController>()) {
+      serviceLocator.registerFactoryParam<ISessionModeController, SessionModeParams, void>(
+        (params, _) => SessionModeController(
+          appointmentId: params.appointmentId,
+          clientId: params.clientId,
+          clientName: params.clientName,
+          sessionStartTime: params.sessionStartTime,
+          sessionEndTime: params.sessionEndTime,
+          workoutPlanId: params.workoutPlanId,
+          isCoachMode: params.isCoachMode,
+        ),
+      );
+    }
+  }
+}
+
+/// SessionModeController 的參數類
+class SessionModeParams {
+  final String appointmentId;
+  final String clientId;
+  final String clientName;
+  final DateTime sessionStartTime;
+  final DateTime sessionEndTime;
+  final String? workoutPlanId;
+  final bool isCoachMode;
+
+  const SessionModeParams({
+    required this.appointmentId,
+    required this.clientId,
+    required this.clientName,
+    required this.sessionStartTime,
+    required this.sessionEndTime,
+    this.workoutPlanId,
+    this.isCoachMode = true,
+  });
 }

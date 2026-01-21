@@ -37,12 +37,13 @@ class _AvailabilitySlotEditorDialogState
   void initState() {
     super.initState();
     
-    if (widget.slot != null) {
+    final slot = widget.slot;
+    if (slot != null) {
       // 編輯模式
-      _startTime = widget.slot!.startTime;
-      _endTime = widget.slot!.endTime;
-      _priority = widget.slot!.priority;
-      _notes = widget.slot!.notes;
+      _startTime = slot.startTime;
+      _endTime = slot.endTime;
+      _priority = slot.priority;
+      _notes = slot.notes;
     } else {
       // 創建模式：使用選定的日期
       _startTime = DateTime(
@@ -113,7 +114,7 @@ class _AvailabilitySlotEditorDialogState
       },
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       final newEndTime = DateTime(
         _endTime.year,
         _endTime.month,
@@ -121,7 +122,7 @@ class _AvailabilitySlotEditorDialogState
         picked.hour,
         picked.minute,
       );
-      
+
       if (newEndTime.isAfter(_startTime)) {
         setState(() => _endTime = newEndTime);
       } else {

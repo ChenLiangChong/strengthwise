@@ -136,7 +136,7 @@ class BookingCacheManager {
 
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[BOOKING_CACHE] $message');
+      debugPrint('[BOOKING_CACHE] $message');
     }
   }
 }

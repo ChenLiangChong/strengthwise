@@ -1,11 +1,14 @@
 // ✅ 已響應式改造 (Phase 0)
+// ignore_for_file: deprecated_member_use - RadioListTile API 待遷移到 RadioGroup
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:strengthwise/controllers/session_note_controller.dart';
-import 'package:strengthwise/controllers/drawing_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_session_note_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_drawing_controller.dart';
+import 'package:strengthwise/controllers/drawing_controller.dart' show DrawingController; // 靜態方法
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/models/session_note/session_note_model.dart';
 import 'package:strengthwise/models/session_note/soap_note_model.dart';
@@ -52,7 +55,7 @@ class SessionNoteEditorPage extends StatefulWidget {
 }
 
 class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
-  late final SessionNoteController _controller;
+  late final ISessionNoteController _controller;
   late final IAuthController _authController;
 
   // 標題控制器
@@ -97,7 +100,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
   @override
   void initState() {
     super.initState();
-    _controller = serviceLocator<SessionNoteController>();
+    _controller = serviceLocator<ISessionNoteController>();
     _authController = serviceLocator<IAuthController>();
 
     // 編輯模式：載入現有筆記
@@ -130,11 +133,12 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
           _titleController.text = note.title;
 
           // 填充 SOAP 欄位
-          if (note.soap != null) {
-            _subjectiveController.text = note.soap!.subjective ?? '';
-            _objectiveController.text = note.soap!.objective ?? '';
-            _assessmentController.text = note.soap!.assessment ?? '';
-            _planController.text = note.soap!.plan ?? '';
+          final soap = note.soap;
+          if (soap != null) {
+            _subjectiveController.text = soap.subjective ?? '';
+            _objectiveController.text = soap.objective ?? '';
+            _assessmentController.text = soap.assessment ?? '';
+            _planController.text = soap.plan ?? '';
           }
 
           // 設定隱私
@@ -330,8 +334,9 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
 
       // 確保 clientId 存在（編輯模式從 selectedNote 取得）
       String? clientId = widget.clientId;
-      if (clientId == null && _controller.selectedNote != null) {
-        clientId = _controller.selectedNote!.clientId;
+      final selectedNote = _controller.selectedNote;
+      if (clientId == null && selectedNote != null) {
+        clientId = selectedNote.clientId;
         debugPrint('[NOTE_EDITOR] 📋 從現有筆記獲得學員 ID: $clientId');
       }
 
@@ -752,7 +757,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
   /// SOAP 說明卡片
   Widget _buildSoapInfoCard() {
     return Card(
-      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+      color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -1035,7 +1040,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
       context,
       MaterialPageRoute(
         builder: (context) => ChangeNotifierProvider(
-          create: (_) => serviceLocator<DrawingController>(),
+          create: (_) => serviceLocator<IDrawingController>(),
           child: DrawingCanvasPage(
             sessionNoteId: sessionNoteId,
             templateType: templateType.name,
@@ -1078,7 +1083,7 @@ class _SessionNoteEditorPageState extends State<SessionNoteEditorPage> {
               Text(
                 '已傳: ${_uploadedPhotoUrls.length}, 待傳: ${_photos.length}',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
               ),
             ],

@@ -7,17 +7,18 @@ import 'session_note/session_note_state_manager.dart';
 import 'session_note/session_note_query_manager.dart';
 import 'session_note/session_note_crud_operations.dart';
 import 'session_note/session_note_storage_operations.dart';
-import 'event_bus_controller.dart'; // ⭐ v3.9: EventBus
+import 'interfaces/i_event_bus_controller.dart'; // ⭐ v3.9: EventBus
+import 'interfaces/i_session_note_controller.dart';
 
 /// SessionNoteController - Phase 3 課程筆記控制器
 ///
 /// 管理課程筆記的創建、查詢、更新、刪除以及 Storage 檔案上傳
 /// 遵循完全解耦架構（透過 Interface 注入依賴）+ 子模組化設計
 /// ⭐ v3.9: 統一發布筆記事件（Controller 層負責事件發布）
-class SessionNoteController extends ChangeNotifier {
+class SessionNoteController extends ChangeNotifier implements ISessionNoteController {
   final ISessionNoteService _noteService;
   final ErrorHandlingService _errorService;
-  final EventBusController _eventBusController; // ⭐ v3.9: EventBus
+  final IEventBusController _eventBusController; // ⭐ v3.9: EventBus
 
   // 子模組
   late final SessionNoteStateManager _state;
@@ -43,28 +44,45 @@ class SessionNoteController extends ChangeNotifier {
   // 狀態訪問（委託給 StateManager）
   // ============================================================================
 
+  @override
   bool get isLoading => _state.isLoading;
+  @override
   String? get errorMessage => _state.errorMessage;
+  @override
   List<SessionNoteModel> get notes => _state.notes;
+  @override
   SessionNoteModel? get selectedNote => _state.selectedNote;
+  @override
   bool get hasNotes => _state.hasNotes;
+  @override
   bool get hasError => _state.hasError;
   
   // 篩選條件
+  @override
   String? get filterClientId => _state.filterClientId;
+  @override
   DateTime? get filterStartDate => _state.filterStartDate;
+  @override
   DateTime? get filterEndDate => _state.filterEndDate;
+  @override
   List<String>? get filterTags => _state.filterTags;
+  @override
   String? get filterVisibility => _state.filterVisibility;
   
   // 統計資料
+  @override
   int get totalCount => _state.totalCount;
+  @override
   int get sharedCount => _state.sharedCount;
+  @override
   int get privateCount => _state.privateCount;
   
   // 衍生狀態
+  @override
   List<SessionNoteModel> get sharedNotes => _state.sharedNotes;
+  @override
   List<SessionNoteModel> get privateNotes => _state.privateNotes;
+  @override
   List<SessionNoteModel> getNotesForClient(String clientId) =>
       _state.getNotesForClient(clientId);
 
@@ -73,6 +91,7 @@ class SessionNoteController extends ChangeNotifier {
   // ============================================================================
 
   /// 載入教練的所有筆記
+  @override
   Future<void> loadCoachNotes({
     required String coachId,
     String? clientId,
@@ -99,6 +118,7 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 載入學員可見的筆記（僅 shared）
+  @override
   Future<void> loadClientNotes({
     required String clientId,
     String? coachId, // ⭐ 新增：用於教練篩選
@@ -125,6 +145,7 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 載入單筆筆記詳情
+  @override
   Future<SessionNoteModel?> loadNoteById(String noteId) async {
     SessionNoteModel? note;
     
@@ -136,6 +157,7 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 載入與預約關聯的筆記
+  @override
   Future<void> loadNotesByAppointment({
     required String appointmentId,
   }) async {
@@ -145,6 +167,7 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 載入與訓練記錄關聯的筆記
+  @override
   Future<void> loadNotesByWorkoutLog({
     required String workoutLogId,
   }) async {
@@ -154,6 +177,7 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 搜尋筆記（依標籤或關鍵字）
+  @override
   Future<void> searchNotes({
     required String coachId,
     String? keyword,
@@ -176,6 +200,7 @@ class SessionNoteController extends ChangeNotifier {
 
   /// 創建新筆記
   /// ⭐ v3.9: 操作成功後自動發布事件
+  @override
   Future<SessionNoteModel?> createNote(SessionNoteModel note) async {
     SessionNoteModel? createdNote;
     
@@ -184,43 +209,47 @@ class SessionNoteController extends ChangeNotifier {
     }, '創建筆記失敗');
 
     // ⭐ v3.9: 發布筆記更新事件
-    final coachId = createdNote?.coachId;
-    final clientId = createdNote?.clientId;
-    if (createdNote != null && coachId != null && clientId != null) {
+    final created = createdNote;
+    final coachId = created?.coachId;
+    final clientId = created?.clientId;
+    if (created != null && coachId != null && clientId != null) {
       _eventBusController.publishSessionNoteUpdated(
-        noteId: createdNote!.id,
+        noteId: created.id,
         coachId: coachId,
         clientId: clientId,
       );
     }
-    
+
     return createdNote;
   }
 
   /// 更新筆記內容
   /// ⭐ v3.9: 操作成功後自動發布事件
+  @override
   Future<SessionNoteModel?> updateNote(SessionNoteModel note) async {
     SessionNoteModel? updatedNote;
-    
+
     await _executeOperation(() async {
       updatedNote = await _crud.updateNote(note);
     }, '更新筆記失敗');
 
     // ⭐ v3.9: 發布筆記更新事件
-    final coachId = updatedNote?.coachId;
-    final clientId = updatedNote?.clientId;
-    if (updatedNote != null && coachId != null && clientId != null) {
+    final updated = updatedNote;
+    final coachId = updated?.coachId;
+    final clientId = updated?.clientId;
+    if (updated != null && coachId != null && clientId != null) {
       _eventBusController.publishSessionNoteUpdated(
-        noteId: updatedNote!.id,
+        noteId: updated.id,
         coachId: coachId,
         clientId: clientId,
       );
     }
-    
+
     return updatedNote;
   }
 
   /// 切換筆記可見性（private <-> shared）
+  @override
   Future<SessionNoteModel?> toggleVisibility(String noteId) async {
     SessionNoteModel? updatedNote;
     
@@ -233,6 +262,7 @@ class SessionNoteController extends ChangeNotifier {
 
   /// 刪除筆記
   /// ⭐ v3.9: 操作成功後自動發布事件
+  @override
   Future<bool> deleteNote(String noteId) async {
     bool success = false;
 
@@ -270,6 +300,7 @@ class SessionNoteController extends ChangeNotifier {
   /// 
   /// [noteId] 筆記 ID
   /// [isCoach] true = 教練隱藏，false = 學員隱藏
+  @override
   Future<bool> hideNote({
     required String noteId,
     required bool isCoach,
@@ -285,6 +316,7 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 批次分享筆記
+  @override
   Future<List<SessionNoteModel>> batchShare(List<String> noteIds) async {
     List<SessionNoteModel> updatedNotes = [];
     
@@ -296,6 +328,7 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 批次刪除筆記
+  @override
   Future<bool> batchDelete(List<String> noteIds) async {
     bool success = false;
     
@@ -312,6 +345,7 @@ class SessionNoteController extends ChangeNotifier {
   // ============================================================================
 
   /// 上傳手繪圖片
+  @override
   Future<String?> uploadDrawing({
     required String coachId,
     required String clientId,
@@ -346,6 +380,7 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 上傳照片
+  @override
   Future<String?> uploadPhoto({
     required String coachId,
     required String clientId,
@@ -380,6 +415,7 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 上傳語音筆記
+  @override
   Future<String?> uploadVoiceNote({
     required String coachId,
     required String clientId,
@@ -414,6 +450,7 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 根據元素類型自動上傳
+  @override
   Future<String?> uploadByElementType({
     required String elementType,
     required String coachId,
@@ -436,6 +473,7 @@ class SessionNoteController extends ChangeNotifier {
 
   /// 生成 Signed URL（24 小時有效）
   /// ⭐ v3.7: 不使用 _executeOperation，避免在 build 過程中觸發 notifyListeners
+  @override
   Future<String?> generateSignedUrl({
     required String bucket,
     required String path,
@@ -456,6 +494,7 @@ class SessionNoteController extends ChangeNotifier {
 
   /// 根據元素類型生成 Signed URL
   /// ⭐ v3.7: 不使用 _executeOperation，避免在 build 過程中觸發 notifyListeners
+  @override
   Future<String?> generateSignedUrlByElementType({
     required String elementType,
     required String path,
@@ -475,6 +514,7 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 刪除 Storage 檔案
+  @override
   Future<bool> deleteFile({
     required String bucket,
     required String path,
@@ -490,6 +530,7 @@ class SessionNoteController extends ChangeNotifier {
   }
 
   /// 根據元素類型刪除檔案
+  @override
   Future<bool> deleteFileByElementType({
     required String elementType,
     required String path,
@@ -512,26 +553,31 @@ class SessionNoteController extends ChangeNotifier {
   // ============================================================================
 
   /// 設定學員篩選
+  @override
   void setClientFilter(String? clientId) {
     _state.setClientFilter(clientId);
   }
 
   /// 設定日期範圍篩選
+  @override
   void setDateRangeFilter(DateTime? startDate, DateTime? endDate) {
     _state.setDateRangeFilter(startDate, endDate);
   }
 
   /// 設定標籤篩選
+  @override
   void setTagsFilter(List<String>? tags) {
     _state.setTagsFilter(tags);
   }
 
   /// 設定可見性篩選
+  @override
   void setVisibilityFilter(String? visibility) {
     _state.setVisibilityFilter(visibility);
   }
 
   /// 清除所有篩選條件
+  @override
   void clearFilters() {
     _state.clearFilters();
   }
@@ -541,21 +587,25 @@ class SessionNoteController extends ChangeNotifier {
   // ============================================================================
 
   /// 設定選中的筆記
+  @override
   void setSelectedNote(SessionNoteModel? note) {
     _state.setSelectedNote(note);
   }
 
   /// 清除選中的筆記
+  @override
   void clearSelectedNote() {
     _state.clearSelectedNote();
   }
 
   /// 清除錯誤訊息
+  @override
   void clearError() {
     _state.clearError();
   }
 
   /// 重置所有狀態
+  @override
   void reset() {
     _state.reset();
   }
@@ -581,7 +631,7 @@ class SessionNoteController extends ChangeNotifier {
       _errorService.logError(error, type: 'SessionNoteControllerError');
       
       if (kDebugMode) {
-        print('❌ [SessionNoteController] $error');
+        debugPrint('❌ [SessionNoteController] $error');
       }
       
       rethrow;
@@ -599,6 +649,7 @@ class SessionNoteController extends ChangeNotifier {
   /// ⭐ v3.6 MVVM 重構
   ///
   /// 用於課程紀錄頁面等需要直接獲取數據的場景
+  @override
   Future<List<SessionNoteModel>> getNotesByAppointment({
     required String appointmentId,
   }) async {

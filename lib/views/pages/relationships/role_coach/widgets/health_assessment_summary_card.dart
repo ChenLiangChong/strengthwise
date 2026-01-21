@@ -53,7 +53,7 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
       elevation: 0, // ⭐ 移除陰影
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
       ),
       child: Padding(
         padding: EdgeInsets.all(context.spacing.md), // ⭐ 響應式內距
@@ -219,8 +219,8 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
           }
           break;
         case 'emergency_contact':
-          if (assessment.emergencyContact != null &&
-              assessment.emergencyContact!.isNotEmpty) {
+          final emergencyContact = assessment.emergencyContact;
+          if (emergencyContact != null && emergencyContact.isNotEmpty) {
             fieldWidget = _buildEmergencyContact(context);
           }
           break;
@@ -251,8 +251,8 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isLowRisk
-            ? colorScheme.primaryContainer.withOpacity(0.3)
-            : colorScheme.errorContainer.withOpacity(0.3),
+            ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : colorScheme.errorContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -409,6 +409,7 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
   /// ⭐ v3.3: 骨骼關節問題
   Widget _buildBoneJoint(BuildContext context) {
     final theme = Theme.of(context);
+    final boneJointNote = assessment.boneJointNote;
 
     return _buildFieldContainer(
       context,
@@ -416,8 +417,8 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
       title: '骨骼關節問題',
       onEdit: onQuickEdit != null ? () => onQuickEdit!(0) : null, // Step 1
       child: Text(
-        assessment.boneJointNote?.isNotEmpty == true
-            ? assessment.boneJointNote!
+        boneJointNote != null && boneJointNote.isNotEmpty
+            ? boneJointNote
             : '有骨骼或關節問題',
         style: theme.textTheme.bodySmall,
       ),
@@ -427,6 +428,7 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
   /// ⭐ v3.3: 其他健康問題
   Widget _buildOtherHealthIssues(BuildContext context) {
     final theme = Theme.of(context);
+    final otherReasonNote = assessment.otherReasonNote;
 
     return _buildFieldContainer(
       context,
@@ -434,8 +436,8 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
       title: '其他健康問題',
       onEdit: onQuickEdit != null ? () => onQuickEdit!(0) : null, // Step 1
       child: Text(
-        assessment.otherReasonNote?.isNotEmpty == true
-            ? assessment.otherReasonNote!
+        otherReasonNote != null && otherReasonNote.isNotEmpty
+            ? otherReasonNote
             : '有其他不宜運動的原因',
         style: theme.textTheme.bodySmall,
       ),
@@ -493,6 +495,8 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
   /// 訓練目標
   Widget _buildTrainingGoals(BuildContext context) {
     final theme = Theme.of(context);
+    final trainingGoals = assessment.trainingGoals;
+    final notes = trainingGoals?.notes;
 
     return _buildFieldContainer(
       context,
@@ -504,17 +508,16 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
         children: [
           // 主要目標 + 數值 + 時程
           Text(
-            assessment.trainingGoals.toString(),
+            trainingGoals.toString(),
             style: theme.textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           // 補充說明
-          if (assessment.trainingGoals!.notes != null &&
-              assessment.trainingGoals!.notes!.isNotEmpty) ...[
+          if (notes != null && notes.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
-              assessment.trainingGoals!.notes!,
+              notes,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -528,8 +531,9 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
   /// 緊急聯絡人
   Widget _buildEmergencyContact(BuildContext context) {
     final theme = Theme.of(context);
-    final name = assessment.emergencyContact!['name'] ?? '';
-    final phone = assessment.emergencyContact!['phone'] ?? '';
+    final emergencyContact = assessment.emergencyContact;
+    final name = emergencyContact?['name'] ?? '';
+    final phone = emergencyContact?['phone'] ?? '';
 
     return _buildFieldContainer(
       context,
@@ -556,7 +560,7 @@ class HealthAssessmentSummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(

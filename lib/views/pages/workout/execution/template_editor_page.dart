@@ -87,7 +87,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
     if (_planTypes.contains(template.planType)) {
       _selectedPlanType = template.planType;
     } else {
-      print('[模板編輯] 警告：模板訓練類型 "${template.planType}" 不在可選列表中，使用預設值');
+      debugPrint('[模板編輯] 警告：模板訓練類型 "${template.planType}" 不在可選列表中，使用預設值');
       _selectedPlanType = _planTypes.first; // 使用第一個選項作為預設值
     }
 
@@ -112,7 +112,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
     });
 
     try {
-      print('[模板編輯] 準備保存模板，動作數量: ${_exercises.length}');
+      debugPrint('[模板編輯] 準備保存模板，動作數量: ${_exercises.length}');
 
       // ⭐ v3.6: MVVM 重構 - 透過 Controller 獲取用戶
       final userId = _authController.user?.uid;
@@ -122,7 +122,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
 
       if (widget.template != null) {
         // 更新現有模板
-        print('[模板編輯] 更新模板 ID: ${widget.template!.id}');
+        debugPrint('[模板編輯] 更新模板 ID: ${widget.template!.id}');
         final updatedTemplate = widget.template!.copyWith(
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
@@ -136,10 +136,10 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
         if (!success) {
           throw Exception(_workoutController.errorMessage ?? '更新模板失敗');
         }
-        print('[模板編輯] 更新完成');
+        debugPrint('[模板編輯] 更新完成');
       } else {
         // 創建新模板
-        print('[模板編輯] 創建新模板');
+        debugPrint('[模板編輯] 創建新模板');
         final newTemplate = WorkoutTemplate(
           id: '', // Service 會生成
           userId: userId,
@@ -153,15 +153,15 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
 
         // ⭐ v3.5: 透過 Controller 創建模板（Controller 會自動發布事件）
         final savedTemplate = await _workoutController.createTemplate(newTemplate);
-        print('[模板編輯] 創建完成，ID: ${savedTemplate.id}');
+        debugPrint('[模板編輯] 創建完成，ID: ${savedTemplate.id}');
       }
 
       if (mounted) {
         Navigator.pop(context, true); // 返回 true 表示保存成功
       }
     } catch (e, stackTrace) {
-      print('[模板編輯] 保存失敗: $e');
-      print('[模板編輯] Stack trace: $stackTrace');
+      debugPrint('[模板編輯] 保存失敗: $e');
+      debugPrint('[模板編輯] Stack trace: $stackTrace');
       if (mounted) {
         NotificationUtils.showError(
           context,

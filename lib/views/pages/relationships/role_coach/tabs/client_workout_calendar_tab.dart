@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:strengthwise/controllers/client_management_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_client_management_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
-import 'package:strengthwise/controllers/realtime_controller.dart'; // ⭐ v3.9
-import 'package:strengthwise/controllers/event_bus_controller.dart'; // ⭐ v3.9
+import 'package:strengthwise/controllers/interfaces/i_realtime_controller.dart'; // ⭐ v3.9
+import 'package:strengthwise/controllers/interfaces/i_event_bus_controller.dart'; // ⭐ v3.9
 import 'package:strengthwise/services/core/app_event_bus.dart'; // ⭐ v3.9
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/user/user_model.dart';
@@ -46,7 +46,7 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
   // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
   late final IAuthController _authController;
   late final IWorkoutController _workoutController;
-  late final RealtimeController _realtimeController; // ⭐ v3.9
+  late final IRealtimeController _realtimeController; // ⭐ v3.9
   
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
@@ -56,7 +56,7 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
   String? _realtimeSubscriptionId;
   
   // ⭐ v3.9: EventBus 訂閱（DELETE 事件）
-  late final EventBusController _eventBusController;
+  late final IEventBusController _eventBusController;
   StreamSubscription<AppEvent>? _availabilitySubscription;
 
   @override
@@ -64,8 +64,8 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
     super.initState();
     _authController = serviceLocator<IAuthController>();
     _workoutController = serviceLocator<IWorkoutController>();
-    _realtimeController = serviceLocator<RealtimeController>(); // ⭐ v3.9
-    _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.9
+    _realtimeController = serviceLocator<IRealtimeController>(); // ⭐ v3.9
+    _eventBusController = serviceLocator<IEventBusController>(); // ⭐ v3.9
 
     // 初始化時載入當月數據
     _loadMonthData(_focusedDay);
@@ -98,7 +98,7 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
           debugPrint('[ClientCalendarTab] ⚡ EventBus DELETE: 學員偏好刪除 id=$deletedId');
         }
         // ⭐ v3.9: 增量刪除，不需要全量刷新
-        final controller = context.read<ClientManagementController>();
+        final controller = context.read<IClientManagementController>();
         controller.removeClientAvailabilityById(deletedId);
       }
     }
@@ -106,12 +106,12 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
 
   /// 載入當月數據
   void _loadMonthData(DateTime month) {
-    final controller = context.read<ClientManagementController>();
+    final controller = context.read<IClientManagementController>();
     final firstDay = DateTime(month.year, month.month, 1);
     final lastDay = DateTime(month.year, month.month + 1, 0);
 
     if (kDebugMode) {
-      print('[CLIENT_CALENDAR] 載入月份數據: ${month.year}-${month.month}');
+      debugPrint('[CLIENT_CALENDAR] 載入月份數據: ${month.year}-${month.month}');
     }
 
     // 載入訓練計畫和時間偏好
@@ -130,8 +130,9 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
   @override
   void dispose() {
     // ⭐ v3.9: 取消訂閱
-    if (_realtimeSubscriptionId != null) {
-      _realtimeController.unsubscribe(_realtimeSubscriptionId!);
+    final subscriptionId = _realtimeSubscriptionId;
+    if (subscriptionId != null) {
+      _realtimeController.unsubscribe(subscriptionId);
     }
     _availabilitySubscription?.cancel();
     super.dispose();
@@ -202,10 +203,12 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[CLIENT_WORKOUT_CALENDAR] 檢查時間重疊失敗: $e');
+        debugPrint('[CLIENT_WORKOUT_CALENDAR] 檢查時間重疊失敗: $e');
       }
       // 即使檢查失敗，也允許繼續（資料庫會在插入時再次檢查）
     }
+
+    if (!mounted) return;
 
     // 直接導航到訓練編輯頁面
     final result = await Navigator.push(
@@ -237,7 +240,7 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Consumer<ClientManagementController>(
+    return Consumer<IClientManagementController>(
       builder: (context, controller, child) {
         if (controller.isLoading) {
           return const Center(child: CircularProgressIndicator());
@@ -325,7 +328,7 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
   }
 
   /// 建立訓練列表
-  Widget _buildWorkoutList(ClientManagementController controller) {
+  Widget _buildWorkoutList(IClientManagementController controller) {
     final workouts = controller.getWorkoutsForDate(_selectedDay);
     final availability = controller.getAvailabilityForDate(_selectedDay);
 
@@ -408,7 +411,7 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: slotColor.withOpacity(0.05),
+      color: slotColor.withValues(alpha: 0.05),
       child: InkWell(
         onTap: () => _createWorkoutDirectly(_selectedDay, slot),
         borderRadius: BorderRadius.circular(12),
@@ -431,7 +434,7 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: slotColor.withOpacity(0.1),
+                  color: slotColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -461,7 +464,7 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: slotColor.withOpacity(0.15),
+                            color: slotColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -475,17 +478,26 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
                         ),
                       ],
                     ),
-                    if (slot.notes != null && slot.notes!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        slot.notes!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                    Builder(builder: (context) {
+                      final notes = slot.notes;
+                      if (notes != null && notes.isNotEmpty) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 4),
+                            Text(
+                              notes,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                          ],
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    }),
                   ],
                 ),
               ),
@@ -530,11 +542,12 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
       final startTime = '${workout.date.hour.toString().padLeft(2, '0')}:'
           '${workout.date.minute.toString().padLeft(2, '0')}';
 
-      if (workout.trainingEndTime != null) {
+      final trainingEndTime = workout.trainingEndTime;
+      if (trainingEndTime != null) {
         final endTime =
-            '${workout.trainingEndTime!.hour.toString().padLeft(2, '0')}:'
-            '${workout.trainingEndTime!.minute.toString().padLeft(2, '0')}';
-        final duration = workout.trainingEndTime!.difference(workout.date);
+            '${trainingEndTime.hour.toString().padLeft(2, '0')}:'
+            '${trainingEndTime.minute.toString().padLeft(2, '0')}';
+        final duration = trainingEndTime.difference(workout.date);
         final hours = duration.inHours;
         final minutes = duration.inMinutes % 60;
 
@@ -580,7 +593,7 @@ class _ClientWorkoutCalendarTabState extends State<ClientWorkoutCalendarTab> {
             ? IconButton(
                 icon: Icon(
                   Icons.delete_outline,
-                  color: colorScheme.error.withOpacity(0.7),
+                  color: colorScheme.error.withValues(alpha: 0.7),
                 ),
                 onPressed: () => _confirmDeleteWorkout(workout),
                 tooltip: '刪除訓練',

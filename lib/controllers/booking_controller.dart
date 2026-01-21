@@ -8,7 +8,7 @@ import 'interfaces/i_auth_controller.dart';
 import 'booking/booking_data_validator.dart';
 import 'booking/booking_data_sorter.dart';
 import 'booking/booking_slot_filter.dart';
-import 'event_bus_controller.dart';
+import 'interfaces/i_event_bus_controller.dart';
 
 /// 預約控制器實現
 /// 
@@ -18,7 +18,7 @@ class BookingController extends ChangeNotifier implements IBookingController {
   // 依賴注入
   final IBookingService _bookingService;
   final ErrorHandlingService _errorService;
-  final EventBusController _eventBusController;
+  final IEventBusController _eventBusController;
   final IAuthController _authController;
   
   // 狀態管理
@@ -40,12 +40,12 @@ class BookingController extends ChangeNotifier implements IBookingController {
   BookingController({
     IBookingService? bookingService,
     ErrorHandlingService? errorService,
-    EventBusController? eventBusController,
+    IEventBusController? eventBusController,
     IAuthController? authController,
-  }) : 
+  }) :
     _bookingService = bookingService ?? serviceLocator<IBookingService>(),
     _errorService = errorService ?? serviceLocator<ErrorHandlingService>(),
-    _eventBusController = eventBusController ?? serviceLocator<EventBusController>(),
+    _eventBusController = eventBusController ?? serviceLocator<IEventBusController>(),
     _authController = authController ?? serviceLocator<IAuthController>() {
     _initialize();
   }
@@ -394,6 +394,6 @@ class BookingController extends ChangeNotifier implements IBookingController {
   
   /// 輸出調試信息
   void _logDebug(String message) {
-    print('[BOOKING] $message');
+    debugPrint('[BOOKING] $message');
   }
 } 

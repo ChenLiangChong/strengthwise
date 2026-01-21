@@ -2,7 +2,7 @@
 // ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/coaching_relationship_model.dart';
 import 'package:strengthwise/models/user_model.dart';
@@ -33,7 +33,7 @@ class ClientManagementPage extends StatefulWidget {
 class _ClientManagementPageState extends State<ClientManagementPage> {
   // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
   late final IAuthController _authController;
-  late final CoachingRelationshipController _coachingController;
+  late final ICoachingRelationshipController _coachingController;
 
   String _selectedFilter = 'active'; // active, pending, archived, all
   bool _isLoading = false;
@@ -48,7 +48,7 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
   void initState() {
     super.initState();
     _authController = serviceLocator<IAuthController>();
-    _coachingController = serviceLocator<CoachingRelationshipController>();
+    _coachingController = serviceLocator<ICoachingRelationshipController>();
     _initializeAndLoad();
   }
 
@@ -72,7 +72,8 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
   /// - Service 層會在背景刷新數據
   /// - 不再強制清除快取
   Future<void> _loadClients() async {
-    if (_currentUserId == null) return;
+    final userId = _currentUserId;
+    if (userId == null) return;
 
     // ⚡ 移除 clearCoachCache，使用 Stale-While-Revalidate
     // _relationshipService.clearCoachCache(_currentUserId!);
@@ -85,13 +86,13 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
     try {
       // ⭐ v3.6: 透過 CoachingRelationshipController 查詢
       final clientUsers = await _coachingController.getCoachClientsWithDetails(
-        _currentUserId!,
+        userId,
         status: _selectedFilter == 'all' ? null : _selectedFilter,
       );
 
       // 同時獲取關係列表（包含備註、創建時間等）
       final relationships = await _coachingController.getCoachClients(
-        _currentUserId!,
+        userId,
         status: _selectedFilter == 'all' ? null : _selectedFilter,
       );
 
@@ -121,7 +122,8 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
   /// 顯示邀請學員 Dialog
   /// 顯示生成邀請碼對話框
   Future<void> _showGenerateInviteCodeDialog() async {
-    if (_currentUserId == null) {
+    final userId = _currentUserId;
+    if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('無法獲取當前用戶 ID')),
       );
@@ -132,7 +134,7 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => GenerateInviteCodeDialog(
-        coachId: _currentUserId!,
+        coachId: userId,
       ),
     );
 
@@ -280,37 +282,40 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
           ),
           // 顯示當前用戶 UUID（開發專用）
           if (_currentUserId != null)
-            IconButton(
-              icon: const Icon(Icons.info_outline),
-              tooltip: '查看我的 UUID',
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
-                  builder: (context) => AlertDialog(
-                    title: const Row(
-                      children: [
-                        Icon(Icons.fingerprint),
-                        SizedBox(width: 12),
-                        Text('我的 UUID'),
-                      ],
-                    ),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '教練 ID（可分享給開發測試）：',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+            Builder(
+              builder: (context) {
+                final userId = _currentUserId!;
+                return IconButton(
+                  icon: const Icon(Icons.info_outline),
+                  tooltip: '查看我的 UUID',
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉
+                      builder: (context) => AlertDialog(
+                        title: const Row(
+                          children: [
+                            Icon(Icons.fingerprint),
+                            SizedBox(width: 12),
+                            Text('我的 UUID'),
+                          ],
                         ),
-                        const SizedBox(height: 12),
-                        SelectableText(
-                          _currentUserId!,
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 14,
-                          ),
-                        ),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '教練 ID（可分享給開發測試）：',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 12),
+                            SelectableText(
+                              userId,
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 14,
+                              ),
+                            ),
                         const SizedBox(height: 16),
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -334,13 +339,15 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
                         ),
                       ],
                     ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('關閉'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('關閉'),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -407,25 +414,30 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
 
           // 錯誤提示
           if (_errorMessage != null)
-            Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colorScheme.errorContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.error_outline, color: colorScheme.error),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _errorMessage!,
-                      style: TextStyle(color: colorScheme.onErrorContainer),
-                    ),
+            Builder(
+              builder: (context) {
+                final errorMsg = _errorMessage!;
+                return Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: colorScheme.error),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          errorMsg,
+                          style: TextStyle(color: colorScheme.onErrorContainer),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
 
           // 學員列表
@@ -477,14 +489,15 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
     }
 
     // 否則使用內部 MasterDetailLayout
+    final client = _selectedClient;
     return MasterDetailLayout(
       master: masterContent,
       masterWidth: 380, // 學員列表稍寬，因為有統計卡片
-      detail: _selectedClient != null
+      detail: client != null
           ? ClientDetailContent(
-              key: ValueKey(_selectedClient!.uid),
-              clientId: _selectedClient!.uid,
-              client: _selectedClient!,
+              key: ValueKey(client.uid),
+              clientId: client.uid,
+              client: client,
               onDataChanged: _loadClients,
             )
           : null,

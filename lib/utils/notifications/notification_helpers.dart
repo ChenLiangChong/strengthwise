@@ -23,20 +23,20 @@ class NotificationHelpers {
   /// 獲取成功色（適配深淺色模式）
   static Color getSuccessColor(BuildContext context, {double opacity = 0.9}) {
     return isDarkMode(context)
-        ? const Color(0xFF81C784).withOpacity(opacity)
-        : const Color(0xFF2E7D32).withOpacity(opacity);
+        ? const Color(0xFF81C784).withValues(alpha: opacity)
+        : const Color(0xFF2E7D32).withValues(alpha: opacity);
   }
 
   /// 獲取錯誤色（適配深淺色模式）
   static Color getErrorColor(BuildContext context, {double opacity = 0.9}) {
     return isDarkMode(context)
-        ? const Color(0xFFEF4444).withOpacity(opacity)
+        ? const Color(0xFFEF4444).withValues(alpha: opacity)
         : Theme.of(context).colorScheme.error;
   }
 
   /// 獲取主題色
   static Color getPrimaryColor(BuildContext context, {double opacity = 0.9}) {
-    return Theme.of(context).colorScheme.primary.withOpacity(opacity);
+    return Theme.of(context).colorScheme.primary.withValues(alpha: opacity);
   }
 
   /// 獲取成就色（適配深淺色模式）
@@ -50,7 +50,7 @@ class NotificationHelpers {
   static BoxShadow getAchievementShadow(BuildContext context) {
     final color = getAchievementColor(context);
     return BoxShadow(
-      color: color.withOpacity(0.3),
+      color: color.withValues(alpha: 0.3),
       blurRadius: 16,
       offset: const Offset(0, 8),
     );

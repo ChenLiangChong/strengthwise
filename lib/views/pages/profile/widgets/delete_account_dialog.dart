@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../controllers/delete_account_controller.dart';
+import '../../../../controllers/interfaces/i_delete_account_controller.dart';
 
 /// 刪除帳號確認對話框
 class DeleteAccountDialog extends StatefulWidget {
@@ -16,7 +16,7 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final controller = context.watch<DeleteAccountController>();
+    final controller = context.watch<IDeleteAccountController>();
 
     return AlertDialog(
       title: Row(
@@ -177,6 +177,7 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
               : () async {
                   final success = await controller.deleteAccount();
                   if (mounted) {
+                    // ignore: use_build_context_synchronously - mounted 已檢查
                     Navigator.of(context).pop(success);
                   }
                 },

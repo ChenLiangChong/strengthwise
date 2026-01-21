@@ -5,7 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
-import 'package:strengthwise/controllers/client_management_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_client_management_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
@@ -40,7 +40,7 @@ class ClientDetailPage extends StatefulWidget {
 class _ClientDetailPageState extends State<ClientDetailPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late ClientManagementController _controller;
+  late IClientManagementController _controller;
   
   // ⭐ v3.2: Coach Mark 引導
   final GlobalKey _tabBarKey = GlobalKey();
@@ -50,7 +50,7 @@ class _ClientDetailPageState extends State<ClientDetailPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this); // 5 → 4（移除預約 Tab）
-    _controller = serviceLocator<ClientManagementController>();
+    _controller = serviceLocator<IClientManagementController>();
 
     // 選中學員（載入詳細資料）
     _controller.selectClient(widget.clientId);
@@ -149,7 +149,7 @@ class _ClientDetailPageState extends State<ClientDetailPage>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<ClientManagementController>.value(
+    return ChangeNotifierProvider<IClientManagementController>.value(
       value: _controller,
       child: Scaffold(
         appBar: AppBar(

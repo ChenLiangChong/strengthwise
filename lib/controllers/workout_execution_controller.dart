@@ -3,7 +3,7 @@ import '../models/workout_record_model.dart';
 import '../models/exercise_model.dart';
 import '../services/interfaces/i_workout_service.dart';
 import '../controllers/interfaces/i_auth_controller.dart';
-import '../controllers/event_bus_controller.dart';
+import '../controllers/interfaces/i_event_bus_controller.dart';
 import '../services/core/error_handling_service.dart';
 import '../services/service_locator.dart';
 import '../utils/notification_utils.dart';
@@ -24,7 +24,7 @@ class WorkoutExecutionController extends ChangeNotifier
   final IWorkoutService _workoutService;
   final IAuthController _authController;
   final ErrorHandlingService _errorService;
-  final EventBusController _eventBusController; // ⭐ v3.5
+  final IEventBusController _eventBusController; // ⭐ v3.5
 
   // 狀態管理
   bool _isLoading = true;
@@ -47,11 +47,11 @@ class WorkoutExecutionController extends ChangeNotifier
     IWorkoutService? workoutService,
     IAuthController? authController,
     ErrorHandlingService? errorService,
-    EventBusController? eventBusController,
+    IEventBusController? eventBusController,
   })  : _workoutService = workoutService ?? serviceLocator<IWorkoutService>(),
         _authController = authController ?? serviceLocator<IAuthController>(),
         _errorService = errorService ?? serviceLocator<ErrorHandlingService>(),
-        _eventBusController = eventBusController ?? serviceLocator<EventBusController>() {
+        _eventBusController = eventBusController ?? serviceLocator<IEventBusController>() {
     // 初始化子模組
     _dataManager = WorkoutExecutionDataManager();
     _autoSave = WorkoutExecutionAutoSave(workoutService: _workoutService);
@@ -116,7 +116,7 @@ class WorkoutExecutionController extends ChangeNotifier
     _setLoading(true);
 
     try {
-      print('[WorkoutExecutionController] 從 Supabase 獲取訓練計畫: $workoutRecordId');
+      debugPrint('[WorkoutExecutionController] 從 Supabase 獲取訓練計畫: $workoutRecordId');
 
       // 使用 IWorkoutService 獲取訓練記錄
       final record = await _workoutService.getRecordById(workoutRecordId);
@@ -126,7 +126,7 @@ class WorkoutExecutionController extends ChangeNotifier
         throw Exception('無法找到訓練計劃');
       }
 
-      print('[WorkoutExecutionController] 成功獲取訓練計畫: ${record.workoutPlanId}');
+      debugPrint('[WorkoutExecutionController] 成功獲取訓練計畫: ${record.workoutPlanId}');
 
       // ⭐ v2.0 Phase 4C: 保存教練學員信息
       _dataManager.traineeId = record.traineeId;
@@ -177,7 +177,7 @@ class WorkoutExecutionController extends ChangeNotifier
         effectiveStatus = 'paused';
       }
 
-      print(
+      debugPrint(
           '[WorkoutExecutionController] 實際完成狀態: $actuallyCompleted, 決定狀態: $effectiveStatus');
 
       // ⭐ v3.1: 如果是 Realtime 重載且正在計時，保留當前的時間資料
@@ -196,14 +196,14 @@ class WorkoutExecutionController extends ChangeNotifier
         actualEndTime: record.actualEndTime,
       );
 
-      print(
+      debugPrint(
           '[WorkoutExecutionController] 訓練計畫載入完成，動作數量: ${_dataManager.exerciseRecords.length}');
-      print(
+      debugPrint(
           '[WorkoutExecutionController] 訓練狀態: $effectiveStatus, 累計秒數: $effectiveElapsedSeconds (保留: $shouldPreserveTime)');
 
       _setLoading(false);
     } catch (e) {
-      print('[WorkoutExecutionController] 加載訓練計劃失敗: $e');
+      debugPrint('[WorkoutExecutionController] 加載訓練計劃失敗: $e');
       _handleError('加載訓練計劃失敗', e);
     }
   }
@@ -233,11 +233,11 @@ class WorkoutExecutionController extends ChangeNotifier
         _dataManager.completeTraining();
       }
 
-      print(
+      debugPrint(
           '[WorkoutExecutionController] Realtime 靜默更新完成, 時間: ${record.elapsedSeconds}s');
       notifyListeners();
     } catch (e) {
-      print('[WorkoutExecutionController] Realtime 更新失敗: $e');
+      debugPrint('[WorkoutExecutionController] Realtime 更新失敗: $e');
     }
   }
 
@@ -497,10 +497,12 @@ class WorkoutExecutionController extends ChangeNotifier
     final isUnchecking = currentSet.completed; // 即將取消勾選
 
     // 使用子模組處理組數切換
-    _dataManager.exerciseRecords[exerciseIndex] =
-        WorkoutExecutionSetOperations.toggleSetCompletion(
-      _dataManager.exerciseRecords[exerciseIndex],
-      setIndex,
+    _dataManager.updateExerciseAt(
+      exerciseIndex,
+      WorkoutExecutionSetOperations.toggleSetCompletion(
+        _dataManager.exerciseRecords[exerciseIndex],
+        setIndex,
+      ),
     );
 
     // ⭐ v2.9.1: 根據勾選狀態自動轉換訓練狀態
@@ -581,15 +583,17 @@ class WorkoutExecutionController extends ChangeNotifier
     if (exerciseIndex >= _dataManager.exerciseRecords.length) return;
 
     // 使用子模組更新組數數據（v3.2+ 包含所有追蹤模式欄位）
-    _dataManager.exerciseRecords[exerciseIndex] =
-        WorkoutExecutionSetOperations.updateSetData(
-      _dataManager.exerciseRecords[exerciseIndex],
-      setIndex,
-      reps,
-      weight,
-      time: time,
-      distance: distance,
-      calories: calories,
+    _dataManager.updateExerciseAt(
+      exerciseIndex,
+      WorkoutExecutionSetOperations.updateSetData(
+        _dataManager.exerciseRecords[exerciseIndex],
+        setIndex,
+        reps,
+        weight,
+        time: time,
+        distance: distance,
+        calories: calories,
+      ),
     );
 
     _isDataChanged = true;
@@ -614,10 +618,12 @@ class WorkoutExecutionController extends ChangeNotifier
     if (exerciseIndex >= _dataManager.exerciseRecords.length) return;
 
     // 使用子模組添加備註
-    _dataManager.exerciseRecords[exerciseIndex] =
-        WorkoutExecutionSetOperations.addExerciseNote(
-      _dataManager.exerciseRecords[exerciseIndex],
-      note,
+    _dataManager.updateExerciseAt(
+      exerciseIndex,
+      WorkoutExecutionSetOperations.addExerciseNote(
+        _dataManager.exerciseRecords[exerciseIndex],
+        note,
+      ),
     );
 
     _isDataChanged = true;
@@ -654,11 +660,11 @@ class WorkoutExecutionController extends ChangeNotifier
         calories: calories,
       );
 
-      // 添加新運動到列表
-      _dataManager.exerciseRecords.add(newExercise);
+      // 添加新運動到列表（使用安全方法）
+      _dataManager.addExercise(newExercise);
       // 新添加的運動自動成為當前運動
       _dataManager
-          .setCurrentExerciseIndex(_dataManager.exerciseRecords.length - 1);
+          .setCurrentExerciseIndex(_dataManager.exerciseCount - 1);
       // 標記數據已變更
       _isDataChanged = true;
 
@@ -674,12 +680,14 @@ class WorkoutExecutionController extends ChangeNotifier
       await _autoSaveCheckboxState();
 
       if (context != null) {
+        // ignore: use_build_context_synchronously - Controller 層無法檢查 mounted
         NotificationUtils.showSuccess(context, '已添加新運動：${exercise.name}');
       }
     } catch (e) {
       _handleError('添加運動失敗', e);
 
       if (context != null) {
+        // ignore: use_build_context_synchronously - Controller 層無法檢查 mounted
         NotificationUtils.showError(context, '添加運動失敗: $e');
       }
     }
@@ -700,9 +708,11 @@ class WorkoutExecutionController extends ChangeNotifier
     if (exerciseIndex >= _dataManager.exerciseRecords.length) return;
 
     // 使用子模組添加組數
-    _dataManager.exerciseRecords[exerciseIndex] =
-        WorkoutExecutionSetOperations.addSetToExercise(
-      _dataManager.exerciseRecords[exerciseIndex],
+    _dataManager.updateExerciseAt(
+      exerciseIndex,
+      WorkoutExecutionSetOperations.addSetToExercise(
+        _dataManager.exerciseRecords[exerciseIndex],
+      ),
     );
 
     _isDataChanged = true;
@@ -721,6 +731,7 @@ class WorkoutExecutionController extends ChangeNotifier
     if (context != null) {
       final newSetNumber =
           _dataManager.exerciseRecords[exerciseIndex].sets.length;
+      // ignore: use_build_context_synchronously - Controller 層無法檢查 mounted
       NotificationUtils.showSuccess(context, '已新增第 $newSetNumber 組');
     }
   }
@@ -748,9 +759,11 @@ class WorkoutExecutionController extends ChangeNotifier
     }
 
     // 使用子模組減少組數
-    _dataManager.exerciseRecords[exerciseIndex] =
-        WorkoutExecutionSetOperations.removeSetFromExercise(
-      _dataManager.exerciseRecords[exerciseIndex],
+    _dataManager.updateExerciseAt(
+      exerciseIndex,
+      WorkoutExecutionSetOperations.removeSetFromExercise(
+        _dataManager.exerciseRecords[exerciseIndex],
+      ),
     );
 
     _isDataChanged = true;
@@ -762,6 +775,7 @@ class WorkoutExecutionController extends ChangeNotifier
     if (context != null) {
       final newSetNumber =
           _dataManager.exerciseRecords[exerciseIndex].sets.length;
+      // ignore: use_build_context_synchronously - Controller 層無法檢查 mounted
       NotificationUtils.showInfo(context, '已減少為 $newSetNumber 組');
     }
   }
@@ -778,20 +792,19 @@ class WorkoutExecutionController extends ChangeNotifier
       return;
     }
 
-    if (exerciseIndex >= _dataManager.exerciseRecords.length) return;
+    if (exerciseIndex >= _dataManager.exerciseCount) return;
 
     final exerciseName =
         _dataManager.exerciseRecords[exerciseIndex].exerciseName;
 
-    // 刪除運動
-    _dataManager.exerciseRecords.removeAt(exerciseIndex);
+    // 刪除運動（使用安全方法）
+    _dataManager.removeExerciseAt(exerciseIndex);
 
     // 調整當前運動索引
-    if (_dataManager.currentExerciseIndex >=
-        _dataManager.exerciseRecords.length) {
-      _dataManager.setCurrentExerciseIndex(_dataManager.exerciseRecords.isEmpty
+    if (_dataManager.currentExerciseIndex >= _dataManager.exerciseCount) {
+      _dataManager.setCurrentExerciseIndex(_dataManager.exerciseCount == 0
           ? 0
-          : _dataManager.exerciseRecords.length - 1);
+          : _dataManager.exerciseCount - 1);
     }
 
     // 標記數據已變更
@@ -802,6 +815,7 @@ class WorkoutExecutionController extends ChangeNotifier
     await _autoSaveCheckboxState();
 
     if (context != null) {
+      // ignore: use_build_context_synchronously - Controller 層無法檢查 mounted
       NotificationUtils.showInfo(context, '已刪除運動：$exerciseName');
     }
   }
@@ -1047,7 +1061,7 @@ class WorkoutExecutionController extends ChangeNotifier
       );
 
       await _workoutService.updateRecord(updatedRecord);
-      print(
+      debugPrint(
           '[WorkoutExecutionController] 訓練狀態已保存: ${_dataManager.trainingStatus}');
     } catch (e) {
       _errorService.logError('保存訓練狀態失敗: $e',

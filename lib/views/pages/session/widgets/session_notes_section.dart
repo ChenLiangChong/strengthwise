@@ -1,6 +1,7 @@
 // ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/session_note/soap_note_model.dart';
+import 'package:strengthwise/themes/app_theme.dart';
 import 'package:strengthwise/models/session_note/visual_element_model.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/views/pages/notes/widgets/soap_field_card.dart';
@@ -175,7 +176,7 @@ class _SessionNotesSectionState extends State<SessionNotesSection> {
                     ),
                     decoration: BoxDecoration(
                       color: filledCount == 4
-                          ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                          ? AppTheme.successLight.withValues(alpha: 0.15)
                           : colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -186,7 +187,7 @@ class _SessionNotesSectionState extends State<SessionNotesSection> {
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: filledCount == 4
-                            ? const Color(0xFF10B981)
+                            ? AppTheme.successLight
                             : colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -220,7 +221,7 @@ class _SessionNotesSectionState extends State<SessionNotesSection> {
                     hint: '學員自述：今天感覺如何？哪裡不舒服？',
                     controller: _subjectiveController,
                     icon: Icons.person,
-                    color: const Color(0xFF3B82F6), // Blue
+                    color: AppTheme.soapSubjective,
                     maxLines: 3,
                   ),
                   const SizedBox(height: 12),
@@ -231,7 +232,7 @@ class _SessionNotesSectionState extends State<SessionNotesSection> {
                     hint: '教練觀察：動作表現、姿勢問題、體能狀態',
                     controller: _objectiveController,
                     icon: Icons.visibility,
-                    color: const Color(0xFF10B981), // Green
+                    color: AppTheme.soapObjective,
                     maxLines: 3,
                   ),
                   const SizedBox(height: 12),
@@ -242,7 +243,7 @@ class _SessionNotesSectionState extends State<SessionNotesSection> {
                     hint: '問題分析：可能的原因、需要注意的地方',
                     controller: _assessmentController,
                     icon: Icons.analytics,
-                    color: const Color(0xFFF59E0B), // Amber
+                    color: AppTheme.soapAssessment,
                     maxLines: 3,
                   ),
                   const SizedBox(height: 12),
@@ -253,7 +254,7 @@ class _SessionNotesSectionState extends State<SessionNotesSection> {
                     hint: '下次課程計畫、回家功課、注意事項',
                     controller: _planController,
                     icon: Icons.flag,
-                    color: const Color(0xFF8B5CF6), // Purple
+                    color: AppTheme.soapPlan,
                     maxLines: 3,
                   ),
 

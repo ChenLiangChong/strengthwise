@@ -35,15 +35,18 @@ class LatestBodyDataCard extends StatelessWidget {
                   ),
                 ),
                 if (record.bodyFat != null)
-                  Expanded(
-                    child: _buildDataItem(
-                      context,
-                      icon: Icons.water_drop_outlined,
-                      label: '體脂率',
-                      value: '${record.bodyFat!.toStringAsFixed(1)}%',
-                      color: colorScheme.secondary,
-                    ),
-                  ),
+                  Builder(builder: (context) {
+                    final bodyFat = record.bodyFat!;
+                    return Expanded(
+                      child: _buildDataItem(
+                        context,
+                        icon: Icons.water_drop_outlined,
+                        label: '體脂率',
+                        value: '${bodyFat.toStringAsFixed(1)}%',
+                        color: colorScheme.secondary,
+                      ),
+                    );
+                  }),
               ],
             ),
             if (record.bmi != null || record.muscleMass != null) ...[
@@ -51,26 +54,32 @@ class LatestBodyDataCard extends StatelessWidget {
               Row(
                 children: [
                   if (record.bmi != null)
-                    Expanded(
-                      child: _buildDataItem(
-                        context,
-                        icon: Icons.straighten_outlined,
-                        label: 'BMI',
-                        value: record.bmi!.toStringAsFixed(1),
-                        color: _getBMIColor(record.bmi!),
-                        subtitle: record.getBMICategory(),
-                      ),
-                    ),
+                    Builder(builder: (context) {
+                      final bmi = record.bmi!;
+                      return Expanded(
+                        child: _buildDataItem(
+                          context,
+                          icon: Icons.straighten_outlined,
+                          label: 'BMI',
+                          value: bmi.toStringAsFixed(1),
+                          color: _getBMIColor(bmi),
+                          subtitle: record.getBMICategory(),
+                        ),
+                      );
+                    }),
                   if (record.muscleMass != null)
-                    Expanded(
-                      child: _buildDataItem(
-                        context,
-                        icon: Icons.fitness_center_outlined,
-                        label: '肌肉量',
-                        value: '${record.muscleMass!.toStringAsFixed(1)} kg',
-                        color: colorScheme.tertiary,
-                      ),
-                    ),
+                    Builder(builder: (context) {
+                      final muscleMass = record.muscleMass!;
+                      return Expanded(
+                        child: _buildDataItem(
+                          context,
+                          icon: Icons.fitness_center_outlined,
+                          label: '肌肉量',
+                          value: '${muscleMass.toStringAsFixed(1)} kg',
+                          color: colorScheme.tertiary,
+                        ),
+                      );
+                    }),
                 ],
               ),
             ],
@@ -93,7 +102,7 @@ class LatestBodyDataCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

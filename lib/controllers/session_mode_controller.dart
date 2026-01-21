@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_session_mode_controller.dart';
 import 'package:strengthwise/models/readiness/daily_readiness_model.dart';
 import 'package:strengthwise/models/session_note/session_note_model.dart';
 import 'package:strengthwise/models/session_note/soap_note_model.dart';
@@ -41,7 +42,7 @@ import 'package:strengthwise/services/realtime/session_realtime_service.dart';
 /// - `canMarkSet`: 課程開始 → 課程結束後 4 小時（即「上課中～+4hr」）
 /// - `canEditNotes`: 教練模式下永遠可以
 /// =====================================================================
-class SessionModeController extends ChangeNotifier {
+class SessionModeController extends ChangeNotifier implements ISessionModeController {
   final IReadinessService _readinessService;
   final ISessionNoteService _sessionNoteService;
   final IWorkoutService _workoutService;
@@ -53,31 +54,39 @@ class SessionModeController extends ChangeNotifier {
   // ============================================================
 
   /// 預約 ID
+  @override
   final String appointmentId;
 
   /// 學員 ID
+  @override
   final String clientId;
 
   /// 學員名稱
+  @override
   final String clientName;
 
   /// 課程開始時間
+  @override
   final DateTime sessionStartTime;
 
   /// 課程結束時間
+  @override
   final DateTime sessionEndTime;
 
   /// 訓練計畫 ID
+  @override
   String? workoutPlanId;
 
   /// 是否為教練模式 ⭐ v3.1
   ///
   /// - true: 教練端，可編輯
   /// - false: 學員端，只能查看和填問卷
+  @override
   final bool isCoachMode;
 
   /// ⭐ v3.1.1: 課程是否已完成（從 appointment 查詢）
   bool _isSessionCompleted = false;
+  @override
   bool get isSessionCompleted => _isSessionCompleted;
 
   // ============================================================
@@ -86,10 +95,12 @@ class SessionModeController extends ChangeNotifier {
 
   /// 載入中
   bool _isLoading = true;
+  @override
   bool get isLoading => _isLoading;
 
   /// 課前問卷
   DailyReadinessModel? _readiness;
+  @override
   DailyReadinessModel? get readiness => _readiness;
 
   /// SOAP 填寫狀態
@@ -99,32 +110,39 @@ class SessionModeController extends ChangeNotifier {
     'assessment': false,
     'plan': false,
   };
+  @override
   Map<String, bool> get soapStatus => _soapStatus;
 
   /// 當前 SOAP 內容
   SoapNoteModel? _currentSoap;
+  @override
   SoapNoteModel? get currentSoap => _currentSoap;
 
   /// 課程筆記 ID（用於更新和繪圖連接）
   String? _sessionNoteId;
+  @override
   String? get sessionNoteId => _sessionNoteId;
 
   /// 完整的課程筆記 Model（用於更新）
   SessionNoteModel? _sessionNote;
 
   /// ⭐ v3.1: 視覺元素（照片、繪圖）
+  @override
   List<VisualElementModel> get visualElements =>
       _sessionNote?.visualElements ?? [];
 
   /// ⭐ v3.1: 快速標籤
+  @override
   List<String> get quickTags => _sessionNote?.quickTags ?? [];
 
   /// ⭐ v3.1: 更新快速標籤
+  @override
   Future<void> updateQuickTags(List<String> tags) async {
-    if (_sessionNote == null) return;
+    final note = _sessionNote;
+    if (note == null) return;
 
     try {
-      final updatedNote = _sessionNote!.copyWith(quickTags: tags);
+      final updatedNote = note.copyWith(quickTags: tags);
       await _sessionNoteService.updateNote(updatedNote);
       _sessionNote = updatedNote;
       notifyListeners();
@@ -141,9 +159,11 @@ class SessionModeController extends ChangeNotifier {
   String? _sessionNoteRealtimeId;
 
   /// 是否有訓練計畫
+  @override
   bool get hasWorkoutPlan => workoutPlanId != null;
 
   /// 是否可以結束課程（課程開始後）
+  @override
   bool get canEndSession {
     final now = DateTime.now();
     return now.isAfter(sessionStartTime);
@@ -153,15 +173,18 @@ class SessionModeController extends ChangeNotifier {
   DateTime get _editDeadline => sessionEndTime.add(const Duration(hours: 4));
 
   /// ⭐ v3.1.1: 公開的編輯截止時間
+  @override
   DateTime get editDeadline => _editDeadline;
 
   /// ⭐ v3.1.1: 課程是否已結束（超過課程結束時間）
+  @override
   bool get isSessionEnded {
     final now = DateTime.now();
     return now.isAfter(sessionEndTime);
   }
 
   /// ⭐ v3.1.1: 剩餘編輯時間（分鐘），0 表示已超時
+  @override
   int get remainingEditMinutes {
     final now = DateTime.now();
     if (now.isAfter(_editDeadline)) return 0;
@@ -169,6 +192,7 @@ class SessionModeController extends ChangeNotifier {
   }
 
   /// 是否在可打勾時間內（課程開始後 → 結束後 4 小時）
+  @override
   bool get isWithinMarkWindow {
     final now = DateTime.now();
     return now.isAfter(sessionStartTime) && now.isBefore(_editDeadline);
@@ -176,6 +200,7 @@ class SessionModeController extends ChangeNotifier {
 
   /// 是否在可編輯計畫時間內（現在 → 課程結束後 4 小時）
   /// 教練可以預先準備課程內容
+  @override
   bool get isWithinEditWindow {
     final now = DateTime.now();
     return now.isBefore(_editDeadline);
@@ -186,6 +211,7 @@ class SessionModeController extends ChangeNotifier {
   /// 條件：
   /// 1. 必須是教練模式（學員不能打勾）
   /// 2. 必須在打勾時間窗口內（課程開始 → 結束後 4 小時）
+  @override
   bool get canMarkSet {
     final result = isCoachMode && isWithinMarkWindow;
     debugPrint(
@@ -202,11 +228,13 @@ class SessionModeController extends ChangeNotifier {
   /// 1. 必須是教練模式（學員不能編輯）
   /// 2. 必須在編輯時間窗口內（現在 → 課程結束後 4 小時）
   /// ✅ 教練可以提前準備課程內容
+  @override
   bool get canEditPlan => isCoachMode && isWithinEditWindow;
 
   /// 是否可以編輯筆記 ⭐ v3.1
   ///
   /// 條件：只要是教練就可以編輯（不受時間窗口限制）
+  @override
   bool get canEditNotes => isCoachMode;
 
   SessionModeController({
@@ -298,15 +326,16 @@ class SessionModeController extends ChangeNotifier {
         appointmentId: appointmentId,
       );
       if (notesList.isNotEmpty) {
-        _sessionNote = notesList.first;
-        _sessionNoteId = _sessionNote!.id;
-        _currentSoap = _sessionNote!.soap;
+        final note = notesList.first;
+        _sessionNote = note;
+        _sessionNoteId = note.id;
+        _currentSoap = note.soap;
         // 檢查 SOAP 各欄位是否已填寫
         _soapStatus = {
-          'subjective': _sessionNote!.soap?.subjective?.isNotEmpty ?? false,
-          'objective': _sessionNote!.soap?.objective?.isNotEmpty ?? false,
-          'assessment': _sessionNote!.soap?.assessment?.isNotEmpty ?? false,
-          'plan': _sessionNote!.soap?.plan?.isNotEmpty ?? false,
+          'subjective': note.soap?.subjective?.isNotEmpty ?? false,
+          'objective': note.soap?.objective?.isNotEmpty ?? false,
+          'assessment': note.soap?.assessment?.isNotEmpty ?? false,
+          'plan': note.soap?.plan?.isNotEmpty ?? false,
         };
         debugPrint('[SESSION_MODE] 載入課程筆記成功: $_sessionNoteId');
         // ⭐ v3.1: 訂閱 Realtime 更新
@@ -323,15 +352,17 @@ class SessionModeController extends ChangeNotifier {
 
   /// ⭐ v3.1: 訂閱課程筆記的 Realtime 更新
   void _subscribeToSessionNote() {
-    if (_sessionNoteId == null) return;
+    final noteId = _sessionNoteId;
+    if (noteId == null) return;
 
     // 取消舊的訂閱
-    if (_sessionNoteRealtimeId != null) {
-      _realtimeService.unsubscribe(_sessionNoteRealtimeId!);
+    final oldRealtimeId = _sessionNoteRealtimeId;
+    if (oldRealtimeId != null) {
+      _realtimeService.unsubscribe(oldRealtimeId);
     }
 
     _sessionNoteRealtimeId = _realtimeService.subscribeToSessionNote(
-      sessionNoteId: _sessionNoteId!,
+      sessionNoteId: noteId,
       onUpdate: _onSessionNoteUpdated,
     );
   }
@@ -346,8 +377,9 @@ class SessionModeController extends ChangeNotifier {
       );
 
       if (notesList.isNotEmpty) {
-        _sessionNote = notesList.first;
-        _currentSoap = _sessionNote!.soap;
+        final note = notesList.first;
+        _sessionNote = note;
+        _currentSoap = note.soap;
         debugPrint('[SESSION_MODE] 筆記已重新載入');
         notifyListeners();
       }
@@ -397,6 +429,7 @@ class SessionModeController extends ChangeNotifier {
   }
 
   /// 更新 SOAP 內容
+  @override
   void updateSoap(SoapNoteModel soap) {
     _currentSoap = soap;
     _soapStatus = {
@@ -454,12 +487,14 @@ class SessionModeController extends ChangeNotifier {
   }
 
   /// 立即儲存 SOAP（用於離開頁面時）
+  @override
   Future<void> saveSoapNow() async {
     _soapSaveTimer?.cancel();
     await _saveSoapToSupabase();
   }
 
   /// 結束課程
+  @override
   Future<void> endSession() async {
     try {
       // 先保存 SOAP
@@ -473,6 +508,7 @@ class SessionModeController extends ChangeNotifier {
   }
 
   /// 重新載入資料
+  @override
   Future<void> refresh() async {
     await _loadData();
   }
@@ -480,8 +516,10 @@ class SessionModeController extends ChangeNotifier {
   /// ⭐ v3.1: 添加照片到課程筆記
   ///
   /// [storagePath] 照片在 Storage 的路徑
+  @override
   Future<void> addPhotoToNote(String storagePath) async {
-    if (_sessionNote == null) {
+    final note = _sessionNote;
+    if (note == null) {
       debugPrint('[SESSION_MODE] ⚠️ 無法添加照片：session_note 不存在');
       return;
     }
@@ -489,11 +527,11 @@ class SessionModeController extends ChangeNotifier {
     try {
       debugPrint('[SESSION_MODE] 📷 添加照片到課程筆記');
       debugPrint('   storagePath: $storagePath');
-      debugPrint('   sessionNoteId: ${_sessionNote!.id}');
+      debugPrint('   sessionNoteId: ${note.id}');
 
       // 取得現有的 visual_elements
       final existingElements = List<Map<String, dynamic>>.from(
-        _sessionNote!.visualElements.map((e) => e.toJson()).toList(),
+        note.visualElements.map((e) => e.toJson()).toList(),
       );
 
       // 添加新照片元素
@@ -503,7 +541,7 @@ class SessionModeController extends ChangeNotifier {
       });
 
       // 更新到資料庫
-      final updatedNote = _sessionNote!.copyWith(
+      final updatedNote = note.copyWith(
         visualElements: existingElements
             .map((e) => VisualElementModel.fromJson(e))
             .toList(),

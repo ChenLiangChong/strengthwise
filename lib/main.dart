@@ -11,14 +11,13 @@ import 'views/pages/startup/splash_screen.dart';
 import 'services/service_locator.dart';
 import 'services/core/supabase_service.dart';
 import 'services/core/deep_link_service.dart';
-import 'services/core/theme_service.dart';
 import 'services/core/network_status_service.dart';
 import 'views/widgets/offline_banner.dart';
 import 'services/interfaces/i_notification_service.dart'; // 基礎設施服務，保留
 import 'services/notification/notification_router.dart'; // ⭐ v3.9: 通知路由
 import 'controllers/interfaces/i_auth_controller.dart'; // ⭐ v3.6: MVVM
 import 'controllers/interfaces/i_statistics_controller.dart'; // ⭐ v3.6: MVVM
-import 'controllers/theme_controller.dart';
+import 'controllers/interfaces/i_theme_controller.dart'; // ⭐ v4.0: Interface
 import 'themes/app_theme.dart';
 
 /// ⭐ v3.9: 全局 Navigator Key，用於通知點擊導航
@@ -42,7 +41,7 @@ void main() {
       // 3. 背景初始化：耗時服務在背景載入
       _backgroundInitialization();
     } catch (e) {
-      print('初始化失敗: $e');
+      debugPrint('初始化失敗: $e');
       // 顯示錯誤並退出
       runApp(
         MaterialApp(
@@ -73,8 +72,8 @@ void main() {
     }
   }, (error, stack) {
     // 處理異步錯誤
-    print('未捕獲的異常: $error');
-    print('堆疊: $stack');
+    debugPrint('未捕獲的異常: $error');
+    debugPrint('堆疊: $stack');
   });
 }
 
@@ -126,11 +125,11 @@ Future<void> _initializeHive() async {
 
     final duration = DateTime.now().difference(startTime);
     if (kDebugMode) {
-      print('[MAIN] ✅ Hive 初始化完成（${duration.inMilliseconds}ms）');
+      debugPrint('[MAIN] ✅ Hive 初始化完成（${duration.inMilliseconds}ms）');
     }
   } catch (e) {
     if (kDebugMode) {
-      print('[MAIN] ⚠️ Hive 初始化失敗: $e');
+      debugPrint('[MAIN] ⚠️ Hive 初始化失敗: $e');
     }
     // Hive 失敗不影響 App 啟動，降級為無本地快取模式
   }
@@ -145,7 +144,7 @@ void _backgroundInitialization() {
     try {
       // 背景載入認證、預約、運動服務
       await setupServiceLocator(lazyInit: false);
-      print('[MAIN] ✅ 背景服務初始化完成');
+      debugPrint('[MAIN] ✅ 背景服務初始化完成');
 
       // ⚡ 標記服務就緒（通知 SplashScreen）
       markServiceReady();
@@ -162,7 +161,7 @@ void _backgroundInitialization() {
       // ⚡ v3.1.1: 網路狀態服務初始化
       await NetworkStatusService().initialize();
     } catch (e) {
-      print('[MAIN] ⚠️ 背景服務初始化失敗: $e');
+      debugPrint('[MAIN] ⚠️ 背景服務初始化失敗: $e');
       // 即使初始化失敗，也標記就緒讓 App 繼續（降級模式）
       markServiceReady();
     }
@@ -180,11 +179,11 @@ void _warmupGoogleFonts() {
     ]);
 
     if (kDebugMode) {
-      print('[MAIN] ✅ GoogleFonts 預熱完成');
+      debugPrint('[MAIN] ✅ GoogleFonts 預熱完成');
     }
   } catch (e) {
     if (kDebugMode) {
-      print('[MAIN] ⚠️ GoogleFonts 預熱失敗: $e');
+      debugPrint('[MAIN] ⚠️ GoogleFonts 預熱失敗: $e');
     }
   }
 }
@@ -201,7 +200,7 @@ void _warmupStatisticsCache() {
       final authController = serviceLocator<IAuthController>();
       if (!authController.isLoggedIn) {
         if (kDebugMode) {
-          print('[MAIN] ⏭️ 統計預熱跳過（用戶未登入）');
+          debugPrint('[MAIN] ⏭️ 統計預熱跳過（用戶未登入）');
         }
         return;
       }
@@ -213,11 +212,11 @@ void _warmupStatisticsCache() {
       await statisticsController.warmupFromLocalCache(userId);
 
       if (kDebugMode) {
-        print('[MAIN] ✅ 統計快取預熱完成');
+        debugPrint('[MAIN] ✅ 統計快取預熱完成');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[MAIN] ⚠️ 統計快取預熱失敗: $e');
+        debugPrint('[MAIN] ⚠️ 統計快取預熱失敗: $e');
       }
     }
   });
@@ -234,7 +233,7 @@ Future<void> _initializeFCM() async {
     // 只在 Android/iOS 上初始化
     if (!Platform.isAndroid && !Platform.isIOS) {
       if (kDebugMode) {
-        print('[MAIN] ⏭️ FCM 跳過（非 Android/iOS 平台）');
+        debugPrint('[MAIN] ⏭️ FCM 跳過（非 Android/iOS 平台）');
       }
       return;
     }
@@ -251,21 +250,21 @@ Future<void> _initializeFCM() async {
     final isLoggedIn = authController.isLoggedIn;
 
     if (kDebugMode) {
-      print('[MAIN] 🔍 FCM 檢查：isLoggedIn=$isLoggedIn');
+      debugPrint('[MAIN] 🔍 FCM 檢查：isLoggedIn=$isLoggedIn');
     }
 
     if (isLoggedIn) {
       final userId = authController.user?.uid;
 
       if (kDebugMode) {
-        print('[MAIN] 🔍 FCM 用戶：userId=$userId');
+        debugPrint('[MAIN] 🔍 FCM 用戶：userId=$userId');
       }
 
       if (userId != null) {
         final token = await notificationService.getToken();
 
         if (kDebugMode) {
-          print('[MAIN] 🔍 FCM Token：${token?.substring(0, 20)}...');
+          debugPrint('[MAIN] 🔍 FCM Token：${token?.substring(0, 20)}...');
         }
 
         if (token != null) {
@@ -278,26 +277,26 @@ Future<void> _initializeFCM() async {
           notificationService.listenForTokenChanges(userId);
 
           if (kDebugMode) {
-            print('[MAIN] ✅ FCM Token 已保存 (user: $userId)');
+            debugPrint('[MAIN] ✅ FCM Token 已保存 (user: $userId)');
           }
         } else {
           if (kDebugMode) {
-            print('[MAIN] ⚠️ FCM Token 為 null');
+            debugPrint('[MAIN] ⚠️ FCM Token 為 null');
           }
         }
       } else {
         if (kDebugMode) {
-          print('[MAIN] ⚠️ userId 為 null');
+          debugPrint('[MAIN] ⚠️ userId 為 null');
         }
       }
     } else {
       if (kDebugMode) {
-        print('[MAIN] ⏭️ FCM Token 跳過（用戶未登入）');
+        debugPrint('[MAIN] ⏭️ FCM Token 跳過（用戶未登入）');
       }
     }
   } catch (e) {
     if (kDebugMode) {
-      print('[MAIN] ⚠️ FCM 初始化失敗: $e');
+      debugPrint('[MAIN] ⚠️ FCM 初始化失敗: $e');
     }
   }
 }
@@ -311,9 +310,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ThemeController(ThemeService()),
-      child: Consumer<ThemeController>(
+    return ChangeNotifierProvider<IThemeController>(
+      create: (_) => serviceLocator<IThemeController>(),
+      child: Consumer<IThemeController>(
         builder: (context, themeController, child) {
           // ⚡ 優化：不等待主題載入，使用默認主題先渲染 UI
           // 主題載入完成後會自動更新
@@ -469,58 +468,4 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  /// 構建深色主題
-  ///
-  /// 整合 Google Fonts（Inter）與 Kinetic 設計系統
-  ThemeData _buildDarkTheme() {
-    final baseTheme = AppTheme.darkTheme;
-
-    return baseTheme.copyWith(
-      // 應用 Inter 字體到整個主題
-      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme).copyWith(
-        // Display Large
-        displayLarge: GoogleFonts.inter(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          letterSpacing: -1.0,
-          color: baseTheme.colorScheme.onSurface,
-        ),
-        // Headline Medium
-        headlineMedium: GoogleFonts.inter(
-          fontSize: 24,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.5,
-          color: baseTheme.colorScheme.onSurface,
-        ),
-        // Title Medium
-        titleMedium: GoogleFonts.inter(
-          fontSize: 18,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.15,
-          color: baseTheme.colorScheme.onSurface,
-        ),
-        // Body Large
-        bodyLarge: GoogleFonts.inter(
-          fontSize: 16,
-          fontWeight: FontWeight.w400,
-          letterSpacing: 0.5,
-          color: baseTheme.colorScheme.onSurface,
-        ),
-        // Body Medium
-        bodyMedium: GoogleFonts.inter(
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          letterSpacing: 0.25,
-          color: baseTheme.colorScheme.onSurface,
-        ),
-        // Label Large
-        labelLarge: GoogleFonts.inter(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 1.25,
-          color: baseTheme.colorScheme.onSurface,
-        ),
-      ),
-    );
-  }
 }

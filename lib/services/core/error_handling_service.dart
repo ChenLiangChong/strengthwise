@@ -59,7 +59,7 @@ class ErrorHandlingService {
     } catch (e) {
       // 特殊處理，因為錯誤處理服務本身出錯
       if (kDebugMode) {
-        print('[ERROR HANDLER INIT FAILURE] $e');
+        debugPrint('[ERROR HANDLER INIT FAILURE] $e');
       }
     }
   }
@@ -74,11 +74,11 @@ class ErrorHandlingService {
 
       _isInitialized = false;
       if (kDebugMode) {
-        print('[ERROR HANDLER] 錯誤處理服務資源已釋放');
+        debugPrint('[ERROR HANDLER] 錯誤處理服務資源已釋放');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[ERROR HANDLER] 釋放錯誤處理服務資源時發生錯誤: $e');
+        debugPrint('[ERROR HANDLER] 釋放錯誤處理服務資源時發生錯誤: $e');
       }
     }
   }
@@ -172,9 +172,9 @@ class ErrorHandlingService {
 
     // 打印到控制台（僅開發模式）
     if (kDebugMode) {
-      print('[ERROR ${log.type}] ${log.timestamp}: ${log.message}');
+      debugPrint('[ERROR ${log.type}] ${log.timestamp}: ${log.message}');
       if (log.stackTrace != null) {
-        print(log.stackTrace);
+        debugPrint(log.stackTrace.toString());
       }
     }
 
@@ -184,7 +184,7 @@ class ErrorHandlingService {
         callback(log);
       } catch (e) {
         if (kDebugMode) {
-          print('[ERROR HANDLER] 錯誤回調執行失敗: $e');
+          debugPrint('[ERROR HANDLER] 錯誤回調執行失敗: $e');
         }
       }
     }
@@ -234,7 +234,7 @@ class ErrorHandlingService {
     _ensureInitialized();
 
     if (kDebugMode) {
-      print('[INFO $source] $message');
+      debugPrint('[INFO $source] $message');
     }
   }
 
@@ -356,7 +356,7 @@ class ErrorHandlingService {
   void _ensureInitialized() {
     if (!_isInitialized) {
       if (kDebugMode) {
-        print('[ERROR HANDLER] 警告: 錯誤處理服務在初始化前被調用');
+        debugPrint('[ERROR HANDLER] 警告: 錯誤處理服務在初始化前被調用');
       }
 
       // 錯誤處理服務是基礎服務，總是自動初始化
@@ -367,7 +367,7 @@ class ErrorHandlingService {
   /// 記錄調試信息
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[ERROR HANDLER] $message');
+      debugPrint('[ERROR HANDLER] $message');
     }
   }
 }

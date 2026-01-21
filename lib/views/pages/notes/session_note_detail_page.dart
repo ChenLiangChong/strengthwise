@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/session_note_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_session_note_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/models/session_note/session_note_model.dart';
 import 'package:strengthwise/models/session_note/soap_note_model.dart';
@@ -33,7 +33,7 @@ class SessionNoteDetailPage extends StatefulWidget {
 }
 
 class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
-  late final SessionNoteController _controller;
+  late final ISessionNoteController _controller;
   late final IAuthController _authController;
   bool _isLoading = false;
   bool _isInitialized = false;
@@ -41,7 +41,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
   @override
   void initState() {
     super.initState();
-    _controller = serviceLocator<SessionNoteController>();
+    _controller = serviceLocator<ISessionNoteController>();
     _authController = serviceLocator<IAuthController>();
     _isInitialized = true;
     _loadNote();
@@ -184,7 +184,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
           title: const Text('筆記詳情'),
           actions: [
             // 更多選項（僅教練可見）
-            Consumer<SessionNoteController>(
+            Consumer<ISessionNoteController>(
               builder: (context, controller, child) {
                 // 確保已初始化
                 if (!_isInitialized) {
@@ -260,7 +260,7 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : Consumer<SessionNoteController>(
+            : Consumer<ISessionNoteController>(
                 builder: (context, controller, child) {
                   // 確保已初始化
                   if (!_isInitialized) {
@@ -315,8 +315,13 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
                               ],
 
                               // SOAP 內容
-                              if (note.soap != null && !note.soap!.isEmpty)
-                                _buildSoapContent(note.soap!),
+                              Builder(builder: (context) {
+                                final soap = note.soap;
+                                if (soap != null && !soap.isEmpty) {
+                                  return _buildSoapContent(soap);
+                                }
+                                return const SizedBox.shrink();
+                              }),
 
                               // 視覺元素
                               if (note.hasVisualElements) ...[
@@ -467,39 +472,44 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
 
   /// SOAP 內容
   Widget _buildSoapContent(SoapNoteModel soap) {
+    final subjective = soap.subjective;
+    final objective = soap.objective;
+    final assessment = soap.assessment;
+    final plan = soap.plan;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (soap.subjective != null && soap.subjective!.isNotEmpty)
+        if (subjective != null && subjective.isNotEmpty)
           SoapSectionCard(
             title: 'S - 主觀描述',
-            content: soap.subjective!,
+            content: subjective,
             icon: Icons.person_outline,
             color: Colors.blue,
           ),
-        if (soap.objective != null && soap.objective!.isNotEmpty) ...[
+        if (objective != null && objective.isNotEmpty) ...[
           const SizedBox(height: 12),
           SoapSectionCard(
             title: 'O - 客觀觀察',
-            content: soap.objective!,
+            content: objective,
             icon: Icons.visibility_outlined,
             color: Colors.green,
           ),
         ],
-        if (soap.assessment != null && soap.assessment!.isNotEmpty) ...[
+        if (assessment != null && assessment.isNotEmpty) ...[
           const SizedBox(height: 12),
           SoapSectionCard(
             title: 'A - 評估',
-            content: soap.assessment!,
+            content: assessment,
             icon: Icons.assessment_outlined,
             color: Colors.orange,
           ),
         ],
-        if (soap.plan != null && soap.plan!.isNotEmpty) ...[
+        if (plan != null && plan.isNotEmpty) ...[
           const SizedBox(height: 12),
           SoapSectionCard(
             title: 'P - 計畫',
-            content: soap.plan!,
+            content: plan,
             icon: Icons.calendar_today_outlined,
             color: Colors.purple,
           ),
@@ -592,13 +602,13 @@ class _SessionNoteDetailPageState extends State<SessionNoteDetailPage> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       child: ListTile(
         leading: Container(
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.1),
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(

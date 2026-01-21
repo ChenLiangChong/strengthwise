@@ -1,7 +1,7 @@
 // ✅ 已響應式改造 (Phase 0) - Session 執行 Tab，子組件處理
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/session_mode_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_session_mode_controller.dart';
 import 'package:strengthwise/models/workout_template_model.dart';
 import 'package:strengthwise/views/pages/session/widgets/readiness_card.dart';
 import 'package:strengthwise/views/pages/session/widgets/session_notes_section.dart';
@@ -26,7 +26,7 @@ class SessionExecutionTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SessionModeController>(
+    return Consumer<ISessionModeController>(
       builder: (context, controller, child) {
         // 整個頁面都在 WorkoutExecutionContent 的滾動區域內
         return _buildWorkoutSection(context, controller);
@@ -37,7 +37,7 @@ class SessionExecutionTab extends StatelessWidget {
   /// 訓練計畫區域
   Widget _buildWorkoutSection(
     BuildContext context,
-    SessionModeController controller,
+    ISessionModeController controller,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -99,7 +99,7 @@ class SessionExecutionTab extends StatelessWidget {
   /// 空訓練計畫狀態
   Widget _buildEmptyPlanState(
     BuildContext context,
-    SessionModeController controller,
+    ISessionModeController controller,
     ColorScheme colorScheme,
   ) {
     return Padding(
@@ -185,7 +185,7 @@ class SessionExecutionTab extends StatelessWidget {
   /// 課程筆記區塊
   Widget _buildNotesSection(
     BuildContext context,
-    SessionModeController controller,
+    ISessionModeController controller,
   ) {
     return SessionNotesSection(
       initialSoap: controller.currentSoap,
@@ -200,7 +200,7 @@ class SessionExecutionTab extends StatelessWidget {
   /// 跳轉到模板選擇
   void _navigateToTemplateSelection(
     BuildContext context,
-    SessionModeController controller,
+    ISessionModeController controller,
   ) {
     Navigator.push<WorkoutTemplate>(
       context,
@@ -210,6 +210,7 @@ class SessionExecutionTab extends StatelessWidget {
     ).then((selectedTemplate) {
       if (selectedTemplate != null) {
         Navigator.push(
+          // ignore: use_build_context_synchronously - then callback 內使用
           context,
           MaterialPageRoute(
             builder: (context) => PlanEditorPage(
@@ -233,7 +234,7 @@ class SessionExecutionTab extends StatelessWidget {
   /// 跳轉到新增訓練計畫
   void _navigateToPlanEditor(
     BuildContext context,
-    SessionModeController controller,
+    ISessionModeController controller,
   ) {
     Navigator.push(
       context,

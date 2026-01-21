@@ -167,20 +167,25 @@ class _ClientHubPageState extends State<ClientHubPage>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          CoachListTab(clientId: _currentUserId!),
-          ClientAvailabilityPage(
-            clientId: _currentUserId!,
-            clientName: _authController.user?.displayName ?? '我',
-            isViewMode: false,
-            showAppBar: false,
-          ),
-          const AppointmentsListPage(isCoachMode: false),
-          const SessionNotesListPage(isClientMode: true),
-          MyHealthAssessmentPage(userId: _currentUserId!),
-        ],
+      body: Builder(
+        builder: (context) {
+          final userId = _currentUserId!;
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              CoachListTab(clientId: userId),
+              ClientAvailabilityPage(
+                clientId: userId,
+                clientName: _authController.user?.displayName ?? '我',
+                isViewMode: false,
+                showAppBar: false,
+              ),
+              const AppointmentsListPage(isCoachMode: false),
+              const SessionNotesListPage(isClientMode: true),
+              MyHealthAssessmentPage(userId: userId),
+            ],
+          );
+        },
       ),
     );
   }
@@ -242,28 +247,33 @@ class _ClientHubPageState extends State<ClientHubPage>
                 ),
                 // 左側 Master 內容
                 Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      // ⭐ P3: 傳入回調，選中教練時更新右側
-                      CoachListTab(
-                        clientId: _currentUserId!,
-                        onCoachSelected: _onCoachSelected,
-                      ),
-                      ClientAvailabilityPage(
-                        clientId: _currentUserId!,
-                        clientName: _authController.user?.displayName ?? '我',
-                        isViewMode: false,
-                        showAppBar: false,
-                      ),
-                      // ⭐ P3: 傳入回調，選中預約時更新右側
-                      AppointmentsListPage(
-                        isCoachMode: false,
-                        onAppointmentSelected: _onAppointmentSelected,
-                      ),
-                      const SessionNotesListPage(isClientMode: true),
-                      MyHealthAssessmentPage(userId: _currentUserId!),
-                    ],
+                  child: Builder(
+                    builder: (context) {
+                      final userId = _currentUserId!;
+                      return TabBarView(
+                        controller: _tabController,
+                        children: [
+                          // ⭐ P3: 傳入回調，選中教練時更新右側
+                          CoachListTab(
+                            clientId: userId,
+                            onCoachSelected: _onCoachSelected,
+                          ),
+                          ClientAvailabilityPage(
+                            clientId: userId,
+                            clientName: _authController.user?.displayName ?? '我',
+                            isViewMode: false,
+                            showAppBar: false,
+                          ),
+                          // ⭐ P3: 傳入回調，選中預約時更新右側
+                          AppointmentsListPage(
+                            isCoachMode: false,
+                            onAppointmentSelected: _onAppointmentSelected,
+                          ),
+                          const SessionNotesListPage(isClientMode: true),
+                          MyHealthAssessmentPage(userId: userId),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
@@ -276,22 +286,30 @@ class _ClientHubPageState extends State<ClientHubPage>
 
           // 【右側面板】 - 根據選中內容顯示不同 Detail
           Expanded(
-            child: _selectedCoach != null
-                ? CoachDetailContent(
-                    key: ValueKey(_selectedCoach!.uid),
-                    coachId: _selectedCoach!.uid,
-                    coach: _selectedCoach!,
-                    clientId: _currentUserId!,
-                  )
-                : _selectedAppointmentId != null
-                    ? AppointmentDetailsContent(
-                        key: ValueKey(_selectedAppointmentId),
-                        appointmentId: _selectedAppointmentId!,
-                        isCoachMode: false,
-                        onClose: () =>
-                            setState(() => _selectedAppointmentId = null),
-                      )
-                    : _buildEmptyDetailState(context),
+            child: Builder(
+              builder: (context) {
+                final coach = _selectedCoach;
+                final appointmentId = _selectedAppointmentId;
+                final userId = _currentUserId!;
+                if (coach != null) {
+                  return CoachDetailContent(
+                    key: ValueKey(coach.uid),
+                    coachId: coach.uid,
+                    coach: coach,
+                    clientId: userId,
+                  );
+                } else if (appointmentId != null) {
+                  return AppointmentDetailsContent(
+                    key: ValueKey(appointmentId),
+                    appointmentId: appointmentId,
+                    isCoachMode: false,
+                    onClose: () =>
+                        setState(() => _selectedAppointmentId = null),
+                  );
+                }
+                return _buildEmptyDetailState(context);
+              },
+            ),
           ),
         ],
       ),

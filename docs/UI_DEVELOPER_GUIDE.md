@@ -2,8 +2,8 @@
 
 > 快速查表與代碼參考
 
-**版本**：2.1  
-**最後更新**：2026年1月7日
+**版本**：2.2
+**最後更新**：2026年1月19日
 
 ---
 
@@ -15,11 +15,11 @@
 |------|---------|---------|-------------|
 | **Primary** | `#0EA5E9` | `#38BDF8` | `colorScheme.primary` |
 | **On Primary** | `#FFFFFF` | `#0F172A` | `colorScheme.onPrimary` |
-| **Secondary** | `#0D9488` | `#5EEAD4` | `colorScheme.secondary` |
+| **Secondary** | `#0D9488` | `#2DD4BF` | `colorScheme.secondary` |
 | **Background** | `#F1F5F9` | `#0F172A` | `colorScheme.background` |
 | **Surface** | `#FFFFFF` | `#1E293B` | `colorScheme.surface` |
-| **On Surface** | `#0F172A` | `#F8FAFC` | `colorScheme.onSurface` |
-| **Outline** | `#E2E8F0` | `#334155` | `colorScheme.outline` |
+| **On Surface** | `#0F172A` | `#FFFFFF` | `colorScheme.onSurface` |
+| **Outline** | `#CBD5E1` | `#334155` | `colorScheme.outline` |
 
 ### 1.2 語意色彩
 
@@ -287,7 +287,7 @@ ConstrainedBox(
 
 | 元素 | 圓角 | 說明 |
 |------|------|------|
-| 卡片 | 12dp | 統一使用（非 16dp）|
+| 卡片 | 20dp | 統一使用（v4.0 更新）|
 | 按鈕 | 8dp 或 12dp | 取決於尺寸 |
 | 輸入框 | 8dp | 標準輸入框 |
 | 底部導航 | 0dp | 不使用圓角 |
@@ -304,7 +304,7 @@ ConstrainedBox(
 CardTheme(
   elevation: 0,
   shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(12),
+    borderRadius: BorderRadius.circular(20),
     side: BorderSide(color: Color(0xFFE2E8F0)),
   ),
 )
@@ -314,7 +314,7 @@ CardTheme(
   elevation: 0,
   color: Color(0xFF1E293B), // 比背景稍亮
   shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(12),
+    borderRadius: BorderRadius.circular(20),
   ),
 )
 ```
@@ -518,7 +518,7 @@ MouseRegion(
 □ 數字欄位使用等寬字體
 □ 關鍵操作有觸覺回饋
 □ 文字可閱讀（字級、顏色）
-□ 卡片圓角統一 12dp
+□ 卡片圓角統一 20dp
 ```
 
 ### 響應式檢查 ⭐ v2.0 新增

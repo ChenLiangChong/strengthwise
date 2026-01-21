@@ -1,11 +1,11 @@
 // ✅ 已響應式改造 (Phase 0) - 子組件處理
 import 'package:flutter/material.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/controllers/appointment_controller.dart';
-import 'package:strengthwise/controllers/availability_slot_controller.dart';
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_appointment_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_availability_slot_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/controllers/event_bus_controller.dart'; // ⭐ v3.5
+import 'package:strengthwise/controllers/interfaces/i_event_bus_controller.dart'; // ⭐ v3.5
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/interfaces/i_availability_slot_service.dart';
 import 'package:strengthwise/models/user/user_model.dart';
@@ -29,12 +29,12 @@ class ClientBookingPage extends StatefulWidget {
 }
 
 class _ClientBookingPageState extends State<ClientBookingPage> {
-  late final AppointmentController _appointmentController;
-  late final AvailabilitySlotController _slotController;
-  late final CoachingRelationshipController _relationshipController;
+  late final IAppointmentController _appointmentController;
+  late final IAvailabilitySlotController _slotController;
+  late final ICoachingRelationshipController _relationshipController;
   late final IAuthController _authController;
   late final ErrorHandlingService _errorService;
-  late final EventBusController _eventBusController; // ⭐ v3.5
+  late final IEventBusController _eventBusController; // ⭐ v3.5
 
   bool _isLoading = true;
   String? _selectedCoachId;
@@ -50,12 +50,12 @@ class _ClientBookingPageState extends State<ClientBookingPage> {
   }
 
   void _initializeControllers() {
-    _appointmentController = serviceLocator<AppointmentController>();
-    _slotController = serviceLocator<AvailabilitySlotController>();
-    _relationshipController = serviceLocator<CoachingRelationshipController>();
+    _appointmentController = serviceLocator<IAppointmentController>();
+    _slotController = serviceLocator<IAvailabilitySlotController>();
+    _relationshipController = serviceLocator<ICoachingRelationshipController>();
     _authController = serviceLocator<IAuthController>();
     _errorService = serviceLocator<ErrorHandlingService>();
-    _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.5
+    _eventBusController = serviceLocator<IEventBusController>(); // ⭐ v3.5
   }
 
   Future<void> _loadInitialData() async {

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:strengthwise/views/pages/relationships/role_coach/coach_hub_page.dart';
 import 'package:strengthwise/views/pages/relationships/role_client/client_hub_page.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
-import 'package:strengthwise/controllers/profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 
 /// 訓練中心 Hub 頁面
@@ -23,13 +23,13 @@ class TrainingHubPage extends StatefulWidget {
 }
 
 class _TrainingHubPageState extends State<TrainingHubPage> {
-  late final ProfileController _controller;
+  late final IProfileController _controller;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _controller = serviceLocator<ProfileController>();
+    _controller = serviceLocator<IProfileController>();
     _loadProfile();
   }
 
@@ -207,7 +207,7 @@ class _TrainingHubPageState extends State<TrainingHubPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -233,7 +233,7 @@ class _TrainingHubPageState extends State<TrainingHubPage> {
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.6),
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                     ),
                   ],
@@ -244,7 +244,7 @@ class _TrainingHubPageState extends State<TrainingHubPage> {
               Icon(
                 Icons.arrow_forward_ios,
                 size: 20,
-                color: colorScheme.onSurface.withOpacity(0.3),
+                color: colorScheme.onSurface.withValues(alpha: 0.3),
               ),
             ],
           ),

@@ -33,7 +33,7 @@ class ProfileMenuItem extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: ListTile(
         contentPadding: EdgeInsets.symmetric(
@@ -43,7 +43,7 @@ class ProfileMenuItem extends StatelessWidget {
         leading: Container(
           padding: EdgeInsets.all(context.spacing.sm),
           decoration: BoxDecoration(
-            color: effectiveColor.withOpacity(0.1),
+            color: effectiveColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(

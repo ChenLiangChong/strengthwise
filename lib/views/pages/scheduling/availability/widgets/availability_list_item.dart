@@ -85,7 +85,7 @@ class AvailabilityListItem extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.amber.withOpacity(0.2),
+            color: Colors.amber.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(Icons.star, color: Colors.amber),
@@ -94,7 +94,7 @@ class AvailabilityListItem extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.2),
+            color: Colors.red.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(Icons.cancel, color: Colors.red),
@@ -103,7 +103,7 @@ class AvailabilityListItem extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.2),
+            color: Colors.green.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(Icons.check_circle, color: Colors.green),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../controllers/profile_controller.dart';
+import '../../../../controllers/interfaces/i_profile_controller.dart';
 import 'set_password_dialog.dart';
 
 /// OAuth 用戶密碼設置區塊（Material 3）
@@ -11,7 +11,7 @@ class OAuthPasswordSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<ProfileController>();
+    final controller = context.watch<IProfileController>();
     final colorScheme = Theme.of(context).colorScheme;
     final userEmail = controller.userEmail;
 

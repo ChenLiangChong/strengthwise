@@ -5,23 +5,25 @@ import 'package:strengthwise/services/interfaces/i_session_note_service.dart';
 import 'package:strengthwise/services/session_note/session_note_query_manager.dart';
 import 'package:strengthwise/services/session_note/session_note_operations.dart';
 import 'package:strengthwise/services/session_note/session_note_storage_manager.dart';
+import 'package:strengthwise/services/core/error_handling_service.dart';
 
 /// Session Note Service Supabase 實現
-/// 
+///
 /// Phase 3: 視覺化筆記系統
 /// 完全解耦合設計 + 子模組化
 class SessionNoteServiceSupabase implements ISessionNoteService {
   final SupabaseClient _supabase;
+  final ErrorHandlingService _errorService;
 
   // 子模組
   late final SessionNoteQueryManager _queryManager;
   late final SessionNoteOperations _operations;
   late final SessionNoteStorageManager _storageManager;
 
-  SessionNoteServiceSupabase(this._supabase) {
-    _storageManager = SessionNoteStorageManager(_supabase);
-    _queryManager = SessionNoteQueryManager(_supabase);
-    _operations = SessionNoteOperations(_supabase, _storageManager);
+  SessionNoteServiceSupabase(this._supabase, this._errorService) {
+    _storageManager = SessionNoteStorageManager(_supabase, _errorService);
+    _queryManager = SessionNoteQueryManager(_supabase, _errorService);
+    _operations = SessionNoteOperations(_supabase, _storageManager, _errorService);
   }
 
   // ==================== 查詢方法（委派給 QueryManager）====================

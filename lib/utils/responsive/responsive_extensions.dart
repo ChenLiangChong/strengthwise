@@ -75,6 +75,7 @@ extension ResponsiveContextExtension on BuildContext {
   // ---------------------------------------------------------------------------
 
   /// 響應式間距系統
+  // ignore: library_private_types_in_public_api - 刻意使用私有類型，僅暴露 getter
   _ResponsiveSpacing get spacing => _ResponsiveSpacing(this);
 
   // ---------------------------------------------------------------------------

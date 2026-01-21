@@ -5,7 +5,7 @@ import 'package:strengthwise/models/health_assessment/health_assessment_model.da
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/models/health_assessment/injury_record.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/controllers/profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart';
 import 'package:strengthwise/models/injury_coach_note_model.dart';
 
 /// 健康評估完整詳情頁面
@@ -30,7 +30,7 @@ class HealthAssessmentDetailPage extends StatefulWidget {
 class _HealthAssessmentDetailPageState
     extends State<HealthAssessmentDetailPage> {
   // ⭐ v3.6: MVVM 重構 - 透過 Controller 查詢
-  late final ProfileController _profileController;
+  late final IProfileController _profileController;
 
   // ⭐ v3.4: 傷病教練備註快取（Map<injurySite, List<InjuryCoachNoteModel>>）
   Map<String, List<InjuryCoachNoteModel>> _injuryCoachNotes = {};
@@ -42,7 +42,7 @@ class _HealthAssessmentDetailPageState
   @override
   void initState() {
     super.initState();
-    _profileController = serviceLocator<ProfileController>();
+    _profileController = serviceLocator<IProfileController>();
     _loadInjuryCoachNotes();
   }
 
@@ -122,8 +122,7 @@ class _HealthAssessmentDetailPageState
                 ],
 
                 // 緊急聯絡人
-                if (assessment.emergencyContact != null &&
-                    assessment.emergencyContact!.isNotEmpty) ...[
+                if (assessment.emergencyContact?.isNotEmpty == true) ...[
                   _buildSectionTitle(context, Icons.contact_phone, '緊急聯絡人'),
                   const SizedBox(height: 12),
                   _buildEmergencyContactSection(context),
@@ -157,8 +156,8 @@ class _HealthAssessmentDetailPageState
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: isLowRisk
-                    ? colorScheme.primaryContainer.withOpacity(0.5)
-                    : colorScheme.errorContainer.withOpacity(0.5),
+                    ? colorScheme.primaryContainer.withValues(alpha: 0.5)
+                    : colorScheme.errorContainer.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -359,7 +358,7 @@ class _HealthAssessmentDetailPageState
                         ),
                         decoration: BoxDecoration(
                           color: _getInjuryStatusColor(injury.status, theme)
-                              .withOpacity(0.2),
+                              .withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -381,8 +380,7 @@ class _HealthAssessmentDetailPageState
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            if (injury.diagnosis != null &&
-                                injury.diagnosis!.isNotEmpty) ...[
+                            if (injury.diagnosis?.isNotEmpty == true) ...[
                               const SizedBox(height: 4),
                               Text(
                                 injury.diagnosis!,
@@ -391,8 +389,7 @@ class _HealthAssessmentDetailPageState
                                 ),
                               ),
                             ],
-                            if (injury.limitations != null &&
-                                injury.limitations!.isNotEmpty) ...[
+                            if (injury.limitations?.isNotEmpty == true) ...[
                               const SizedBox(height: 4),
                               Text(
                                 '限制：${injury.limitations!}',
@@ -413,7 +410,7 @@ class _HealthAssessmentDetailPageState
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
@@ -673,7 +670,7 @@ class _HealthAssessmentDetailPageState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: theme.colorScheme.outlineVariant,

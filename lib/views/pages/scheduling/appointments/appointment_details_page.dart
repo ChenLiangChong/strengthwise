@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
-import 'package:strengthwise/controllers/appointment_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_appointment_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 // ⭐ v3.5: 事件由 Controller 統一發布，View 不需要直接使用 EventBusController
 import 'package:strengthwise/services/core/error_handling_service.dart';
@@ -13,7 +13,7 @@ import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appoint
 import 'package:strengthwise/views/pages/scheduling/appointments/widgets/appointment_details/actions_section.dart';
 import 'package:strengthwise/views/pages/scheduling/appointments/session_record_page.dart';
 import 'package:strengthwise/views/pages/session/session_mode_page.dart';
-import 'package:strengthwise/controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/common_widgets/dialogs/reason_input_dialog.dart'; // ⭐ v3.9
 
 /// 預約詳情頁面 - Phase 2
@@ -38,9 +38,9 @@ class AppointmentDetailsPage extends StatefulWidget {
 }
 
 class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
-  late final AppointmentController _appointmentController;
+  late final IAppointmentController _appointmentController;
   late final IAuthController _authController;
-  late final ProfileController _profileController; // ⭐ v3.6: MVVM
+  late final IProfileController _profileController; // ⭐ v3.6: MVVM
   late final ErrorHandlingService _errorService;
 
   final TextEditingController _notesController = TextEditingController();
@@ -55,9 +55,9 @@ class _AppointmentDetailsPageState extends State<AppointmentDetailsPage> {
   }
 
   void _initializeControllers() {
-    _appointmentController = serviceLocator<AppointmentController>();
+    _appointmentController = serviceLocator<IAppointmentController>();
     _authController = serviceLocator<IAuthController>();
-    _profileController = serviceLocator<ProfileController>(); // ⭐ v3.6: MVVM
+    _profileController = serviceLocator<IProfileController>(); // ⭐ v3.6: MVVM
     _errorService = serviceLocator<ErrorHandlingService>();
     _appointmentController.addListener(_onControllerUpdate);
   }

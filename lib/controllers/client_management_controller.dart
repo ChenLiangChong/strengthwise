@@ -8,18 +8,19 @@ import '../models/user/user_model.dart';
 import '../models/workout_record/workout_record.dart';
 import '../models/workout_record/exercise_record.dart';
 import '../models/client_availability_model.dart';
-import 'event_bus_controller.dart'; // ⭐ v3.5
+import 'interfaces/i_event_bus_controller.dart'; // ⭐ v3.5
+import 'interfaces/i_client_management_controller.dart';
 
 /// 教練端學員管理控制器
 ///
 /// 負責教練查看學員詳情、管理學員訓練計畫等功能
-class ClientManagementController extends ChangeNotifier {
+class ClientManagementController extends ChangeNotifier implements IClientManagementController {
   final ICoachingRelationshipService _relationshipService;
   final IWorkoutService _workoutService;
   final IClientAvailabilityService _availabilityService;
   final IUserService _userService;
   final ErrorHandlingService _errorService;
-  final EventBusController _eventBusController; // ⭐ v3.5
+  final IEventBusController _eventBusController; // ⭐ v3.5
 
   ClientManagementController(
     this._relationshipService,
@@ -57,13 +58,21 @@ class ClientManagementController extends ChangeNotifier {
   // Getters
   // ============================================================================
 
+  @override
   bool get isLoading => _isLoading;
+  @override
   String? get errorMessage => _errorMessage;
+  @override
   UserModel? get selectedClient => _selectedClient;
+  @override
   List<UserModel> get clients => _clients;
+  @override
   List<UserModel> get filteredClients => _filteredClients;
+  @override
   List<WorkoutRecord> get clientWorkouts => _clientWorkouts;
+  @override
   List<ClientAvailabilityModel> get clientAvailability => _clientAvailability;
+  @override
   String get searchQuery => _searchQuery;
 
   // ============================================================================
@@ -71,6 +80,7 @@ class ClientManagementController extends ChangeNotifier {
   // ============================================================================
 
   /// 載入教練的學員列表
+  @override
   Future<void> loadClients(String coachId) async {
     _setLoading(true);
     _clearError();
@@ -91,6 +101,7 @@ class ClientManagementController extends ChangeNotifier {
   }
 
   /// 搜尋學員
+  @override
   void searchClients(String query) {
     _searchQuery = query.trim();
 
@@ -109,6 +120,7 @@ class ClientManagementController extends ChangeNotifier {
   }
 
   /// 清除搜尋
+  @override
   void clearSearch() {
     _searchQuery = '';
     _filteredClients = List.from(_clients);
@@ -120,6 +132,7 @@ class ClientManagementController extends ChangeNotifier {
   // ============================================================================
 
   /// 選擇學員（進入詳情頁）
+  @override
   Future<void> selectClient(String clientId) async {
     _setLoading(true);
     _clearError();
@@ -143,6 +156,7 @@ class ClientManagementController extends ChangeNotifier {
   }
 
   /// 清除選中的學員
+  @override
   void clearSelectedClient() {
     _selectedClient = null;
     _clientWorkouts = [];
@@ -155,6 +169,7 @@ class ClientManagementController extends ChangeNotifier {
   // ============================================================================
 
   /// 載入學員的訓練計畫
+  @override
   Future<void> loadClientWorkouts(
     String clientId, {
     DateTime? startDate,
@@ -179,6 +194,7 @@ class ClientManagementController extends ChangeNotifier {
   }
 
   /// 教練為學員創建訓練計畫
+  @override
   Future<bool> createWorkoutForClient({
     required String coachId,
     required String clientId,
@@ -231,6 +247,7 @@ class ClientManagementController extends ChangeNotifier {
   }
 
   /// 更新訓練計畫
+  @override
   Future<bool> updateWorkout(WorkoutRecord workout) async {
     _setLoading(true);
     _clearError();
@@ -246,8 +263,9 @@ class ClientManagementController extends ChangeNotifier {
       );
 
       // 重新載入訓練計畫
-      if (_selectedClient != null) {
-        await loadClientWorkouts(_selectedClient!.uid);
+      final client = _selectedClient;
+      if (client != null) {
+        await loadClientWorkouts(client.uid);
       }
 
       notifyListeners();
@@ -261,6 +279,7 @@ class ClientManagementController extends ChangeNotifier {
   }
 
   /// 刪除訓練計畫
+  @override
   Future<bool> deleteWorkout(String workoutId) async {
     _setLoading(true);
     _clearError();
@@ -280,8 +299,9 @@ class ClientManagementController extends ChangeNotifier {
       }
 
       // 重新載入訓練計畫
-      if (_selectedClient != null) {
-        await loadClientWorkouts(_selectedClient!.uid);
+      final selectedClient = _selectedClient;
+      if (selectedClient != null) {
+        await loadClientWorkouts(selectedClient.uid);
       }
 
       notifyListeners();
@@ -299,6 +319,7 @@ class ClientManagementController extends ChangeNotifier {
   // ============================================================================
 
   /// 載入學員的時間偏好
+  @override
   Future<void> loadClientAvailability(
     String clientId, {
     DateTime? startDate,
@@ -310,9 +331,9 @@ class ClientManagementController extends ChangeNotifier {
       );
       
       if (kDebugMode) {
-        print('[CLIENT_CONTROLLER] 載入學員時間偏好: ${_clientAvailability.length} 個時段');
+        debugPrint('[CLIENT_CONTROLLER] 載入學員時間偏好: ${_clientAvailability.length} 個時段');
         for (var avail in _clientAvailability) {
-          print('[CLIENT_CONTROLLER]   ${avail.startTime} - ${avail.endTime} (${avail.priority.toString().split('.').last})');
+          debugPrint('[CLIENT_CONTROLLER]   ${avail.startTime} - ${avail.endTime} (${avail.priority.toString().split('.').last})');
         }
       }
       
@@ -325,6 +346,7 @@ class ClientManagementController extends ChangeNotifier {
 
   /// ⭐ v3.9: 增量刪除學員可訓練時間（本地）
   /// 用於 Realtime DELETE 事件的增量處理
+  @override
   bool removeClientAvailabilityById(String availabilityId) {
     final before = _clientAvailability.length;
     _clientAvailability.removeWhere((a) => a.id == availabilityId);
@@ -340,6 +362,7 @@ class ClientManagementController extends ChangeNotifier {
   }
 
   /// 根據日期查詢時間偏好
+  @override
   List<ClientAvailabilityModel> getAvailabilityForDate(DateTime date) {
     // ⚡ 只比較日期部分（忽略時分秒）
     final targetDate = DateTime(date.year, date.month, date.day);
@@ -355,13 +378,14 @@ class ClientManagementController extends ChangeNotifier {
     
     // ⭐ 只在有找到匹配時才打印（減少 log 噪音）
     if (kDebugMode && results.isNotEmpty) {
-      print('[CLIENT_CONTROLLER] getAvailabilityForDate(${date.month}/${date.day}) 找到 ${results.length} 個偏好時段');
+      debugPrint('[CLIENT_CONTROLLER] getAvailabilityForDate(${date.month}/${date.day}) 找到 ${results.length} 個偏好時段');
     }
     
     return results;
   }
 
   /// 根據日期查詢訓練計畫
+  @override
   List<WorkoutRecord> getWorkoutsForDate(DateTime date) {
     final targetDate = DateTime(date.year, date.month, date.day);
     return _clientWorkouts.where((workout) {

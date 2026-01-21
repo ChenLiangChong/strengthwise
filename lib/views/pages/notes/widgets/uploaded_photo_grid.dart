@@ -1,7 +1,7 @@
 // ✅ v3.1: 已上傳照片網格（公用元件）
 // ✅ v3.7: MVVM 修復 - 透過 Controller 獲取簽名 URL
 import 'package:flutter/material.dart';
-import 'package:strengthwise/controllers/session_note_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_session_note_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 
 /// 已上傳照片網格
@@ -172,7 +172,7 @@ class UploadedPhotoGrid extends StatelessWidget {
   /// 取得 Storage 簽名 URL
   /// ⭐ v3.7: MVVM 修復 - 透過 Controller 獲取（不直接訪問 Supabase）
   static Future<String> _getSignedUrl(String storagePath) async {
-    final controller = serviceLocator<SessionNoteController>();
+    final controller = serviceLocator<ISessionNoteController>();
     final signedUrl = await controller.generateSignedUrl(
       bucket: 'session_photos',
       path: storagePath,

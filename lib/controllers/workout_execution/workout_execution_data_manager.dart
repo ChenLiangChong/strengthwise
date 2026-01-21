@@ -1,9 +1,16 @@
+// ignore_for_file: unnecessary_getters_setters - 保持封裝一致性
+
+import 'dart:collection';
 import '../../models/workout_record_model.dart';
 import 'package:flutter/material.dart';
 
 /// 訓練執行數據管理器
 ///
 /// 管理訓練執行過程中的數據狀態
+///
+/// ⭐ v4.2.1: exerciseRecords 使用不可變視圖模式
+/// - getter 返回 UnmodifiableListView，防止外部直接 .add()
+/// - 提供明確的修改方法：addExercise(), removeExerciseAt(), updateExerciseAt()
 class WorkoutExecutionDataManager {
   // 數據
   String _workoutRecordId = '';
@@ -46,7 +53,16 @@ class WorkoutExecutionDataManager {
   String get workoutRecordId => _workoutRecordId;
   String get planTitle => _planTitle;
   String get planType => _planType;
-  List<ExerciseRecord> get exerciseRecords => _exerciseRecords;
+
+  /// 運動記錄列表（不可變視圖）
+  ///
+  /// ⚠️ 返回 UnmodifiableListView，無法直接 .add()/.remove()
+  /// 請使用 addExercise(), removeExerciseAt(), updateExerciseAt() 方法
+  List<ExerciseRecord> get exerciseRecords => UnmodifiableListView(_exerciseRecords);
+
+  /// 運動記錄數量
+  int get exerciseCount => _exerciseRecords.length;
+
   TextEditingController get notesController => _notesController;
   String? get traineeId => _traineeId;  // ⭐ 新增
   String? get creatorId => _creatorId;  // ⭐ 新增
@@ -86,7 +102,35 @@ class WorkoutExecutionDataManager {
   set elapsedSeconds(int value) => _elapsedSeconds = value;
   set actualStartTime(DateTime? value) => _actualStartTime = value;
   set actualEndTime(DateTime? value) => _actualEndTime = value;
-  
+
+  // =============================================
+  // ⭐ v4.2.1: exerciseRecords 安全修改方法
+  // =============================================
+
+  /// 新增運動記錄
+  void addExercise(ExerciseRecord record) {
+    _exerciseRecords = [..._exerciseRecords, record];
+  }
+
+  /// 移除指定索引的運動記錄
+  void removeExerciseAt(int index) {
+    if (index < 0 || index >= _exerciseRecords.length) return;
+    _exerciseRecords = [
+      ..._exerciseRecords.sublist(0, index),
+      ..._exerciseRecords.sublist(index + 1),
+    ];
+  }
+
+  /// 更新指定索引的運動記錄
+  void updateExerciseAt(int index, ExerciseRecord record) {
+    if (index < 0 || index >= _exerciseRecords.length) return;
+    _exerciseRecords = [
+      ..._exerciseRecords.sublist(0, index),
+      record,
+      ..._exerciseRecords.sublist(index + 1),
+    ];
+  }
+
   /// 設置當前運動索引
   void setCurrentExerciseIndex(int index) {
     if (index >= 0 && index < _exerciseRecords.length) {
@@ -207,11 +251,11 @@ class WorkoutExecutionDataManager {
   /// 處理日期信息
   void processDateInfo(DateTime date) {
     _planDate = date;
-    
+
     // 對比今日日期（僅考慮年月日，不考慮時分秒）
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
-    final planDateOnly = DateTime(_planDate!.year, _planDate!.month, _planDate!.day);
+    final planDateOnly = DateTime(date.year, date.month, date.day);
     
     _isToday = planDateOnly.isAtSameMomentAs(todayDate);
     _isPastDate = planDateOnly.isBefore(todayDate);

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/client_management_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_client_management_controller.dart';
 import 'package:strengthwise/models/workout_template/workout_template.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/workout/execution/plan_editor_page.dart';
@@ -87,7 +87,7 @@ class _CreateWorkoutDialogState extends State<CreateWorkoutDialog> {
 
   /// 從模板創建
   Future<void> _createFromTemplate(WorkoutTemplate template) async {
-    final controller = context.read<ClientManagementController>();
+    final controller = context.read<IClientManagementController>();
 
     try {
       final success = await controller.createWorkoutForClient(

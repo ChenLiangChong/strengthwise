@@ -76,9 +76,9 @@ class SlotListView extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isBookedByOthers
-                      ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
+                      ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
                       : isMyBooking
-                          ? colorScheme.primaryContainer.withOpacity(0.7)
+                          ? colorScheme.primaryContainer.withValues(alpha: 0.7)
                           : colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -90,7 +90,7 @@ class SlotListView extends StatelessWidget {
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: isBookedByOthers 
-                            ? colorScheme.onSurfaceVariant.withOpacity(0.6)
+                            ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
                             : isMyBooking
                                 ? colorScheme.primary
                                 : colorScheme.onPrimaryContainer,
@@ -102,9 +102,9 @@ class SlotListView extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         color: isBookedByOthers 
-                            ? colorScheme.onSurfaceVariant.withOpacity(0.6)
+                            ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
                             : isMyBooking
-                                ? colorScheme.primary.withOpacity(0.8)
+                                ? colorScheme.primary.withValues(alpha: 0.8)
                                 : colorScheme.onPrimaryContainer,
                       ),
                     ),
@@ -125,7 +125,7 @@ class SlotListView extends StatelessWidget {
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: isBookedByOthers 
-                            ? colorScheme.onSurfaceVariant.withOpacity(0.6)
+                            ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
                             : isMyBooking
                                 ? colorScheme.primary
                                 : colorScheme.onSurface,
@@ -160,7 +160,7 @@ class SlotListView extends StatelessWidget {
                           Icon(
                             Icons.lock_outline,
                             size: 14,
-                            color: colorScheme.error.withOpacity(0.8),
+                            color: colorScheme.error.withValues(alpha: 0.8),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -168,7 +168,7 @@ class SlotListView extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: colorScheme.error.withOpacity(0.8),
+                              color: colorScheme.error.withValues(alpha: 0.8),
                             ),
                           ),
                         ],
@@ -197,7 +197,7 @@ class SlotListView extends StatelessWidget {
                 color: isMyBooking
                     ? colorScheme.primary
                     : isBookedByOthers 
-                        ? colorScheme.error.withOpacity(0.6)
+                        ? colorScheme.error.withValues(alpha: 0.6)
                         : colorScheme.primary,
               ),
             ],

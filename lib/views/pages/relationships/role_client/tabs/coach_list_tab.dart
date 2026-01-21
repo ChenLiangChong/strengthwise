@@ -1,8 +1,8 @@
 // ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/coach_management_controller.dart';
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coach_management_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
@@ -30,7 +30,7 @@ class CoachListTab extends StatefulWidget {
 
 class _CoachListTabState extends State<CoachListTab>
     with AutomaticKeepAliveClientMixin {
-  late final CoachManagementController _controller;
+  late final ICoachManagementController _controller;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -39,7 +39,7 @@ class _CoachListTabState extends State<CoachListTab>
   @override
   void initState() {
     super.initState();
-    _controller = serviceLocator<CoachManagementController>();
+    _controller = serviceLocator<ICoachManagementController>();
     _controller.loadCoaches(widget.clientId);
 
     _searchController.addListener(() {
@@ -56,7 +56,7 @@ class _CoachListTabState extends State<CoachListTab>
   /// 刷新列表
   Future<void> _refresh() async {
     // ⭐ v3.6: 透過 Controller 清除快取
-    final coachingController = serviceLocator<CoachingRelationshipController>();
+    final coachingController = serviceLocator<ICoachingRelationshipController>();
     coachingController.clearClientCache(widget.clientId);
 
     // 重新載入
@@ -178,9 +178,9 @@ class _CoachListTabState extends State<CoachListTab>
   @override
   Widget build(BuildContext context) {
     super.build(context); // ⭐ AutomaticKeepAliveClientMixin 要求
-    return ChangeNotifierProvider<CoachManagementController>.value(
+    return ChangeNotifierProvider<ICoachManagementController>.value(
       value: _controller,
-      child: Consumer<CoachManagementController>(
+      child: Consumer<ICoachManagementController>(
         builder: (context, controller, child) {
           // ⭐ 移除 AppBar，因為此頁面在 TabBarView 中使用
           return Scaffold(
@@ -233,7 +233,7 @@ class _CoachListTabState extends State<CoachListTab>
   }
 
   /// 統計卡片
-  Widget _buildStatisticsCard(CoachManagementController controller) {
+  Widget _buildStatisticsCard(ICoachManagementController controller) {
     final colorScheme = Theme.of(context).colorScheme;
     final totalCoaches = controller.coaches.length;
 
@@ -268,7 +268,7 @@ class _CoachListTabState extends State<CoachListTab>
   }
 
   /// 教練列表
-  Widget _buildCoachList(CoachManagementController controller) {
+  Widget _buildCoachList(ICoachManagementController controller) {
     if (controller.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }

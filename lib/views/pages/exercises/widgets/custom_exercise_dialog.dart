@@ -86,15 +86,16 @@ class _CustomExerciseDialogState extends State<CustomExerciseDialog> {
     super.initState();
 
     // 如果是編輯模式，預填資料
-    if (widget.exercise != null) {
-      _nameController = TextEditingController(text: widget.exercise!.name);
+    final exercise = widget.exercise;
+    if (exercise != null) {
+      _nameController = TextEditingController(text: exercise.name);
       _descriptionController =
-          TextEditingController(text: widget.exercise!.description);
-      _notesController = TextEditingController(text: widget.exercise!.notes);
-      _selectedTrainingType = widget.exercise!.trainingType;
-      _selectedBodyPart = widget.exercise!.bodyPart;
-      _selectedEquipment = widget.exercise!.equipment;
-      _selectedTrackingMode = widget.exercise!.trackingMode; // v3.2+
+          TextEditingController(text: exercise.description);
+      _notesController = TextEditingController(text: exercise.notes);
+      _selectedTrainingType = exercise.trainingType;
+      _selectedBodyPart = exercise.bodyPart;
+      _selectedEquipment = exercise.equipment;
+      _selectedTrackingMode = exercise.trackingMode; // v3.2+
     } else {
       _nameController = TextEditingController();
       _descriptionController = TextEditingController();

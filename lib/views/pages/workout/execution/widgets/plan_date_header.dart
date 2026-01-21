@@ -57,10 +57,10 @@ class PlanDateHeader extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: colorScheme.outline.withOpacity(0.5),
+                color: colorScheme.outline.withValues(alpha: 0.5),
               ),
             ),
             child: Row(
@@ -82,7 +82,7 @@ class PlanDateHeader extends StatelessWidget {
                             '開始: ',
                             style: TextStyle(
                               fontSize: 14,
-                              color: colorScheme.onSurface.withOpacity(0.6),
+                              color: colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
                           Text(
@@ -104,7 +104,7 @@ class PlanDateHeader extends StatelessWidget {
                             '結束: ',
                             style: TextStyle(
                               fontSize: 14,
-                              color: colorScheme.onSurface.withOpacity(0.6),
+                              color: colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
                           Text(
@@ -139,7 +139,7 @@ class PlanDateHeader extends StatelessWidget {
                 Icon(
                   Icons.edit_calendar_outlined,
                   size: 20,
-                  color: colorScheme.primary.withOpacity(0.6),
+                  color: colorScheme.primary.withValues(alpha: 0.6),
                 ),
               ],
             ),

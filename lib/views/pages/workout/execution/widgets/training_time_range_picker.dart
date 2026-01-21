@@ -195,7 +195,7 @@ class _TrainingTimeRangePickerState extends State<TrainingTimeRangePicker> {
               '快速選擇時長',
               style: TextStyle(
                 fontSize: 12,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -256,8 +256,8 @@ class _TrainingTimeRangePickerState extends State<TrainingTimeRangePicker> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: _errorMessage != null
-                    ? theme.colorScheme.errorContainer.withOpacity(0.3)
-                    : theme.colorScheme.primaryContainer.withOpacity(0.3),
+                    ? theme.colorScheme.errorContainer.withValues(alpha: 0.3)
+                    : theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -335,10 +335,10 @@ class _QuickDurationChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: colorScheme.primaryContainer.withOpacity(0.3),
+          color: colorScheme.primaryContainer.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: colorScheme.primary.withOpacity(0.5),
+            color: colorScheme.primary.withValues(alpha: 0.5),
           ),
         ),
         child: Text(

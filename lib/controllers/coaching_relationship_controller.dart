@@ -10,17 +10,18 @@ import '../models/user/user_model.dart';
 import '../models/invite_code_model.dart';
 import '../models/client_with_relationship.dart'; // ⭐ v3.6: MVVM
 import '../models/coach_with_relationship.dart'; // ⭐ v3.6: MVVM
-import 'event_bus_controller.dart'; // ⭐ v3.5: EventBus
+import 'interfaces/i_event_bus_controller.dart'; // ⭐ v3.5: EventBus
+import 'interfaces/i_coaching_relationship_controller.dart';
 
 /// 教練-學員關係控制器
 ///
 /// 管理教練與學員的綁定關係、邀請、查詢等業務邏輯
-class CoachingRelationshipController extends ChangeNotifier {
+class CoachingRelationshipController extends ChangeNotifier implements ICoachingRelationshipController {
   final ICoachingRelationshipService _relationshipService;
   final IUserService _userService;
   final IInviteCodeService _inviteCodeService;
   final ErrorHandlingService _errorService;
-  final EventBusController _eventBusController; // ⭐ v3.5: EventBus
+  final IEventBusController _eventBusController; // ⭐ v3.5: EventBus
 
   CoachingRelationshipController(
     this._relationshipService,
@@ -53,11 +54,17 @@ class CoachingRelationshipController extends ChangeNotifier {
   // Getters
   // ============================================================================
 
+  @override
   bool get isLoading => _isLoading;
+  @override
   String? get errorMessage => _errorMessage;
+  @override
   List<UserModel> get clients => _clients;
+  @override
   List<CoachingRelationshipModel> get pendingInvitations => _pendingInvitations;
+  @override
   List<CoachingRelationshipModel> get coaches => _coaches;
+  @override
   int get activeClientCount => _activeClientCount;
 
   // ============================================================================
@@ -68,6 +75,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   ///
   /// [coachId] 教練 ID
   /// [status] 過濾狀態（可選，預設 'active'）
+  @override
   Future<void> loadCoachClients(
     String coachId, {
     String? status = 'active',
@@ -98,6 +106,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// [coachId] 教練 ID
   /// [clientEmail] 學員 Email
   /// [notes] 備註（可選）
+  @override
   Future<bool> inviteClient(
     String coachId,
     String clientEmail,
@@ -129,6 +138,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// [clientId] 學員 ID
   /// [status] 初始狀態（預設 'active'）
   /// ⭐ v3.9: 操作成功後自動發布事件
+  @override
   Future<bool> createRelationship(
     String coachId,
     String clientId, {
@@ -167,6 +177,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   ///
   /// [relationshipId] 關係 ID
   /// [coachId] 教練 ID（用於重新載入）
+  @override
   Future<bool> archiveClient(String relationshipId, String coachId) async {
     _setLoading(true);
     _clearError();
@@ -191,6 +202,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// 適用於學員端解除綁定，不重新載入列表
   ///
   /// [relationshipId] 綁定關係 ID
+  @override
   Future<bool> archiveRelationship(String relationshipId) async {
     _setLoading(true);
     _clearError();
@@ -210,6 +222,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   ///
   /// [coachId] 教練 ID
   /// [clientId] 學員 ID
+  @override
   Future<CoachingRelationshipModel?> getRelationshipByUsers(
     String coachId,
     String clientId,
@@ -232,6 +245,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// 載入學員的待處理邀請
   ///
   /// [clientId] 學員 ID
+  @override
   Future<void> loadPendingInvitations(String clientId) async {
     _setLoading(true);
     _clearError();
@@ -253,6 +267,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   ///
   /// [clientId] 學員 ID
   /// [status] 過濾狀態（可選，預設 'active'）
+  @override
   Future<void> loadClientCoaches(
     String clientId, {
     String? status = 'active',
@@ -278,6 +293,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// [relationshipId] 關係 ID
   /// [clientId] 學員 ID（用於重新載入）
   /// ⭐ v3.9: 操作成功後自動發布事件
+  @override
   Future<bool> acceptInvitation(String relationshipId, String clientId) async {
     _setLoading(true);
     _clearError();
@@ -320,6 +336,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   ///
   /// [relationshipId] 關係 ID
   /// [clientId] 學員 ID（用於重新載入）
+  @override
   Future<bool> rejectInvitation(String relationshipId, String clientId) async {
     _setLoading(true);
     _clearError();
@@ -346,6 +363,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// 刪除綁定關係（雙方都可刪除）
   ///
   /// [relationshipId] 關係 ID
+  @override
   Future<bool> deleteRelationship(String relationshipId) async {
     _setLoading(true);
     _clearError();
@@ -374,6 +392,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   // ============================================================================
 
   /// 清除所有快取
+  @override
   void clearCache() {
     _relationshipService.clearCache();
   }
@@ -386,6 +405,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// 
   /// [currentRole] - 'coach' 或 'client'
   /// 返回 JSON 字串，包含用戶資訊
+  @override
   Future<String> generateMyQRData(String currentRole) async {
     try {
       final currentUser = await _userService.getCurrentUserProfile();
@@ -416,6 +436,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// [qrData] - 掃描到的 QR Code 內容（JSON 字串）
   /// [myRole] - 我的角色 ('coach' 或 'client')
   /// 返回：true = 成功，false = 失敗
+  @override
   Future<bool> scanAndBind({
     required String qrData,
     required String myRole,
@@ -500,6 +521,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// 驗證 QR Code 格式（不創建關係，僅返回資訊）
   /// 
   /// 用於掃描後顯示確認對話框
+  @override
   Map<String, dynamic>? validateQRCode(String qrData) {
     try {
       final Map<String, dynamic> data = jsonDecode(qrData);
@@ -535,12 +557,14 @@ class CoachingRelationshipController extends ChangeNotifier {
   ///
   /// [coachId] - 教練 ID
   /// 返回邀請碼模型（包含 code 和 expiresAt）
+  @override
   Future<InviteCodeModel?> generateInviteCode(String coachId) async {
     // ⭐ 檢查快取：如果有未過期的邀請碼，直接返回
-    if (_cachedInviteCode != null &&
-        _cachedInviteCode!.coachId == coachId &&
-        _cachedInviteCode!.isValid) {
-      return _cachedInviteCode;
+    final cached = _cachedInviteCode;
+    if (cached != null &&
+        cached.coachId == coachId &&
+        cached.isValid) {
+      return cached;
     }
 
     try {
@@ -562,6 +586,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   }
 
   /// 清除邀請碼快取（強制下次生成新的）
+  @override
   void clearInviteCodeCache() {
     _cachedInviteCode = null;
   }
@@ -571,6 +596,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   /// [code] - 邀請碼
   /// [traineeId] - 學員 ID
   /// 返回：true = 成功，false = 失敗
+  @override
   Future<bool> useInviteCode({
     required String code,
     required String traineeId,
@@ -613,6 +639,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   ///
   /// [clientId] 學員 ID
   /// 返回 true 表示有至少一個活躍教練
+  @override
   Future<bool> hasActiveCoach(String clientId) async {
     try {
       final coaches = await _relationshipService.getClientCoaches(
@@ -634,6 +661,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   ///
   /// [coachId] 教練 ID
   /// [status] 過濾狀態（可選，null = 全部）
+  @override
   Future<List<ClientWithRelationship>> getCoachClientsWithRelationship(
     String coachId, {
     String? status,
@@ -657,6 +685,7 @@ class CoachingRelationshipController extends ChangeNotifier {
   ///
   /// [clientId] 學員 ID
   /// [status] 過濾狀態（可選，null = 全部）
+  @override
   Future<List<CoachWithRelationship>> getClientCoachesWithRelationship(
     String clientId, {
     String? status,
@@ -677,6 +706,7 @@ class CoachingRelationshipController extends ChangeNotifier {
 
   /// 根據教練和學員 ID 查詢詳細綁定關係
   /// ⭐ v3.6 MVVM 重構
+  @override
   Future<CoachingRelationshipModel?> getRelationshipByUsersDetailed(
     String coachId,
     String clientId,
@@ -697,6 +727,7 @@ class CoachingRelationshipController extends ChangeNotifier {
 
   /// 取得教練的學員列表（UserModel）
   /// ⭐ v3.6 MVVM 重構
+  @override
   Future<List<UserModel>> getCoachClientsWithDetails(
     String coachId, {
     String? status,
@@ -717,6 +748,7 @@ class CoachingRelationshipController extends ChangeNotifier {
 
   /// 取得教練的學員關係列表
   /// ⭐ v3.6 MVVM 重構
+  @override
   Future<List<CoachingRelationshipModel>> getCoachClients(
     String coachId, {
     String? status,
@@ -737,6 +769,7 @@ class CoachingRelationshipController extends ChangeNotifier {
 
   /// 清除學員快取（用於強制刷新）
   /// ⭐ v3.6 MVVM 重構
+  @override
   void clearClientCache(String clientId) {
     _relationshipService.clearClientCache(clientId);
   }

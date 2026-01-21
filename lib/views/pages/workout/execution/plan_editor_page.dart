@@ -47,7 +47,7 @@ class PlanEditorPage extends StatefulWidget {
   });
 
   @override
-  _PlanEditorPageState createState() => _PlanEditorPageState();
+  State<PlanEditorPage> createState() => _PlanEditorPageState();
 }
 
 class _PlanEditorPageState extends State<PlanEditorPage> {
@@ -102,8 +102,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     // ⭐ v2.1: 設定訓練時間
     // 1. 如果調用方提供 initialStartTime（偏好時段）→ 使用該時間
     // 2. 否則使用當前時間設為預設，讓用戶自知需要修改
-    if (widget.initialStartTime != null) {
-      _trainingTime = widget.initialStartTime!;
+    final initialStartTime = widget.initialStartTime;
+    if (initialStartTime != null) {
+      _trainingTime = initialStartTime;
     } else {
       final now = DateTime.now();
       _trainingTime = DateTime(
@@ -121,8 +122,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     });
 
     // ⭐ v2.1: 設定訓練結束時間
-    if (widget.initialEndTime != null) {
-      _trainingEndTime = widget.initialEndTime!;
+    final initialEndTime = widget.initialEndTime;
+    if (initialEndTime != null) {
+      _trainingEndTime = initialEndTime;
     } else {
       _trainingEndTime = _trainingTime.add(const Duration(hours: 1));
     }
@@ -143,6 +145,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     if (selectedDate.isBefore(today)) {
       // 使用 Future.microtask 確保在 initState 之後顯示錯誤提示並返回
       Future.microtask(() {
+        if (!mounted) return;
         NotificationUtils.showError(context, '無法在過去的日期創建訓練計畫');
         Navigator.of(context).pop();
       });
@@ -179,7 +182,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     });
 
     try {
-      print('[PlanEditor] 載入現有計畫: ${widget.planId}');
+      debugPrint('[PlanEditor] 載入現有計畫: ${widget.planId}');
 
       // ⭐ v3.6: MVVM 重構 - 透過 Controller 查詢
       final record = await _workoutController.getRecordById(widget.planId!);
@@ -215,11 +218,13 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           );
         }).toList();
 
-        print('[PlanEditor] 載入完成，動作數量: ${_exercises.length}');
+        debugPrint('[PlanEditor] 載入完成，動作數量: ${_exercises.length}');
       }
     } catch (e) {
-      print('[PlanEditor] 載入失敗: $e');
-      NotificationUtils.showError(context, '載入訓練計畫失敗: $e');
+      debugPrint('[PlanEditor] 載入失敗: $e');
+      if (mounted) {
+        NotificationUtils.showError(context, '載入訓練計畫失敗: $e');
+      }
     } finally {
       setState(() {
         _isLoading = false;
@@ -244,7 +249,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         throw Exception('未登入');
       }
 
-      print('[PlanEditor] 準備保存訓練計畫，動作數量: ${_exercises.length}');
+      debugPrint('[PlanEditor] 準備保存訓練計畫，動作數量: ${_exercises.length}');
 
       // 從 WorkoutExercise 轉換為 ExerciseRecord
       // v3.2+ 支援多元追蹤模式 + 修復：正確使用 setTargets
@@ -257,9 +262,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
             exercise.sets,
             (index) {
               // ✅ 優先使用 setTargets 中的個別設定
-              if (exercise.setTargets != null &&
-                  index < exercise.setTargets!.length) {
-                final target = exercise.setTargets![index];
+              final setTargets = exercise.setTargets;
+              if (setTargets != null && index < setTargets.length) {
+                final target = setTargets[index];
                 return SetRecord(
                   setNumber: index + 1,
                   reps: (target['reps'] as num?)?.toInt() ?? exercise.reps,
@@ -296,7 +301,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
       if (widget.planId != null) {
         // 更新現有記錄
-        print('[PlanEditor] 更新現有計畫: ${widget.planId}');
+        debugPrint('[PlanEditor] 更新現有計畫: ${widget.planId}');
 
         // ⭐ v3.6: MVVM 重構 - 透過 Controller 查詢
         final existingRecord =
@@ -324,12 +329,12 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           if (!success) {
             throw Exception(_workoutController.errorMessage ?? '更新失敗');
           }
-          print('[PlanEditor] 更新完成');
+          debugPrint('[PlanEditor] 更新完成');
         }
       } else {
         // 創建新記錄
-        print('[PlanEditor] 創建新記錄');
-        print(
+        debugPrint('[PlanEditor] 創建新記錄');
+        debugPrint(
             '[PlanEditor] appointmentId: ${widget.appointmentId}'); // ⭐ v3.1 調試
 
         // ⭐ Phase 4C: 正確設置 traineeId 和 creatorId
@@ -356,7 +361,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
         // ⭐ v3.5: 透過 Controller 創建訓練記錄（Controller 會自動發布事件）
         final createdRecord = await _workoutController.createRecord(newRecord);
-        print('[PlanEditor] 創建完成: ${createdRecord.id}');
+        debugPrint('[PlanEditor] 創建完成: ${createdRecord.id}');
       }
 
       // 顯示成功通知
@@ -373,7 +378,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         Navigator.pop(context, true); // 返回 true 表示保存成功
       }
     } catch (e) {
-      print('[PlanEditor] 保存失敗: $e');
+      debugPrint('[PlanEditor] 保存失敗: $e');
 
       // ⭐ v2.1: 識別時間衝突錯誤
       if (e.toString().contains('訓練時間衝突')) {
@@ -452,7 +457,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         throw Exception('用戶未登入');
       }
 
-      print('[PlanEditor] 準備保存為模板: $templateName');
+      debugPrint('[PlanEditor] 準備保存為模板: $templateName');
 
       // 創建模板對象
       final template = WorkoutTemplate(
@@ -468,7 +473,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
 
       // ⭐ v3.5: 透過 Controller 創建模板（Controller 會自動發布事件）
       final savedTemplate = await _workoutController.createTemplate(template);
-      print('[PlanEditor] 模板已儲存: $templateName, ID: ${savedTemplate.id}');
+      debugPrint('[PlanEditor] 模板已儲存: $templateName, ID: ${savedTemplate.id}');
 
       setState(() {
         _isLoading = false;
@@ -478,8 +483,8 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         NotificationUtils.showSuccess(context, '模板保存成功');
       }
     } catch (e, stackTrace) {
-      print('[PlanEditor] 保存模板錯誤: $e');
-      print('[PlanEditor] 錯誤堆棧: $stackTrace');
+      debugPrint('[PlanEditor] 保存模板錯誤: $e');
+      debugPrint('[PlanEditor] 錯誤堆棧: $stackTrace');
 
       setState(() {
         _isLoading = false;
@@ -518,18 +523,22 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
           } else {
             // 如果不在列表中則設置為預設值
             _selectedPlanType = '全身訓練';
-            print(
+            debugPrint(
                 '[PlanEditor] ⚠️ 模板的 planType "${template.planType}" 不在列表中，已設為預設值');
           }
 
           _exercises = List.from(template.exercises);
         });
 
-        NotificationUtils.showSuccess(context, '已載入模板: ${template.title}');
+        if (mounted) {
+          NotificationUtils.showSuccess(context, '已載入模板: ${template.title}');
+        }
       }
     } catch (e) {
-      print('從模板加載錯誤: $e');
-      NotificationUtils.showError(context, '載入模板失敗: $e');
+      debugPrint('從模板加載錯誤: $e');
+      if (mounted) {
+        NotificationUtils.showError(context, '載入模板失敗: $e');
+      }
     }
   }
 
@@ -623,8 +632,9 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     double? currentDistance;
     double? currentCalories;
 
-    if (exercise.setTargets != null && setIndex < exercise.setTargets!.length) {
-      final target = exercise.setTargets![setIndex];
+    final setTargets = exercise.setTargets;
+    if (setTargets != null && setIndex < setTargets.length) {
+      final target = setTargets[setIndex];
       currentReps = target['reps'] as int? ?? exercise.reps;
       currentWeight = (target['weight'] as num?)?.toDouble() ?? exercise.weight;
       currentTime = target['time'] as int? ?? exercise.time;
@@ -734,45 +744,6 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
         setTargets: newSetTargets,
       );
     });
-  }
-
-  // 批量編輯所有組
-  // v3.2+ 支援多元追蹤模式
-  Future<void> _batchEditSets(int exerciseIndex) async {
-    final exercise = _exercises[exerciseIndex];
-    final trackingMode = exercise.trackingMode;
-
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      barrierDismissible: false, // 修復：防止點擊外部關閉
-      builder: (context) => BatchSetEditDialog(
-        initialReps: exercise.reps,
-        initialWeight: exercise.weight,
-        initialTime: exercise.time,
-        initialDistance: exercise.distance,
-        initialCalories: exercise.calories,
-        trackingMode: trackingMode, // v3.2+
-      ),
-    );
-
-    if (result != null) {
-      setState(() {
-        final newSetTargets = List.generate(
-          exercise.sets,
-          (i) => Map<String, dynamic>.from(result),
-        );
-
-        _exercises[exerciseIndex] = exercise.copyWith(
-          sets: exercise.sets,
-          reps: result['reps'] as int? ?? exercise.reps,
-          weight: (result['weight'] as num?)?.toDouble() ?? exercise.weight,
-          time: result['time'] as int?,
-          distance: (result['distance'] as num?)?.toDouble(),
-          calories: (result['calories'] as num?)?.toDouble(),
-          setTargets: newSetTargets,
-        );
-      });
-    }
   }
 
   /// 處理 inline 編輯更新（來自 PlanExerciseCard）

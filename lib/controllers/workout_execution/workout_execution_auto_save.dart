@@ -28,7 +28,7 @@ class WorkoutExecutionAutoSave {
   }) async {
     try {
       if (kDebugMode) {
-        print('[AutoSave] 自動保存打勾狀態，workoutRecordId: $workoutRecordId');
+        debugPrint('[AutoSave] 自動保存打勾狀態，workoutRecordId: $workoutRecordId');
       }
       
       // 獲取現有記錄
@@ -61,19 +61,19 @@ class WorkoutExecutionAutoSave {
         await _workoutService.updateRecord(updatedRecord);
         
         if (kDebugMode) {
-          print('[AutoSave] 自動保存成功');
+          debugPrint('[AutoSave] 自動保存成功');
         }
         return true;
       } else {
         if (kDebugMode) {
-          print('[AutoSave] 找不到訓練記錄: $workoutRecordId');
+          debugPrint('[AutoSave] 找不到訓練記錄: $workoutRecordId');
         }
         return false;
       }
     } catch (e) {
       // 靜默失敗，不影響用戶體驗
       if (kDebugMode) {
-        print('[AutoSave] 自動保存打勾狀態失敗: $e');
+        debugPrint('[AutoSave] 自動保存打勾狀態失敗: $e');
       }
       return false;
     }

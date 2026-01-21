@@ -80,14 +80,14 @@ class TrainingHistoryCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: record.isPR && isWeightBased
-                    ? Colors.amber.withOpacity(0.1)
+                    ? Colors.amber.withValues(alpha: 0.1)
                     : Theme.of(context)
                         .colorScheme
                         .onSurfaceVariant
-                        .withOpacity(0.05),
+                        .withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(8),
                 border: record.isPR && isWeightBased
-                    ? Border.all(color: Colors.amber.withOpacity(0.3))
+                    ? Border.all(color: Colors.amber.withValues(alpha: 0.3))
                     : null,
               ),
               child: Row(

@@ -9,7 +9,7 @@ import 'package:strengthwise/models/workout_template_model.dart';
 import 'package:strengthwise/models/workout_record_model.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/controllers/event_bus_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_event_bus_controller.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
@@ -42,7 +42,7 @@ class _TrainingPageState extends State<TrainingPage> {
   late final IWorkoutController _workoutController;
   late final IAuthController _authController;
   late final ErrorHandlingService _errorService;
-  late final EventBusController _eventBusController; // ⭐ v3.5
+  late final IEventBusController _eventBusController; // ⭐ v3.5
 
   StreamSubscription<AppEvent>? _eventSubscription; // ⭐ v3.5
   List<WorkoutTemplate> _templates = [];
@@ -58,7 +58,7 @@ class _TrainingPageState extends State<TrainingPage> {
     _workoutController = serviceLocator<IWorkoutController>();
     _authController = serviceLocator<IAuthController>();
     _errorService = serviceLocator<ErrorHandlingService>();
-    _eventBusController = serviceLocator<EventBusController>(); // ⭐ v3.5
+    _eventBusController = serviceLocator<IEventBusController>(); // ⭐ v3.5
 
     // ⭐ v3.5: 訂閱模板相關事件
     _eventSubscription = _eventBusController.templateEvents.listen(_onAppEvent);
@@ -193,7 +193,7 @@ class _TrainingPageState extends State<TrainingPage> {
       final trainingStart = result['start']!;
       final trainingEnd = result['end']!;
 
-      print(
+      debugPrint(
           '[TrainingPage] 從模板創建今日訓練: ${template.title}，時間: $trainingStart - $trainingEnd');
 
       // 從模板創建動作列表
@@ -243,7 +243,7 @@ class _TrainingPageState extends State<TrainingPage> {
         );
       }
     } catch (e) {
-      print('[TrainingPage] 創建今日訓練失敗: $e');
+      debugPrint('[TrainingPage] 創建今日訓練失敗: $e');
       if (mounted) {
         _errorService.handleError(context, e);
       }
@@ -274,7 +274,7 @@ class _TrainingPageState extends State<TrainingPage> {
       final trainingStart = result['start']!;
       final trainingEnd = result['end']!;
 
-      print(
+      debugPrint(
           '[TrainingPage] 從模板創建訓練: ${template.title}，時間: $trainingStart - $trainingEnd');
 
       // 從模板創建動作列表

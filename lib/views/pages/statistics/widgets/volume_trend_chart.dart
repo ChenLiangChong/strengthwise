@@ -39,7 +39,7 @@ class VolumeTrendChart extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.show_chart,
@@ -68,7 +68,7 @@ class VolumeTrendChart extends StatelessWidget {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurfaceVariant
-                            .withOpacity(0.2),
+                            .withValues(alpha: 0.2),
                         strokeWidth: 1,
                       );
                     },
@@ -140,14 +140,14 @@ class VolumeTrendChart extends StatelessWidget {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurfaceVariant
-                            .withOpacity(0.2),
+                            .withValues(alpha: 0.2),
                         width: 1,
                       ),
                       left: BorderSide(
                         color: Theme.of(context)
                             .colorScheme
                             .onSurfaceVariant
-                            .withOpacity(0.2),
+                            .withValues(alpha: 0.2),
                         width: 1,
                       ),
                     ),
@@ -179,8 +179,8 @@ class VolumeTrendChart extends StatelessWidget {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.blue.withOpacity(0.3),
-                            Colors.blue.withOpacity(0.05),
+                            Colors.blue.withValues(alpha: 0.3),
+                            Colors.blue.withValues(alpha: 0.05),
                           ],
                         ),
                       ),
@@ -189,7 +189,7 @@ class VolumeTrendChart extends StatelessWidget {
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
                       getTooltipColor: (touchedSpot) =>
-                          Colors.blueGrey.withOpacity(0.8),
+                          Colors.blueGrey.withValues(alpha: 0.8),
                       getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                         return touchedBarSpots.map((barSpot) {
                           final point = history[barSpot.x.toInt()];

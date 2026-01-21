@@ -337,10 +337,10 @@ class WorkoutRecordOperations {
         recordData['training_time_range'] = rangeStr;
 
         // ⭐ Debug
-        print('[WORKOUT_OPERATIONS] ⏰ 時間範圍:');
-        print('  開始: ${record.date}');
-        print('  結束: ${record.trainingEndTime}');
-        print('  範圍: $rangeStr');
+        debugPrint('[WORKOUT_OPERATIONS] ⏰ 時間範圍:');
+        debugPrint('  開始: ${record.date}');
+        debugPrint('  結束: ${record.trainingEndTime}');
+        debugPrint('  範圍: $rangeStr');
       } else {
         // 沒有結束時間，假設 1 小時
         recordData['training_time_range'] = DateTimeUtils.formatToTstzRange(

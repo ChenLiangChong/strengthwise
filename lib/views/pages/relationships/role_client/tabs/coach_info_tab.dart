@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/user/user_model.dart';
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/views/pages/profile/widgets/coach/coach_profile_content.dart';
@@ -241,7 +241,7 @@ class _DangerZone extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
 
     final relationshipController =
-        serviceLocator<CoachingRelationshipController>();
+        serviceLocator<ICoachingRelationshipController>();
     final relationship = await relationshipController.getRelationshipByUsers(
       coach.uid,
       clientId,

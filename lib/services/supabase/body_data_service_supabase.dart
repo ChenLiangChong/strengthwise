@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/body_data_record.dart';
 import '../interfaces/i_body_data_service.dart';
@@ -100,12 +101,12 @@ class BodyDataServiceSupabase implements IBodyDataService {
 
   /// 記錄調試信息
   void _logDebug(String message) {
-    print('[BODY_DATA_SERVICE] $message');
+    debugPrint('[BODY_DATA_SERVICE] $message');
   }
 
   /// 記錄錯誤信息
   void _logError(String message, [Object? error]) {
-    print('[BODY_DATA_SERVICE ERROR] $message${error != null ? ": $error" : ""}');
+    debugPrint('[BODY_DATA_SERVICE ERROR] $message${error != null ? ": $error" : ""}');
     _errorService?.logError(message, type: 'BodyDataServiceError');
   }
 }

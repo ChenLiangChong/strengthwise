@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../../controllers/profile_controller.dart';
+import '../../../../controllers/interfaces/i_profile_controller.dart';
 import '../../../../utils/notification_utils.dart';
 
 /// 設置密碼對話框（為 OAuth 用戶啟用 Email 登入）
 /// Material 3 設計
 class SetPasswordDialog extends StatefulWidget {
-  final ProfileController controller;
+  final IProfileController controller;
   
   const SetPasswordDialog({
     super.key,

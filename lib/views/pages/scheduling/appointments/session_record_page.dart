@@ -8,8 +8,8 @@ import 'package:strengthwise/models/session_note/session_note_model.dart';
 import 'package:strengthwise/models/readiness/daily_readiness_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart'; // ⭐ v3.6: MVVM
-import 'package:strengthwise/controllers/session_note_controller.dart'; // ⭐ v3.6: MVVM
-import 'package:strengthwise/controllers/appointment_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_session_note_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_appointment_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/views/pages/session/widgets/readiness_card.dart';
 
@@ -35,8 +35,8 @@ class SessionRecordPage extends StatefulWidget {
 class _SessionRecordPageState extends State<SessionRecordPage> {
   // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
   late final IWorkoutController _workoutController;
-  late final SessionNoteController _sessionNoteController;
-  late final AppointmentController _appointmentController;
+  late final ISessionNoteController _sessionNoteController;
+  late final IAppointmentController _appointmentController;
   late final ErrorHandlingService _errorService;
 
   bool _isLoading = true;
@@ -48,8 +48,8 @@ class _SessionRecordPageState extends State<SessionRecordPage> {
   void initState() {
     super.initState();
     _workoutController = serviceLocator<IWorkoutController>();
-    _sessionNoteController = serviceLocator<SessionNoteController>();
-    _appointmentController = serviceLocator<AppointmentController>();
+    _sessionNoteController = serviceLocator<ISessionNoteController>();
+    _appointmentController = serviceLocator<IAppointmentController>();
     _errorService = serviceLocator<ErrorHandlingService>();
     _loadData();
   }
@@ -218,7 +218,8 @@ class _SessionRecordPageState extends State<SessionRecordPage> {
 
   /// 訓練記錄區塊
   Widget _buildWorkoutSection(ThemeData theme, ColorScheme colorScheme) {
-    if (_workoutRecord == null) {
+    final workoutRecord = _workoutRecord;
+    if (workoutRecord == null) {
       return Card(
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -247,7 +248,7 @@ class _SessionRecordPageState extends State<SessionRecordPage> {
       );
     }
 
-    final exerciseRecords = _workoutRecord!.exerciseRecords;
+    final exerciseRecords = workoutRecord.exerciseRecords;
 
     // 計算統計數據
     final totalSets = exerciseRecords.fold<int>(
@@ -315,7 +316,7 @@ class _SessionRecordPageState extends State<SessionRecordPage> {
                 _buildStatItem(
                   context,
                   '時長',
-                  '${_workoutRecord!.elapsedSeconds ~/ 60} 分',
+                  '${workoutRecord.elapsedSeconds ~/ 60} 分',
                   Icons.timer,
                 ),
               ],
@@ -393,6 +394,15 @@ class _SessionRecordPageState extends State<SessionRecordPage> {
 
   /// 課程筆記區塊
   Widget _buildNotesSection(ThemeData theme, ColorScheme colorScheme) {
+    final sessionNote = _sessionNote;
+    if (sessionNote == null) return const SizedBox.shrink();
+
+    final soap = sessionNote.soap;
+    final subjective = soap?.subjective;
+    final objective = soap?.objective;
+    final assessment = soap?.assessment;
+    final plan = soap?.plan;
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -417,16 +427,16 @@ class _SessionRecordPageState extends State<SessionRecordPage> {
               ],
             ),
             const SizedBox(height: 12),
-            
+
             // SOAP 格式顯示
-            if (_sessionNote!.soap?.subjective?.isNotEmpty == true)
-              _buildSoapField(theme, 'S - 主觀', _sessionNote!.soap!.subjective!),
-            if (_sessionNote!.soap?.objective?.isNotEmpty == true)
-              _buildSoapField(theme, 'O - 客觀', _sessionNote!.soap!.objective!),
-            if (_sessionNote!.soap?.assessment?.isNotEmpty == true)
-              _buildSoapField(theme, 'A - 評估', _sessionNote!.soap!.assessment!),
-            if (_sessionNote!.soap?.plan?.isNotEmpty == true)
-              _buildSoapField(theme, 'P - 計劃', _sessionNote!.soap!.plan!),
+            if (subjective != null && subjective.isNotEmpty)
+              _buildSoapField(theme, 'S - 主觀', subjective),
+            if (objective != null && objective.isNotEmpty)
+              _buildSoapField(theme, 'O - 客觀', objective),
+            if (assessment != null && assessment.isNotEmpty)
+              _buildSoapField(theme, 'A - 評估', assessment),
+            if (plan != null && plan.isNotEmpty)
+              _buildSoapField(theme, 'P - 計劃', plan),
           ],
         ),
       ),

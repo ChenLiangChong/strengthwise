@@ -58,13 +58,13 @@ class StatisticsLocalCacheService {
           _isInitialized = true;
           _isInitializing = false;
           if (kDebugMode) {
-            print('[STATISTICS_CACHE] 本地快取初始化完成');
+            debugPrint('[STATISTICS_CACHE] 本地快取初始化完成');
           }
           return;
         } catch (e) {
           retryCount++;
           if (kDebugMode) {
-            print('[STATISTICS_CACHE] 初始化失敗 (第 $retryCount/$maxRetries 次): $e');
+            debugPrint('[STATISTICS_CACHE] 初始化失敗 (第 $retryCount/$maxRetries 次): $e');
           }
 
           if (e.toString().contains('lock failed') ||
@@ -76,14 +76,14 @@ class StatisticsLocalCacheService {
               await Future.delayed(Duration(milliseconds: 500 * retryCount));
             } catch (cleanupError) {
               if (kDebugMode) {
-                print('[STATISTICS_CACHE] 清理失敗: $cleanupError');
+                debugPrint('[STATISTICS_CACHE] 清理失敗: $cleanupError');
               }
             }
           }
 
           if (retryCount >= maxRetries) {
             if (kDebugMode) {
-              print('[STATISTICS_CACHE] ⚠️ 初始化失敗，將使用無快取模式');
+              debugPrint('[STATISTICS_CACHE] ⚠️ 初始化失敗，將使用無快取模式');
             }
             _box = null;
             _isInitialized = true; // 標記為已嘗試初始化
@@ -94,7 +94,7 @@ class StatisticsLocalCacheService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[STATISTICS_CACHE] 初始化過程發生錯誤: $e');
+        debugPrint('[STATISTICS_CACHE] 初始化過程發生錯誤: $e');
       }
       _box = null;
       _isInitialized = true; // 標記為已嘗試初始化
@@ -109,7 +109,7 @@ class StatisticsLocalCacheService {
     final cachedVersion = _box!.get(_versionKey, defaultValue: 0);
     if (cachedVersion != currentCacheVersion) {
       if (kDebugMode) {
-        print('[STATISTICS_CACHE] 快取版本不符，清除舊快取');
+        debugPrint('[STATISTICS_CACHE] 快取版本不符，清除舊快取');
       }
       _box!.clear();
       _box!.put(_versionKey, currentCacheVersion);
@@ -155,7 +155,7 @@ class StatisticsLocalCacheService {
     final isValid = now.difference(lastUpdate) < cacheValidDuration;
 
     if (kDebugMode && isValid) {
-      print('[STATISTICS_CACHE] ✅ 快取有效：$userId - ${timeRange.displayName}');
+      debugPrint('[STATISTICS_CACHE] ✅ 快取有效：$userId - ${timeRange.displayName}');
     }
 
     return isValid;
@@ -177,13 +177,13 @@ class StatisticsLocalCacheService {
       final data = StatisticsDataJson.fromJson(json);
 
       if (kDebugMode) {
-        print('[STATISTICS_CACHE] 📦 從快取載入：${timeRange.displayName}');
+        debugPrint('[STATISTICS_CACHE] 📦 從快取載入：${timeRange.displayName}');
       }
 
       return data;
     } catch (e) {
       if (kDebugMode) {
-        print('[STATISTICS_CACHE] ⚠️ 解析快取失敗：$e');
+        debugPrint('[STATISTICS_CACHE] ⚠️ 解析快取失敗：$e');
       }
       // 解析失敗，刪除損壞的快取
       _box!.delete(dataKey);
@@ -239,11 +239,11 @@ class StatisticsLocalCacheService {
           .put(lastUpdateKey, DateTimeUtils.formatToUtcIso(DateTime.now()));
 
       if (kDebugMode) {
-        print('[STATISTICS_CACHE] 💾 已儲存：${timeRange.displayName}');
+        debugPrint('[STATISTICS_CACHE] 💾 已儲存：${timeRange.displayName}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[STATISTICS_CACHE] ⚠️ 儲存失敗：$e');
+        debugPrint('[STATISTICS_CACHE] ⚠️ 儲存失敗：$e');
       }
     }
   }
@@ -265,7 +265,7 @@ class StatisticsLocalCacheService {
     }
 
     if (kDebugMode) {
-      print('[STATISTICS_CACHE] 🗑️ 已清除用戶快取：$userId');
+      debugPrint('[STATISTICS_CACHE] 🗑️ 已清除用戶快取：$userId');
     }
   }
 
@@ -277,7 +277,7 @@ class StatisticsLocalCacheService {
     await _box!.put(_versionKey, currentCacheVersion);
 
     if (kDebugMode) {
-      print('[STATISTICS_CACHE] 🗑️ 已清除所有快取');
+      debugPrint('[STATISTICS_CACHE] 🗑️ 已清除所有快取');
     }
   }
 
@@ -318,7 +318,7 @@ class StatisticsLocalCacheService {
     }
 
     if (kDebugMode && result.isNotEmpty) {
-      print('[STATISTICS_CACHE] 🔥 預熱完成：${result.length} 個時間範圍');
+      debugPrint('[STATISTICS_CACHE] 🔥 預熱完成：${result.length} 個時間範圍');
     }
 
     return result;

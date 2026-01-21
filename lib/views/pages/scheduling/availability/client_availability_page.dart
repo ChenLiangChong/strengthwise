@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
-import 'package:strengthwise/controllers/client_availability_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_client_availability_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/models/client_availability_model.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
@@ -53,7 +53,7 @@ class ClientAvailabilityPage extends StatefulWidget {
 
 class _ClientAvailabilityPageState extends State<ClientAvailabilityPage>
     with CopyWeekSlotsMixin {
-  late final ClientAvailabilityController _controller;
+  late final IClientAvailabilityController _controller;
   late final IAuthController _authController;
 
   // 篩選條件
@@ -69,7 +69,7 @@ class _ClientAvailabilityPageState extends State<ClientAvailabilityPage>
   @override
   void initState() {
     super.initState();
-    _controller = serviceLocator<ClientAvailabilityController>();
+    _controller = serviceLocator<IClientAvailabilityController>();
     _authController = serviceLocator<IAuthController>();
     _loadAvailability();
 
@@ -250,7 +250,7 @@ class _ClientAvailabilityPageState extends State<ClientAvailabilityPage>
                 },
               )
             : null, // ⭐ 嵌入 Tab 時不顯示 AppBar
-        body: Consumer<ClientAvailabilityController>(
+        body: Consumer<IClientAvailabilityController>(
           builder: (context, controller, child) {
             // ⚡ 載入中使用骨架屏
             if (controller.isLoading) {

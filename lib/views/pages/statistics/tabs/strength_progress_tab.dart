@@ -176,7 +176,7 @@ class _StrengthProgressTabState extends State<StrengthProgressTab> {
         // 提示卡片
         Card(
           margin: const EdgeInsets.all(16),
-          color: Colors.blue.withOpacity(0.1),
+          color: Colors.blue.withValues(alpha: 0.1),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(

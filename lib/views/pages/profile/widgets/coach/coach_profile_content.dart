@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/coach_profile/coach_profile_model.dart';
 import 'package:strengthwise/models/coach_profile/coach_specialty.dart';
-import 'package:strengthwise/controllers/coach_profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coach_profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/profile/coach_profile_form_page.dart';
 
@@ -78,7 +78,7 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
 
     try {
       // ⭐ v3.6: 透過 CoachProfileController 查詢
-      final coachProfileController = serviceLocator<CoachProfileController>();
+      final coachProfileController = serviceLocator<ICoachProfileController>();
       final profile = await coachProfileController.getCoachProfileById(widget.coachId);
       if (mounted) {
         setState(() {
@@ -117,7 +117,8 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
       );
     }
 
-    if (_profile == null) {
+    final profile = _profile;
+    if (profile == null) {
       return _EmptyState(
         title: widget.emptyStateTitle,
         subtitle: widget.emptyStateSubtitle,
@@ -126,6 +127,9 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
       );
     }
 
+    final bio = profile.bio;
+    final email = widget.email;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -133,13 +137,13 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
         children: [
           // 頭像與基本資訊
           _ProfileHeaderCard(
-            profile: _profile!,
+            profile: profile,
             photoUrl: widget.photoUrl,
           ),
           const SizedBox(height: 24),
 
           // 聯絡資訊
-          if (widget.showContactInfo && widget.email != null) ...[
+          if (widget.showContactInfo && email != null) ...[
             _SectionContainer(
               title: '聯絡資訊',
               icon: Icons.contact_mail,
@@ -147,7 +151,7 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
                 _InfoRow(
                   icon: Icons.email_outlined,
                   label: 'Email',
-                  value: widget.email!,
+                  value: email,
                 ),
               ],
             ),
@@ -155,13 +159,13 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
           ],
 
           // 關於我
-          if (_profile!.bio != null && _profile!.bio!.isNotEmpty) ...[
+          if (bio != null && bio.isNotEmpty) ...[
             _SectionContainer(
               title: '關於我',
               icon: Icons.person_outline,
               children: [
                 Text(
-                  _profile!.bio!,
+                  bio,
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ],
@@ -170,7 +174,7 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
           ],
 
           // 專長領域
-          if (_profile!.specialties.isNotEmpty) ...[
+          if (profile.specialties.isNotEmpty) ...[
             _SectionContainer(
               title: '專長領域',
               icon: Icons.fitness_center,
@@ -178,7 +182,7 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _profile!.specialties
+                  children: profile.specialties
                       .map((tag) => _SpecialtyChip(tag: tag))
                       .toList(),
                 ),
@@ -188,11 +192,11 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
           ],
 
           // 專業證照
-          if (_profile!.certifications.isNotEmpty) ...[
+          if (profile.certifications.isNotEmpty) ...[
             _SectionContainer(
               title: '專業證照',
               icon: Icons.workspace_premium,
-              children: _profile!.certifications
+              children: profile.certifications
                   .map((cert) => _CertificationTile(certification: cert))
                   .toList(),
             ),
@@ -207,16 +211,16 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
               _InfoRow(
                 icon: Icons.work_history_outlined,
                 label: '從業年資',
-                value: _profile!.yearsExperience > 0
-                    ? '${_profile!.yearsExperience} 年'
+                value: profile.yearsExperience > 0
+                    ? '${profile.yearsExperience} 年'
                     : '未設定',
               ),
               const SizedBox(height: 12),
               _InfoRow(
                 icon: Icons.language,
                 label: '教學語言',
-                value: _profile!.languages.isNotEmpty
-                    ? _profile!.languages.map(_getLanguageLabel).join('、')
+                value: profile.languages.isNotEmpty
+                    ? profile.languages.map(_getLanguageLabel).join('、')
                     : '未設定',
               ),
             ],
@@ -324,8 +328,7 @@ class _ProfileHeaderCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (profile.headline != null &&
-                    profile.headline!.isNotEmpty) ...[
+                if (profile.headline?.isNotEmpty == true) ...[
                   const SizedBox(height: 4),
                   Text(
                     profile.headline!,
@@ -398,7 +401,7 @@ class _SectionContainer extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),

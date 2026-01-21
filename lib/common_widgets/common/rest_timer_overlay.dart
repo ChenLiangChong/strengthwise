@@ -144,7 +144,7 @@ class _RestTimerWidget extends StatelessWidget {
                   color: (isFinished
                           ? const Color(0xFF81C784)
                           : Colors.black)
-                      .withOpacity(0.3),
+                      .withValues(alpha: 0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -241,7 +241,7 @@ class _RestTimerWidget extends StatelessWidget {
         Text(
           isFinished ? '準備好開始下一組' : '剩餘休息時間',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
             fontSize: 12,
           ),
         ),

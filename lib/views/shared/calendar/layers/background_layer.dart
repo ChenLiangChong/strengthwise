@@ -62,7 +62,7 @@ class BackgroundLayer implements CalendarLayer {
     return Container(
       margin: margin,
       decoration: BoxDecoration(
-        color: bgColor.withOpacity(opacity),
+        color: bgColor.withValues(alpha: opacity),
         border: borderColor != null
             ? Border.all(color: borderColor, width: 1.0)
             : null,

@@ -2,12 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:strengthwise/controllers/session_mode_controller.dart';
-import 'package:strengthwise/controllers/drawing_controller.dart';
-import 'package:strengthwise/controllers/session_note_controller.dart';
+import 'package:strengthwise/themes/app_theme.dart';
+import 'package:strengthwise/controllers/interfaces/i_session_mode_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_drawing_controller.dart';
+import 'package:strengthwise/services/locator/controller_registry.dart';
+import 'package:strengthwise/controllers/interfaces/i_session_note_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/services/interfaces/i_drawing_service.dart';
-import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/session/tabs/session_execution_tab.dart';
 import 'package:strengthwise/views/pages/workout/execution/workout_execution_content.dart';
@@ -65,15 +65,17 @@ class SessionModePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => SessionModeController(
-        appointmentId: appointmentId,
-        clientId: clientId,
-        clientName: clientName,
-        sessionStartTime: sessionStartTime,
-        sessionEndTime: sessionEndTime,
-        workoutPlanId: workoutPlanId,
-        isCoachMode: isCoachMode,
+    return ChangeNotifierProvider<ISessionModeController>(
+      create: (_) => serviceLocator<ISessionModeController>(
+        param1: SessionModeParams(
+          appointmentId: appointmentId,
+          clientId: clientId,
+          clientName: clientName,
+          sessionStartTime: sessionStartTime,
+          sessionEndTime: sessionEndTime,
+          workoutPlanId: workoutPlanId,
+          isCoachMode: isCoachMode,
+        ),
       ),
       child: _SessionModeContent(isCoachMode: isCoachMode),
     );
@@ -115,7 +117,7 @@ class _SessionModeContentState extends State<_SessionModeContent>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Consumer<SessionModeController>(
+    return Consumer<ISessionModeController>(
       builder: (context, controller, child) {
         return Scaffold(
           appBar: AppBar(
@@ -232,7 +234,7 @@ class _SessionModeContentState extends State<_SessionModeContent>
   }
 
   /// 標題（顯示學員名稱和課程時間）
-  Widget _buildTitle(SessionModeController controller) {
+  Widget _buildTitle(ISessionModeController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -253,7 +255,7 @@ class _SessionModeContentState extends State<_SessionModeContent>
   }
 
   /// 格式化課程時間
-  String _formatSessionTime(SessionModeController controller) {
+  String _formatSessionTime(ISessionModeController controller) {
     final start = controller.sessionStartTime;
     final end = controller.sessionEndTime;
     return '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')} - '
@@ -263,7 +265,7 @@ class _SessionModeContentState extends State<_SessionModeContent>
   /// ⭐ v3.1.1: 課程已完成提示橫幅
   Widget _buildSessionCompletedBanner(
     BuildContext context,
-    SessionModeController controller,
+    ISessionModeController controller,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final remainingMinutes = controller.remainingEditMinutes;
@@ -322,7 +324,7 @@ class _SessionModeContentState extends State<_SessionModeContent>
   /// 結束課程對話框
   Future<void> _showEndSessionDialog(
     BuildContext context,
-    SessionModeController controller,
+    ISessionModeController controller,
   ) async {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -408,7 +410,7 @@ class _SessionModeContentState extends State<_SessionModeContent>
 
   /// SOAP 填寫狀態
   Widget _buildSoapStatus(
-    SessionModeController controller,
+    ISessionModeController controller,
     ColorScheme colorScheme,
   ) {
     final soapStatus = controller.soapStatus;
@@ -417,7 +419,7 @@ class _SessionModeContentState extends State<_SessionModeContent>
     if (allFilled) {
       return const Row(
         children: [
-          Icon(Icons.check_circle, color: Color(0xFF10B981), size: 20),
+          Icon(Icons.check_circle, color: AppTheme.successLight, size: 20),
           SizedBox(width: 8),
           Text('SOAP 筆記已填寫完成'),
         ],
@@ -427,10 +429,10 @@ class _SessionModeContentState extends State<_SessionModeContent>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF59E0B).withValues(alpha: 0.1), // Warning
+        color: AppTheme.warningLight.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border:
-            Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
+            Border.all(color: AppTheme.warningLight.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,7 +440,7 @@ class _SessionModeContentState extends State<_SessionModeContent>
           const Row(
             children: [
               Icon(Icons.warning_amber,
-                  color: Color(0xFFF59E0B), size: 20),
+                  color: AppTheme.warningLight, size: 20),
               SizedBox(width: 8),
               Text('SOAP 筆記尚未填寫完成'),
             ],
@@ -464,11 +466,11 @@ class _SessionModeContentState extends State<_SessionModeContent>
       avatar: Icon(
         filled ? Icons.check : Icons.close,
         size: 16,
-        color: filled ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+        color: filled ? AppTheme.successLight : AppTheme.errorRed,
       ),
       backgroundColor: filled
-          ? const Color(0xFF10B981).withValues(alpha: 0.1) // Success
-          : const Color(0xFFEF4444).withValues(alpha: 0.1), // Error
+          ? AppTheme.successLight.withValues(alpha: 0.1)
+          : AppTheme.errorRed.withValues(alpha: 0.1),
       padding: EdgeInsets.zero,
       visualDensity: VisualDensity.compact,
     );
@@ -477,7 +479,7 @@ class _SessionModeContentState extends State<_SessionModeContent>
   /// ⭐ v3.1: 處理照相功能
   Future<void> _handlePhoto(
     BuildContext context,
-    SessionModeController controller,
+    ISessionModeController controller,
   ) async {
     // 確認有 Session Note
     if (controller.sessionNoteId == null) {
@@ -510,10 +512,11 @@ class _SessionModeContentState extends State<_SessionModeContent>
       if (pickedFile == null) return;
 
       final file = File(pickedFile.path);
-      final noteController = serviceLocator<SessionNoteController>();
+      final noteController = serviceLocator<ISessionNoteController>();
       final authController = serviceLocator<IAuthController>();
 
-      if (authController.user == null) {
+      final user = authController.user;
+      if (user == null) {
         throw Exception('用戶未登入');
       }
 
@@ -528,7 +531,7 @@ class _SessionModeContentState extends State<_SessionModeContent>
       }
 
       final url = await noteController.uploadPhoto(
-        coachId: authController.user!.uid,
+        coachId: user.uid,
         clientId: controller.clientId,
         file: file,
       );
@@ -579,17 +582,14 @@ class _SessionModeContentState extends State<_SessionModeContent>
   /// 導航到繪圖畫布
   void _navigateToDrawingCanvas(
     BuildContext context,
-    SessionModeController controller,
+    ISessionModeController controller,
     String templateType,
   ) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ChangeNotifierProvider<DrawingController>(
-          create: (_) => DrawingController(
-            serviceLocator<IDrawingService>(),
-            serviceLocator<ErrorHandlingService>(),
-          ),
+        builder: (context) => ChangeNotifierProvider<IDrawingController>(
+          create: (_) => serviceLocator<IDrawingController>(),
           child: DrawingCanvasPage(
             sessionNoteId: controller.sessionNoteId!,
             templateType: templateType,
@@ -602,7 +602,7 @@ class _SessionModeContentState extends State<_SessionModeContent>
   /// 導航到課前問卷填寫頁面 ⭐ v3.1
   void _navigateToReadinessForm(
     BuildContext context,
-    SessionModeController controller,
+    ISessionModeController controller,
   ) {
     Navigator.push(
       context,

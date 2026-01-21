@@ -2,7 +2,7 @@
 
 > 專案架構、技術棧、目錄結構
 
-**最後更新**：2026-01-17
+**最後更新**：2026-01-20
 
 ---
 
@@ -12,8 +12,8 @@
 
 | 項目 | 內容 |
 |------|------|
-| 當前版本 | v4.0（完成 - 跨用戶即時同步 + FCM 完善）|
-| 上一版本 | v3.9（跨用戶即時同步 + BookingPage 優化）|
+| 當前版本 | v4.2（完成 - 效能優化）|
+| 上一版本 | v4.1（Service 單元測試）|
 | 主要功能 | 個人健身記錄 + 教練學員管理平台 |
 | 目標平台 | Android / iOS / Windows / Web |
 
@@ -27,10 +27,11 @@
 
 核心組件：
 ├── Pages：65+
-├── Controllers：22+（含 70 子模組）
-├── Services：56+（含 Realtime、Onboarding）
-├── Models：67+
-└── Widgets：202+（含 Coach Mark）
+├── Controllers：29（含 70+ 子模組）
+├── Services：60+（含 Realtime、Notification）
+├── Interfaces：25 Controller + 20+ Service
+├── Models：73+
+└── Widgets：234+（含 Coach Mark）
 ```
 
 ---
@@ -53,7 +54,7 @@ Flutter (Dart SDK >=3.1.0, Flutter >=3.16.0)
 ```
 Supabase (PostgreSQL 14+)
 ├── Authentication：Supabase Auth + Google Sign-In
-├── Database：PostgreSQL（19 個表格）
+├── Database：PostgreSQL（24 個表格）
 ├── Storage：檔案儲存（照片、手繪圖）
 ├── Realtime：即時訂閱
 └── 安全性：Row Level Security (RLS) - 50+ 策略

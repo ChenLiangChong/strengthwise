@@ -11,10 +11,11 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
-import 'package:strengthwise/controllers/event_bus_controller.dart';
-import 'package:strengthwise/controllers/appointment_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_event_bus_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_appointment_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_statistics_controller.dart'; // ⭐ v3.6: MVVM
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart';
 import 'package:strengthwise/services/core/app_event_bus.dart';
 import 'package:strengthwise/models/user_model.dart';
 import 'package:strengthwise/models/appointment_model.dart';
@@ -45,23 +46,22 @@ import 'package:strengthwise/views/pages/scheduling/appointments/widgets/adhoc_s
 import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/views/widgets/onboarding/coach_mark_helper.dart';
 import 'package:strengthwise/views/widgets/current_page_provider.dart';
-import 'package:strengthwise/controllers/profile_controller.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  _HomePageState createState() => _HomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   late final IAuthController _authController;
   late final IWorkoutController _workoutController;
-  late final ProfileController _profileController;
-  late final EventBusController _eventBusController;
-  late final AppointmentController _appointmentController;
+  late final IProfileController _profileController;
+  late final IEventBusController _eventBusController;
+  late final IAppointmentController _appointmentController;
   late final IStatisticsController _statisticsController; // ⭐ v3.6: MVVM
-  late final CoachingRelationshipController _coachingController; // ⭐ v3.6: MVVM
+  late final ICoachingRelationshipController _coachingController; // ⭐ v3.6: MVVM
 
   // ⭐ v3.5: 事件訂閱
   StreamSubscription<AppEvent>? _eventSubscription;
@@ -97,11 +97,11 @@ class _HomePageState extends State<HomePage> {
     // ⭐ v3.6: MVVM 重構 - 只使用 Controller，不直接使用 Service
     _authController = serviceLocator<IAuthController>();
     _workoutController = serviceLocator<IWorkoutController>();
-    _profileController = serviceLocator<ProfileController>();
-    _eventBusController = serviceLocator<EventBusController>();
-    _appointmentController = serviceLocator<AppointmentController>();
+    _profileController = serviceLocator<IProfileController>();
+    _eventBusController = serviceLocator<IEventBusController>();
+    _appointmentController = serviceLocator<IAppointmentController>();
     _statisticsController = serviceLocator<IStatisticsController>();
-    _coachingController = serviceLocator<CoachingRelationshipController>();
+    _coachingController = serviceLocator<ICoachingRelationshipController>();
 
     // ⭐ v3.2: 監聯 ProfileController 變化（教練模式切換時刷新）
     _profileController.addListener(_onProfileChanged);
@@ -147,7 +147,7 @@ class _HomePageState extends State<HomePage> {
       await _statisticsController.warmupFromLocalCache(user.uid);
     } catch (e) {
       if (kDebugMode) {
-        print('[HomePage] ⚠️ 統計快取預熱失敗: $e');
+        debugPrint('[HomePage] ⚠️ 統計快取預熱失敗: $e');
       }
     }
   }
@@ -165,12 +165,12 @@ class _HomePageState extends State<HomePage> {
 
     // ⭐ Phase 3.1-B: 用戶資料載入後，根據身份載入教練數據
     if (kDebugMode) {
-      print('[HomePage] 🔍 檢查教練身份：isCoach = ${_userProfile?.isCoach}');
-      print('[HomePage] 🔍 檢查是否有教練：hasCoach = $_hasCoach');
+      debugPrint('[HomePage] 🔍 檢查教練身份：isCoach = ${_userProfile?.isCoach}');
+      debugPrint('[HomePage] 🔍 檢查是否有教練：hasCoach = $_hasCoach');
     }
     if (_userProfile?.isCoach == true) {
       if (kDebugMode) {
-        print('[HomePage] ✅ 用戶是教練，開始載入教練數據...');
+        debugPrint('[HomePage] ✅ 用戶是教練，開始載入教練數據...');
       }
       await Future.wait([
         _loadTodayCoachSessions(), // 今日要教的課
@@ -178,12 +178,12 @@ class _HomePageState extends State<HomePage> {
       ], eagerError: false);
     } else {
       if (kDebugMode) {
-        print('[HomePage] ⏭️ 用戶不是教練，跳過教練數據載入');
+        debugPrint('[HomePage] ⏭️ 用戶不是教練，跳過教練數據載入');
       }
     }
 
     if (kDebugMode) {
-      print('[HomePage] ✅ 首頁關鍵數據載入完成');
+      debugPrint('[HomePage] ✅ 首頁關鍵數據載入完成');
     }
 
     // ⭐ v3.2: 檢查 Coach Mark 引導
@@ -370,7 +370,7 @@ class _HomePageState extends State<HomePage> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[HomePage] ⚠️ 檢查教練綁定失敗: $e');
+        debugPrint('[HomePage] ⚠️ 檢查教練綁定失敗: $e');
       }
     }
   }
@@ -380,13 +380,14 @@ class _HomePageState extends State<HomePage> {
   /// v3.1.1 優化：直接並行預載入所有時間範圍，不阻塞首頁
   /// ⭐ Phase 1 優化：確保只執行一次
   /// ⭐ v3.6: MVVM 重構 - 透過 Controller 操作
-  static bool _hasPreloadedStatistics = false;
+  /// ⭐ v4.3: 移除 static，修復帳戶切換時不重新預載入的問題
+  bool _hasPreloadedStatistics = false;
 
   Future<void> _preloadStatistics() async {
     // ⭐ 防止重複預載入
     if (_hasPreloadedStatistics) {
       if (kDebugMode) {
-        print('[HomePage] ⏭️ 統計數據已預載入，跳過');
+        debugPrint('[HomePage] ⏭️ 統計數據已預載入，跳過');
       }
       return;
     }
@@ -400,18 +401,18 @@ class _HomePageState extends State<HomePage> {
         if (user == null) return;
 
         if (kDebugMode) {
-          print('[HomePage] 🚀 檢查並從 DB 補充缺少的時間範圍...');
+          debugPrint('[HomePage] 🚀 檢查並從 DB 補充缺少的時間範圍...');
         }
         await _statisticsController.preloadAllTimeRanges(user.uid);
 
         if (kDebugMode) {
-          print('[HomePage] ✅ 統計數據預載入完成');
+          debugPrint('[HomePage] ✅ 統計數據預載入完成');
         }
       } catch (e) {
         // 預載入失敗不影響主頁面，但重置標記以便下次重試
         _hasPreloadedStatistics = false;
         if (kDebugMode) {
-          print('[HomePage] ⚠️ 統計數據預載入失敗: $e');
+          debugPrint('[HomePage] ⚠️ 統計數據預載入失敗: $e');
         }
       }
     });
@@ -425,11 +426,11 @@ class _HomePageState extends State<HomePage> {
     try {
       final userId = _authController.user?.uid;
       if (userId == null) {
-        print('[HomePage] 用戶未登入');
+        debugPrint('[HomePage] 用戶未登入');
         return;
       }
 
-      print('[HomePage] 查詢用戶資料，userId: $userId');
+      debugPrint('[HomePage] 查詢用戶資料，userId: $userId');
 
       // ⭐ v3.6: 透過 ProfileController 查詢用戶資料
       final profile = await _profileController.getUserProfileById(userId);
@@ -440,10 +441,10 @@ class _HomePageState extends State<HomePage> {
         _userProfile = profile;
       });
 
-      print('[HomePage] ✅ 用戶資料載入完成：${profile?.displayName ?? profile?.email}');
+      debugPrint('[HomePage] ✅ 用戶資料載入完成：${profile?.displayName ?? profile?.email}');
     } catch (e) {
       if (!mounted) return;
-      print('[HomePage] 載入用戶資料失敗: $e');
+      debugPrint('[HomePage] 載入用戶資料失敗: $e');
     }
   }
 
@@ -556,7 +557,7 @@ class _HomePageState extends State<HomePage> {
       final userId = _authController.user?.uid;
       if (userId == null) {
         if (kDebugMode) {
-          print('[HomePage] ⚠️ 無法載入教練課程：userId 為 null');
+          debugPrint('[HomePage] ⚠️ 無法載入教練課程：userId 為 null');
         }
         setState(() => _isLoadingCoachSessions = false);
         return;
@@ -568,8 +569,8 @@ class _HomePageState extends State<HomePage> {
       final tomorrow = today.add(const Duration(days: 1));
 
       if (kDebugMode) {
-        print('[HomePage] 🔍 查詢教練課程：coachId=$userId');
-        print('[HomePage] 🔍 日期範圍：$today ~ $tomorrow');
+        debugPrint('[HomePage] 🔍 查詢教練課程：coachId=$userId');
+        debugPrint('[HomePage] 🔍 日期範圍：$today ~ $tomorrow');
       }
 
       // ⭐ v3.6: 透過 AppointmentController 查詢今日已確認的預約
@@ -581,9 +582,9 @@ class _HomePageState extends State<HomePage> {
       );
 
       if (kDebugMode) {
-        print('[HomePage] 🔍 查詢結果：${appointments.length} 筆已確認預約');
+        debugPrint('[HomePage] 🔍 查詢結果：${appointments.length} 筆已確認預約');
         for (final apt in appointments) {
-          print(
+          debugPrint(
               '[HomePage]   - ${apt.id}: ${apt.startTime} ~ ${apt.endTime}, status=${apt.status}');
         }
       }
@@ -596,9 +597,9 @@ class _HomePageState extends State<HomePage> {
           startDate: today,
           endDate: tomorrow,
         );
-        print('[HomePage] 🔍 今日所有狀態預約：${allAppointments.length} 筆');
+        debugPrint('[HomePage] 🔍 今日所有狀態預約：${allAppointments.length} 筆');
         for (final apt in allAppointments) {
-          print('[HomePage]   - ${apt.id}: status=${apt.status}');
+          debugPrint('[HomePage]   - ${apt.id}: status=${apt.status}');
         }
       }
 
@@ -623,14 +624,14 @@ class _HomePageState extends State<HomePage> {
       });
 
       if (kDebugMode) {
-        print('[HomePage] ✅ 載入今日要教的課：${appointments.length} 堂');
+        debugPrint('[HomePage] ✅ 載入今日要教的課：${appointments.length} 堂');
       }
     } catch (e, stack) {
       if (!mounted) return;
       setState(() => _isLoadingCoachSessions = false);
       if (kDebugMode) {
-        print('[HomePage] ⚠️ 載入今日要教的課失敗: $e');
-        print('[HomePage] ⚠️ Stack: $stack');
+        debugPrint('[HomePage] ⚠️ 載入今日要教的課失敗: $e');
+        debugPrint('[HomePage] ⚠️ Stack: $stack');
       }
     }
   }
@@ -668,11 +669,11 @@ class _HomePageState extends State<HomePage> {
       });
 
       if (kDebugMode) {
-        print('[HomePage] ✅ 載入待確認預約：${appointments.length} 個');
+        debugPrint('[HomePage] ✅ 載入待確認預約：${appointments.length} 個');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[HomePage] ⚠️ 載入待確認預約失敗: $e');
+        debugPrint('[HomePage] ⚠️ 載入待確認預約失敗: $e');
       }
     }
   }
@@ -761,11 +762,11 @@ class _HomePageState extends State<HomePage> {
                       colors: brightness == Brightness.light
                           ? [
                               colorScheme.primary,
-                              colorScheme.primary.withOpacity(0.8),
+                              colorScheme.primary.withValues(alpha: 0.8),
                             ]
                           : [
                               colorScheme.surface,
-                              colorScheme.surface.withOpacity(0.95),
+                              colorScheme.surface.withValues(alpha: 0.95),
                             ],
                     ),
                   ),
@@ -773,7 +774,7 @@ class _HomePageState extends State<HomePage> {
                   child: MediaQuery(
                     data: MediaQuery.of(context).copyWith(
                       textScaler: TextScaler.linear(
-                        MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.3),
+                        MediaQuery.of(context).textScaler.scale(1.0).clamp(0.8, 1.3),
                       ),
                     ),
                     child: SafeArea(
@@ -1034,12 +1035,19 @@ class _HomePageState extends State<HomePage> {
     return Column(
       children: [
         // 有訓練計畫的卡片
+        // ⭐ 效能優化：添加 Key 避免不必要的重建
         ..._todayPlans.map((record) {
-          return _buildScheduleCard(record);
+          return KeyedSubtree(
+            key: ValueKey('plan_${record.id}'),
+            child: _buildScheduleCard(record),
+          );
         }),
         // 只有預約沒有訓練計畫的上課卡片
         ..._todayStudentSessions.map((appointment) {
-          return _buildSessionOnlyCard(appointment);
+          return KeyedSubtree(
+            key: ValueKey('session_${appointment.id}'),
+            child: _buildSessionOnlyCard(appointment),
+          );
         }),
       ],
     );
@@ -1645,7 +1653,7 @@ class _HomePageState extends State<HomePage> {
             color: Theme.of(context)
                 .colorScheme
                 .surfaceContainerHighest
-                .withOpacity(0.3),
+                .withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -1659,7 +1667,7 @@ class _HomePageState extends State<HomePage> {
                   color: Theme.of(context)
                       .colorScheme
                       .onSurfaceVariant
-                      .withOpacity(0.15),
+                      .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -1672,7 +1680,7 @@ class _HomePageState extends State<HomePage> {
                   color: Theme.of(context)
                       .colorScheme
                       .onSurfaceVariant
-                      .withOpacity(0.15),
+                      .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -1684,7 +1692,7 @@ class _HomePageState extends State<HomePage> {
                   color: Theme.of(context)
                       .colorScheme
                       .onSurfaceVariant
-                      .withOpacity(0.15),
+                      .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -1695,7 +1703,7 @@ class _HomePageState extends State<HomePage> {
               color: Theme.of(context)
                   .colorScheme
                   .onSurfaceVariant
-                  .withOpacity(0.08),
+                  .withValues(alpha: 0.08),
             );
       }),
     );

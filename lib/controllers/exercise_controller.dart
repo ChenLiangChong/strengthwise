@@ -8,7 +8,7 @@ import '../services/core/error_handling_service.dart';
 import '../services/core/app_event_bus.dart'; // ⭐ v3.5: EventBus
 import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_exercise_controller.dart';
-import 'event_bus_controller.dart'; // ⭐ v3.5: EventBus
+import 'interfaces/i_event_bus_controller.dart'; // ⭐ v3.5: EventBus
 import 'exercise/exercise_cache_manager.dart';
 import 'exercise/exercise_cache_key_builder.dart';
 import 'exercise/exercise_filter_validator.dart';
@@ -33,9 +33,11 @@ class ExerciseController extends ChangeNotifier implements IExerciseController {
   late final ExerciseCacheInvalidator _cacheInvalidator;
   
   /// 正在載入數據
+  @override
   bool get isLoading => _isLoading;
   
   /// 錯誤訊息
+  @override
   String? get errorMessage => _errorMessage;
   
   /// 構造函數，支持依賴注入
@@ -333,6 +335,7 @@ class ExerciseController extends ChangeNotifier implements IExerciseController {
   // =========================================================================
 
   /// 添加動作到收藏
+  @override
   Future<bool> addFavorite({
     required String userId,
     required String exerciseId,
@@ -347,7 +350,7 @@ class ExerciseController extends ChangeNotifier implements IExerciseController {
       await favoritesService.addFavorite(userId, exerciseId, exerciseName, bodyPart);
 
       // ⭐ v3.5: 發布收藏新增事件
-      final eventBusController = serviceLocator<EventBusController>();
+      final eventBusController = serviceLocator<IEventBusController>();
       eventBusController.publish(AppEvent(
         type: AppEventType.favoriteAdded,
         entityId: exerciseId,
@@ -365,6 +368,7 @@ class ExerciseController extends ChangeNotifier implements IExerciseController {
   }
 
   /// 移除收藏動作
+  @override
   Future<bool> removeFavorite({
     required String userId,
     required String exerciseId,
@@ -377,7 +381,7 @@ class ExerciseController extends ChangeNotifier implements IExerciseController {
       await favoritesService.removeFavorite(userId, exerciseId);
 
       // ⭐ v3.5: 發布收藏移除事件
-      final eventBusController = serviceLocator<EventBusController>();
+      final eventBusController = serviceLocator<IEventBusController>();
       eventBusController.publish(AppEvent(
         type: AppEventType.favoriteRemoved,
         entityId: exerciseId,
@@ -395,6 +399,7 @@ class ExerciseController extends ChangeNotifier implements IExerciseController {
 
   /// 檢查動作是否已收藏
   /// ⭐ MVVM 重構：View 層透過 Controller 查詢
+  @override
   Future<bool> isFavorite(String userId, String exerciseId) async {
     try {
       final favoritesService = serviceLocator<IFavoritesService>();
@@ -407,6 +412,7 @@ class ExerciseController extends ChangeNotifier implements IExerciseController {
 
   /// 獲取用戶收藏的動作 ID 列表
   /// ⭐ MVVM 重構：View 層透過 Controller 查詢
+  @override
   Future<List<String>> getFavoriteExerciseIds(String userId) async {
     try {
       final favoritesService = serviceLocator<IFavoritesService>();
@@ -419,6 +425,7 @@ class ExerciseController extends ChangeNotifier implements IExerciseController {
 
   /// 獲取用戶收藏的動作列表（含詳細資訊）
   /// ⭐ v3.6 MVVM 重構：View 層透過 Controller 查詢
+  @override
   Future<List<FavoriteExercise>> getFavoriteExercises(String userId) async {
     try {
       final favoritesService = serviceLocator<IFavoritesService>();
@@ -435,12 +442,14 @@ class ExerciseController extends ChangeNotifier implements IExerciseController {
 
   /// 獲取訓練類型列表
   /// ⭐ MVVM 重構：View 層透過 Controller 查詢
+  @override
   Future<List<String>> getExerciseTypes() async {
     return await loadExerciseTypes();
   }
 
   /// 根據篩選條件獲取動作列表
   /// ⭐ MVVM 重構：View 層透過 Controller 查詢
+  @override
   Future<List<Exercise>> getExercisesByFilters(Map<String, String> filters) async {
     if (!_isInitialized) await _initialize();
 

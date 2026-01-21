@@ -1,7 +1,7 @@
 // ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/coach_profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coach_profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
@@ -27,7 +27,7 @@ class CoachProfileFormPage extends StatefulWidget {
 }
 
 class _CoachProfileFormPageState extends State<CoachProfileFormPage> {
-  late final CoachProfileController _controller;
+  late final ICoachProfileController _controller;
   final _formKey = GlobalKey<FormState>();
   final _pageController = PageController();
   int _currentStep = 0;
@@ -42,7 +42,7 @@ class _CoachProfileFormPageState extends State<CoachProfileFormPage> {
   @override
   void initState() {
     super.initState();
-    _controller = serviceLocator<CoachProfileController>();
+    _controller = serviceLocator<ICoachProfileController>();
     _controller.loadCoachProfile().then((_) {
       _initFormControllers();
     });
@@ -144,7 +144,7 @@ class _CoachProfileFormPageState extends State<CoachProfileFormPage> {
             ),
           ],
         ),
-        body: Consumer<CoachProfileController>(
+        body: Consumer<ICoachProfileController>(
           builder: (context, controller, child) {
             if (controller.isLoading && controller.profile == null) {
               return const Center(child: CircularProgressIndicator());
@@ -287,7 +287,7 @@ class _Step1BasicInfo extends StatelessWidget {
 
 /// 步驟 2：專業背景
 class _Step2ProfessionalBackground extends StatelessWidget {
-  final CoachProfileController controller;
+  final ICoachProfileController controller;
   final TextEditingController yearsController;
 
   const _Step2ProfessionalBackground({

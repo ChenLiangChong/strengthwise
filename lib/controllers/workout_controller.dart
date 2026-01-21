@@ -9,7 +9,7 @@ import '../services/service_locator.dart' show serviceLocator;
 import 'interfaces/i_workout_controller.dart';
 import 'interfaces/i_auth_controller.dart'; // ⭐ v3.6: EventBus fallback
 import 'workout/workout_data_validator.dart';
-import 'event_bus_controller.dart'; // ⭐ v3.5
+import 'interfaces/i_event_bus_controller.dart'; // ⭐ v3.5
 
 /// 訓練計畫控制器實現
 /// 
@@ -19,7 +19,7 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
   // 依賴注入
   final IWorkoutService _workoutService;
   final ErrorHandlingService _errorService;
-  final EventBusController _eventBusController; // ⭐ v3.5
+  final IEventBusController _eventBusController; // ⭐ v3.5
   final IAuthController _authController; // ⭐ v3.6: EventBus fallback
   
   // 狀態管理
@@ -38,12 +38,12 @@ class WorkoutController extends ChangeNotifier implements IWorkoutController {
   WorkoutController({
     IWorkoutService? workoutService,
     ErrorHandlingService? errorService,
-    EventBusController? eventBusController, // ⭐ v3.5
+    IEventBusController? eventBusController, // ⭐ v3.5
     IAuthController? authController, // ⭐ v3.6: EventBus fallback
   }) :
     _workoutService = workoutService ?? serviceLocator<IWorkoutService>(),
     _errorService = errorService ?? serviceLocator<ErrorHandlingService>(),
-    _eventBusController = eventBusController ?? serviceLocator<EventBusController>(),
+    _eventBusController = eventBusController ?? serviceLocator<IEventBusController>(),
     _authController = authController ?? serviceLocator<IAuthController>() {
     _initialize();
   }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
@@ -17,7 +17,7 @@ class ClientSelectorDialog extends StatefulWidget {
 }
 
 class _ClientSelectorDialogState extends State<ClientSelectorDialog> {
-  late final CoachingRelationshipController _controller;
+  late final ICoachingRelationshipController _controller;
   late final IAuthController _authController;
   bool _isLoading = true;
   List<UserModel> _clients = [];
@@ -25,7 +25,7 @@ class _ClientSelectorDialogState extends State<ClientSelectorDialog> {
   @override
   void initState() {
     super.initState();
-    _controller = serviceLocator<CoachingRelationshipController>();
+    _controller = serviceLocator<ICoachingRelationshipController>();
     _authController = serviceLocator<IAuthController>();
     _loadClients();
   }

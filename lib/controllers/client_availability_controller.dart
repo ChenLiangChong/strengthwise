@@ -3,16 +3,17 @@ import '../services/interfaces/i_client_availability_service.dart';
 import '../services/core/error_handling_service.dart';
 import '../services/core/app_event_bus.dart'; // ⭐ v3.5: EventBus
 import '../models/client_availability_model.dart';
-import 'event_bus_controller.dart'; // ⭐ v3.5: EventBus
+import 'interfaces/i_event_bus_controller.dart'; // ⭐ v3.5: EventBus
+import 'interfaces/i_client_availability_controller.dart';
 
 /// ClientAvailabilityController - Phase 3 學員時間偏好控制器
 ///
 /// 管理學員可運動時間的設定（雙向時間管理系統）
 /// 學員設定可用時間，教練可查看並主動安排訓練
-class ClientAvailabilityController extends ChangeNotifier {
+class ClientAvailabilityController extends ChangeNotifier implements IClientAvailabilityController {
   final IClientAvailabilityService _service;
   final ErrorHandlingService _errorService;
-  final EventBusController _eventBusController; // ⭐ v3.5: EventBus
+  final IEventBusController _eventBusController; // ⭐ v3.5: EventBus
 
   ClientAvailabilityController(
     this._service,
@@ -39,23 +40,34 @@ class ClientAvailabilityController extends ChangeNotifier {
   // Getters
   // ============================================================================
 
+  @override
   bool get isLoading => _isLoading;
+  @override
   String? get errorMessage => _errorMessage;
+  @override
   List<ClientAvailabilityModel> get availabilities =>
       List.unmodifiable(_availabilities);
+  @override
   ClientAvailabilityModel? get selectedAvailability => _selectedAvailability;
 
   // 統計資料
+  @override
   int get totalCount => _totalCount;
+  @override
   int get preferredCount => _preferredCount;
+  @override
   int get availableCount => _availableCount;
+  @override
   int get avoidCount => _avoidCount;
 
   // 衍生狀態
+  @override
   bool get hasAvailabilities => _availabilities.isNotEmpty;
+  @override
   bool get hasError => _errorMessage != null;
 
   /// 取得最佳時段
+  @override
   List<ClientAvailabilityModel> get preferredSlots {
     return _availabilities
         .where((a) => a.priority == AvailabilityPriority.preferred)
@@ -63,6 +75,7 @@ class ClientAvailabilityController extends ChangeNotifier {
   }
 
   /// 取得避免時段
+  @override
   List<ClientAvailabilityModel> get avoidSlots {
     return _availabilities
         .where((a) => a.priority == AvailabilityPriority.avoid)
@@ -70,6 +83,7 @@ class ClientAvailabilityController extends ChangeNotifier {
   }
 
   /// 取得週期性時段
+  @override
   List<ClientAvailabilityModel> get recurringSlots {
     return _availabilities.where((a) => a.isRecurring).toList();
   }
@@ -79,6 +93,7 @@ class ClientAvailabilityController extends ChangeNotifier {
   // ============================================================================
 
   /// 載入學員的時間偏好設定
+  @override
   Future<void> loadClientAvailabilities({
     required String clientId,
     AvailabilityPriority? priority,
@@ -95,6 +110,7 @@ class ClientAvailabilityController extends ChangeNotifier {
   }
 
   /// 載入指定日期範圍內的時間偏好
+  @override
   Future<void> loadAvailabilitiesInRange({
     required String clientId,
     required DateTime startDate,
@@ -113,6 +129,7 @@ class ClientAvailabilityController extends ChangeNotifier {
   }
 
   /// 載入教練查看學員的時間偏好
+  @override
   Future<void> loadClientAvailabilitiesForCoach({
     required String coachId,
     required String clientId,
@@ -129,6 +146,7 @@ class ClientAvailabilityController extends ChangeNotifier {
   }
 
   /// 檢查時段衝突
+  @override
   Future<bool> hasConflict({
     required String clientId,
     required DateTime startTime,
@@ -154,6 +172,7 @@ class ClientAvailabilityController extends ChangeNotifier {
   // ============================================================================
 
   /// 創建時間偏好
+  @override
   Future<ClientAvailabilityModel?> createAvailability(
     ClientAvailabilityModel availability,
   ) async {
@@ -161,16 +180,18 @@ class ClientAvailabilityController extends ChangeNotifier {
 
     await _executeOperation(() async {
       created = await _service.createAvailability(availability);
+      final createdItem = created;
+      if (createdItem == null) return;
 
       // 新增到列表
-      _availabilities.insert(0, created!);
+      _availabilities.insert(0, createdItem);
       _recalculateStats();
 
       // ⭐ v3.5: 發布可訓練時段創建事件
       _eventBusController.publish(AppEvent(
         type: AppEventType.availabilitySlotCreated,
-        entityId: created!.id,
-        userId: created!.clientId,
+        entityId: createdItem.id,
+        userId: createdItem.clientId,
         timestamp: DateTime.now(),
       ));
     }, '創建時間偏好失敗');
@@ -179,6 +200,7 @@ class ClientAvailabilityController extends ChangeNotifier {
   }
 
   /// 更新時間偏好
+  @override
   Future<ClientAvailabilityModel?> updateAvailability(
     ClientAvailabilityModel availability,
   ) async {
@@ -186,11 +208,13 @@ class ClientAvailabilityController extends ChangeNotifier {
 
     await _executeOperation(() async {
       updated = await _service.updateAvailability(availability);
+      final updatedItem = updated;
+      if (updatedItem == null) return;
 
       // 更新列表中的項目
-      final index = _availabilities.indexWhere((a) => a.id == updated!.id);
+      final index = _availabilities.indexWhere((a) => a.id == updatedItem.id);
       if (index != -1) {
-        _availabilities[index] = updated!;
+        _availabilities[index] = updatedItem;
         _recalculateStats();
       }
     }, '更新時間偏好失敗');
@@ -199,6 +223,7 @@ class ClientAvailabilityController extends ChangeNotifier {
   }
 
   /// 刪除時間偏好
+  @override
   Future<bool> deleteAvailability(String id) async {
     bool success = false;
 
@@ -223,6 +248,7 @@ class ClientAvailabilityController extends ChangeNotifier {
   /// 複製週時段
   /// 
   /// 將指定週的時段複製到目標週
+  @override
   Future<int> copyWeekAvailabilities({
     required String clientId,
     required DateTime sourceWeekStart,
@@ -274,6 +300,7 @@ class ClientAvailabilityController extends ChangeNotifier {
   }
 
   /// 批次創建週期性時段
+  @override
   Future<List<ClientAvailabilityModel>> batchCreateRecurring({
     required ClientAvailabilityModel template,
     required List<DateTime> dates,
@@ -322,24 +349,28 @@ class ClientAvailabilityController extends ChangeNotifier {
   // ============================================================================
 
   /// 設定選中的時間偏好
+  @override
   void setSelectedAvailability(ClientAvailabilityModel? availability) {
     _selectedAvailability = availability;
     notifyListeners();
   }
 
   /// 清除選中的時間偏好
+  @override
   void clearSelectedAvailability() {
     _selectedAvailability = null;
     notifyListeners();
   }
 
   /// 清除錯誤訊息
+  @override
   void clearError() {
     _errorMessage = null;
     notifyListeners();
   }
 
   /// 重置所有狀態
+  @override
   void reset() {
     _isLoading = false;
     _errorMessage = null;
@@ -387,7 +418,7 @@ class ClientAvailabilityController extends ChangeNotifier {
       _errorService.logError(error, type: 'ClientAvailabilityControllerError');
 
       if (kDebugMode) {
-        print('❌ [ClientAvailabilityController] $error');
+        debugPrint('❌ [ClientAvailabilityController] $error');
       }
 
       rethrow;
@@ -405,6 +436,7 @@ class ClientAvailabilityController extends ChangeNotifier {
   /// ⭐ v3.6 MVVM 重構
   ///
   /// 用於行事曆頁面等需要直接獲取數據的場景
+  @override
   Future<List<ClientAvailabilityModel>> getClientAvailabilityForCoach({
     required String coachId,
     required String clientId,

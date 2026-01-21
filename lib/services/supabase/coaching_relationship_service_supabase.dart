@@ -56,7 +56,7 @@ class CoachingRelationshipServiceSupabase
         final hiveCached = await _localCacheService!.getCachedCoachClientsAsync(coachId, status);
         if (hiveCached != null) {
           if (kDebugMode) {
-            print('[RELATIONSHIP_SERVICE] ⚡ 從 Hive 快取載入 ${hiveCached.length} 個學員關係');
+            debugPrint('[RELATIONSHIP_SERVICE] ⚡ 從 Hive 快取載入 ${hiveCached.length} 個學員關係');
           }
           // 同步到記憶體快取
           _cache.setCoachClients(coachId, status, hiveCached);
@@ -94,11 +94,11 @@ class CoachingRelationshipServiceSupabase
       _cache.setCoachClients(coachId, status, relationships);
       await _localCacheService?.cacheCoachClients(coachId, status, relationships);
       if (kDebugMode) {
-        print('[RELATIONSHIP_SERVICE] ⚡ 背景刷新學員列表完成');
+        debugPrint('[RELATIONSHIP_SERVICE] ⚡ 背景刷新學員列表完成');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[RELATIONSHIP_SERVICE] 背景刷新學員列表失敗: $e');
+        debugPrint('[RELATIONSHIP_SERVICE] 背景刷新學員列表失敗: $e');
       }
     }
   }
@@ -120,7 +120,7 @@ class CoachingRelationshipServiceSupabase
         final hiveCached = await _localCacheService!.getCachedClientCoachesAsync(clientId, status);
         if (hiveCached != null) {
           if (kDebugMode) {
-            print('[RELATIONSHIP_SERVICE] ⚡ 從 Hive 快取載入 ${hiveCached.length} 個教練關係');
+            debugPrint('[RELATIONSHIP_SERVICE] ⚡ 從 Hive 快取載入 ${hiveCached.length} 個教練關係');
           }
           // 同步到記憶體快取
           _cache.setClientCoaches(clientId, status, hiveCached);
@@ -158,11 +158,11 @@ class CoachingRelationshipServiceSupabase
       _cache.setClientCoaches(clientId, status, relationships);
       await _localCacheService?.cacheClientCoaches(clientId, status, relationships);
       if (kDebugMode) {
-        print('[RELATIONSHIP_SERVICE] ⚡ 背景刷新教練列表完成');
+        debugPrint('[RELATIONSHIP_SERVICE] ⚡ 背景刷新教練列表完成');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[RELATIONSHIP_SERVICE] 背景刷新教練列表失敗: $e');
+        debugPrint('[RELATIONSHIP_SERVICE] 背景刷新教練列表失敗: $e');
       }
     }
   }

@@ -1,14 +1,15 @@
 import 'package:flutter/foundation.dart';
 import '../services/interfaces/i_user_service.dart';
 import '../services/service_locator.dart';
+import 'interfaces/i_delete_account_controller.dart';
 
 /// 刪除帳號控制器
-/// 
+///
 /// 職責：
 /// - 處理刪除帳號業務邏輯
 /// - 提供刪除前的資料統計
 /// - 管理刪除狀態
-class DeleteAccountController extends ChangeNotifier {
+class DeleteAccountController extends ChangeNotifier implements IDeleteAccountController {
   final IUserService _userService;
   
   bool _isDeleting = false;
@@ -20,12 +21,15 @@ class DeleteAccountController extends ChangeNotifier {
   }) : _userService = userService ?? serviceLocator<IUserService>();
 
   /// 是否正在刪除中
+  @override
   bool get isDeleting => _isDeleting;
 
   /// 錯誤訊息
+  @override
   String? get errorMessage => _errorMessage;
 
   /// 刪除結果
+  @override
   Map<String, dynamic>? get deleteResult => _deleteResult;
 
   /// 執行刪除帳號
@@ -33,6 +37,7 @@ class DeleteAccountController extends ChangeNotifier {
   /// 返回：
   /// - true: 刪除成功
   /// - false: 刪除失敗
+  @override
   Future<bool> deleteAccount() async {
     _isDeleting = true;
     _errorMessage = null;
@@ -68,6 +73,7 @@ class DeleteAccountController extends ChangeNotifier {
   }
 
   /// 取得刪除統計資訊（用於顯示確認對話框）
+  @override
   String getDeleteSummary() {
     if (_deleteResult == null) {
       return '將刪除您的帳號及所有關聯資料';
@@ -109,12 +115,14 @@ class DeleteAccountController extends ChangeNotifier {
   }
 
   /// 清除錯誤訊息
+  @override
   void clearError() {
     _errorMessage = null;
     notifyListeners();
   }
 
   /// 重置狀態
+  @override
   void reset() {
     _isDeleting = false;
     _errorMessage = null;
@@ -125,14 +133,14 @@ class DeleteAccountController extends ChangeNotifier {
   /// 偵錯日誌
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[DELETE_ACCOUNT_CONTROLLER] $message');
+      debugPrint('[DELETE_ACCOUNT_CONTROLLER] $message');
     }
   }
 
   /// 錯誤日誌
   void _logError(String message) {
     if (kDebugMode) {
-      print('[DELETE_ACCOUNT_CONTROLLER ERROR] $message');
+      debugPrint('[DELETE_ACCOUNT_CONTROLLER ERROR] $message');
     }
   }
 }

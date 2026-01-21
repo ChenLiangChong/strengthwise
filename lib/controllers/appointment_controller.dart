@@ -9,17 +9,18 @@ import 'appointment/appointment_state_manager.dart';
 import 'appointment/appointment_query_manager.dart';
 import 'appointment/appointment_coach_operations.dart';
 import 'appointment/appointment_client_operations.dart';
-import 'event_bus_controller.dart'; // ⭐ v3.5
+import 'interfaces/i_event_bus_controller.dart'; // ⭐ v3.5
+import 'interfaces/i_appointment_controller.dart';
 
 /// AppointmentController - Phase 2 預約管理控制器
 ///
 /// 管理教練-學員預約的創建、查詢、狀態更新等業務邏輯
 /// 遵循完全解耦架構（透過 Interface 注入依賴）+ 子模組化設計
 /// ⭐ v3.5: 統一發布預約事件（Controller 層負責事件發布）
-class AppointmentController extends ChangeNotifier {
+class AppointmentController extends ChangeNotifier implements IAppointmentController {
   final IAppointmentService _appointmentService;
   final ErrorHandlingService _errorService;
-  final EventBusController _eventBusController; // ⭐ v3.5
+  final IEventBusController _eventBusController; // ⭐ v3.5
 
   // 子模組
   late final AppointmentStateManager _state;
@@ -45,18 +46,31 @@ class AppointmentController extends ChangeNotifier {
   // 狀態訪問（委託給 StateManager）
   // ============================================================================
 
+  @override
   bool get isLoading => _state.isLoading;
+  @override
   String? get errorMessage => _state.errorMessage;
+  @override
   List<AppointmentModel> get appointments => _state.appointments;
+  @override
   List<AppointmentModel> get pendingAppointments => _state.pendingAppointments;
+  @override
   List<AppointmentModel> get upcomingAppointments => _state.upcomingAppointments;
+  @override
   AppointmentModel? get selectedAppointment => _state.selectedAppointment;
+  @override
   int get totalAppointments => _state.totalAppointments;
+  @override
   int get completedCount => _state.completedCount;
+  @override
   int get cancelledCount => _state.cancelledCount;
+  @override
   double get attendanceRate => _state.attendanceRate;
+  @override
   DateTime? get queryStartDate => _state.queryStartDate;
+  @override
   DateTime? get queryEndDate => _state.queryEndDate;
+  @override
   AppointmentStatus? get queryStatus => _state.queryStatus;
 
   // ============================================================================
@@ -64,6 +78,7 @@ class AppointmentController extends ChangeNotifier {
   // ============================================================================
 
   /// 載入教練的預約列表
+  @override
   Future<void> loadCoachAppointments({
     required String coachId,
     DateTime? startDate,
@@ -82,6 +97,7 @@ class AppointmentController extends ChangeNotifier {
   }
 
   /// 載入待確認的預約
+  @override
   Future<void> loadPendingAppointments(String coachId) async {
     await _executeOperation(
       () => _query.loadPendingAppointments(coachId),
@@ -91,6 +107,7 @@ class AppointmentController extends ChangeNotifier {
 
   /// 確認預約
   /// ⭐ v3.5: 操作成功後自動發布事件
+  @override
   Future<bool> confirmAppointment(String appointmentId) async {
     // 先獲取預約資訊用於事件發布
     final appointment = _state.selectedAppointment?.id == appointmentId
@@ -116,6 +133,7 @@ class AppointmentController extends ChangeNotifier {
 
   /// 拒絕預約
   /// ⭐ v3.5: 操作成功後自動發布事件（拒絕視為取消）
+  @override
   Future<bool> rejectAppointment({
     required String appointmentId,
     required String cancelledBy,
@@ -149,6 +167,7 @@ class AppointmentController extends ChangeNotifier {
 
   /// 完成預約
   /// ⭐ v3.5: 操作成功後自動發布事件
+  @override
   Future<bool> completeAppointment(String appointmentId) async {
     // 先獲取預約資訊用於事件發布
     final appointment = _state.selectedAppointment?.id == appointmentId
@@ -173,6 +192,7 @@ class AppointmentController extends ChangeNotifier {
   }
 
   /// 更新教練備註
+  @override
   Future<bool> updateCoachNotes({
     required String appointmentId,
     required String notes,
@@ -193,6 +213,7 @@ class AppointmentController extends ChangeNotifier {
   }
 
   /// 關聯訓練計劃
+  @override
   Future<bool> linkWorkoutPlan({
     required String appointmentId,
     required String workoutPlanId,
@@ -214,6 +235,7 @@ class AppointmentController extends ChangeNotifier {
 
   /// ⭐ v3.5: 創建臨時課程（教練直接建立 confirmed 狀態的課程）
   /// MVVM 重構 - 透過 Controller 操作，事件由 Controller 自動發布
+  @override
   Future<String?> createAdHocSession({
     required String coachId,
     required String clientId,
@@ -253,6 +275,7 @@ class AppointmentController extends ChangeNotifier {
   // ============================================================================
 
   /// 載入學員的預約列表
+  @override
   Future<void> loadClientAppointments({
     required String clientId,
     DateTime? startDate,
@@ -272,6 +295,7 @@ class AppointmentController extends ChangeNotifier {
 
   /// 創建預約
   /// ⭐ v3.5: 操作成功後自動發布事件
+  @override
   Future<bool> createAppointment(AppointmentModel appointment) async {
     final success = await _executeOperation(() async {
       await _clientOps.createAppointment(appointment);
@@ -293,6 +317,7 @@ class AppointmentController extends ChangeNotifier {
 
   /// 取消預約
   /// ⭐ v3.5: 操作成功後自動發布事件
+  @override
   Future<bool> cancelAppointment({
     required String appointmentId,
     required String cancelledBy,
@@ -325,6 +350,7 @@ class AppointmentController extends ChangeNotifier {
   }
 
   /// 更新學員備註
+  @override
   Future<bool> updateClientNotes({
     required String appointmentId,
     required String notes,
@@ -346,6 +372,7 @@ class AppointmentController extends ChangeNotifier {
 
   /// 更新預約時間
   /// ⭐ v3.9: 操作成功後自動發布事件
+  @override
   Future<bool> rescheduleAppointment({
     required String appointmentId,
     required DateTime newStartTime,
@@ -382,6 +409,7 @@ class AppointmentController extends ChangeNotifier {
   // ============================================================================
 
   /// 載入即將到來的預約
+  @override
   Future<void> loadUpcomingAppointments({
     required String userId,
     required bool isCoach,
@@ -393,6 +421,7 @@ class AppointmentController extends ChangeNotifier {
   }
 
   /// 查詢預約詳情
+  @override
   Future<void> selectAppointment(String appointmentId) async {
     _state.clearError();
     try {
@@ -403,11 +432,13 @@ class AppointmentController extends ChangeNotifier {
   }
 
   /// 清除選中的預約
+  @override
   void clearSelectedAppointment() {
     _state.setSelectedAppointment(null);
   }
 
   /// 檢查時段衝突
+  @override
   Future<bool> checkTimeConflict({
     required String coachId,
     required DateTime startTime,
@@ -462,11 +493,12 @@ class AppointmentController extends ChangeNotifier {
     );
 
     if (kDebugMode) {
-      print('❌ AppointmentController Error: $message - $error');
+      debugPrint('❌ AppointmentController Error: $message - $error');
     }
   }
 
   /// 清除所有狀態
+  @override
   void clearAll() {
     _state.clearAll();
   }
@@ -478,6 +510,7 @@ class AppointmentController extends ChangeNotifier {
   /// 查詢學員的預約（直接返回結果）
   ///
   /// 用於首頁等需要直接獲取數據的場景
+  @override
   Future<List<AppointmentModel>> getClientAppointments({
     required String clientId,
     DateTime? startDate,
@@ -503,6 +536,7 @@ class AppointmentController extends ChangeNotifier {
   /// 查詢教練的預約（直接返回結果）
   ///
   /// 用於首頁等需要直接獲取數據的場景
+  @override
   Future<List<AppointmentModel>> getCoachAppointments({
     required String coachId,
     DateTime? startDate,
@@ -526,6 +560,7 @@ class AppointmentController extends ChangeNotifier {
   }
 
   /// 查詢單筆預約（直接返回結果）
+  @override
   Future<AppointmentModel?> getAppointmentById(String appointmentId) async {
     try {
       return await _appointmentService.getAppointmentById(appointmentId);
@@ -542,6 +577,7 @@ class AppointmentController extends ChangeNotifier {
   /// ⭐ v3.6 MVVM 重構
   ///
   /// 用於課程紀錄頁面等需要直接獲取數據的場景
+  @override
   Future<DailyReadinessModel?> getReadinessByAppointmentId(
     String appointmentId,
   ) async {

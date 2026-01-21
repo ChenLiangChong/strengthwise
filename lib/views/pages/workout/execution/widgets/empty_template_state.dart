@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:strengthwise/themes/app_theme.dart';
 
 /// 空模板狀態顯示
 class EmptyTemplateState extends StatelessWidget {
@@ -18,7 +19,7 @@ class EmptyTemplateState extends StatelessWidget {
           const Icon(
             Icons.note_alt_outlined,
             size: 64,
-            color: Color(0xFF94A3B8), // Slate-400
+            color: AppTheme.slate400,
           ),
           const SizedBox(height: 16),
           Text(

@@ -62,8 +62,6 @@ void main() {
           ),
         );
 
-        final button =
-            tester.widget<ElevatedButton>(find.byType(ElevatedButton));
         final buttonSize = tester.getSize(find.byType(ElevatedButton));
 
         // Material Design 最小觸控目標 48dp

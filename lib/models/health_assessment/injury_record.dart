@@ -1,3 +1,5 @@
+import 'package:strengthwise/utils/datetime_utils.dart';
+
 /// 傷病狀態列舉
 enum InjuryStatus {
   acute('acute', '急性'),
@@ -49,7 +51,7 @@ class InjuryRecord {
       diagnosis: json['diagnosis'] as String?,
       limitations: json['limitations'] as String?,
       occurredDate: json['occurred_date'] != null
-          ? DateTime.parse(json['occurred_date'] as String)
+          ? DateTimeUtils.parseIsoTimestamp(json['occurred_date'] as String)
           : null,
     );
   }
@@ -60,7 +62,8 @@ class InjuryRecord {
       'status': status.value,
       if (diagnosis != null) 'diagnosis': diagnosis,
       if (limitations != null) 'limitations': limitations,
-      if (occurredDate != null) 'occurred_date': occurredDate!.toIso8601String(),
+      if (occurredDate != null)
+        'occurred_date': DateTimeUtils.formatToUtcIso(occurredDate!),
     };
   }
 

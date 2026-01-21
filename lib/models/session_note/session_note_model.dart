@@ -130,8 +130,9 @@ class SessionNoteModel {
     // 構建 JSONB content 欄位
     final content = <String, dynamic>{};
 
-    if (soap != null && !soap!.isEmpty) {
-      content['soap'] = soap!.toJson();
+    final soapData = soap;
+    if (soapData != null && !soapData.isEmpty) {
+      content['soap'] = soapData.toJson();
     }
 
     if (visualElements.isNotEmpty) {
@@ -143,8 +144,9 @@ class SessionNoteModel {
       content['quick_tags'] = quickTags;
     }
 
-    if (followUpDate != null) {
-      content['follow_up_date'] = DateTimeUtils.formatToUtcIso(followUpDate!);
+    final followUp = followUpDate;
+    if (followUp != null) {
+      content['follow_up_date'] = DateTimeUtils.formatToUtcIso(followUp);
     }
 
     return {
@@ -226,8 +228,10 @@ class SessionNoteModel {
       visualElements.any((e) => e is VoiceNoteElementModel);
 
   /// 是否為空筆記（無 SOAP 內容且無視覺元素）
-  bool get isEmpty =>
-      (soap == null || soap!.isEmpty) && visualElements.isEmpty;
+  bool get isEmpty {
+    final soapData = soap;
+    return (soapData == null || soapData.isEmpty) && visualElements.isEmpty;
+  }
 
   @override
   String toString() {

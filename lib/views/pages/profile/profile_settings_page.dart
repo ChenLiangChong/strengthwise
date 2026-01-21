@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:strengthwise/controllers/profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
@@ -37,7 +37,7 @@ class ProfileSettingsPage extends StatefulWidget {
 }
 
 class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
-  late final ProfileController _controller;
+  late final IProfileController _controller;
   final _formKey = GlobalKey<FormState>();
 
   // 本地狀態（不屬於全局狀態）
@@ -72,7 +72,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   @override
   void initState() {
     super.initState();
-    _controller = serviceLocator<ProfileController>();
+    _controller = serviceLocator<IProfileController>();
     _loadUserProfile();
   }
 
@@ -418,7 +418,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<ProfileController>.value(
+    return ChangeNotifierProvider<IProfileController>.value(
       value: _controller,
       // ⭐ v3.1-B: 攔截返回操作，自動保存
       // ⭐ v3.4: 首次設定時禁止返回（避免黑屏）
@@ -445,8 +445,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
             title: Text(widget.isFirstTimeSetup ? '完成您的個人資料' : '編輯個人資料'),
             automaticallyImplyLeading: !widget.isFirstTimeSetup,
           ),
-          body: Consumer<ProfileController>(
-          builder: (context, controller, child) {
+          body: Consumer<IProfileController>(
+          builder: (context, IProfileController controller, child) {
             // 首次載入顯示 Loading
             if (controller.isLoading && controller.userProfile == null) {
               return const Center(child: CircularProgressIndicator());
@@ -521,6 +521,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                             final success =
                                 await controller.toggleCoachRole(value);
                             if (mounted && success) {
+                              // ignore: use_build_context_synchronously - mounted 已檢查
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content:
@@ -529,6 +530,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                               );
                               // 首次開啟教練模式時引導填寫教練檔案
                               if (value && mounted) {
+                                // ignore: use_build_context_synchronously - mounted 已檢查
                                 _promptCoachProfileSetup(context);
                               }
                             }

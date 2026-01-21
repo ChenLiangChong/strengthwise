@@ -13,7 +13,7 @@ import 'auth/auth_error_handler.dart';
 import 'auth/auth_user_manager.dart';
 import 'auth/auth_state_listener.dart';
 import 'auth/auth_validators.dart';
-import 'realtime_controller.dart'; // ⭐ v3.9
+import 'interfaces/i_realtime_controller.dart'; // ⭐ v3.9
 
 /// 身份驗證控制器
 ///
@@ -82,9 +82,10 @@ class AuthController extends ChangeNotifier implements IAuthController {
       notifyListeners();
       
       // ⭐ v3.9: 如果已登入，訂閱全局預約 Realtime（App 重啟時）
-      if (_user != null) {
+      final currentUser = _user;
+      if (currentUser != null) {
         if (kDebugMode) {
-          debugPrint('[AUTH_CONTROLLER] 🔴 已登入用戶 ${_user!.uid}，開始訂閱 Realtime...');
+          debugPrint('[AUTH_CONTROLLER] 🔴 已登入用戶 ${currentUser.uid}，開始訂閱 Realtime...');
         }
         _subscribeToAppointmentsRealtime();
       } else {
@@ -396,7 +397,7 @@ class AuthController extends ChangeNotifier implements IAuthController {
     if (userId == null) return;
     
     try {
-      final realtimeController = serviceLocator<RealtimeController>();
+      final realtimeController = serviceLocator<IRealtimeController>();
       
       // 1. 訂閱預約變更
       _appointmentsRealtimeId = realtimeController.subscribeToUserAppointments(
@@ -431,7 +432,7 @@ class AuthController extends ChangeNotifier implements IAuthController {
   /// ⭐ v3.9: 取消全局 Realtime 訂閱（登出時調用）
   void _unsubscribeFromAppointmentsRealtime() {
     try {
-      final realtimeController = serviceLocator<RealtimeController>();
+      final realtimeController = serviceLocator<IRealtimeController>();
       
       if (_appointmentsRealtimeId != null) {
         realtimeController.unsubscribe(_appointmentsRealtimeId!);

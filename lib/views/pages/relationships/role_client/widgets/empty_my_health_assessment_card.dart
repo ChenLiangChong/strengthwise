@@ -36,7 +36,7 @@ class EmptyMyHealthAssessmentCard extends StatelessWidget {
             Icon(
               Icons.health_and_safety_outlined,
               size: 64,
-              color: colorScheme.primary.withOpacity(0.5),
+              color: colorScheme.primary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             
@@ -75,7 +75,7 @@ class EmptyMyHealthAssessmentCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(

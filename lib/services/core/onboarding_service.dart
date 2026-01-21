@@ -61,11 +61,11 @@ class OnboardingService {
       }
       
       if (kDebugMode) {
-        print('[OnboardingService] ✅ 初始化完成');
+        debugPrint('[OnboardingService] ✅ 初始化完成');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[OnboardingService] ⚠️ 初始化失敗: $e');
+        debugPrint('[OnboardingService] ⚠️ 初始化失敗: $e');
       }
     }
   }
@@ -89,7 +89,7 @@ class OnboardingService {
       return box.get(key, defaultValue: false) as bool;
     } catch (e) {
       if (kDebugMode) {
-        print('[OnboardingService] ⚠️ 讀取 Coach Mark 狀態失敗 ($key): $e');
+        debugPrint('[OnboardingService] ⚠️ 讀取 Coach Mark 狀態失敗 ($key): $e');
       }
       return false;
     }
@@ -102,11 +102,11 @@ class OnboardingService {
       await box.put(key, true);
       
       if (kDebugMode) {
-        print('[OnboardingService] ✅ Coach Mark 已完成: $key');
+        debugPrint('[OnboardingService] ✅ Coach Mark 已完成: $key');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[OnboardingService] ⚠️ 標記 Coach Mark 失敗 ($key): $e');
+        debugPrint('[OnboardingService] ⚠️ 標記 Coach Mark 失敗 ($key): $e');
       }
     }
   }
@@ -133,7 +133,7 @@ class OnboardingService {
       return box.get(keyAskedCoachMode, defaultValue: false) as bool;
     } catch (e) {
       if (kDebugMode) {
-        print('[OnboardingService] ⚠️ 讀取教練模式詢問狀態失敗: $e');
+        debugPrint('[OnboardingService] ⚠️ 讀取教練模式詢問狀態失敗: $e');
       }
       return false;
     }
@@ -146,11 +146,11 @@ class OnboardingService {
       await box.put(keyAskedCoachMode, true);
       
       if (kDebugMode) {
-        print('[OnboardingService] ✅ 教練模式詢問已標記');
+        debugPrint('[OnboardingService] ✅ 教練模式詢問已標記');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[OnboardingService] ⚠️ 標記教練模式詢問失敗: $e');
+        debugPrint('[OnboardingService] ⚠️ 標記教練模式詢問失敗: $e');
       }
     }
   }
@@ -171,11 +171,11 @@ class OnboardingService {
       // 注意：不重置 keyAskedCoachMode，避免重複詢問
       
       if (kDebugMode) {
-        print('[OnboardingService] ✅ 所有 Coach Mark 已重置');
+        debugPrint('[OnboardingService] ✅ 所有 Coach Mark 已重置');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[OnboardingService] ⚠️ 重置 Coach Mark 失敗: $e');
+        debugPrint('[OnboardingService] ⚠️ 重置 Coach Mark 失敗: $e');
       }
     }
   }
@@ -187,11 +187,11 @@ class OnboardingService {
       await box.put(key, false);
       
       if (kDebugMode) {
-        print('[OnboardingService] ✅ Coach Mark 已重置: $key');
+        debugPrint('[OnboardingService] ✅ Coach Mark 已重置: $key');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('[OnboardingService] ⚠️ 重置 Coach Mark 失敗 ($key): $e');
+        debugPrint('[OnboardingService] ⚠️ 重置 Coach Mark 失敗 ($key): $e');
       }
     }
   }

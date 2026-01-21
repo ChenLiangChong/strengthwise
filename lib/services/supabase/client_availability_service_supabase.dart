@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:strengthwise/models/client_availability_model.dart';
 import 'package:strengthwise/services/interfaces/i_client_availability_service.dart';
+import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/utils/datetime_utils.dart';
 
 /// Client Availability Service Supabase 實現
@@ -14,8 +15,9 @@ const String _kClientAvailabilitySelectFields = '''
 
 class ClientAvailabilityServiceSupabase implements IClientAvailabilityService {
   final SupabaseClient _supabase;
+  final ErrorHandlingService _errorService;
 
-  ClientAvailabilityServiceSupabase(this._supabase);
+  ClientAvailabilityServiceSupabase(this._supabase, this._errorService);
 
   // ==================== 查詢方法 ====================
 
@@ -24,31 +26,47 @@ class ClientAvailabilityServiceSupabase implements IClientAvailabilityService {
     required String clientId,
     AvailabilityPriority? priority,
   }) async {
-    var query = _supabase
-        .from('client_availability')
-        .select(_kClientAvailabilitySelectFields)
-        .eq('client_id', clientId);
+    try {
+      var query = _supabase
+          .from('client_availability')
+          .select(_kClientAvailabilitySelectFields)
+          .eq('client_id', clientId);
 
-    if (priority != null) {
-      query = query.eq('priority', priority.toJson());
+      if (priority != null) {
+        query = query.eq('priority', priority.toJson());
+      }
+
+      final response = await query.order('time_range', ascending: true);
+      return (response as List)
+          .map((json) => ClientAvailabilityModel.fromSupabase(json))
+          .toList();
+    } catch (e) {
+      _errorService.logError(
+        '查詢學員可用時段失敗: $e',
+        type: 'ClientAvailabilityServiceError',
+      );
+      rethrow;
     }
-
-    final response = await query.order('time_range', ascending: true);
-    return (response as List)
-        .map((json) => ClientAvailabilityModel.fromSupabase(json))
-        .toList();
   }
 
   @override
   Future<ClientAvailabilityModel?> getAvailabilityById(String id) async {
-    final response = await _supabase
-        .from('client_availability')
-        .select(_kClientAvailabilitySelectFields)
-        .eq('id', id)
-        .maybeSingle();
+    try {
+      final response = await _supabase
+          .from('client_availability')
+          .select(_kClientAvailabilitySelectFields)
+          .eq('id', id)
+          .maybeSingle();
 
-    if (response == null) return null;
-    return ClientAvailabilityModel.fromSupabase(response);
+      if (response == null) return null;
+      return ClientAvailabilityModel.fromSupabase(response);
+    } catch (e) {
+      _errorService.logError(
+        '查詢可用時段詳情失敗: $e',
+        type: 'ClientAvailabilityServiceError',
+      );
+      rethrow;
+    }
   }
 
   @override
@@ -57,19 +75,27 @@ class ClientAvailabilityServiceSupabase implements IClientAvailabilityService {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
-    // 使用 PostgreSQL 範圍重疊運算子
-    final rangeStr = DateTimeUtils.formatToTstzRange(startDate, endDate);
+    try {
+      // 使用 PostgreSQL 範圍重疊運算子
+      final rangeStr = DateTimeUtils.formatToTstzRange(startDate, endDate);
 
-    final response = await _supabase
-        .from('client_availability')
-        .select(_kClientAvailabilitySelectFields)
-        .eq('client_id', clientId)
-        .filter('time_range', 'ov', rangeStr)
-        .order('time_range', ascending: true);
+      final response = await _supabase
+          .from('client_availability')
+          .select(_kClientAvailabilitySelectFields)
+          .eq('client_id', clientId)
+          .filter('time_range', 'ov', rangeStr)
+          .order('time_range', ascending: true);
 
-    return (response as List)
-        .map((json) => ClientAvailabilityModel.fromSupabase(json))
-        .toList();
+      return (response as List)
+          .map((json) => ClientAvailabilityModel.fromSupabase(json))
+          .toList();
+    } catch (e) {
+      _errorService.logError(
+        '查詢日期範圍內可用時段失敗: $e',
+        type: 'ClientAvailabilityServiceError',
+      );
+      rethrow;
+    }
   }
 
   @override
@@ -88,53 +114,85 @@ class ClientAvailabilityServiceSupabase implements IClientAvailabilityService {
   Future<ClientAvailabilityModel> createAvailability(
     ClientAvailabilityModel availability,
   ) async {
-    final data = availability.toSupabase(includeId: false);
+    try {
+      final data = availability.toSupabase(includeId: false);
 
-    final response = await _supabase
-        .from('client_availability')
-        .insert(data)
-        .select(_kClientAvailabilitySelectFields)
-        .single();
+      final response = await _supabase
+          .from('client_availability')
+          .insert(data)
+          .select(_kClientAvailabilitySelectFields)
+          .single();
 
-    return ClientAvailabilityModel.fromSupabase(response);
+      return ClientAvailabilityModel.fromSupabase(response);
+    } catch (e) {
+      _errorService.logError(
+        '創建可用時段失敗: $e',
+        type: 'ClientAvailabilityServiceError',
+      );
+      rethrow;
+    }
   }
 
   @override
   Future<ClientAvailabilityModel> updateAvailability(
     ClientAvailabilityModel availability,
   ) async {
-    final data = availability.toSupabase(includeId: false);
+    try {
+      final data = availability.toSupabase(includeId: false);
 
-    final response = await _supabase
-        .from('client_availability')
-        .update(data)
-        .eq('id', availability.id)
-        .select(_kClientAvailabilitySelectFields)
-        .single();
+      final response = await _supabase
+          .from('client_availability')
+          .update(data)
+          .eq('id', availability.id)
+          .select(_kClientAvailabilitySelectFields)
+          .single();
 
-    return ClientAvailabilityModel.fromSupabase(response);
+      return ClientAvailabilityModel.fromSupabase(response);
+    } catch (e) {
+      _errorService.logError(
+        '更新可用時段失敗: $e',
+        type: 'ClientAvailabilityServiceError',
+      );
+      rethrow;
+    }
   }
 
   @override
   Future<void> deleteAvailability(String id) async {
-    await _supabase.from('client_availability').delete().eq('id', id);
+    try {
+      await _supabase.from('client_availability').delete().eq('id', id);
+    } catch (e) {
+      _errorService.logError(
+        '刪除可用時段失敗: $e',
+        type: 'ClientAvailabilityServiceError',
+      );
+      rethrow;
+    }
   }
 
   @override
   Future<List<ClientAvailabilityModel>> batchCreateAvailability(
     List<ClientAvailabilityModel> availabilities,
   ) async {
-    final dataList =
-        availabilities.map((a) => a.toSupabase(includeId: false)).toList();
+    try {
+      final dataList =
+          availabilities.map((a) => a.toSupabase(includeId: false)).toList();
 
-    final response = await _supabase
-        .from('client_availability')
-        .insert(dataList)
-        .select(_kClientAvailabilitySelectFields);
+      final response = await _supabase
+          .from('client_availability')
+          .insert(dataList)
+          .select(_kClientAvailabilitySelectFields);
 
-    return (response as List)
-        .map((json) => ClientAvailabilityModel.fromSupabase(json))
-        .toList();
+      return (response as List)
+          .map((json) => ClientAvailabilityModel.fromSupabase(json))
+          .toList();
+    } catch (e) {
+      _errorService.logError(
+        '批量創建可用時段失敗: $e',
+        type: 'ClientAvailabilityServiceError',
+      );
+      rethrow;
+    }
   }
 
   // ==================== 輔助方法 ====================
@@ -146,21 +204,29 @@ class ClientAvailabilityServiceSupabase implements IClientAvailabilityService {
     required DateTime endTime,
     String? excludeId,
   }) async {
-    final rangeStr = DateTimeUtils.formatToTstzRange(startTime, endTime);
+    try {
+      final rangeStr = DateTimeUtils.formatToTstzRange(startTime, endTime);
 
-    var query = _supabase
-        .from('client_availability')
-        .select('id')
-        .eq('client_id', clientId)
-        .filter('time_range', 'ov', rangeStr);
+      var query = _supabase
+          .from('client_availability')
+          .select('id')
+          .eq('client_id', clientId)
+          .filter('time_range', 'ov', rangeStr);
 
-    // 排除自己（更新時）
-    if (excludeId != null) {
-      query = query.neq('id', excludeId);
+      // 排除自己（更新時）
+      if (excludeId != null) {
+        query = query.neq('id', excludeId);
+      }
+
+      final response = await query;
+      return (response as List).isNotEmpty;
+    } catch (e) {
+      _errorService.logError(
+        '檢查時段衝突失敗: $e',
+        type: 'ClientAvailabilityServiceError',
+      );
+      rethrow;
     }
-
-    final response = await query;
-    return (response as List).isNotEmpty;
   }
 
   @override
@@ -168,27 +234,35 @@ class ClientAvailabilityServiceSupabase implements IClientAvailabilityService {
     required String clientId,
     required DateTime date,
   }) async {
-    // 查詢指定日期的時段
-    final startOfDay = DateTime(date.year, date.month, date.day);
-    final endOfDay = startOfDay.add(const Duration(days: 1));
+    try {
+      // 查詢指定日期的時段
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    final slots = await getAvailabilityInRange(
-      clientId: clientId,
-      startDate: startOfDay,
-      endDate: endOfDay,
-    );
+      final slots = await getAvailabilityInRange(
+        clientId: clientId,
+        startDate: startOfDay,
+        endDate: endOfDay,
+      );
 
-    // 依優先級排序（preferred > available > avoid）
-    slots.sort((a, b) {
-      final priorityOrder = {
-        AvailabilityPriority.preferred: 0,
-        AvailabilityPriority.available: 1,
-        AvailabilityPriority.avoid: 2,
-      };
-      return (priorityOrder[a.priority] ?? 1)
-          .compareTo(priorityOrder[b.priority] ?? 1);
-    });
+      // 依優先級排序（preferred > available > avoid）
+      slots.sort((a, b) {
+        final priorityOrder = {
+          AvailabilityPriority.preferred: 0,
+          AvailabilityPriority.available: 1,
+          AvailabilityPriority.avoid: 2,
+        };
+        return (priorityOrder[a.priority] ?? 1)
+            .compareTo(priorityOrder[b.priority] ?? 1);
+      });
 
-    return slots;
+      return slots;
+    } catch (e) {
+      _errorService.logError(
+        '查詢偏好時段失敗: $e',
+        type: 'ClientAvailabilityServiceError',
+      );
+      rethrow;
+    }
   }
 }

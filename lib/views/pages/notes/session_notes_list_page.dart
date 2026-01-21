@@ -2,10 +2,10 @@
 // ✅ v3.6: MVVM 重構 - 移除 Service 直接調用
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/session_note_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_session_note_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart'; // ⭐ v3.6: MVVM
-import 'package:strengthwise/controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/models/session_note/session_note_model.dart';
 import 'package:strengthwise/models/user_model.dart';
 import 'package:strengthwise/models/client_with_relationship.dart';
@@ -67,10 +67,10 @@ class SessionNotesListPage extends StatefulWidget {
 }
 
 class _SessionNotesListPageState extends State<SessionNotesListPage> {
-  late final SessionNoteController _controller;
+  late final ISessionNoteController _controller;
   late final IAuthController _authController;
-  late final CoachingRelationshipController _coachingController; // ⭐ v3.6: MVVM
-  late final ProfileController _profileController; // ⭐ v3.6: MVVM
+  late final ICoachingRelationshipController _coachingController; // ⭐ v3.6: MVVM
+  late final IProfileController _profileController; // ⭐ v3.6: MVVM
   String _currentFilter = 'all'; // 'all', 'private', 'shared'
 
   // UX 重構：學員篩選與搜尋
@@ -92,27 +92,27 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
   void initState() {
     super.initState();
     // ⭐ v3.6: MVVM 重構 - 只使用 Controller，不直接使用 Service
-    _controller = serviceLocator<SessionNoteController>();
+    _controller = serviceLocator<ISessionNoteController>();
     _authController = serviceLocator<IAuthController>();
-    _coachingController = serviceLocator<CoachingRelationshipController>();
-    _profileController = serviceLocator<ProfileController>();
+    _coachingController = serviceLocator<ICoachingRelationshipController>();
+    _profileController = serviceLocator<IProfileController>();
     _searchController.addListener(_onSearchChanged);
 
     // 調試：顯示當前用戶資訊
     final currentUser = _authController.user;
-    print(
+    debugPrint(
         '[SessionNotesListPage] 📱 當前用戶: ${currentUser?.email} (${currentUser?.uid})');
-    print('[SessionNotesListPage] 📱 是否教練: ${currentUser?.isCoach}');
-    print(
+    debugPrint('[SessionNotesListPage] 📱 是否教練: ${currentUser?.isCoach}');
+    debugPrint(
         '[SessionNotesListPage] 📱 showClientFilter: ${widget.showClientFilter}');
 
     // ⭐ 總是載入學員列表（用於顯示學員名稱）
-    print('[SessionNotesListPage] 🔄 準備載入學員列表...');
+    debugPrint('[SessionNotesListPage] 🔄 準備載入學員列表...');
     _loadClientsList();
 
     // ⭐ 學員模式：載入教練列表（用於篩選和顯示教練名稱）
     if (widget.isClientMode) {
-      print('[SessionNotesListPage] 🔄 學員模式：準備載入教練列表...');
+      debugPrint('[SessionNotesListPage] 🔄 學員模式：準備載入教練列表...');
       _loadCoachesList();
     }
 
@@ -136,11 +136,11 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
   Future<void> _loadClientsList() async {
     final currentUser = _authController.user;
     if (currentUser == null) {
-      print('[SessionNotesListPage] ❌ 無法獲取當前用戶');
+      debugPrint('[SessionNotesListPage] ❌ 無法獲取當前用戶');
       return;
     }
 
-    print('[SessionNotesListPage] 🔄 開始載入學員列表，當前用戶: ${currentUser.email}');
+    debugPrint('[SessionNotesListPage] 🔄 開始載入學員列表，當前用戶: ${currentUser.email}');
 
     setState(() {
       _isLoadingClients = true;
@@ -157,7 +157,7 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
               await _profileController.getUserProfileById(widget.clientId!);
           if (clientProfile != null) {
             clients = [clientProfile];
-            print(
+            debugPrint(
                 '[SessionNotesListPage] ✅ 學員模式：載入完整用戶資料 (${clientProfile.displayName ?? clientProfile.email})');
           }
         }
@@ -166,9 +166,9 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
         final userProfile = await _profileController.getUserProfileById(currentUser.uid);
         final isCoach = userProfile?.isCoach ?? false;
 
-        print(
+        debugPrint(
             '[SessionNotesListPage] 📋 完整用戶資料：${userProfile?.displayName ?? userProfile?.email}');
-        print('[SessionNotesListPage] 📋 isCoach (從資料庫): $isCoach');
+        debugPrint('[SessionNotesListPage] 📋 isCoach (從資料庫): $isCoach');
 
         if (isCoach) {
           // ⭐ v3.6: 透過 CoachingRelationshipController 載入學員列表
@@ -184,7 +184,7 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
               .map((c) => c.user!)
               .toList();
 
-          print(
+          debugPrint(
               '[SessionNotesListPage] ✅ 教練模式：成功載入 ${clientsWithRel.length} 個學員（含歷史）');
 
           // 保存完整資料（用於篩選器）
@@ -197,12 +197,12 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
             return; // ⭐ 提前返回
           }
         } else {
-          print('[SessionNotesListPage] ⚠️  非教練用戶，不載入學員列表');
+          debugPrint('[SessionNotesListPage] ⚠️  非教練用戶，不載入學員列表');
         }
       }
 
       for (var client in clients) {
-        print('  - ${client.displayName ?? client.email} (${client.uid})');
+        debugPrint('  - ${client.displayName ?? client.email} (${client.uid})');
       }
 
       if (mounted) {
@@ -212,8 +212,8 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
         });
       }
     } catch (e, stackTrace) {
-      print('[SessionNotesListPage] ❌ 載入學員列表失敗: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('[SessionNotesListPage] ❌ 載入學員列表失敗: $e');
+      debugPrint('Stack trace: $stackTrace');
 
       if (mounted) {
         setState(() {
@@ -236,11 +236,11 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
   Future<void> _loadCoachesList() async {
     final currentUser = _authController.user;
     if (currentUser == null) {
-      print('[SessionNotesListPage] ❌ 無法獲取當前用戶');
+      debugPrint('[SessionNotesListPage] ❌ 無法獲取當前用戶');
       return;
     }
 
-    print('[SessionNotesListPage] 🔄 開始載入教練列表，當前學員: ${currentUser.email}');
+    debugPrint('[SessionNotesListPage] 🔄 開始載入教練列表，當前學員: ${currentUser.email}');
 
     setState(() {
       _isLoadingCoaches = true;
@@ -260,7 +260,7 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
           .map((c) => c.user!)
           .toList();
 
-      print(
+      debugPrint(
           '[SessionNotesListPage] ✅ 學員模式：成功載入 ${coachesWithRel.length} 個教練（含歷史）');
 
       if (mounted) {
@@ -269,11 +269,11 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
           _coachsList = coaches;
           _isLoadingCoaches = false;
         });
-        print('[SessionNotesListPage] ✅ 最終教練列表：${coaches.length} 個教練');
+        debugPrint('[SessionNotesListPage] ✅ 最終教練列表：${coaches.length} 個教練');
       }
     } catch (e, stackTrace) {
-      print('[SessionNotesListPage] ❌ 載入教練列表失敗: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('[SessionNotesListPage] ❌ 載入教練列表失敗: $e');
+      debugPrint('Stack trace: $stackTrace');
 
       if (mounted) {
         setState(() {
@@ -302,16 +302,17 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
       String? filterCoachId;
       String? filterCoachName;
 
-      if (_selectedCoach != null) {
+      final selectedCoach = _selectedCoach;
+      if (selectedCoach != null) {
         // ⭐ 使用選中的教練
-        filterCoachId = _selectedCoach!.relationship.coachId; // 可能為 null
+        filterCoachId = selectedCoach.relationship.coachId; // 可能為 null
         if (filterCoachId == null) {
           // ⭐ 已刪除的教練：使用 coach_name 查詢
-          filterCoachName = _selectedCoach!.displayName;
+          filterCoachName = selectedCoach.displayName;
         }
       }
 
-      print(
+      debugPrint(
           '[SessionNotesListPage] 🔍 學員模式載入筆記：coachId=$filterCoachId, coachName=$filterCoachName');
 
       await _controller.loadClientNotes(
@@ -331,19 +332,20 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
       String? filterClientId;
       String? filterClientName;
 
-      if (_selectedClient != null) {
+      final selectedClient = _selectedClient;
+      if (selectedClient != null) {
         // ⭐ 使用選中的學員
-        filterClientId = _selectedClient!.relationship.clientId; // 可能為 null
+        filterClientId = selectedClient.relationship.clientId; // 可能為 null
         if (filterClientId == null) {
           // ⭐ 已刪除的學員：使用 client_name 查詢
-          filterClientName = _selectedClient!.displayName;
+          filterClientName = selectedClient.displayName;
         }
       } else if (widget.clientId != null) {
         // 使用傳入的 clientId
         filterClientId = widget.clientId;
       }
 
-      print(
+      debugPrint(
           '[SessionNotesListPage] 🔍 載入筆記：clientId=$filterClientId, clientName=$filterClientName');
 
       await _controller.loadCoachNotes(
@@ -408,7 +410,7 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
+    return ChangeNotifierProvider<ISessionNoteController>.value(
       value: _controller,
       child: Scaffold(
         // ⭐ 移除標題（外層 TabBar 已有標籤），只保留 actions
@@ -436,6 +438,7 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
                   if (clientId != null && mounted) {
                     // 導航到新增筆記頁面
                     final result = await Navigator.push<bool>(
+                      // ignore: use_build_context_synchronously - mounted 已檢查
                       context,
                       MaterialPageRoute(
                         builder: (context) => SessionNoteEditorPage(
@@ -454,7 +457,7 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
               ),
           ],
         ),
-        body: Consumer<SessionNoteController>(
+        body: Consumer<ISessionNoteController>(
           builder: (context, controller, child) {
             // 載入中狀態
             if (controller.isLoading) {
@@ -534,10 +537,11 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
                                 clientName = note.clientName;
 
                                 // 否則從列表查找或使用傳入的學員資訊
+                                final widgetClient = widget.client;
                                 if (clientName == null) {
-                                  if (widget.client != null) {
-                                    clientName = widget.client!.displayName ??
-                                        widget.client!.email;
+                                  if (widgetClient != null) {
+                                    clientName = widgetClient.displayName ??
+                                        widgetClient.email;
                                   } else if (_clientsList.isNotEmpty) {
                                     final client = _clientsList.firstWhere(
                                       (c) => c.uid == note.clientId,
@@ -558,10 +562,11 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
                                 coachName = note.coachName;
 
                                 // 否則從列表查找或使用傳入的教練資訊
+                                final widgetCoach = widget.coach;
                                 if (coachName == null) {
-                                  if (widget.coach != null) {
-                                    coachName = widget.coach!.displayName ??
-                                        widget.coach!.email;
+                                  if (widgetCoach != null) {
+                                    coachName = widgetCoach.displayName ??
+                                        widgetCoach.email;
                                   } else if (_coachsList.isNotEmpty) {
                                     final coachId = note.coachId;
                                     if (coachId != null && coachId.isNotEmpty) {
@@ -934,7 +939,7 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
           }
         }
       } catch (e) {
-        print('[SessionNotesListPage] ❌ 檢查綁定關係失敗: $e');
+        debugPrint('[SessionNotesListPage] ❌ 檢查綁定關係失敗: $e');
         // 如果查詢失敗，繼續執行（讓 RLS 決定）
       }
     }
@@ -961,6 +966,7 @@ class _SessionNotesListPageState extends State<SessionNotesListPage> {
     }
 
     // 顯示確認對話框
+    if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: false, // 🐛 修復：禁止點擊旁邊關閉

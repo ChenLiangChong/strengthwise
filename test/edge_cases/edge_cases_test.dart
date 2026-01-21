@@ -170,6 +170,7 @@ void main() {
     test('nullable 變數處理', () {
       String? nullableStr;
       expect(nullableStr, isNull);
+      // ignore: dead_code - 測試 null 安全運算符行為
       expect(nullableStr?.length, isNull);
     });
 

@@ -2,7 +2,7 @@
 
 > Supabase PostgreSQL 資料庫架構與最佳實踐
 
-**最後更新**：2026-01-12（v3.3）
+**最後更新**：2026-01-17（v3.9）
 
 ---
 
@@ -48,6 +48,18 @@ Supabase PostgreSQL（24 個表格）
     ├── daily_workout_summary - 每日訓練統計
     └── personal_records      - 個人記錄彙總
 ```
+
+### Realtime 配置（v3.9）
+
+以下表格已啟用 Realtime 即時同步：
+
+| 表格 | 用途 | REPLICA IDENTITY |
+|------|------|------------------|
+| `availability_slots` | 教練可用時段 | FULL |
+| `client_availability` | 學員時間偏好 | FULL |
+| `appointments` | 預約記錄 | FULL |
+
+**REPLICA IDENTITY FULL**：確保 DELETE 事件可獲取完整 oldRecord 資料，用於跨用戶即時同步。
 
 ---
 

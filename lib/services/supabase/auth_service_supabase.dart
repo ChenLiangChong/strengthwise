@@ -288,14 +288,14 @@ class AuthServiceSupabase implements IAuthService {
   /// 偵錯日誌
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[AUTH_SUPABASE] $message');
+      debugPrint('[AUTH_SUPABASE] $message');
     }
   }
 
   /// 錯誤日誌
   void _logError(String message) {
     if (kDebugMode) {
-      print('[AUTH_SUPABASE ERROR] $message');
+      debugPrint('[AUTH_SUPABASE ERROR] $message');
     }
     _errorService?.logError(message, type: 'AuthError');
   }

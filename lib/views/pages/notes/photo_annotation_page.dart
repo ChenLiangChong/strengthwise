@@ -128,11 +128,12 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
 
   /// 轉換到照片座標
   Offset _convertToImageCoordinates(Offset screenOffset, Size canvasSize) {
-    if (_imageSize == null) return Offset.zero;
+    final imageSize = _imageSize;
+    if (imageSize == null) return Offset.zero;
 
     // 計算縮放比例
-    final scaleX = _imageSize!.width / canvasSize.width;
-    final scaleY = _imageSize!.height / canvasSize.height;
+    final scaleX = imageSize.width / canvasSize.width;
+    final scaleY = imageSize.height / canvasSize.height;
 
     return Offset(
       screenOffset.dx * scaleX,
@@ -272,7 +273,7 @@ class _PhotoAnnotationPageState extends State<PhotoAnnotationPage> {
               color: theme.colorScheme.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, -2),
                 ),
@@ -437,7 +438,7 @@ class CircleAnnotation extends Annotation {
       'type': 'circle',
       'center': {'x': center.dx, 'y': center.dy},
       'radius': radius,
-      'color': color.value,
+      'color': color.toARGB32(),
     };
   }
 }
@@ -471,7 +472,7 @@ class ArrowAnnotation extends Annotation {
       'type': 'arrow',
       'start': {'x': start.dx, 'y': start.dy},
       'end': {'x': end.dx, 'y': end.dy},
-      'color': color.value,
+      'color': color.toARGB32(),
     };
   }
 }
@@ -493,7 +494,7 @@ class TextAnnotation extends Annotation {
       'type': 'text',
       'position': {'x': position.dx, 'y': position.dy},
       'text': text,
-      'color': color.value,
+      'color': color.toARGB32(),
     };
   }
 }

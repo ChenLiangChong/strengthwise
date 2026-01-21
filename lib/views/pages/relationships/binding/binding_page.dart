@@ -1,7 +1,7 @@
 // ✅ 已響應式改造 (Phase 0) - Tab 子組件處理
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'widgets/my_qrcode_tab.dart';
 import 'widgets/scan_qrcode_tab.dart';
@@ -32,13 +32,13 @@ class BindingPage extends StatefulWidget {
 class _BindingPageState extends State<BindingPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late CoachingRelationshipController _controller;
+  late ICoachingRelationshipController _controller;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _controller = serviceLocator<CoachingRelationshipController>();
+    _controller = serviceLocator<ICoachingRelationshipController>();
   }
 
   @override
@@ -52,7 +52,7 @@ class _BindingPageState extends State<BindingPage>
     final colorScheme = Theme.of(context).colorScheme;
     final isCoach = widget.currentRole == 'coach';
 
-    return ChangeNotifierProvider<CoachingRelationshipController>.value(
+    return ChangeNotifierProvider<ICoachingRelationshipController>.value(
       value: _controller,
       child: Scaffold(
         appBar: AppBar(

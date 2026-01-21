@@ -1,3 +1,5 @@
+import 'package:strengthwise/utils/datetime_utils.dart';
+
 /// 教練顯示偏好模型
 ///
 /// 用於儲存教練在學員詳情頁的顯示偏好設定
@@ -61,7 +63,7 @@ class CoachDisplayPreferencesModel {
       healthAssessmentFields:
           (json['health_assessment_fields'] as List?)?.cast<String>() ??
               defaultFields,
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      updatedAt: DateTimeUtils.parseIsoTimestamp(json['updated_at'] as String),
     );
   }
 
@@ -70,7 +72,7 @@ class CoachDisplayPreferencesModel {
     return {
       'coach_id': coachId,
       'health_assessment_fields': healthAssessmentFields,
-      'updated_at': DateTime.now().toUtc().toIso8601String(),
+      'updated_at': DateTimeUtils.formatToUtcIso(DateTime.now()),
     };
   }
 

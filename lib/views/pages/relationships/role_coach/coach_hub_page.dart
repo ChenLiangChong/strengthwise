@@ -256,21 +256,28 @@ class _CoachHubPageState extends State<CoachHubPage>
 
           // 【右側面板】 - 根據選中內容顯示不同 Detail
           Expanded(
-            child: _selectedClient != null
-                ? ClientDetailContent(
-                    key: ValueKey(_selectedClient!.uid),
-                    clientId: _selectedClient!.uid,
-                    client: _selectedClient!,
-                  )
-                : _selectedAppointmentId != null
-                    ? AppointmentDetailsContent(
-                        key: ValueKey(_selectedAppointmentId),
-                        appointmentId: _selectedAppointmentId!,
-                        isCoachMode: true,
-                        onClose: () =>
-                            setState(() => _selectedAppointmentId = null),
-                      )
-                    : _buildEmptyDetailState(context),
+            child: Builder(
+              builder: (context) {
+                final client = _selectedClient;
+                final appointmentId = _selectedAppointmentId;
+                if (client != null) {
+                  return ClientDetailContent(
+                    key: ValueKey(client.uid),
+                    clientId: client.uid,
+                    client: client,
+                  );
+                } else if (appointmentId != null) {
+                  return AppointmentDetailsContent(
+                    key: ValueKey(appointmentId),
+                    appointmentId: appointmentId,
+                    isCoachMode: true,
+                    onClose: () =>
+                        setState(() => _selectedAppointmentId = null),
+                  );
+                }
+                return _buildEmptyDetailState(context);
+              },
+            ),
           ),
         ],
       ),

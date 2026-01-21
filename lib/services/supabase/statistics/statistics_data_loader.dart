@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../utils/datetime_utils.dart';
 
@@ -60,7 +61,7 @@ class StatisticsDataLoader {
           trainingDate = DateTimeUtils.parseIsoTimestamp(updatedAtStr);
         }
       } catch (e) {
-        print('[STATISTICS_LOADER] ❌ 解析日期失敗：$e');
+        debugPrint('[STATISTICS_LOADER] ❌ 解析日期失敗：$e');
         return false;
       }
 

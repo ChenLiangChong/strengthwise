@@ -29,7 +29,7 @@ class EmptyNotesState extends StatelessWidget {
             Icon(
               _getIcon(),
               size: 80.scaled(context), // ⭐ 響應式圖標
-              color: colorScheme.primary.withOpacity(0.3),
+              color: colorScheme.primary.withValues(alpha: 0.3),
             ),
 
             SizedBox(height: context.spacing.lg), // ⭐ 響應式間距

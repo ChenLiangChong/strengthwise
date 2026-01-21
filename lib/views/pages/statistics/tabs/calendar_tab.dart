@@ -248,11 +248,11 @@ class CalendarTab extends StatelessWidget {
       case 0:
         return surfaceVariant;
       case 1:
-        return secondary.withOpacity(0.2);
+        return secondary.withValues(alpha: 0.2);
       case 2:
-        return secondary.withOpacity(0.5);
+        return secondary.withValues(alpha: 0.5);
       case 3:
-        return secondary.withOpacity(0.7);
+        return secondary.withValues(alpha: 0.7);
       case 4:
         return secondary;
       default:

@@ -4,10 +4,14 @@ import 'dart:async';
 /// 預約監聽器管理器
 ///
 /// 負責設置和管理 Supabase Realtime 監聽器
+/// ⭐ v3.9.1：新增 dispose() 方法，避免記憶體洩漏
 class BookingListenerManager {
   final SupabaseClient _supabase;
   final void Function(PostgresChangePayload, {required bool isCoach}) _onBookingChange;
   final void Function(String) _logDebug;
+
+  /// ⭐ 儲存 channel 引用，以便在 dispose 時取消訂閱
+  final List<RealtimeChannel> _channels = [];
 
   BookingListenerManager({
     required SupabaseClient supabase,
@@ -23,9 +27,12 @@ class BookingListenerManager {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) return;
 
+    // ⭐ 先清理舊的訂閱（避免重複訂閱）
+    await dispose();
+
     try {
       // 監聽用戶的預約更新（使用 Supabase Realtime）
-      _supabase
+      final userChannel = _supabase
           .channel('user_bookings_$userId')
           .onPostgresChanges(
             event: PostgresChangeEvent.all,
@@ -42,6 +49,7 @@ class BookingListenerManager {
           )
           .subscribe();
 
+      _channels.add(userChannel);
       _logDebug('用戶預約監聽器設置成功');
 
       // 檢查用戶是否為教練
@@ -53,7 +61,7 @@ class BookingListenerManager {
 
       if (userResponse != null && userResponse['is_coach'] == true) {
         // 監聽教練的預約更新
-        _supabase
+        final coachChannel = _supabase
             .channel('coach_bookings_$userId')
             .onPostgresChanges(
               event: PostgresChangeEvent.all,
@@ -70,10 +78,26 @@ class BookingListenerManager {
             )
             .subscribe();
 
+        _channels.add(coachChannel);
         _logDebug('教練預約監聽器設置成功');
       }
     } catch (e) {
       _logDebug('Bookings 設置監聽器失敗（可能是權限問題）: $e');
+    }
+  }
+
+  /// ⭐ 清理所有訂閱（登出或切換用戶時調用）
+  Future<void> dispose() async {
+    for (final channel in _channels) {
+      try {
+        await _supabase.removeChannel(channel);
+      } catch (e) {
+        _logDebug('取消訂閱失敗: $e');
+      }
+    }
+    _channels.clear();
+    if (_channels.isEmpty) {
+      _logDebug('預約監聽器已清理');
     }
   }
 }

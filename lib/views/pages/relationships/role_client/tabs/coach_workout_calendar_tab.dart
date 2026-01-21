@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:strengthwise/controllers/coach_management_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coach_management_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_workout_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/user/user_model.dart';
@@ -54,7 +54,7 @@ class _CoachWorkoutCalendarTabState extends State<CoachWorkoutCalendarTab> {
       _workoutController.clearUserPlansCache(widget.clientId);
     }
     
-    final controller = context.read<CoachManagementController>();
+    final controller = context.read<ICoachManagementController>();
     final firstDay = DateTime(month.year, month.month, 1);
     final lastDay = DateTime(month.year, month.month + 1, 0);
 
@@ -84,7 +84,7 @@ class _CoachWorkoutCalendarTabState extends State<CoachWorkoutCalendarTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<CoachManagementController>(
+    return Consumer<ICoachManagementController>(
       builder: (context, controller, child) {
         if (controller.isLoading) {
           return const Center(child: CircularProgressIndicator());
@@ -156,10 +156,10 @@ class _CoachWorkoutCalendarTabState extends State<CoachWorkoutCalendarTab> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withOpacity(0.3),
+        color: colorScheme.primaryContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.primary.withOpacity(0.3),
+          color: colorScheme.primary.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -187,7 +187,7 @@ class _CoachWorkoutCalendarTabState extends State<CoachWorkoutCalendarTab> {
   }
 
   /// 建立訓練列表
-  Widget _buildWorkoutList(CoachManagementController controller) {
+  Widget _buildWorkoutList(ICoachManagementController controller) {
     final workouts = controller.getWorkoutsForDate(_selectedDay);
 
     if (workouts.isEmpty) {

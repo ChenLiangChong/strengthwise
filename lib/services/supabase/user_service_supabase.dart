@@ -315,14 +315,14 @@ class UserServiceSupabase implements IUserService {
   /// 偵錯日誌
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[USER_SERVICE_SUPABASE] $message');
+      debugPrint('[USER_SERVICE_SUPABASE] $message');
     }
   }
 
   /// 錯誤日誌
   void _logError(String message) {
     if (kDebugMode) {
-      print('[USER_SERVICE_SUPABASE ERROR] $message');
+      debugPrint('[USER_SERVICE_SUPABASE ERROR] $message');
     }
     _errorService?.logError(message, type: 'UserServiceError');
   }

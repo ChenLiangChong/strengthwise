@@ -14,23 +14,24 @@ import '../services/interfaces/i_coach_assessment_note_service.dart'; // ⭐ v3.
 import '../services/service_locator.dart';
 import 'interfaces/i_auth_controller.dart';
 import 'body_data/body_data_operation_helper.dart';
-import 'event_bus_controller.dart';
+import 'interfaces/i_event_bus_controller.dart';
+import 'interfaces/i_profile_controller.dart';
 import '../services/core/app_event_bus.dart'; // ⭐ v3.5: AppEvent
 
 /// Profile 控制器
-/// 
+///
 /// 負責管理個人資料相關的業務邏輯與狀態
-class ProfileController extends ChangeNotifier {
+class ProfileController extends ChangeNotifier implements IProfileController {
   final IUserService _userService;
   final IAuthService _authService;
   final IBodyDataService _bodyDataService;
-  final EventBusController _eventBusController; // ⭐ v3.5
+  final IEventBusController _eventBusController; // ⭐ v3.5
 
   ProfileController({
     required IUserService userService,
     required IAuthService authService,
     required IBodyDataService bodyDataService,
-    required EventBusController eventBusController,
+    required IEventBusController eventBusController,
   })  : _userService = userService,
         _authService = authService,
         _bodyDataService = bodyDataService,
@@ -44,18 +45,25 @@ class ProfileController extends ChangeNotifier {
 
   // ==================== Getters ====================
 
+  @override
   UserModel? get userProfile => _userProfile;
+  @override
   bool get isLoading => _isLoading;
+  @override
   String? get errorMessage => _errorMessage;
+  @override
   bool get isOAuthUser => _authService.isOAuthUser();
+  @override
   bool get hasPassword => _authService.hasPassword();
   
   Map<String, dynamic>? get currentUser => _authService.getCurrentUser();
+  @override
   String get userEmail => currentUser?['email'] ?? '';
 
   // ==================== 個人資料載入 ====================
 
   /// 載入當前用戶的個人資料
+  @override
   Future<void> loadUserProfile() async {
     _isLoading = true;
     _errorMessage = null;
@@ -77,6 +85,7 @@ class ProfileController extends ChangeNotifier {
   /// ⭐ v3.6: MVVM 純查詢方法
   /// 
   /// 直接返回當前用戶資料，不影響 Controller 狀態
+  @override
   Future<UserModel?> getCurrentUserProfile() async {
     try {
       return await _userService.getCurrentUserProfile();
@@ -91,6 +100,7 @@ class ProfileController extends ChangeNotifier {
   /// 更新個人資料
   /// 
   /// ⭐ v3.5: 當體重有變更時，自動同步到 body_data 表
+  @override
   Future<bool> updateUserProfile({
     String? displayName,
     String? nickname,
@@ -134,11 +144,12 @@ class ProfileController extends ChangeNotifier {
         _errorMessage = null;
         
         // ⭐ v3.5: 體重有變更時，同步到 body_data
-        if (weight != null && weight != oldWeight && _userProfile != null) {
+        final profile = _userProfile;
+        if (weight != null && weight != oldWeight && profile != null) {
           await _syncWeightToBodyData(
-            userId: _userProfile!.uid,
+            userId: profile.uid,
             weight: weight,
-            height: height ?? _userProfile!.height,
+            height: height ?? profile.height,
           );
         }
       } else {
@@ -205,6 +216,7 @@ class ProfileController extends ChangeNotifier {
   // ==================== 角色切換 ====================
 
   /// 切換教練模式
+  @override
   Future<bool> toggleCoachRole(bool isCoach) async {
     try {
       await _userService.toggleUserRole(isCoach);
@@ -221,6 +233,7 @@ class ProfileController extends ChangeNotifier {
   // ==================== 認證相關 ====================
 
   /// 為 OAuth 用戶設置密碼
+  @override
   Future<bool> setPasswordForOAuthUser(String newPassword) async {
     try {
       final success = await _authService.setPasswordForOAuthUser(newPassword);
@@ -240,6 +253,7 @@ class ProfileController extends ChangeNotifier {
   /// 登出
   /// 
   /// 委託給 AuthController 處理（統一登出邏輯，包括 FCM Token 刪除）
+  @override
   Future<void> signOut() async {
     try {
       // ⭐ v3.0-C: 統一使用 AuthController 登出（包含 FCM Token 刪除）
@@ -256,22 +270,28 @@ class ProfileController extends ChangeNotifier {
   // ==================== 檢查個人資料完整度 ====================
 
   /// 檢查個人資料是否完整（用於首次設置檢查）
+  @override
   bool isProfileCompleted() {
-    if (_userProfile == null) return false;
+    final profile = _userProfile;
+    if (profile == null) return false;
 
-    return _userProfile!.displayName != null &&
-        _userProfile!.displayName!.isNotEmpty &&
-        _userProfile!.nickname != null &&
-        _userProfile!.nickname!.isNotEmpty &&
-        _userProfile!.gender != null &&
-        _userProfile!.height != null &&
-        _userProfile!.weight != null &&
-        _userProfile!.birthDate != null;
+    final displayName = profile.displayName;
+    final nickname = profile.nickname;
+
+    return displayName != null &&
+        displayName.isNotEmpty &&
+        nickname != null &&
+        nickname.isNotEmpty &&
+        profile.gender != null &&
+        profile.height != null &&
+        profile.weight != null &&
+        profile.birthDate != null;
   }
 
   // ==================== 清理 ====================
 
   /// 清除錯誤訊息
+  @override
   void clearError() {
     _errorMessage = null;
     notifyListeners();
@@ -283,6 +303,7 @@ class ProfileController extends ChangeNotifier {
   // =========================================================================
 
   /// 創建健康評估
+  @override
   Future<bool> createHealthAssessment(
     HealthAssessmentModel assessment, {
     bool setAsCurrent = true,
@@ -315,6 +336,7 @@ class ProfileController extends ChangeNotifier {
   }
 
   /// 更新健康評估
+  @override
   Future<bool> updateHealthAssessment(HealthAssessmentModel assessment) async {
     try {
       _isLoading = true;
@@ -344,6 +366,7 @@ class ProfileController extends ChangeNotifier {
   }
 
   /// 刪除傷病備註
+  @override
   Future<bool> deleteInjuryNote({
     required String coachId,
     required String clientId,
@@ -365,6 +388,7 @@ class ProfileController extends ChangeNotifier {
   }
 
   /// 新增或更新傷病備註
+  @override
   Future<bool> upsertInjuryNote({
     required String coachId,
     required String clientId,
@@ -396,6 +420,7 @@ class ProfileController extends ChangeNotifier {
   ///
   /// [clientId] 學員 ID
   /// 返回 Map<injurySite, List<InjuryCoachNoteModel>>
+  @override
   Future<Map<String, List<InjuryCoachNoteModel>>> getInjuryCoachNotes(
     String clientId,
   ) async {
@@ -414,6 +439,7 @@ class ProfileController extends ChangeNotifier {
   ///
   /// [userId] 用戶 ID
   /// 返回 UserModel 或 null
+  @override
   Future<UserModel?> getUserProfileById(String userId) async {
     try {
       return await _userService.getUserProfile(userId);
@@ -425,6 +451,7 @@ class ProfileController extends ChangeNotifier {
 
   /// 取得學員當前有效的健康評估
   /// ⭐ v3.6 MVVM 重構
+  @override
   Future<HealthAssessmentModel?> getCurrentHealthAssessment(String userId) async {
     try {
       final healthService = serviceLocator<IHealthAssessmentService>();
@@ -437,6 +464,7 @@ class ProfileController extends ChangeNotifier {
 
   /// 取得教練對健康評估的備註
   /// ⭐ v3.6 MVVM 重構
+  @override
   Future<CoachAssessmentNoteModel?> getCoachAssessmentNote({
     required String coachId,
     required String assessmentId,
@@ -455,6 +483,7 @@ class ProfileController extends ChangeNotifier {
 
   /// 新增或更新教練對健康評估的備註
   /// ⭐ v3.6 MVVM 重構
+  @override
   Future<CoachAssessmentNoteModel?> upsertCoachAssessmentNote({
     required String coachId,
     required String assessmentId,

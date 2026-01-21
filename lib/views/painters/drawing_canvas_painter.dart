@@ -13,19 +13,20 @@ class DrawingCanvasPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (drawing == null) return;
+    final drawingModel = drawing;
+    if (drawingModel == null) return;
 
     // 計算座標縮放比例（支持跨設備）
-    final scaleX = size.width / drawing!.canvasWidth;
-    final scaleY = size.height / drawing!.canvasHeight;
-    
+    final scaleX = size.width / drawingModel.canvasWidth;
+    final scaleY = size.height / drawingModel.canvasHeight;
+
     debugPrint('[DRAWING_PAINTER] 🎨 畫布尺寸: ${size.width} x ${size.height}');
-    debugPrint('[DRAWING_PAINTER] 📐 原始尺寸: ${drawing!.canvasWidth} x ${drawing!.canvasHeight}');
+    debugPrint('[DRAWING_PAINTER] 📐 原始尺寸: ${drawingModel.canvasWidth} x ${drawingModel.canvasHeight}');
     debugPrint('[DRAWING_PAINTER] 📏 縮放比例: $scaleX x $scaleY');
 
     // 繪製所有可見圖層
-    for (int i = 0; i < drawing!.layers.length; i++) {
-      final layer = drawing!.layers[i];
+    for (int i = 0; i < drawingModel.layers.length; i++) {
+      final layer = drawingModel.layers[i];
       if (!layer.isVisible) continue;
 
       // 繪製圖層的所有筆劃
@@ -40,7 +41,7 @@ class DrawingCanvasPainter extends CustomPainter {
     if (stroke.points.isEmpty) return;
 
     final paint = Paint()
-      ..color = stroke.color.withOpacity(stroke.opacity)
+      ..color = stroke.color.withValues(alpha: stroke.opacity)
       ..strokeWidth = stroke.strokeWidth * ((scaleX + scaleY) / 2) // 筆劃寬度也要縮放
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round

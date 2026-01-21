@@ -112,7 +112,7 @@ class _MiniLineChartPainter extends CustomPainter {
 
     // 繪製填充區域
     final fillPaint = Paint()
-      ..color = fillColor.withOpacity(0.2)
+      ..color = fillColor.withValues(alpha: 0.2)
       ..style = PaintingStyle.fill;
     canvas.drawPath(fillPath, fillPaint);
 

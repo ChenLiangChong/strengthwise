@@ -371,14 +371,14 @@ class CustomExerciseServiceSupabase implements ICustomExerciseService {
   /// 記錄調試信息
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[CUSTOM_EXERCISE_SUPABASE] $message');
+      debugPrint('[CUSTOM_EXERCISE_SUPABASE] $message');
     }
   }
 
   /// 記錄錯誤信息
   void _logError(String message) {
     if (kDebugMode) {
-      print('[CUSTOM_EXERCISE_SUPABASE ERROR] $message');
+      debugPrint('[CUSTOM_EXERCISE_SUPABASE ERROR] $message');
     }
     _errorService?.logError(message);
   }

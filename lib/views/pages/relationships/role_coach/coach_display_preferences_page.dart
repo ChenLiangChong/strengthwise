@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import 'package:strengthwise/models/coach_display_preferences_model.dart';
-import 'package:strengthwise/controllers/coach_profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coach_profile_controller.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
@@ -22,7 +22,7 @@ class CoachDisplayPreferencesPage extends StatefulWidget {
 class _CoachDisplayPreferencesPageState
     extends State<CoachDisplayPreferencesPage> {
   // ⭐ v3.6: MVVM 重構 - 全部透過 Controller
-  late final CoachProfileController _coachController;
+  late final ICoachProfileController _coachController;
   late final IAuthController _authController;
 
   CoachDisplayPreferencesModel? _preferences;
@@ -34,7 +34,7 @@ class _CoachDisplayPreferencesPageState
   @override
   void initState() {
     super.initState();
-    _coachController = serviceLocator<CoachProfileController>();
+    _coachController = serviceLocator<ICoachProfileController>();
     _authController = serviceLocator<IAuthController>();
     _loadPreferences();
   }
@@ -217,7 +217,7 @@ class _CoachDisplayPreferencesPageState
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primaryContainer
-                              .withOpacity(0.3),
+                              .withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(

@@ -204,8 +204,9 @@ class BookingCalendarView extends StatelessWidget {
             // ⭐ v3.1-B / v3.9: 教練可上課時段（🟢 綠色）
             // Tab 0：顯示「我的教練們」的可上課時段
             // Tab 1：顯示「我自己」的可上課時段
-            if (coachSlots != null) {
-              final slots = coachSlots![normalizedDay] ?? [];
+            final coachSlotsMap = coachSlots;
+            if (coachSlotsMap != null) {
+              final slots = coachSlotsMap[normalizedDay] ?? [];
               for (var slot in slots) {
                 markers.add(CalendarMarker(
                   color: Colors.green, // 🟢 綠色
@@ -216,8 +217,9 @@ class BookingCalendarView extends StatelessWidget {
             }
 
             // ⭐ v3.1.1: Tab 2 - 學員可訓練時段（區分 preferred/available）
-            if (isCoachMode && clientAvailability != null) {
-              final slots = clientAvailability![normalizedDay] ?? [];
+            final clientAvailabilityMap = clientAvailability;
+            if (isCoachMode && clientAvailabilityMap != null) {
+              final slots = clientAvailabilityMap[normalizedDay] ?? [];
               // if (slots.isNotEmpty) {
               //   debugPrint(
               //       '[CALENDAR MARKER] 🟡 $normalizedDay: ${slots.length} 個學員可訓練時段');
@@ -304,8 +306,8 @@ class BookingCalendarView extends StatelessWidget {
   /// Tab 1「我的」內容
   Widget _buildMyTabContent(BuildContext context) {
     final hasTrainings = selectedDayTrainings.isNotEmpty;
-    final hasCoachSlots =
-        selectedDayCoachSlots != null && selectedDayCoachSlots!.isNotEmpty;
+    final coachSlotsList = selectedDayCoachSlots;
+    final hasCoachSlots = coachSlotsList != null && coachSlotsList.isNotEmpty;
 
     if (!hasTrainings && !hasCoachSlots) {
       return _buildEmptyState(context, '今天沒有安排');
@@ -329,9 +331,9 @@ class BookingCalendarView extends StatelessWidget {
         if (hasCoachSlots) ...[
           if (hasTrainings) const SizedBox(height: 16),
           _buildSectionTitle(
-              context, '🟢 教練可上課時段', selectedDayCoachSlots!.length),
+              context, '🟢 教練可上課時段', coachSlotsList.length),
           const SizedBox(height: 8),
-          ...selectedDayCoachSlots!.map((slot) => _buildCoachSlotCard(
+          ...coachSlotsList.map((slot) => _buildCoachSlotCard(
                 context,
                 slot,
               )),
@@ -343,11 +345,11 @@ class BookingCalendarView extends StatelessWidget {
   /// Tab 2「教練」內容
   Widget _buildCoachTabContent(BuildContext context) {
     final hasTrainings = selectedDayTrainings.isNotEmpty;
-    final hasClientSlots = selectedDayClientAvailability != null &&
-        selectedDayClientAvailability!.isNotEmpty;
+    final clientSlotsList = selectedDayClientAvailability;
+    final hasClientSlots = clientSlotsList != null && clientSlotsList.isNotEmpty;
     // ⭐ v3.9: 我的可上課時段
-    final hasMySlots =
-        selectedDayCoachSlots != null && selectedDayCoachSlots!.isNotEmpty;
+    final mySlotsList = selectedDayCoachSlots;
+    final hasMySlots = mySlotsList != null && mySlotsList.isNotEmpty;
 
     if (!hasTrainings && !hasClientSlots && !hasMySlots) {
       return _buildEmptyState(context, '今天沒有課程');
@@ -359,9 +361,9 @@ class BookingCalendarView extends StatelessWidget {
         // ⭐ v3.9: 我的可上課時段（最上方顯示）
         if (hasMySlots) ...[
           _buildSectionTitle(
-              context, '🟢 我的可上課時段', selectedDayCoachSlots!.length),
+              context, '🟢 我的可上課時段', mySlotsList.length),
           const SizedBox(height: 8),
-          ...selectedDayCoachSlots!.map((slot) => _buildMySlotCard(
+          ...mySlotsList.map((slot) => _buildMySlotCard(
                 context,
                 slot,
               )),
@@ -383,9 +385,9 @@ class BookingCalendarView extends StatelessWidget {
         if (hasClientSlots) ...[
           if (hasTrainings || hasMySlots) const SizedBox(height: 16),
           _buildSectionTitle(
-              context, '🟡 學員可訓練時段', selectedDayClientAvailability!.length),
+              context, '🟡 學員可訓練時段', clientSlotsList.length),
           const SizedBox(height: 8),
-          ...selectedDayClientAvailability!.map((slot) => _buildClientSlotCard(
+          ...clientSlotsList.map((slot) => _buildClientSlotCard(
                 context,
                 slot,
               )),
@@ -495,7 +497,7 @@ class BookingCalendarView extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: Colors.green.withOpacity(0.05),
+      color: Colors.green.withValues(alpha: 0.05),
       child: InkWell(
         onTap: () {
           if (onBookCoachSlot != null) {
@@ -522,7 +524,7 @@ class BookingCalendarView extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: Colors.green.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child:
@@ -585,7 +587,7 @@ class BookingCalendarView extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: Colors.green.withOpacity(0.05),
+      color: Colors.green.withValues(alpha: 0.05),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -605,7 +607,7 @@ class BookingCalendarView extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
@@ -678,7 +680,7 @@ class BookingCalendarView extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: slotColor.withOpacity(0.05),
+      color: slotColor.withValues(alpha: 0.05),
       child: InkWell(
         onTap: () {
           if (onSelectClientSlot != null) {
@@ -705,7 +707,7 @@ class BookingCalendarView extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: slotColor.withOpacity(0.1),
+                  color: slotColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -735,7 +737,7 @@ class BookingCalendarView extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: slotColor.withOpacity(0.15),
+                            color: slotColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(

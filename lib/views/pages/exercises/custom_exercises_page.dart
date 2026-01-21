@@ -12,7 +12,7 @@ class CustomExercisesPage extends StatefulWidget {
   const CustomExercisesPage({super.key});
 
   @override
-  _CustomExercisesPageState createState() => _CustomExercisesPageState();
+  State<CustomExercisesPage> createState() => _CustomExercisesPageState();
 }
 
 class _CustomExercisesPageState extends State<CustomExercisesPage> {
@@ -81,10 +81,12 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
               // 🐛 修復：重新載入列表以確保數據同步
               await _loadExercises();
 
+              if (!mounted) return;
+              // ignore: use_build_context_synchronously - mounted 已在上方檢查
               NotificationUtils.showSuccess(context, '成功添加自訂動作');
             } catch (e) {
               if (!mounted) return;
-
+              // ignore: use_build_context_synchronously - mounted 已在上方檢查
               _errorService.handleSavingError(context, e);
             }
           },
@@ -118,10 +120,12 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
               // 重新載入列表以顯示更新後的資料
               await _loadExercises();
 
+              if (!mounted) return;
+              // ignore: use_build_context_synchronously - mounted 已在上方檢查
               NotificationUtils.showSuccess(context, '成功更新自訂動作');
             } catch (e) {
               if (!mounted) return;
-
+              // ignore: use_build_context_synchronously - mounted 已在上方檢查
               _errorService.handleSavingError(context, e);
             }
           },
@@ -139,10 +143,10 @@ class _CustomExercisesPageState extends State<CustomExercisesPage> {
       // 🐛 修復：重新載入列表以確保數據同步
       await _loadExercises();
 
+      if (!mounted) return;
       NotificationUtils.showSuccess(context, '成功刪除自訂動作');
     } catch (e) {
       if (!mounted) return;
-
       _errorService.handleError(context, e);
     }
   }

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/appointment_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/controllers/profile_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart'; // ⭐ v3.6: MVVM
 
 /// 詳情資訊區域組件
 /// ⭐ v3.1.1: 改為 StatefulWidget 以支援異步加載用戶名稱
@@ -34,7 +34,7 @@ class _DetailsInfoSectionState extends State<DetailsInfoSection> {
   /// ⭐ v3.6: 透過 ProfileController 查詢
   Future<void> _loadUserName() async {
     try {
-      final profileController = serviceLocator<ProfileController>();
+      final profileController = serviceLocator<IProfileController>();
       final userId = widget.isCoachMode
           ? widget.appointment.clientId
           : widget.appointment.coachId;

@@ -17,7 +17,7 @@ class UnifiedSlotCard extends StatelessWidget {
   /// 圖標顏色（也用於指示器和背景）
   final Color iconColor;
   
-  /// 圖標背景色（可選，默認為 iconColor.withOpacity(0.15)）
+  /// 圖標背景色（可選，默認為 iconColor.withValues(alpha: 0.15)）
   final Color? iconBackgroundColor;
   
   /// 副標題（可選，例如：備註）
@@ -66,7 +66,7 @@ class UnifiedSlotCard extends StatelessWidget {
     
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: iconColor.withOpacity(0.05),
+      color: iconColor.withValues(alpha: 0.05),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -89,7 +89,7 @@ class UnifiedSlotCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: iconBackgroundColor ?? iconColor.withOpacity(0.1),
+                  color: iconBackgroundColor ?? iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: iconColor, size: 20),
@@ -115,7 +115,7 @@ class UnifiedSlotCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: iconColor.withOpacity(0.15),
+                              color: iconColor.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(

@@ -5,11 +5,12 @@ import '../services/interfaces/i_user_service.dart';
 import '../services/core/error_handling_service.dart';
 import '../models/user/user_model.dart';
 import '../models/workout_record/workout_record.dart';
+import 'interfaces/i_coach_management_controller.dart';
 
 /// 學員端教練管理控制器
 ///
 /// 負責學員查看教練列表、查看教練指派的訓練等功能
-class CoachManagementController extends ChangeNotifier {
+class CoachManagementController extends ChangeNotifier implements ICoachManagementController {
   final ICoachingRelationshipService _relationshipService;
   final IWorkoutService _workoutService;
   final IUserService _userService;
@@ -46,12 +47,19 @@ class CoachManagementController extends ChangeNotifier {
   // Getters
   // ============================================================================
 
+  @override
   bool get isLoading => _isLoading;
+  @override
   String? get errorMessage => _errorMessage;
+  @override
   UserModel? get selectedCoach => _selectedCoach;
+  @override
   List<UserModel> get coaches => _coaches;
+  @override
   List<UserModel> get filteredCoaches => _filteredCoaches;
+  @override
   List<WorkoutRecord> get coachWorkouts => _coachWorkouts;
+  @override
   String get searchQuery => _searchQuery;
 
   // ============================================================================
@@ -59,13 +67,14 @@ class CoachManagementController extends ChangeNotifier {
   // ============================================================================
 
   /// 載入學員的教練列表
+  @override
   Future<void> loadCoaches(String clientId) async {
     _setLoading(true);
     _clearError();
 
     try {
       if (kDebugMode) {
-        print('[CoachManagementController] 🔄 載入教練列表，學員 ID: $clientId');
+        debugPrint('[CoachManagementController] 🔄 載入教練列表，學員 ID: $clientId');
       }
 
       // 獲取教練關係列表（只載入 active 狀態）
@@ -75,7 +84,7 @@ class CoachManagementController extends ChangeNotifier {
       );
 
       if (kDebugMode) {
-        print('[CoachManagementController] 📋 查詢到 ${relationships.length} 個教練關係');
+        debugPrint('[CoachManagementController] 📋 查詢到 ${relationships.length} 個教練關係');
       }
 
       // 獲取教練詳細資訊
@@ -85,30 +94,30 @@ class CoachManagementController extends ChangeNotifier {
           // ⭐ 跳過已刪除的教練（coachId 為 null）
           if (relationship.coachId == null) {
             if (kDebugMode) {
-              print('[CoachManagementController] ⚠️ 教練已被刪除，跳過');
+              debugPrint('[CoachManagementController] ⚠️ 教練已被刪除，跳過');
             }
             continue;
           }
           
           if (kDebugMode) {
-            print('[CoachManagementController] 🔍 載入教練資料: ${relationship.coachId}');
+            debugPrint('[CoachManagementController] 🔍 載入教練資料: ${relationship.coachId}');
           }
           
           final coach = await _userService.getUserProfile(relationship.coachId!);
           if (coach != null) {
             coachUsers.add(coach);
             if (kDebugMode) {
-              print('[CoachManagementController] ✅ 教練資料載入成功: ${coach.displayName ?? coach.email}');
+              debugPrint('[CoachManagementController] ✅ 教練資料載入成功: ${coach.displayName ?? coach.email}');
             }
           } else {
             if (kDebugMode) {
-              print('[CoachManagementController] ⚠️ 教練資料不存在: ${relationship.coachId}');
+              debugPrint('[CoachManagementController] ⚠️ 教練資料不存在: ${relationship.coachId}');
             }
           }
         } catch (e) {
           _errorService.logError('載入教練資訊失敗: $e');
           if (kDebugMode) {
-            print('[CoachManagementController] ❌ 載入教練資訊失敗: $e');
+            debugPrint('[CoachManagementController] ❌ 載入教練資訊失敗: $e');
           }
         }
       }
@@ -117,14 +126,14 @@ class CoachManagementController extends ChangeNotifier {
       _filteredCoaches = List.from(_coaches);
       
       if (kDebugMode) {
-        print('[CoachManagementController] ✅ 教練列表更新完成，共 ${_coaches.length} 位教練');
+        debugPrint('[CoachManagementController] ✅ 教練列表更新完成，共 ${_coaches.length} 位教練');
       }
       
       notifyListeners();
     } catch (e) {
       _handleError('載入教練列表失敗', e);
       if (kDebugMode) {
-        print('[CoachManagementController] ❌ 載入教練列表失敗: $e');
+        debugPrint('[CoachManagementController] ❌ 載入教練列表失敗: $e');
       }
     } finally {
       _setLoading(false);
@@ -132,6 +141,7 @@ class CoachManagementController extends ChangeNotifier {
   }
 
   /// 搜尋教練
+  @override
   void searchCoaches(String query) {
     _searchQuery = query.trim();
 
@@ -150,6 +160,7 @@ class CoachManagementController extends ChangeNotifier {
   }
 
   /// 清除搜尋
+  @override
   void clearSearch() {
     _searchQuery = '';
     _filteredCoaches = List.from(_coaches);
@@ -161,6 +172,7 @@ class CoachManagementController extends ChangeNotifier {
   // ============================================================================
 
   /// 選擇教練（進入詳情頁）
+  @override
   Future<void> selectCoach(String coachId, String currentUserId) async {
     _setLoading(true);
     _clearError();
@@ -181,6 +193,7 @@ class CoachManagementController extends ChangeNotifier {
   }
 
   /// 清除選中的教練
+  @override
   void clearSelectedCoach() {
     _selectedCoach = null;
     _coachWorkouts = [];
@@ -192,6 +205,7 @@ class CoachManagementController extends ChangeNotifier {
   // ============================================================================
 
   /// 載入該教練指派的訓練計畫
+  @override
   Future<void> loadCoachWorkouts(
     String traineeId,
     String coachId, {
@@ -219,6 +233,7 @@ class CoachManagementController extends ChangeNotifier {
   }
 
   /// 根據日期查詢訓練計畫
+  @override
   List<WorkoutRecord> getWorkoutsForDate(DateTime date) {
     final targetDate = DateTime(date.year, date.month, date.day);
     return _coachWorkouts.where((workout) {

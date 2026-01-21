@@ -33,7 +33,7 @@ class ClientListItem extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -75,7 +75,7 @@ class ClientListItem extends StatelessWidget {
                         Text(
                           client.email,
                           style: context.responsive.bodySmall.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.6),
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
                           ), // ⭐ 響應式文字
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -90,7 +90,7 @@ class ClientListItem extends StatelessWidget {
                   PopupMenuButton<String>(
                     icon: Icon(
                       Icons.more_vert,
-                      color: colorScheme.onSurface.withOpacity(0.6),
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                     itemBuilder: (context) => [
                       // ⭐ 新增：查看時間偏好
@@ -155,13 +155,13 @@ class ClientListItem extends StatelessWidget {
                       Icon(
                         Icons.calendar_today,
                         size: 14.scaled(context), // ⭐ 響應式圖標
-                        color: colorScheme.onSurface.withOpacity(0.4),
+                        color: colorScheme.onSurface.withValues(alpha: 0.4),
                       ),
                       SizedBox(width: context.spacing.xs), // ⭐ 響應式間距
                       Text(
                         '邀請於 ${_formatDate(relationship.invitedAt)}',
                         style: context.responsive.bodySmall.copyWith(
-                          color: colorScheme.onSurface.withOpacity(0.4),
+                          color: colorScheme.onSurface.withValues(alpha: 0.4),
                         ), // ⭐ 響應式文字
                       ),
                     ],

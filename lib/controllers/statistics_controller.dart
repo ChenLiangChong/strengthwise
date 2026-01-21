@@ -75,7 +75,7 @@ class StatisticsController extends ChangeNotifier implements IStatisticsControll
     await loadStatistics(TimeRange.week);
     
     if (kDebugMode) {
-      print('[StatisticsController] ⚡ 最小化初始化完成（僅本週）');
+      debugPrint('[StatisticsController] ⚡ 最小化初始化完成（僅本週）');
     }
   }
 
@@ -107,33 +107,34 @@ class StatisticsController extends ChangeNotifier implements IStatisticsControll
 
       // 🐛 DEBUG: 輸出統計數據詳情
       if (kDebugMode) {
-        print('\n========== 統計頁面 DEBUG ==========');
-        print('📊 時間範圍: ${timeRange.displayName}');
-        print('📊 訓練次數: ${_statisticsData?.frequency.totalWorkouts ?? 0}');
-        print('📊 訓練天數: ${_statisticsData?.volumeHistory.length ?? 0}');
-        print('📊 個人記錄數量: ${_statisticsData?.personalRecords.length ?? 0}');
+        debugPrint('\n========== 統計頁面 DEBUG ==========');
+        debugPrint('📊 時間範圍: ${timeRange.displayName}');
+        debugPrint('📊 訓練次數: ${_statisticsData?.frequency.totalWorkouts ?? 0}');
+        debugPrint('📊 訓練天數: ${_statisticsData?.volumeHistory.length ?? 0}');
+        debugPrint('📊 個人記錄數量: ${_statisticsData?.personalRecords.length ?? 0}');
         
         // 輸出個人記錄的 body_part 分布
-        if (_statisticsData != null && _statisticsData!.personalRecords.isNotEmpty) {
+        final statsData = _statisticsData;
+        if (statsData != null && statsData.personalRecords.isNotEmpty) {
           final bodyPartCount = <String, int>{};
-          for (var pr in _statisticsData!.personalRecords) {
+          for (var pr in statsData.personalRecords) {
             bodyPartCount[pr.bodyPart] = (bodyPartCount[pr.bodyPart] ?? 0) + 1;
           }
-          print('📊 個人記錄 body_part 分布:');
+          debugPrint('📊 個人記錄 body_part 分布:');
           bodyPartCount.forEach((bodyPart, count) {
-            print('   - $bodyPart: $count 筆');
+            debugPrint('   - $bodyPart: $count 筆');
           });
         }
-        
+
         // 輸出訓練量趨勢數據
-        if (_statisticsData != null && _statisticsData!.volumeHistory.isNotEmpty) {
-          print('📊 訓練量趨勢數據點:');
-          for (var point in _statisticsData!.volumeHistory) {
-            print('   - ${point.formattedDate}: 訓練 ${point.workoutCount} 次, 訓練量 ${point.totalVolume.toStringAsFixed(0)} kg');
+        if (statsData != null && statsData.volumeHistory.isNotEmpty) {
+          debugPrint('📊 訓練量趨勢數據點:');
+          for (var point in statsData.volumeHistory) {
+            debugPrint('   - ${point.formattedDate}: 訓練 ${point.workoutCount} 次, 訓練量 ${point.totalVolume.toStringAsFixed(0)} kg');
           }
         }
         
-        print('====================================\n');
+        debugPrint('====================================\n');
       }
 
       // 生成訓練建議
@@ -194,6 +195,7 @@ class StatisticsController extends ChangeNotifier implements IStatisticsControll
 
   /// 獲取力量進步數據
   /// ⭐ MVVM 重構：View 層透過 Controller 查詢
+  @override
   Future<List<ExerciseStrengthProgress>> getStrengthProgress(
     String userId,
     TimeRange timeRange, {
@@ -209,6 +211,7 @@ class StatisticsController extends ChangeNotifier implements IStatisticsControll
 
   /// 獲取有訓練記錄的動作列表
   /// ⭐ MVVM 重構：View 層透過 Controller 查詢
+  @override
   Future<List<ExerciseWithRecord>> getExercisesWithRecords(
     String userId, {
     TimeRange? timeRange,
@@ -223,12 +226,14 @@ class StatisticsController extends ChangeNotifier implements IStatisticsControll
 
   /// 清除統計快取
   /// ⭐ MVVM 重構：View 層透過 Controller 操作
+  @override
   void clearStatisticsCache() {
     _statisticsService.clearCache();
   }
 
   /// 預熱統計快取（從 Hive 載入到記憶體）
   /// ⭐ MVVM 重構：首頁初始化時調用
+  @override
   Future<void> warmupFromLocalCache(String userId) async {
     try {
       await _statisticsService.warmupFromLocalCache(userId);
@@ -239,6 +244,7 @@ class StatisticsController extends ChangeNotifier implements IStatisticsControll
 
   /// 預載入所有時間範圍的統計數據
   /// ⭐ MVVM 重構：首頁背景載入時調用
+  @override
   Future<void> preloadAllTimeRanges(String userId) async {
     try {
       await _statisticsService.preloadAllTimeRanges(userId);
@@ -255,6 +261,7 @@ class StatisticsController extends ChangeNotifier implements IStatisticsControll
   /// ⭐ v3.6 MVVM 重構
   ///
   /// 用於 Session Mode 等需要直接獲取數據的場景
+  @override
   Future<StatisticsData?> getStatistics(String userId, TimeRange timeRange) async {
     try {
       return await _statisticsService.getStatistics(userId, timeRange);

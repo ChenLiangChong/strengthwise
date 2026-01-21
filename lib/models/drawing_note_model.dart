@@ -171,7 +171,7 @@ class DrawingStroke {
     return {
       'id': id,
       'points': points.map((p) => p.toJson()).toList(),
-      'color': color.value,
+      'color': color.toARGB32(),
       'stroke_width': strokeWidth,
       'opacity': opacity,
       'tool': tool.toString(),

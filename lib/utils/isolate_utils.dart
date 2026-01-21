@@ -44,13 +44,13 @@ class IsolateUtils {
       );
 
       if (kDebugMode) {
-        print('[ISOLATE_UTILS] ⚡ 背景解析完成：${result.length} 筆資料');
+        debugPrint('[ISOLATE_UTILS] ⚡ 背景解析完成：${result.length} 筆資料');
       }
 
       return result;
     } catch (e) {
       if (kDebugMode) {
-        print('[ISOLATE_UTILS] ⚠️ Isolate 解析失敗，降級到主執行緒: $e');
+        debugPrint('[ISOLATE_UTILS] ⚠️ Isolate 解析失敗，降級到主執行緒: $e');
       }
       // 降級：在主執行緒解析
       return rawData
@@ -83,7 +83,7 @@ class IsolateUtils {
       return await compute(callback, message);
     } catch (e) {
       if (kDebugMode) {
-        print('[ISOLATE_UTILS] ⚠️ 背景計算失敗: $e');
+        debugPrint('[ISOLATE_UTILS] ⚠️ 背景計算失敗: $e');
       }
       rethrow;
     }

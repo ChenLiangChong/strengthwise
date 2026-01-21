@@ -38,15 +38,20 @@ class BirthdayPicker extends StatelessWidget {
           helperText: isRequired ? '必填' : '可選',
           suffixIcon: const Icon(Icons.calendar_today),
         ),
-        child: Text(
-          selectedDate != null
-              ? '${selectedDate!.year}年${selectedDate!.month}月${selectedDate!.day}日'
-              : '點擊選擇生日',
-          style: TextStyle(
-            color: selectedDate != null
-                ? Colors.black
-                : Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+        child: Builder(
+          builder: (context) {
+            final date = selectedDate;
+            return Text(
+              date != null
+                  ? '${date.year}年${date.month}月${date.day}日'
+                  : '點擊選擇生日',
+              style: TextStyle(
+                color: selectedDate != null
+                    ? Colors.black
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            );
+          },
         ),
       ),
     );

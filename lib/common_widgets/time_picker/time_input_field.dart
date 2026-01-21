@@ -10,7 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 /// ```dart
 /// TimeInputField(
 ///   value: 90,  // 秒數
-///   onChanged: (seconds) => print('新值: $seconds 秒'),
+///   onChanged: (seconds) => debugPrint('新值: $seconds 秒'),
 ///   enabled: true,
 /// )
 /// ```
@@ -163,11 +163,11 @@ class _TimeInputFieldState extends State<TimeInputField> {
                   enabled: widget.enabled,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.jetBrainsMono(fontSize: 16),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: '0',
                     suffixText: '分',
-                    border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   ),
                   keyboardType: TextInputType.number,
                   inputFormatters: [
@@ -196,11 +196,11 @@ class _TimeInputFieldState extends State<TimeInputField> {
                   enabled: widget.enabled,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.jetBrainsMono(fontSize: 16),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: '00',
                     suffixText: '秒',
-                    border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   ),
                   keyboardType: TextInputType.number,
                   inputFormatters: [
@@ -220,7 +220,7 @@ class _TimeInputFieldState extends State<TimeInputField> {
                 '共 ${widget.value} 秒',
                 style: TextStyle(
                   fontSize: 11,
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                 ),
               ),
             ),
@@ -232,18 +232,18 @@ class _TimeInputFieldState extends State<TimeInputField> {
     // 分鐘和秒數各自獨立的輸入框，中間用冒號分隔
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final textColor = widget.isCompleted
-        ? colorScheme.onSurface.withOpacity(0.5)
+        ? colorScheme.onSurface.withValues(alpha: 0.5)
         : colorScheme.onSurface;
     final fillColor = widget.enabled
         ? (isDarkMode
-            ? colorScheme.surface.withOpacity(0.5)
+            ? colorScheme.surface.withValues(alpha: 0.5)
             : colorScheme.surface)
-        : colorScheme.surface.withOpacity(0.3);
+        : colorScheme.surface.withValues(alpha: 0.3);
 
     final inputDecoration = InputDecoration(
       hintStyle: GoogleFonts.jetBrainsMono(
         fontSize: 14,
-        color: colorScheme.onSurface.withOpacity(0.3),
+        color: colorScheme.onSurface.withValues(alpha: 0.3),
       ),
       filled: true,
       fillColor: fillColor,
@@ -254,7 +254,7 @@ class _TimeInputFieldState extends State<TimeInputField> {
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide(
-          color: colorScheme.outline.withOpacity(0.5),
+          color: colorScheme.outline.withValues(alpha: 0.5),
           width: 1,
         ),
       ),

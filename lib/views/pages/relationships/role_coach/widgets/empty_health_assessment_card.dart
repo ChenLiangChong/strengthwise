@@ -23,7 +23,7 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
       elevation: 0, // ⭐ 移除陰影
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
       ),
       child: Padding(
         padding: EdgeInsets.all(context.spacing.md), // ⭐ 響應式內距
@@ -54,7 +54,7 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(context.spacing.md), // ⭐ 響應式內距
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withOpacity(0.3),
+                color: colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -81,7 +81,7 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
                   Text(
                     '建議在首次上課前完成評估，以確保訓練安全與效果',
                     style: context.responsive.bodyMedium.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.7),
+                      color: colorScheme.onSurface.withValues(alpha: 0.7),
                     ), // ⭐ 響應式文字
                   ),
                   SizedBox(height: context.spacing.md), // ⭐ 響應式間距
@@ -147,7 +147,7 @@ class EmptyHealthAssessmentCard extends StatelessWidget {
           child: Text(
             text,
             style: context.responsive.bodySmall.copyWith(
-              color: colorScheme.onSurface.withOpacity(0.7),
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
             ), // ⭐ 響應式文字
           ),
         ),

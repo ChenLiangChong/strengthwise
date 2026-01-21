@@ -1,13 +1,17 @@
+// ignore_for_file: unnecessary_getters_setters - 保持封裝一致性
+
+import 'package:strengthwise/models/exercise/exercise.dart';
+
 /// 運動數據緩存管理器
 ///
 /// 管理運動相關的本地緩存，包括分類、運動列表和運動詳情
 class ExerciseCacheManager {
   // 數據緩存
   final Map<String, List<String>> _categoriesCache = {};
-  final Map<String, List<dynamic>> _exercisesCache = {};
+  final Map<String, List<Exercise>> _exercisesCache = {};
   List<String>? _exerciseTypes;
   List<String>? _bodyParts;
-  final Map<String, dynamic> _exerciseDetailsCache = {};
+  final Map<String, Exercise> _exerciseDetailsCache = {};
   
   /// 獲取緩存的訓練類型
   List<String>? get exerciseTypes => _exerciseTypes;
@@ -36,22 +40,22 @@ class ExerciseCacheManager {
   }
   
   /// 獲取緩存的運動列表
-  List<dynamic>? getExercisesByKey(String key) {
+  List<Exercise>? getExercisesByKey(String key) {
     return _exercisesCache[key];
   }
-  
+
   /// 設置運動列表緩存
-  void setExercisesByKey(String key, List<dynamic> exercises) {
+  void setExercisesByKey(String key, List<Exercise> exercises) {
     _exercisesCache[key] = exercises;
   }
-  
+
   /// 獲取運動詳情
-  dynamic getExerciseDetails(String exerciseId) {
+  Exercise? getExerciseDetails(String exerciseId) {
     return _exerciseDetailsCache[exerciseId];
   }
-  
+
   /// 設置運動詳情
-  void setExerciseDetails(String exerciseId, dynamic exercise) {
+  void setExerciseDetails(String exerciseId, Exercise exercise) {
     _exerciseDetailsCache[exerciseId] = exercise;
   }
   

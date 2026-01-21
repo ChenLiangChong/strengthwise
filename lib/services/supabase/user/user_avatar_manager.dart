@@ -60,7 +60,7 @@ class UserAvatarManager {
   /// 偵錯日誌
   void _logDebug(String message) {
     if (kDebugMode) {
-      print('[USER_AVATAR_MANAGER] $message');
+      debugPrint('[USER_AVATAR_MANAGER] $message');
     }
   }
 }

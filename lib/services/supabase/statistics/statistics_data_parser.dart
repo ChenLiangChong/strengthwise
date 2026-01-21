@@ -107,13 +107,13 @@ class StatisticsDataParser {
       );
 
       if (kDebugMode) {
-        print('[STATISTICS_PARSER] ⚡ Isolate 解析完成：${result.length} 筆訓練');
+        debugPrint('[STATISTICS_PARSER] ⚡ Isolate 解析完成：${result.length} 筆訓練');
       }
 
       return result;
     } catch (e) {
       if (kDebugMode) {
-        print('[STATISTICS_PARSER] ⚠️ Isolate 解析失敗，降級到主執行緒: $e');
+        debugPrint('[STATISTICS_PARSER] ⚠️ Isolate 解析失敗，降級到主執行緒: $e');
       }
       // 降級：在主執行緒解析
       return parseWorkoutDataList(docs);

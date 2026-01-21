@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/availability_slot_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/controllers/availability_slot_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_availability_slot_controller.dart';
 import 'package:strengthwise/utils/date_format_utils.dart';
 
 /// 快速添加/編輯時段對話框
@@ -29,7 +29,7 @@ class QuickAddSlotDialog extends StatefulWidget {
 }
 
 class _QuickAddSlotDialogState extends State<QuickAddSlotDialog> {
-  late final AvailabilitySlotController _slotController;
+  late final IAvailabilitySlotController _slotController;
 
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
@@ -40,14 +40,14 @@ class _QuickAddSlotDialogState extends State<QuickAddSlotDialog> {
   @override
   void initState() {
     super.initState();
-    _slotController = serviceLocator<AvailabilitySlotController>();
+    _slotController = serviceLocator<IAvailabilitySlotController>();
 
     // ⭐ v3.9: 編輯模式預填數據
-    if (widget.existingSlot != null) {
-      final slot = widget.existingSlot!;
-      _startTime = TimeOfDay(hour: slot.startTime.hour, minute: slot.startTime.minute);
-      _endTime = TimeOfDay(hour: slot.endTime.hour, minute: slot.endTime.minute);
-      _notesController.text = slot.notes ?? '';
+    final existingSlot = widget.existingSlot;
+    if (existingSlot != null) {
+      _startTime = TimeOfDay(hour: existingSlot.startTime.hour, minute: existingSlot.startTime.minute);
+      _endTime = TimeOfDay(hour: existingSlot.endTime.hour, minute: existingSlot.endTime.minute);
+      _notesController.text = existingSlot.notes ?? '';
     } else {
       _startTime = const TimeOfDay(hour: 9, minute: 0);
       _endTime = const TimeOfDay(hour: 10, minute: 0);
@@ -119,20 +119,21 @@ class _QuickAddSlotDialogState extends State<QuickAddSlotDialog> {
     try {
       bool success;
 
-      if (widget.isEditMode) {
+      final existingSlot = widget.existingSlot;
+      if (widget.isEditMode && existingSlot != null) {
         // ⭐ v3.9: 編輯模式 - 更新時段
         final updatedSlot = AvailabilitySlotModel(
-          id: widget.existingSlot!.id,
+          id: existingSlot.id,
           coachId: widget.coachId,
           startTime: startDateTime,
           endTime: endDateTime,
-          recurrenceRule: widget.existingSlot!.recurrenceRule,
-          isOverride: widget.existingSlot!.isOverride,
+          recurrenceRule: existingSlot.recurrenceRule,
+          isOverride: existingSlot.isOverride,
           notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-          createdAt: widget.existingSlot!.createdAt,
+          createdAt: existingSlot.createdAt,
           updatedAt: DateTime.now(),
         );
-        success = await _slotController.updateSlot(widget.existingSlot!.id, updatedSlot);
+        success = await _slotController.updateSlot(existingSlot.id, updatedSlot);
       } else {
         // 創建單次時段
         final slot = AvailabilitySlotModel(

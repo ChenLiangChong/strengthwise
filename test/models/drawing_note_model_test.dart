@@ -97,7 +97,7 @@ void main() {
 
       expect(json['id'], 'stroke-001');
       expect(json['points'], isA<List>());
-      expect(json['color'], Colors.red.value);
+      expect(json['color'], Colors.red.toARGB32());
       expect(json['stroke_width'], 3.0);
       expect(json['opacity'], 0.9);
       expect(json['tool'], 'DrawingTool.pencil');
@@ -110,7 +110,7 @@ void main() {
 
       expect(restored.id, original.id);
       expect(restored.points.length, original.points.length);
-      expect(restored.color.value, original.color.value);
+      expect(restored.color.toARGB32(), original.color.toARGB32());
       expect(restored.strokeWidth, original.strokeWidth);
       expect(restored.opacity, original.opacity);
       expect(restored.tool, original.tool);

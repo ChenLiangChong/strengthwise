@@ -1,7 +1,7 @@
 // ✅ P3 響應式分欄佈局 (True Dual-Pane Content)
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/coach_management_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coach_management_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/views/pages/relationships/role_client/tabs/coach_info_tab.dart';
@@ -30,13 +30,13 @@ class CoachDetailContent extends StatefulWidget {
 class _CoachDetailContentState extends State<CoachDetailContent>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late CoachManagementController _controller;
+  late ICoachManagementController _controller;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _controller = serviceLocator<CoachManagementController>();
+    _controller = serviceLocator<ICoachManagementController>();
 
     // 選中教練（載入詳細資料）
     _controller.selectCoach(widget.coachId, widget.clientId);
@@ -62,7 +62,7 @@ class _CoachDetailContentState extends State<CoachDetailContent>
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return ChangeNotifierProvider<CoachManagementController>.value(
+    return ChangeNotifierProvider<ICoachManagementController>.value(
       value: _controller,
       child: Column(
         children: [

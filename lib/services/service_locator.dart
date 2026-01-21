@@ -30,7 +30,7 @@ void markServiceReady() {
   if (!_serviceReadyCompleter.isCompleted) {
     _serviceReadyCompleter.complete();
     if (kDebugMode) {
-      print('[SERVICE_LOCATOR] ✅ 服務已就緒');
+      debugPrint('[SERVICE_LOCATOR] ✅ 服務已就緒');
     }
   }
 }
@@ -64,11 +64,11 @@ Future<void> setupServiceLocator({bool lazyInit = false}) async {
     }
 
     if (kDebugMode) {
-      print('服務定位器初始化完成${lazyInit ? '（延遲模式）' : ''}');
+      debugPrint('服務定位器初始化完成${lazyInit ? '（延遲模式）' : ''}');
     }
   } catch (e) {
     if (kDebugMode) {
-      print('服務定位器初始化失敗: $e');
+      debugPrint('服務定位器初始化失敗: $e');
     }
     rethrow;
   }
@@ -94,11 +94,11 @@ Future<void> resetServiceLocator() async {
     serviceLocator.reset();
 
     if (kDebugMode) {
-      print('服務定位器已重置');
+      debugPrint('服務定位器已重置');
     }
   } catch (e) {
     if (kDebugMode) {
-      print('重置服務定位器時出錯: $e');
+      debugPrint('重置服務定位器時出錯: $e');
     }
   }
 }

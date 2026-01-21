@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/availability_slot_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/controllers/availability_slot_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_availability_slot_controller.dart';
 import 'package:strengthwise/utils/date_format_utils.dart';
 
 /// 時段編輯對話框
@@ -24,7 +24,7 @@ class SlotEditorDialog extends StatefulWidget {
 }
 
 class _SlotEditorDialogState extends State<SlotEditorDialog> {
-  late final AvailabilitySlotController _slotController;
+  late final IAvailabilitySlotController _slotController;
 
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
@@ -37,7 +37,7 @@ class _SlotEditorDialogState extends State<SlotEditorDialog> {
   @override
   void initState() {
     super.initState();
-    _slotController = serviceLocator<AvailabilitySlotController>();
+    _slotController = serviceLocator<IAvailabilitySlotController>();
 
     if (_isEditMode) {
       // 編輯模式：載入現有時段資料

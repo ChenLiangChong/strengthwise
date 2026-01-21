@@ -2,9 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/services/service_locator.dart';
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart'; // ⭐ v3.6: MVVM
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart'; // ⭐ v3.6: MVVM
 import 'package:strengthwise/services/core/error_handling_service.dart';
-import 'package:strengthwise/controllers/appointment_controller.dart'; // ⭐ v3.5: MVVM 重構
+import 'package:strengthwise/controllers/interfaces/i_appointment_controller.dart'; // ⭐ v3.5: MVVM 重構
 
 /// ⭐ v3.1.1: 臨時課程建立結果
 ///
@@ -55,8 +55,8 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
 
-  late final CoachingRelationshipController _relationshipController; // ⭐ v3.6: MVVM
-  late final AppointmentController _appointmentController; // ⭐ v3.5: MVVM 重構
+  late final ICoachingRelationshipController _relationshipController; // ⭐ v3.6: MVVM
+  late final IAppointmentController _appointmentController; // ⭐ v3.5: MVVM 重構
   late final ErrorHandlingService _errorService;
 
   List<UserModel> _clients = [];
@@ -72,8 +72,8 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
   @override
   void initState() {
     super.initState();
-    _relationshipController = serviceLocator<CoachingRelationshipController>(); // ⭐ v3.6: MVVM
-    _appointmentController = serviceLocator<AppointmentController>(); // ⭐ v3.5: MVVM 重構
+    _relationshipController = serviceLocator<ICoachingRelationshipController>(); // ⭐ v3.6: MVVM
+    _appointmentController = serviceLocator<IAppointmentController>(); // ⭐ v3.5: MVVM 重構
     _errorService = serviceLocator<ErrorHandlingService>();
     _loadClients();
   }
@@ -137,7 +137,8 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
   /// ⭐ v3.5: MVVM 重構 - 透過 Controller 操作，事件由 Controller 自動發布
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedClient == null) {
+    final client = _selectedClient;
+    if (client == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('請選擇學員')),
       );
@@ -168,7 +169,7 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
         // ⭐ v3.5: 透過 Controller 創建臨時課程（Controller 會自動發布事件）
         final appointmentId = await _appointmentController.createAdHocSession(
           coachId: widget.coachId,
-          clientId: _selectedClient!.uid,
+          clientId: client.uid,
           startTime: startTime,
           endTime: endTime,
           notes:
@@ -194,8 +195,8 @@ class _AdHocSessionDialogState extends State<AdHocSessionDialog> {
         // ⭐ v3.1.1: 返回完整資訊供跳轉使用
         final result = AdHocSessionResult(
           appointmentId: firstAppointmentId,
-          clientId: _selectedClient!.uid,
-          clientName: _selectedClient!.displayName ?? _selectedClient!.email,
+          clientId: client.uid,
+          clientName: client.displayName ?? client.email,
           startTime: firstStartTime,
           endTime: firstEndTime,
         );

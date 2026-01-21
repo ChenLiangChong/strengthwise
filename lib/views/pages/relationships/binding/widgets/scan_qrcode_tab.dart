@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-import 'package:strengthwise/controllers/coaching_relationship_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart';
 import 'package:strengthwise/utils/notification_utils.dart';
 
 /// 掃描 QR Code Tab（共用 Widget）
@@ -112,7 +112,7 @@ class _ScanQRCodeTabState extends State<ScanQRCodeTab> {
     _scannerController?.stop();
 
     final controller =
-        Provider.of<CoachingRelationshipController>(context, listen: false);
+        Provider.of<ICoachingRelationshipController>(context, listen: false);
 
     // 執行綁定
     final success = await controller.scanAndBind(
@@ -225,7 +225,7 @@ class _ScanQRCodeTabState extends State<ScanQRCodeTab> {
             margin: const EdgeInsets.symmetric(horizontal: 32),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: colorScheme.surface.withOpacity(0.9),
+              color: colorScheme.surface.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(

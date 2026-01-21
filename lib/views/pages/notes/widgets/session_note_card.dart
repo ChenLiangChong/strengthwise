@@ -34,7 +34,7 @@ class SessionNoteCard extends StatelessWidget {
       elevation: 0, // ⭐ 移除陰影
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -167,10 +167,18 @@ class SessionNoteCard extends StatelessWidget {
               SizedBox(height: context.spacing.sm),
               
               // SOAP 筆記預覽
-              if (note.soap != null && !note.soap!.isEmpty) ...[
-                _buildSoapPreview(context, note.soap!),
-                SizedBox(height: context.spacing.sm),
-              ],
+              Builder(builder: (context) {
+                final soap = note.soap;
+                if (soap != null && !soap.isEmpty) {
+                  return Column(
+                    children: [
+                      _buildSoapPreview(context, soap),
+                      SizedBox(height: context.spacing.sm),
+                    ],
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
               
               // 底部資訊列：視覺元素數量 + 更新時間（使用 Wrap 防止溢出）
               Row(
@@ -260,15 +268,17 @@ class SessionNoteCard extends StatelessWidget {
   /// 獲取人名首字母（用於頭像）
   String _getPersonInitial() {
     // 優先顯示教練名稱（學員模式）
-    if (coachName != null && coachName!.isNotEmpty) {
-      if (coachName == '已刪除的教練') {
+    final coach = coachName;
+    if (coach != null && coach.isNotEmpty) {
+      if (coach == '已刪除的教練') {
         return '?';
       }
-      return coachName![0].toUpperCase();
+      return coach[0].toUpperCase();
     }
     // 其次顯示學員名稱（教練模式）
-    if (clientName != null && clientName!.isNotEmpty) {
-      return clientName![0].toUpperCase();
+    final client = clientName;
+    if (client != null && client.isNotEmpty) {
+      return client[0].toUpperCase();
     }
     return '學';
   }
@@ -284,29 +294,35 @@ class SessionNoteCard extends StatelessWidget {
       return clientName!;
     }
     // ⭐ 處理已刪除的用戶（ID 為 null）
-    if (note.clientId == null) {
+    final clientId = note.clientId;
+    if (clientId == null) {
       return '已刪除的學員';
     }
     // 後備方案：顯示 ID 前綴
-    return '學員 ${note.clientId!.substring(0, 8)}...';
+    return '學員 ${clientId.substring(0, 8)}...';
   }
 
   /// SOAP 筆記預覽
   Widget _buildSoapPreview(BuildContext context, SoapNoteModel soap) {
     final theme = Theme.of(context);
-    
+
     // 找出第一個有內容的欄位作為預覽
     String? preview;
-    if (soap.subjective != null && soap.subjective!.isNotEmpty) {
-      preview = 'S: ${soap.subjective}';
-    } else if (soap.objective != null && soap.objective!.isNotEmpty) {
-      preview = 'O: ${soap.objective}';
-    } else if (soap.assessment != null && soap.assessment!.isNotEmpty) {
-      preview = 'A: ${soap.assessment}';
-    } else if (soap.plan != null && soap.plan!.isNotEmpty) {
-      preview = 'P: ${soap.plan}';
+    final subjective = soap.subjective;
+    final objective = soap.objective;
+    final assessment = soap.assessment;
+    final plan = soap.plan;
+
+    if (subjective != null && subjective.isNotEmpty) {
+      preview = 'S: $subjective';
+    } else if (objective != null && objective.isNotEmpty) {
+      preview = 'O: $objective';
+    } else if (assessment != null && assessment.isNotEmpty) {
+      preview = 'A: $assessment';
+    } else if (plan != null && plan.isNotEmpty) {
+      preview = 'P: $plan';
     }
-    
+
     if (preview == null) return const SizedBox.shrink();
     
     return Text(
