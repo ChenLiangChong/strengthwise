@@ -1,9 +1,3 @@
----
-description: "Clean Architecture 分層規則、依賴注入與目錄結構強制執行。適用於 lib/ 下所有檔案。"
-globs: lib/**/*.dart
-alwaysApply: false
----
-
 # Flutter 架構規範
 
 <critical>

@@ -1,9 +1,3 @@
----
-description: "開發狀態文檔規範：DEVELOPMENT_STATUS.md 與 VERSION_HISTORY.md 的維護。"
-globs: docs/DEVELOPMENT_STATUS.md,docs/archived/VERSION_HISTORY.md
-alwaysApply: false
----
-
 # 開發狀態文檔規範
 
 ## 📄 DEVELOPMENT_STATUS.md 結構
@@ -72,4 +66,3 @@ DEVELOPMENT_STATUS.md（主文檔）
 **技術亮點**：
 - 批量查詢避免 N+1
 ```
-

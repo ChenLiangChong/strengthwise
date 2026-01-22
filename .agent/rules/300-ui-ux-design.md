@@ -1,9 +1,3 @@
----
-description: "UI/UX 設計規範：Kinetic 設計系統、色彩方案、Material 3。適用於 views 和 themes。"
-globs: lib/views/**/*.dart,lib/themes/**/*.dart
-alwaysApply: false
----
-
 # UI/UX 設計規範
 
 <critical>

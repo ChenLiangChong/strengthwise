@@ -254,16 +254,18 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
     super.didChangeAppLifecycleState(state);
 
     if (state == AppLifecycleState.paused) {
-      // ⭐ v3.1: App 進入背景時保存訓練狀態
+      // ⭐ v4.3: App 進入背景時，同步經過時間並保存
+      // 不暫停訓練，讓計時在背景繼續
       if (_executionController.isInProgress) {
-        _executionController.pauseTraining();
+        _executionController.syncElapsedTimeForSave();
       }
       // 保存所有未保存的修改
       if (_executionController.isDataChanged) {
         _executionController.saveWorkoutRecord();
       }
-      setState(() {});
     } else if (state == AppLifecycleState.resumed) {
+      // ⭐ v4.3: 回到前景時重新整理 UI，計時會自動更新
+      // 因為 tickElapsedTime() 是基於時間差計算的
       setState(() {});
     }
   }

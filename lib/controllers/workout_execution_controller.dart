@@ -1043,6 +1043,14 @@ class WorkoutExecutionController extends ChangeNotifier
     }
   }
 
+  /// ⭐ v4.3: 同步經過時間（不改變狀態）
+  ///
+  /// 用於 App 進入背景前保存，確保儲存的時間是準確的。
+  @override
+  void syncElapsedTimeForSave() {
+    _dataManager.syncElapsedTime();
+  }
+
   /// 保存訓練狀態到資料庫
   Future<void> _saveTrainingStatus() async {
     final userId = _authController.user?.uid;

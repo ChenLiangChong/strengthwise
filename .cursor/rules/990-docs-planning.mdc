@@ -1,8 +1,3 @@
----
-description: "規劃文檔規範：docs/planning/ 目錄下的功能規劃文檔維護。"
-globs: "docs/planning/**"
----
-
 # 規劃文檔規範
 
 ## 📁 目錄定位

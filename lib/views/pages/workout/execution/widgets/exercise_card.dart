@@ -35,7 +35,7 @@ class SetData {
   final int setNumber;
   final double? weight;
   final int? reps;
-  final int? time;        // v3.2+ 秒
+  final int? time; // v3.2+ 秒
   final double? distance; // v3.2+ 公尺
   final double? calories; // v3.2+ 大卡
   final bool isCompleted;
@@ -91,7 +91,8 @@ class ExerciseCard extends StatelessWidget {
 
   /// 組數數據更新回調
   /// v3.2+ 支援所有追蹤模式欄位
-  final Function(int setNumber, {
+  final Function(
+    int setNumber, {
     double? weight,
     int? reps,
     int? time,
@@ -202,15 +203,20 @@ class ExerciseCard extends StatelessWidget {
                   setNumber: set.setNumber,
                   weight: set.weight,
                   reps: set.reps,
-                  time: set.time,           // v3.2+
-                  distance: set.distance,   // v3.2+
-                  calories: set.calories,   // v3.2+
+                  time: set.time, // v3.2+
+                  distance: set.distance, // v3.2+
+                  calories: set.calories, // v3.2+
                   trackingMode: data.trackingMode, // v3.2+
                   previousData: set.previousData,
                   isCompleted: set.isCompleted,
                   isActive: set.setNumber == activeSetNumber,
                   isEditable: isEditable,
-                  onUpdate: ({double? weight, int? reps, int? time, double? distance, double? calories}) {
+                  onUpdate: (
+                      {double? weight,
+                      int? reps,
+                      int? time,
+                      double? distance,
+                      double? calories}) {
                     onSetUpdate(
                       set.setNumber,
                       weight: weight,
@@ -353,6 +359,9 @@ class ExerciseCard extends StatelessWidget {
   /// 構建表頭
   /// v3.2+ 根據 trackingMode 顯示不同表頭
   Widget _buildTableHeader(BuildContext context) {
+    // ⭐ v4.3: timeOnly 模式縮減 PREV 寬度，讓 TIME 輸入框有更多空間
+    final prevWidth = data.trackingMode == TrackingMode.timeOnly ? 48.0 : 60.0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppTheme.spacingMd,
@@ -362,7 +371,7 @@ class ExerciseCard extends StatelessWidget {
         children: [
           _buildHeaderCell(context, 'SET', width: 40),
           const SizedBox(width: AppTheme.spacingSm),
-          _buildHeaderCell(context, 'PREV', width: 60),
+          _buildHeaderCell(context, 'PREV', width: prevWidth),
           const SizedBox(width: AppTheme.spacingSm),
           // v3.2+ 根據 trackingMode 顯示不同欄位
           ..._buildTrackingModeHeaders(context),
@@ -374,6 +383,7 @@ class ExerciseCard extends StatelessWidget {
   }
 
   /// v3.2+ 根據追蹤模式構建表頭欄位
+  /// ⭐ v4.3: 優化 Time 相關模式的對齊
   List<Widget> _buildTrackingModeHeaders(BuildContext context) {
     switch (data.trackingMode) {
       case TrackingMode.weightReps:
@@ -383,30 +393,30 @@ class ExerciseCard extends StatelessWidget {
           _buildHeaderCell(context, 'REPS', flex: 3),
         ];
       case TrackingMode.weightTime:
+        // ⭐ v4.3: 雙行佈局 - 表頭只顯示 KG，TIME 在第二行
         return [
-          _buildHeaderCell(context, 'KG', flex: 3),
-          const SizedBox(width: AppTheme.spacingSm),
-          _buildHeaderCell(context, 'TIME', flex: 3),
+          _buildHeaderCell(context, 'KG', flex: 6),
         ];
       case TrackingMode.repsOnly:
         return [
           _buildHeaderCell(context, 'REPS', flex: 6),
         ];
       case TrackingMode.timeOnly:
+        // ⭐ v4.3: 五列結構 - TIME | 空佔位1(Timer) | 空佔位2(Checkbox)
         return [
           _buildHeaderCell(context, 'TIME', flex: 6),
+          const SizedBox(width: AppTheme.spacingSm),
+          const SizedBox(width: 40), // Timer 按鈕空位
         ];
       case TrackingMode.repsTime:
+        // ⭐ v4.3: 雙行佈局 - 表頭只顯示 REPS，TIME 在第二行
         return [
-          _buildHeaderCell(context, 'REPS', flex: 3),
-          const SizedBox(width: AppTheme.spacingSm),
-          _buildHeaderCell(context, 'TIME', flex: 3),
+          _buildHeaderCell(context, 'REPS', flex: 6),
         ];
       case TrackingMode.distanceTime:
+        // ⭐ v4.3: 雙行佈局 - 表頭只顯示 DIST，TIME 在第二行
         return [
-          _buildHeaderCell(context, 'DIST', flex: 3),
-          const SizedBox(width: AppTheme.spacingSm),
-          _buildHeaderCell(context, 'TIME', flex: 3),
+          _buildHeaderCell(context, 'DIST', flex: 6),
         ];
       case TrackingMode.distanceOnly:
         return [
@@ -669,7 +679,12 @@ class SetInputRow extends StatefulWidget {
   final bool isEditable;
 
   /// 數據更新回調（v3.2+ 支援所有欄位）
-  final Function({double? weight, int? reps, int? time, double? distance, double? calories}) onUpdate;
+  final Function(
+      {double? weight,
+      int? reps,
+      int? time,
+      double? distance,
+      double? calories}) onUpdate;
 
   /// 完成狀態切換回調
   final VoidCallback onComplete;
@@ -697,7 +712,8 @@ class SetInputRow extends StatefulWidget {
 
 class _SetInputRowState extends State<SetInputRow> {
   // 通用控制器：根據 trackingMode 可能使用不同欄位
-  late TextEditingController _field1Controller; // weight, reps, time, distance, calories
+  late TextEditingController
+      _field1Controller; // weight, reps, time, distance, calories
   late TextEditingController _field2Controller; // reps, time（雙欄位模式）
   late FocusNode _field1FocusNode;
   late FocusNode _field2FocusNode;
@@ -788,7 +804,8 @@ class _SetInputRowState extends State<SetInputRow> {
     switch (widget.trackingMode) {
       case TrackingMode.weightReps:
         if (widget.weight != oldWidget.weight && !_field1FocusNode.hasFocus) {
-          _field1Controller.text = widget.weight != null ? _formatNumber(widget.weight!) : '';
+          _field1Controller.text =
+              widget.weight != null ? _formatNumber(widget.weight!) : '';
         }
         if (widget.reps != oldWidget.reps && !_field2FocusNode.hasFocus) {
           _field2Controller.text = widget.reps?.toString() ?? '';
@@ -796,7 +813,8 @@ class _SetInputRowState extends State<SetInputRow> {
         break;
       case TrackingMode.weightTime:
         if (widget.weight != oldWidget.weight && !_field1FocusNode.hasFocus) {
-          _field1Controller.text = widget.weight != null ? _formatNumber(widget.weight!) : '';
+          _field1Controller.text =
+              widget.weight != null ? _formatNumber(widget.weight!) : '';
         }
         if (widget.time != oldWidget.time && !_field2FocusNode.hasFocus) {
           _field2Controller.text = widget.time?.toString() ?? '';
@@ -821,21 +839,27 @@ class _SetInputRowState extends State<SetInputRow> {
         }
         break;
       case TrackingMode.distanceTime:
-        if (widget.distance != oldWidget.distance && !_field1FocusNode.hasFocus) {
-          _field1Controller.text = widget.distance != null ? _formatNumber(widget.distance!) : '';
+        if (widget.distance != oldWidget.distance &&
+            !_field1FocusNode.hasFocus) {
+          _field1Controller.text =
+              widget.distance != null ? _formatNumber(widget.distance!) : '';
         }
         if (widget.time != oldWidget.time && !_field2FocusNode.hasFocus) {
           _field2Controller.text = widget.time?.toString() ?? '';
         }
         break;
       case TrackingMode.distanceOnly:
-        if (widget.distance != oldWidget.distance && !_field1FocusNode.hasFocus) {
-          _field1Controller.text = widget.distance != null ? _formatNumber(widget.distance!) : '';
+        if (widget.distance != oldWidget.distance &&
+            !_field1FocusNode.hasFocus) {
+          _field1Controller.text =
+              widget.distance != null ? _formatNumber(widget.distance!) : '';
         }
         break;
       case TrackingMode.calories:
-        if (widget.calories != oldWidget.calories && !_field1FocusNode.hasFocus) {
-          _field1Controller.text = widget.calories != null ? _formatNumber(widget.calories!) : '';
+        if (widget.calories != oldWidget.calories &&
+            !_field1FocusNode.hasFocus) {
+          _field1Controller.text =
+              widget.calories != null ? _formatNumber(widget.calories!) : '';
         }
         break;
     }
@@ -956,7 +980,7 @@ class _SetInputRowState extends State<SetInputRow> {
   }
 
   /// 當外部 time 值改變時，動態調整計時器
-  /// 
+  ///
   /// ⭐ v3.7+: 計時中修改時間會自動暫停，避免在 build 中呼叫 setState
   void _handleTimeChange(int? newTime) {
     if (!_isTimerRunning && _remainingSeconds == 0 && _elapsedSeconds == 0) {
@@ -1048,7 +1072,7 @@ class _SetInputRowState extends State<SetInputRow> {
     final targetSeconds = widget.time ?? 0;
     if (targetSeconds <= 0) return const SizedBox.shrink();
 
-    final progress = targetSeconds > 0 
+    final progress = targetSeconds > 0
         ? (_elapsedSeconds / targetSeconds).clamp(0.0, 1.0)
         : 0.0;
 
@@ -1076,8 +1100,8 @@ class _SetInputRowState extends State<SetInputRow> {
               Icon(
                 _isTimerRunning ? Icons.timer : Icons.timer_outlined,
                 size: 14,
-                color: _isTimerRunning 
-                    ? colorScheme.primary 
+                color: _isTimerRunning
+                    ? colorScheme.primary
                     : colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 4),
@@ -1100,9 +1124,16 @@ class _SetInputRowState extends State<SetInputRow> {
 
   /// 是否顯示倒數計時器（計時中或暫停中）
   bool get _showCountdown {
-    return widget.trackingMode.needsTime && 
-           !widget.isCompleted && 
-           (_isTimerRunning || (_remainingSeconds > 0 && _elapsedSeconds > 0));
+    return widget.trackingMode.needsTime &&
+        !widget.isCompleted &&
+        (_isTimerRunning || (_remainingSeconds > 0 && _elapsedSeconds > 0));
+  }
+
+  /// ⭐ v4.3: 是否為複合時間模式（需要顯示獨立的 TIME 行）
+  bool get _isCompositeTimeMode {
+    return widget.trackingMode == TrackingMode.repsTime ||
+        widget.trackingMode == TrackingMode.weightTime ||
+        widget.trackingMode == TrackingMode.distanceTime;
   }
 
   @override
@@ -1115,7 +1146,7 @@ class _SetInputRowState extends State<SetInputRow> {
       mainAxisSize: MainAxisSize.min,
       children: [
         // ========================================
-        // Set 資料行
+        // Set 資料行（主內容）
         // ========================================
         Padding(
           padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingXs),
@@ -1144,8 +1175,9 @@ class _SetInputRowState extends State<SetInputRow> {
                         '${widget.setNumber}',
                         style: GoogleFonts.jetBrainsMono(
                           fontSize: 14,
-                          fontWeight:
-                              widget.isActive ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: widget.isActive
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           color: widget.isActive
                               ? colorScheme.primary
                               : colorScheme.onSurface.withValues(
@@ -1162,9 +1194,10 @@ class _SetInputRowState extends State<SetInputRow> {
 
               // ========================================
               // 上一組參考數據（固定寬度，保持對齊）
+              // ⭐ v4.3: timeOnly 模式縮減寬度，讓 TIME 輸入框有更多空間
               // ========================================
               SizedBox(
-                width: 60,
+                width: widget.trackingMode == TrackingMode.timeOnly ? 48 : 60,
                 child: Center(
                   child: widget.previousData != null
                       ? Text(
@@ -1189,16 +1222,11 @@ class _SetInputRowState extends State<SetInputRow> {
 
               // ========================================
               // v3.2+ 根據追蹤模式顯示輸入欄位
+              // ⭐ v4.3: Timer 按鈕已移入 _buildTrackingModeInputs
               // ========================================
               ..._buildTrackingModeInputs(context, isEditable),
 
               const SizedBox(width: AppTheme.spacingSm),
-
-              // ========================================
-              // ⭐ v3.7+: 運動計時按鈕（僅 needsTime 模式）
-              // ========================================
-              if (widget.trackingMode.needsTime && !widget.isCompleted)
-                _buildTimerButton(context, colorScheme),
 
               // ========================================
               // 完成勾選按鈕（佔 15%）
@@ -1249,10 +1277,58 @@ class _SetInputRowState extends State<SetInputRow> {
           ),
         ),
         // ========================================
+        // ⭐ v4.3: TIME 行（只有複合時間模式才顯示）
+        // 結構：[空40] | TIME標題60 | TIME輸入 | Timer40
+        // ========================================
+        if (_isCompositeTimeMode)
+          Padding(
+            padding: const EdgeInsets.only(
+              top: AppTheme.spacingXs,
+              bottom: AppTheme.spacingXs,
+            ),
+            child: Row(
+              children: [
+                // 對應 SET 的空間
+                const SizedBox(width: 40),
+                const SizedBox(width: AppTheme.spacingSm),
+                // TIME 標題（對應 PREV 位置）
+                SizedBox(
+                  width: 60,
+                  child: Center(
+                    child: Text(
+                      'TIME',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface.withValues(alpha: 0.4),
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spacingSm),
+                // TIME 輸入框（對應主輸入框位置）
+                Expanded(
+                  flex: 6,
+                  child: _buildTimeInputForCompositeMode(context, isEditable),
+                ),
+                const SizedBox(width: AppTheme.spacingSm),
+                // Timer 按鈕（對應 Checkbox 位置）
+                SizedBox(
+                  width: 40,
+                  child: widget.isCompleted
+                      ? const SizedBox.shrink()
+                      : Center(
+                          child: _buildTimerButton(context, colorScheme),
+                        ),
+                ),
+              ],
+            ),
+          ),
+        // ========================================
         // ⭐ v3.7+: 倒數計時器（顯示在 set row 下方）
         // ========================================
-        if (_showCountdown)
-          _buildCountdownBar(context, colorScheme),
+        if (_showCountdown) _buildCountdownBar(context, colorScheme),
       ],
     );
   }
@@ -1276,7 +1352,8 @@ class _SetInputRowState extends State<SetInputRow> {
                   reps: int.tryParse(_field2Controller.text),
                 );
               },
-              onSubmitted: (_) => FocusScope.of(context).requestFocus(_field2FocusNode),
+              onSubmitted: (_) =>
+                  FocusScope.of(context).requestFocus(_field2FocusNode),
               textInputAction: TextInputAction.next,
             ),
           ),
@@ -1301,9 +1378,10 @@ class _SetInputRowState extends State<SetInputRow> {
           ),
         ];
       case TrackingMode.weightTime:
+        // ⭐ v4.3: 只返回主輸入框，TIME 行在 build 方法中單獨處理
         return [
           Expanded(
-            flex: 3,
+            flex: 6,
             child: _buildNumberInput(
               controller: _field1Controller,
               focusNode: _field1FocusNode,
@@ -1316,26 +1394,9 @@ class _SetInputRowState extends State<SetInputRow> {
                   time: int.tryParse(_field2Controller.text),
                 );
               },
-              onSubmitted: (_) => FocusScope.of(context).requestFocus(_field2FocusNode),
+              onSubmitted: (_) =>
+                  FocusScope.of(context).requestFocus(_field2FocusNode),
               textInputAction: TextInputAction.next,
-            ),
-          ),
-          const SizedBox(width: AppTheme.spacingSm),
-          Expanded(
-            flex: 3,
-            child: TimeInputField(
-              value: widget.time,
-              onChanged: (seconds) {
-                // 更新 controller 以保持同步
-                _field2Controller.text = seconds?.toString() ?? '';
-                widget.onUpdate(
-                  weight: double.tryParse(_field1Controller.text),
-                  time: seconds,
-                );
-              },
-              enabled: isEditable,
-              isCompleted: widget.isCompleted,
-              focusNode: _field2FocusNode,
             ),
           ),
         ];
@@ -1358,6 +1419,8 @@ class _SetInputRowState extends State<SetInputRow> {
           ),
         ];
       case TrackingMode.timeOnly:
+        // ⭐ v4.3: 簡化結構 - TIME 輸入框佔滿空間 + Timer 按鈕在 Checkbox 前
+        final colorScheme = Theme.of(context).colorScheme;
         return [
           Expanded(
             flex: 6,
@@ -1372,11 +1435,15 @@ class _SetInputRowState extends State<SetInputRow> {
               focusNode: _field1FocusNode,
             ),
           ),
+          const SizedBox(width: AppTheme.spacingSm),
+          // Timer 按鈕（在 Checkbox 前面）
+          if (!widget.isCompleted) _buildTimerButton(context, colorScheme),
         ];
       case TrackingMode.repsTime:
+        // ⭐ v4.3: 只返回主輸入框，TIME 行在 build 方法中單獨處理
         return [
           Expanded(
-            flex: 3,
+            flex: 6,
             child: _buildNumberInput(
               controller: _field1Controller,
               focusNode: _field1FocusNode,
@@ -1389,32 +1456,17 @@ class _SetInputRowState extends State<SetInputRow> {
                   time: int.tryParse(_field2Controller.text),
                 );
               },
-              onSubmitted: (_) => FocusScope.of(context).requestFocus(_field2FocusNode),
+              onSubmitted: (_) =>
+                  FocusScope.of(context).requestFocus(_field2FocusNode),
               textInputAction: TextInputAction.next,
-            ),
-          ),
-          const SizedBox(width: AppTheme.spacingSm),
-          Expanded(
-            flex: 3,
-            child: TimeInputField(
-              value: widget.time,
-              onChanged: (seconds) {
-                _field2Controller.text = seconds?.toString() ?? '';
-                widget.onUpdate(
-                  reps: int.tryParse(_field1Controller.text),
-                  time: seconds,
-                );
-              },
-              enabled: isEditable,
-              isCompleted: widget.isCompleted,
-              focusNode: _field2FocusNode,
             ),
           ),
         ];
       case TrackingMode.distanceTime:
+        // ⭐ v4.3: 只返回主輸入框，TIME 行在 build 方法中單獨處理
         return [
           Expanded(
-            flex: 3,
+            flex: 6,
             child: _buildNumberInput(
               controller: _field1Controller,
               focusNode: _field1FocusNode,
@@ -1427,25 +1479,9 @@ class _SetInputRowState extends State<SetInputRow> {
                   time: int.tryParse(_field2Controller.text),
                 );
               },
-              onSubmitted: (_) => FocusScope.of(context).requestFocus(_field2FocusNode),
+              onSubmitted: (_) =>
+                  FocusScope.of(context).requestFocus(_field2FocusNode),
               textInputAction: TextInputAction.next,
-            ),
-          ),
-          const SizedBox(width: AppTheme.spacingSm),
-          Expanded(
-            flex: 3,
-            child: TimeInputField(
-              value: widget.time,
-              onChanged: (seconds) {
-                _field2Controller.text = seconds?.toString() ?? '';
-                widget.onUpdate(
-                  distance: double.tryParse(_field1Controller.text),
-                  time: seconds,
-                );
-              },
-              enabled: isEditable,
-              isCompleted: widget.isCompleted,
-              focusNode: _field2FocusNode,
             ),
           ),
         ];
@@ -1486,6 +1522,40 @@ class _SetInputRowState extends State<SetInputRow> {
           ),
         ];
     }
+  }
+
+  /// ⭐ v4.3: 構建複合時間模式的 TIME 輸入框
+  Widget _buildTimeInputForCompositeMode(
+      BuildContext context, bool isEditable) {
+    return TimeInputField(
+      value: widget.time,
+      onChanged: (seconds) {
+        _field2Controller.text = seconds?.toString() ?? '';
+        // 根據不同的複合模式更新對應的欄位
+        switch (widget.trackingMode) {
+          case TrackingMode.repsTime:
+            widget.onUpdate(
+              reps: int.tryParse(_field1Controller.text),
+              time: seconds,
+            );
+          case TrackingMode.weightTime:
+            widget.onUpdate(
+              weight: double.tryParse(_field1Controller.text),
+              time: seconds,
+            );
+          case TrackingMode.distanceTime:
+            widget.onUpdate(
+              distance: double.tryParse(_field1Controller.text),
+              time: seconds,
+            );
+          default:
+            widget.onUpdate(time: seconds);
+        }
+      },
+      enabled: isEditable,
+      isCompleted: widget.isCompleted,
+      focusNode: _field2FocusNode,
+    );
   }
 
   /// 構建數字輸入框

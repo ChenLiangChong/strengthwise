@@ -1,13 +1,7 @@
----
-description: "資料庫 Migration 執行規範：版本順序、合併策略、注意事項。適用於 SQL 遷移檔案。"
-globs: migrations/**/*.sql,migrations/README.md
-alwaysApply: false
----
-
 # Migration 規範
 
 <critical>
-1. 必須按編號順序執行（001 → 22）
+1. 必須按編號順序執行（001 → 23）
 2. 不可跳過（v2.0 依賴 v1.0 的 users 表）
 3. 所有 SQL 使用 `IF NOT EXISTS`（冪等性）
 4. 需先啟用 Supabase Auth

@@ -1,8 +1,3 @@
----
-description: "FCM 推播通知文檔規範：FCM_SETUP_GUIDE.md 與 Edge Functions 的維護。"
-globs: "supabase/functions/**"
----
-
 # FCM 推播通知文檔規範
 
 ## 📄 FCM_SETUP_GUIDE.md 結構

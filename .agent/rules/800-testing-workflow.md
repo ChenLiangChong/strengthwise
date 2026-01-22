@@ -1,9 +1,3 @@
----
-description: "測試策略與工作流程：單元測試、Widget 測試、驗收標準。適用於 test 目錄。"
-globs: test/**/*.dart
-alwaysApply: false
----
-
 # 測試規範
 
 <critical>
@@ -18,10 +12,10 @@ alwaysApply: false
 test('應該正確計算訓練總量', () {
   // Arrange (Given)
   final records = [WorkoutRecord(weight: 100, reps: 5)];
-  
+
   // Act (When)
   final totalVolume = calculator.calculateTotalVolume(records);
-  
+
   // Assert (Then)
   expect(totalVolume, equals(500));
 });
@@ -36,10 +30,10 @@ test('Controller 應該載入訓練記錄', () async {
   final mockService = MockWorkoutService();
   when(() => mockService.getRecords())
       .thenAnswer((_) async => [mockRecord]);
-  
+
   final controller = WorkoutController(workoutService: mockService);
   await controller.loadRecords();
-  
+
   expect(controller.records.length, equals(1));
 });
 ```

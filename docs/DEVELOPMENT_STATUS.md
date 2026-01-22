@@ -2,8 +2,8 @@
 
 > 下一步計劃、當前版本、未來規劃
 
-**當前版本**：v4.2（2026-01-20 完成）
-**上一版本**：v4.1（2026-01-20 完成）
+**當前版本**：v4.3（2026-01-22 完成）
+**上一版本**：v4.2（2026-01-20 完成）
 **維護者**：StrengthWise 開發團隊
 
 ---
@@ -35,6 +35,27 @@
 | RLS 策略完整性驗證 | 1 天 | 虛擬學員功能前需審查 |
 | LocalCacheManager 統一 | 2-3 天 | 5 個獨立 CacheService 合併入口 |
 | 離線寫入佇列機制 | 評估中 | Write-Through Queue + 網路恢復自動重試 |
+
+---
+
+## v4.3 UI/UX 微調（2026-01-22 完成）
+
+### Exercise Card TIME 佈局優化
+
+| 項目 | 檔案 | 修改內容 |
+|------|------|----------|
+| 複合時間模式 | `exercise_card.dart` | 三行結構（repsTime, weightTime, distanceTime）|
+| timeOnly 模式 | `exercise_card.dart` | 五列結構，PREV 寬度 60px → 48px |
+| 新增方法 | `exercise_card.dart` | `_isCompositeTimeMode`, `_buildTimeInputForCompositeMode` |
+
+### 背景計時器修復
+
+| 項目 | 檔案 | 修改內容 |
+|------|------|----------|
+| DataManager | `workout_execution_data_manager.dart` | 新增 `syncElapsedTime()` |
+| Controller Interface | `i_workout_execution_controller.dart` | 新增 `syncElapsedTimeForSave()` |
+| Controller | `workout_execution_controller.dart` | 實作 `syncElapsedTimeForSave()` |
+| UI | `workout_execution_content.dart` | sync 替代 pause/resume，計時器背景繼續運行 |
 
 ---
 
@@ -250,7 +271,8 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 | v3.9 | 跨用戶即時同步 + FCM 完善 + BookingPage 優化 |
 | v4.0 | 架構優化 + Controller Interface 統一 |
 | v4.1 | Service 單元測試（24 個 Service，~293 測試）|
-| **v4.2** | **效能優化（UI 渲染 + 啟動/網路）** |
+| v4.2 | 效能優化（UI 渲染 + 啟動/網路）|
+| **v4.3** | **UI/UX 微調（TIME 佈局 + 背景計時器）** |
 
 **詳細版本歷史**：[archived/VERSION_HISTORY.md](archived/VERSION_HISTORY.md)  
 **技術架構**：[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)  
@@ -262,7 +284,7 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 
 | 項目 | 狀態 |
 |------|------|
-| v1.0-v4.2 | ✅ 100% |
+| v1.0-v4.3 | ✅ 100% |
 | 代碼品質 | ✅ 0 issues（517→0，含 deprecated API 處理）|
 | MVVM 架構 | ✅ 100% 合規 |
 | 快取架構 | ✅ Service 層統一管理 |
@@ -278,6 +300,8 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 
 ---
 
+> ✅ **v4.3 完成**（2026-01-22）：UI/UX 微調（TIME 佈局優化 + 背景計時器修復）
+>
 > ✅ **v4.2 完成**（2026-01-20）：效能優化（UI 渲染 + 啟動/網路優化）
 >
 > ✅ **v4.1 完成**（2026-01-20）：Service 單元測試（24 個 Service，370 測試案例全部通過）

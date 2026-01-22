@@ -1,9 +1,3 @@
----
-description: "文檔維護通用規則：規則與文檔的分工、各領域規則索引。"
-globs: "*"
-alwaysApply: true
----
-
 # 文檔維護通用規則
 
 <critical>

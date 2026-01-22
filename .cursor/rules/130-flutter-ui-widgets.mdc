@@ -1,9 +1,3 @@
----
-description: "Flutter UI 組件設計規範、Widget 使用準則與主題系統。適用於 views 目錄。"
-globs: lib/views/**/*.dart
-alwaysApply: false
----
-
 # Flutter UI 組件規範
 
 <critical>

@@ -1,9 +1,3 @@
----
-description: "StrengthWise 專案的全域上下文、技術棧與版本狀態。適用於所有開發任務。"
-globs: *
-alwaysApply: true
----
-
 # Project Context - StrengthWise
 
 ## 📋 專案資訊
@@ -11,7 +5,7 @@ alwaysApply: true
 | 項目 | 內容 |
 |------|------|
 | **專案名稱** | StrengthWise |
-| **當前版本** | v4.2（2026-01-20 完成 - 效能優化）|
+| **當前版本** | v4.3（2026-01-22 完成 - UI/UX 微調）|
 | **專案類型** | 跨平台健身訓練追蹤應用 |
 | **目標平台** | Android / iOS / Windows / Web |
 
@@ -79,6 +73,7 @@ Model Layer              → lib/models/
 - v4.0：架構優化 + Controller Interface 統一 ✅
 - v4.1：Service 單元測試（24 個 Service，370 測試）✅
 - v4.2：效能優化（UI 渲染 + 啟動/網路）✅
+- v4.3：UI/UX 微調（TIME 佈局 + 背景計時器）✅
 
 ## 📊 專案規模
 

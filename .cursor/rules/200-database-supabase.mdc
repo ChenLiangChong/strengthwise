@@ -1,9 +1,3 @@
----
-description: "Supabase PostgreSQL 資料庫規範：表格設計、Model 轉換、RLS 策略。適用於 Model 和 Service 層。"
-globs: lib/models/**/*.dart,lib/services/**/*.dart,migrations/**/*.sql
-alwaysApply: false
----
-
 # Supabase 資料庫規範
 
 <critical>

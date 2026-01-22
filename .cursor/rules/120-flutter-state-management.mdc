@@ -1,9 +1,3 @@
----
-description: "狀態管理規範：Provider、ChangeNotifier、GetIt 使用指南。適用於 Controller 和 Service 層。"
-globs: lib/controllers/**/*.dart,lib/services/**/*.dart
-alwaysApply: false
----
-
 # 狀態管理規範
 
 <critical>
@@ -20,14 +14,14 @@ alwaysApply: false
 class WorkoutController extends ChangeNotifier {
   final IWorkoutService _workoutService;
   List<WorkoutRecord> _records = [];
-  
+
   List<WorkoutRecord> get records => _records;
-  
+
   Future<void> loadRecords() async {
     _records = await _workoutService.getRecords();
     notifyListeners();  // 必須
   }
-  
+
   void addRecord(WorkoutRecord record) {
     _records = [..._records, record];  // 重新賦值
     notifyListeners();

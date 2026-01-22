@@ -1,9 +1,3 @@
----
-description: "專案總覽文檔規範：PROJECT_OVERVIEW.md 的結構與維護。"
-globs: docs/PROJECT_OVERVIEW.md
-alwaysApply: false
----
-
 # 專案總覽文檔規範
 
 ## 📄 PROJECT_OVERVIEW.md 定位

@@ -1,9 +1,3 @@
----
-description: "部署流程規範：Android APK、iOS、Google Sign-In、Supabase 配置。"
-globs: android/**/*,ios/**/*,pubspec.yaml
-alwaysApply: false
----
-
 # 部署流程規範
 
 <critical>

@@ -1,9 +1,3 @@
----
-description: "專案文檔索引與查閱指南。指導 AI 根據需求主動查找相關文檔。"
-globs: 
-alwaysApply: true
----
-
 # 文檔索引
 
 ## 📚 文檔地圖

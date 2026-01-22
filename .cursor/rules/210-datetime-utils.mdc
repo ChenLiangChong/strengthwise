@@ -1,9 +1,3 @@
----
-description: "時間處理統一規範：DateTimeUtils 工具類使用指南。適用於所有涉及時間的代碼。"
-globs: **/*.dart
-alwaysApply: false
----
-
 # 時間處理規範
 
 <critical>

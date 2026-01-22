@@ -202,9 +202,21 @@ class WorkoutExecutionDataManager {
     if (_trainingStatus != 'in_progress' || _lastTickTime == null) {
       return _elapsedSeconds;
     }
-    
+
     final now = DateTime.now();
     return _elapsedSeconds + now.difference(_lastTickTime!).inSeconds;
+  }
+
+  /// ⭐ v4.3: 同步經過時間（不改變狀態）
+  ///
+  /// 用於 App 進入背景前保存，確保儲存的時間是準確的。
+  /// 與 pauseTraining() 不同，此方法不會改變訓練狀態。
+  void syncElapsedTime() {
+    if (_trainingStatus != 'in_progress' || _lastTickTime == null) return;
+
+    final now = DateTime.now();
+    _elapsedSeconds += now.difference(_lastTickTime!).inSeconds;
+    _lastTickTime = now;
   }
   
   /// 從資料庫加載的資料初始化狀態

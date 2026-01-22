@@ -1,9 +1,3 @@
----
-description: "UI/UX Pro Max 技能整合：AI 設計智慧資料庫的使用規範。"
-globs: lib/views/**/*.dart
-alwaysApply: false
----
-
 # UI/UX Pro Max 整合規範
 
 > 本規則與現有 `300-ui-ux-design.mdc` 分層運作

@@ -1,9 +1,3 @@
----
-description: "Flutter/Dart 編碼標準、命名規範與型別安全規則。適用於所有 Dart 檔案。"
-globs: **/*.dart
-alwaysApply: false
----
-
 # Flutter/Dart 編碼標準
 
 <critical>

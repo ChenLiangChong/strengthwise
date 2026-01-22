@@ -210,4 +210,10 @@ abstract class IWorkoutExecutionController {
   
   /// 更新經過時間（每秒呼叫，僅在 in_progress 時有效）
   void tickElapsedTime();
+
+  /// ⭐ v4.3: 同步經過時間（不改變狀態）
+  ///
+  /// 用於 App 進入背景前保存，確保儲存的時間是準確的。
+  /// 與 pauseTraining() 不同，此方法不會改變訓練狀態。
+  void syncElapsedTimeForSave();
 } 

@@ -1,9 +1,3 @@
----
-description: "Python 工具腳本使用指南：資料庫管理、測試資料生成、統計重置、Schema 導出。"
-globs: scripts/**/*.py
-alwaysApply: false
----
-
 # Python 工具腳本
 
 <critical>

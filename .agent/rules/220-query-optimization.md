@@ -1,9 +1,3 @@
----
-description: "資料庫查詢效能規範：索引策略、分頁、避免常見問題。適用於 Service 層。"
-globs: lib/services/**/*.dart
-alwaysApply: false
----
-
 # 查詢效能規範
 
 <critical>

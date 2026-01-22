@@ -1,9 +1,3 @@
----
-description: "UI 文檔更新規範：UI_DESIGN_SYSTEM.md 與 UI_DEVELOPER_GUIDE.md 的維護。"
-globs: docs/UI*.md
-alwaysApply: false
----
-
 # UI 文檔更新規範
 
 ## 📂 文檔分工

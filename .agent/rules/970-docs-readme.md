@@ -1,9 +1,3 @@
----
-description: "文檔索引規範：docs/README.md 的結構與維護。"
-globs: docs/README.md
-alwaysApply: false
----
-
 # 文檔索引規範
 
 ## 📄 README.md 定位

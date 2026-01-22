@@ -1,9 +1,3 @@
----
-description: "健康評估系統文檔規範：HEALTH_ASSESSMENT_SYSTEM.md 的結構與維護。"
-globs: docs/HEALTH_ASSESSMENT_SYSTEM.md
-alwaysApply: false
----
-
 # 健康評估系統文檔規範
 
 ## 📄 HEALTH_ASSESSMENT_SYSTEM.md 結構
