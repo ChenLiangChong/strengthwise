@@ -2,8 +2,8 @@
 
 > 下一步計劃、當前版本、未來規劃
 
-**當前版本**：v4.3（2026-01-22 完成）
-**上一版本**：v4.2（2026-01-20 完成）
+**當前版本**：v5.0（2026-02-08 完成 - 動作分類系統 v2）
+**上一版本**：v4.3（2026-01-22 完成）
 **維護者**：StrengthWise 開發團隊
 
 ---
@@ -18,6 +18,67 @@
 ---
 
 ## 下一步計劃
+
+### v5.0 動作分類系統 v2（✅ 完成）
+
+> 規格文檔：[EXERCISE_CLASSIFICATION_ANALYSIS.md](planning/EXERCISE_CLASSIFICATION_ANALYSIS.md)
+
+**目標**：將審核完成的動作資料匯入專案，實現多維度分類與別名搜尋
+
+| # | 任務 | 類型 | 狀態 |
+|---|------|------|------|
+| 1 | Migration 24：Schema 變更（新增 v2 欄位、別名表）| SQL | ✅ 完成 |
+| 2 | Python 匯入腳本開發 | Python | ✅ 完成 |
+| 3 | Migration 25：資料匯入（775 筆 + 2344 別名）| SQL | ✅ 完成 |
+| 4 | Exercise Model v2 欄位 | Dart | ✅ 完成 |
+| 5 | ExerciseMapper 更新 | Dart | ✅ 完成 |
+| 6 | IExerciseService 介面擴展 | Dart | ✅ 完成 |
+| 7 | ExerciseServiceSupabase 進階搜尋 | Dart | ✅ 完成 |
+| 8 | ExerciseSearchEngine 別名支援 | Dart | ✅ 完成 |
+| 9 | Migration 執行驗證 + 資料清理 | 測試 | ✅ 完成 |
+| 10 | ExerciseLocalCacheService 擴展（v2 欄位 + 搜尋索引）| Dart | ✅ 完成 |
+| 11 | FuzzySearchEngine 新增（Jaro-Winkler + Trigram）| Dart | ✅ 完成 |
+| 12 | ExerciseSearchEngine 整合模糊搜尋 | Dart | ✅ 完成 |
+| 13 | Hive 離線模糊搜尋整合測試 | 測試 | ⏳ 待測試 |
+| 14 | PinyinConverter（拼音索引）| Dart | 📋 後續版本 |
+| 15 | UI 進階篩選器 | UI | 📋 後續版本 |
+
+**新增欄位**：
+- `canonical_name` / `canonical_name_en`：SEE 標準名稱
+- `movement_patterns`：動作模式（TEXT[]，如 hinge, squat, push）
+- `ppl_tags`：PPL 標籤（TEXT[]，如 push, pull, legs）
+- `primary_muscle`：主動肌（25 個有效值之一）
+- `synergist_muscles`：協同肌（TEXT[]）
+- `mechanics_type`：compound / isolation
+- `is_explosive`：爆發力動作標記
+
+**新增表**：
+- `exercise_aliases`：別名表（支援俚語、縮寫搜尋）
+- `ref_movement_patterns`：動作模式參照表
+- `ref_muscle_groups`：肌肉群參照表
+- `ref_equipment`：器材參照表
+
+**新增 RPC**：
+- `search_exercises_v2()`：進階搜尋函式
+
+**搜尋系統設計決策**：
+- 模糊搜尋僅針對 5 個名稱欄位（name, nameEn, canonicalName, canonicalNameEn, aliases）
+- 其他欄位（movement_patterns, ppl_tags 等）作為精確篩選條件
+- Hive 持久化支援離線搜尋
+- Trigram 索引加速候選過濾
+- Isolate 並行處理避免 UI 卡頓
+- 拼音索引支援中文輸入
+
+**Hive 離線搜尋架構**：
+```
+exercises_cache Box（現有）：擴展儲存 v2 欄位
+exercises_search_index Box（新增）：
+├── trigram_index      → {"squ": ["id1","id2"], ...}
+├── pinyin_full_index  → {"shenqun": ["id1"], ...}
+└── pinyin_initials    → {"sq": ["id1"], ...}
+```
+
+---
 
 ### Beta 測試前（高優先級）
 
@@ -254,7 +315,7 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 
 | 版本 | 功能 |
 |------|------|
-| v1.0 | 單機版（訓練記錄、統計、794 動作）|
+| v1.0 | 單機版（訓練記錄、統計、775 動作）|
 | v2.0 | 教練學員系統（Phase 1-4）|
 | v2.1-v2.7 | 時區統一、登入驗證、UI 重構 |
 | v2.8-v2.8.4 | 健康評估系統、教練評估備註、文檔重構 |
@@ -272,7 +333,8 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 | v4.0 | 架構優化 + Controller Interface 統一 |
 | v4.1 | Service 單元測試（24 個 Service，~293 測試）|
 | v4.2 | 效能優化（UI 渲染 + 啟動/網路）|
-| **v4.3** | **UI/UX 微調（TIME 佈局 + 背景計時器）** |
+| v4.3 | UI/UX 微調（TIME 佈局 + 背景計時器）|
+| **v5.0** | **動作分類系統 v2（775 動作 + 2344 別名 + RPC 搜尋）** |
 
 **詳細版本歷史**：[archived/VERSION_HISTORY.md](archived/VERSION_HISTORY.md)  
 **技術架構**：[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)  
@@ -284,7 +346,7 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 
 | 項目 | 狀態 |
 |------|------|
-| v1.0-v4.3 | ✅ 100% |
+| v1.0-v5.0 | ✅ 100% |
 | 代碼品質 | ✅ 0 issues（517→0，含 deprecated API 處理）|
 | MVVM 架構 | ✅ 100% 合規 |
 | 快取架構 | ✅ Service 層統一管理 |
@@ -295,11 +357,14 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 | Service 單元測試 | ✅ 24 個 Service（~293 測試案例） |
 
 **下一步重點**：
-1. Beta 測試準備
-2. 實機效能驗證
+1. Hive 離線模糊搜尋整合測試
+2. Beta 測試準備
+3. 實機效能驗證
 
 ---
 
+> ✅ **v5.0 完成**（2026-02-08）：動作分類系統 v2（775 動作 + 2344 別名 + search_exercises_v2 RPC）
+>
 > ✅ **v4.3 完成**（2026-01-22）：UI/UX 微調（TIME 佈局優化 + 背景計時器修復）
 >
 > ✅ **v4.2 完成**（2026-01-20）：效能優化（UI 渲染 + 啟動/網路優化）
@@ -308,7 +373,7 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 >
 > ✅ **v4.0 完成**（2026-01-19）：架構優化 + Controller Interface 統一（25/29 = 86%）
 >
-> 📱 **Google Play**：v1.1.0+15（2026-01-17 發布）
+> 📱 **Google Play**：v1.1.1+16（2026-01-23 發布）
 >
 > 🌐 **Web**：v1.1.0（2026-01-17 發布）
 >

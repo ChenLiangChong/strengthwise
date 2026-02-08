@@ -45,6 +45,18 @@ class ExerciseMapper {
           : DateTime.now(),
       // v3.2+ 追蹤模式
       trackingMode: TrackingModeExtension.fromJson(data['tracking_mode'] as String?),
+      // v5.0+ 動作分類系統 v2
+      canonicalName: data['canonical_name'] as String?,
+      canonicalNameEn: data['canonical_name_en'] as String?,
+      movementPatterns: List<String>.from(data['movement_patterns'] ?? []),
+      pplTags: List<String>.from(data['ppl_tags'] ?? []),
+      primaryMuscle: data['primary_muscle'] as String?,
+      synergistMuscles: List<String>.from(data['synergist_muscles'] ?? []),
+      mechanicsType: data['mechanics_type'] ?? 'compound',
+      isUnilateral: data['is_unilateral'] ?? false,
+      difficultyLevel: data['difficulty_level'] ?? 'beginner',
+      isExplosive: data['is_explosive'] ?? false,
+      aliases: List<String>.from(data['aliases'] ?? []),
     );
   }
 
@@ -79,6 +91,18 @@ class ExerciseMapper {
                  DateTime.now(),
       // v3.2+ 追蹤模式
       trackingMode: TrackingModeExtension.fromJson(json['trackingMode'] as String?),
+      // v5.0+ 動作分類系統 v2
+      canonicalName: json['canonicalName'] as String?,
+      canonicalNameEn: json['canonicalNameEn'] as String?,
+      movementPatterns: List<String>.from(json['movementPatterns'] ?? []),
+      pplTags: List<String>.from(json['pplTags'] ?? []),
+      primaryMuscle: json['primaryMuscle'] as String?,
+      synergistMuscles: List<String>.from(json['synergistMuscles'] ?? []),
+      mechanicsType: json['mechanicsType'] ?? 'compound',
+      isUnilateral: json['isUnilateral'] ?? false,
+      difficultyLevel: json['difficultyLevel'] ?? 'beginner',
+      isExplosive: json['isExplosive'] ?? false,
+      aliases: List<String>.from(json['aliases'] ?? []),
     );
   }
 
@@ -111,6 +135,18 @@ class ExerciseMapper {
       'createdAt': exercise.createdAt.millisecondsSinceEpoch,
       // v3.2+ 追蹤模式
       'trackingMode': exercise.trackingMode.toJson(),
+      // v5.0+ 動作分類系統 v2
+      'canonicalName': exercise.canonicalName,
+      'canonicalNameEn': exercise.canonicalNameEn,
+      'movementPatterns': exercise.movementPatterns,
+      'pplTags': exercise.pplTags,
+      'primaryMuscle': exercise.primaryMuscle,
+      'synergistMuscles': exercise.synergistMuscles,
+      'mechanicsType': exercise.mechanicsType,
+      'isUnilateral': exercise.isUnilateral,
+      'difficultyLevel': exercise.difficultyLevel,
+      'isExplosive': exercise.isExplosive,
+      'aliases': exercise.aliases,
     };
   }
 }

@@ -19,12 +19,16 @@ import 'exercise/exercise_preload_manager.dart';
 
 /// ⭐ 定義 exercises 表的標準查詢欄位（避免 SELECT *）
 /// v3.2+ 新增 tracking_mode 欄位
+/// v5.0+ 新增分類系統 v2 欄位
 const String _kExerciseSelectFields = '''
   id, name, name_en, body_parts, training_type, equipment,
   level1, level2, level3, level4, level5, action_name,
   description, image_url, video_url, body_part,
   specific_muscle, equipment_category, equipment_subcategory, created_at,
-  tracking_mode
+  tracking_mode,
+  canonical_name, canonical_name_en, movement_patterns, ppl_tags,
+  primary_muscle, synergist_muscles, mechanics_type, is_unilateral,
+  difficulty_level, is_explosive
 ''';
 
 /// ⭐ 定義 custom_exercises 表的標準查詢欄位
@@ -676,6 +680,193 @@ class ExerciseServiceSupabase implements IExerciseService {
       return exercises;
     } catch (e) {
       _logError('回退搜尋失敗: $e');
+      return [];
+    }
+  }
+
+  // ============================================================================
+  // v5.0+ 動作分類系統 v2
+  // ============================================================================
+
+  @override
+  Future<List<Exercise>> searchExercisesAdvanced({
+    String? query,
+    List<String>? movementPatterns,
+    List<String>? pplTags,
+    String? primaryMuscle,
+    String? equipment,
+    bool? isExplosive,
+    String? difficultyLevel,
+    int limit = 50,
+  }) async {
+    _ensureInitialized();
+
+    _logDebug('🔍 進階搜尋: query=$query, patterns=$movementPatterns, '
+        'ppl=$pplTags, muscle=$primaryMuscle, equipment=$equipment, '
+        'explosive=$isExplosive, difficulty=$difficultyLevel');
+
+    try {
+      // ⚡ 優先嘗試從記憶體快取搜尋
+      final allExercisesCache = _preloadManager.allExercisesCache;
+      if (allExercisesCache != null && allExercisesCache.isNotEmpty) {
+        _logDebug('✨ 使用記憶體快取進行進階搜尋...');
+
+        final results = _searchEngine.searchAdvancedFromCache(
+          cache: allExercisesCache,
+          query: query,
+          movementPatterns: movementPatterns,
+          pplTags: pplTags,
+          primaryMuscle: primaryMuscle,
+          equipment: equipment,
+          isExplosive: isExplosive,
+          difficultyLevel: difficultyLevel,
+          limit: limit,
+        );
+
+        _logDebug('✅ 從快取進階搜尋到 ${results.length} 個結果');
+        return results;
+      }
+
+      // ⚠️ 快取未準備好，使用 RPC 函數
+      _logDebug('☁️  使用 search_exercises_v2 RPC 函數...');
+
+      final response = await _client.rpc(
+        'search_exercises_v2',
+        params: {
+          'search_query': query,
+          'p_movement_patterns': movementPatterns,
+          'p_ppl_tags': pplTags,
+          'p_primary_muscle': primaryMuscle,
+          'p_equipment': equipment,
+          'p_is_explosive': isExplosive,
+          'p_difficulty_level': difficultyLevel,
+          'max_results': limit,
+        },
+      ).timeout(
+        Duration(seconds: _queryTimeout),
+        onTimeout: () => throw TimeoutException('進階搜尋逾時'),
+      );
+
+      final List<Exercise> exercises = [];
+      for (var item in response as List) {
+        try {
+          final exercise = Exercise.fromSupabase(item);
+          exercises.add(exercise);
+        } catch (e) {
+          _logError('解析進階搜尋結果失敗: ${item['id']} - $e');
+        }
+      }
+
+      _logDebug('✅ 進階搜尋到 ${exercises.length} 個結果');
+      return exercises;
+    } catch (e) {
+      _logError('進階搜尋失敗: $e');
+      // 回退到基本搜尋
+      if (query != null && query.isNotEmpty) {
+        return searchExercises(query, limit: limit);
+      }
+      return [];
+    }
+  }
+
+  @override
+  Future<List<Map<String, String>>> getMovementPatterns() async {
+    _ensureInitialized();
+
+    _logDebug('載入動作模式參照資料...');
+
+    try {
+      final response = await _client
+          .from('ref_movement_patterns')
+          .select('id, name_zh, name_en, parent_id')
+          .order('sort_order')
+          .timeout(
+            Duration(seconds: _queryTimeout),
+            onTimeout: () => throw TimeoutException('載入動作模式逾時'),
+          );
+
+      final List<Map<String, String>> patterns = [];
+      for (var item in response as List) {
+        patterns.add({
+          'id': item['id'] as String,
+          'nameZh': item['name_zh'] as String,
+          'nameEn': item['name_en'] as String,
+          'parentId': (item['parent_id'] as String?) ?? '',
+        });
+      }
+
+      _logDebug('成功載入 ${patterns.length} 個動作模式');
+      return patterns;
+    } catch (e) {
+      _logError('載入動作模式失敗: $e');
+      return [];
+    }
+  }
+
+  @override
+  Future<List<Map<String, String>>> getMuscleGroups() async {
+    _ensureInitialized();
+
+    _logDebug('載入肌肉群參照資料...');
+
+    try {
+      final response = await _client
+          .from('ref_muscle_groups')
+          .select('id, name_zh, name_en, region, parent_group')
+          .order('sort_order')
+          .timeout(
+            Duration(seconds: _queryTimeout),
+            onTimeout: () => throw TimeoutException('載入肌肉群逾時'),
+          );
+
+      final List<Map<String, String>> muscles = [];
+      for (var item in response as List) {
+        muscles.add({
+          'id': item['id'] as String,
+          'nameZh': item['name_zh'] as String,
+          'nameEn': item['name_en'] as String,
+          'region': item['region'] as String,
+          'parentGroup': (item['parent_group'] as String?) ?? '',
+        });
+      }
+
+      _logDebug('成功載入 ${muscles.length} 個肌肉群');
+      return muscles;
+    } catch (e) {
+      _logError('載入肌肉群失敗: $e');
+      return [];
+    }
+  }
+
+  @override
+  Future<List<Map<String, String>>> getEquipmentList() async {
+    _ensureInitialized();
+
+    _logDebug('載入器材參照資料...');
+
+    try {
+      final response = await _client
+          .from('ref_equipment')
+          .select('id, name_zh, name_en')
+          .order('sort_order')
+          .timeout(
+            Duration(seconds: _queryTimeout),
+            onTimeout: () => throw TimeoutException('載入器材逾時'),
+          );
+
+      final List<Map<String, String>> equipment = [];
+      for (var item in response as List) {
+        equipment.add({
+          'id': item['id'] as String,
+          'nameZh': item['name_zh'] as String,
+          'nameEn': item['name_en'] as String,
+        });
+      }
+
+      _logDebug('成功載入 ${equipment.length} 種器材');
+      return equipment;
+    } catch (e) {
+      _logError('載入器材失敗: $e');
       return [];
     }
   }

@@ -54,17 +54,26 @@ class ExerciseLocalCacheService {
   }
 
   static const String _boxName = 'exercises_cache';
+  static const String _searchIndexBoxName = 'exercises_search_index';
   static const String _versionKey = 'cache_version';
   static const String _exercisesKey = 'all_exercises';
   static const String _lastUpdateKey = 'last_update';
+
+  // 搜尋索引 Keys（v5.0 新增）
+  static const String _trigramIndexKey = 'trigram_index';
+  static const String _pinyinFullIndexKey = 'pinyin_full_index';
+  static const String _pinyinInitialsIndexKey = 'pinyin_initials_index';
+  static const String _indexVersionKey = 'index_version';
 
   /// 當前快取版本（更新此版本號會觸發重新下載）
   /// v2: 修復 body_part 欄位序列化問題 (2024-12-27)
   /// v3: 新增 tracking_mode 欄位支援 (2026-01-12)
   /// v4: 強制重新下載確保 tracking_mode 正確 (2026-01-17)
-  static const int currentCacheVersion = 4;
+  /// v5: 新增 v2 分類欄位 + 搜尋索引支援 (2026-02-07)
+  static const int currentCacheVersion = 5;
 
   Box? _box;
+  Box? _searchIndexBox;
 
   /// 初始化 Hive Box
   Future<void> initialize() async {
@@ -78,7 +87,9 @@ class ExerciseLocalCacheService {
       while (retryCount < maxRetries) {
         try {
           _box = await Hive.openBox(_boxName);
-          debugPrint('[EXERCISE_CACHE] 本地快取初始化完成');
+          // v5.0: 同時打開搜尋索引 Box
+          _searchIndexBox = await Hive.openBox(_searchIndexBoxName);
+          debugPrint('[EXERCISE_CACHE] 本地快取初始化完成（含搜尋索引）');
           return;
         } catch (e) {
           retryCount++;
@@ -95,6 +106,10 @@ class ExerciseLocalCacheService {
                 await Hive.deleteBoxFromDisk(_boxName);
                 debugPrint('[EXERCISE_CACHE] 已刪除舊的快取檔案');
               }
+              if (await Hive.boxExists(_searchIndexBoxName)) {
+                await Hive.deleteBoxFromDisk(_searchIndexBoxName);
+                debugPrint('[EXERCISE_CACHE] 已刪除舊的搜尋索引檔案');
+              }
 
               // 等待一小段時間後重試
               await Future.delayed(Duration(milliseconds: 500 * retryCount));
@@ -107,6 +122,7 @@ class ExerciseLocalCacheService {
             debugPrint('[EXERCISE_CACHE] ⚠️ 初始化失敗，將使用無快取模式');
             // 不拋出錯誤，讓服務在無快取模式下運行
             _box = null;
+            _searchIndexBox = null;
             return;
           }
         }
@@ -115,6 +131,7 @@ class ExerciseLocalCacheService {
       debugPrint('[EXERCISE_CACHE] 初始化過程發生錯誤: $e');
       // 不拋出錯誤，讓服務在無快取模式下運行
       _box = null;
+      _searchIndexBox = null;
     }
   }
 
@@ -171,6 +188,18 @@ class ExerciseLocalCacheService {
           'action_name': e.actionName,
           'description': e.description,
           'tracking_mode': e.trackingMode.toJson(), // v3 新增
+          // v5.0 新增：動作分類系統 v2 欄位
+          'canonical_name': e.canonicalName,
+          'canonical_name_en': e.canonicalNameEn,
+          'movement_patterns': e.movementPatterns,
+          'ppl_tags': e.pplTags,
+          'primary_muscle': e.primaryMuscle,
+          'synergist_muscles': e.synergistMuscles,
+          'mechanics_type': e.mechanicsType,
+          'is_unilateral': e.isUnilateral,
+          'difficulty_level': e.difficultyLevel,
+          'is_explosive': e.isExplosive,
+          'aliases': e.aliases,
         };
       }).toList();
 
@@ -180,6 +209,9 @@ class ExerciseLocalCacheService {
           .put(_lastUpdateKey, DateTimeUtils.formatToUtcIso(DateTime.now()));
 
       debugPrint('[EXERCISE_CACHE] ✅ 成功保存到本地（${_getDataSize(exercisesMaps)}）');
+
+      // v5.0: 在背景建構搜尋索引
+      _buildSearchIndexInBackground(exercises);
     } catch (e) {
       debugPrint('[EXERCISE_CACHE] 保存失敗: $e');
       rethrow;
@@ -265,6 +297,162 @@ class ExerciseLocalCacheService {
   /// 關閉 Box
   Future<void> close() async {
     await _box?.close();
+    await _searchIndexBox?.close();
     _box = null;
+    _searchIndexBox = null;
+  }
+
+  // ============================================================================
+  // v5.0 搜尋索引功能
+  // ============================================================================
+
+  /// 在背景建構搜尋索引（使用 Isolate 避免 UI 卡頓）
+  void _buildSearchIndexInBackground(List<Exercise> exercises) {
+    // 使用 compute 在 Isolate 中建構索引
+    compute(_buildSearchIndexIsolate, exercises).then((indexData) {
+      _saveSearchIndex(indexData);
+    }).catchError((e) {
+      debugPrint('[EXERCISE_CACHE] 搜尋索引建構失敗: $e');
+    });
+  }
+
+  /// Isolate 內執行的索引建構（純函數）
+  static Map<String, dynamic> _buildSearchIndexIsolate(List<Exercise> exercises) {
+    final trigramIndex = <String, List<String>>{};
+
+    for (final exercise in exercises) {
+      final id = exercise.id;
+
+      // 收集所有需要索引的文字
+      final textsToIndex = <String>[
+        exercise.name,
+        exercise.nameEn,
+        if (exercise.canonicalName != null) exercise.canonicalName!,
+        if (exercise.canonicalNameEn != null) exercise.canonicalNameEn!,
+        ...exercise.aliases,
+      ];
+
+      // 為每個文字建構 Trigram
+      for (final text in textsToIndex) {
+        final trigrams = _generateTrigrams(text.toLowerCase());
+        for (final trigram in trigrams) {
+          trigramIndex.putIfAbsent(trigram, () => []);
+          if (!trigramIndex[trigram]!.contains(id)) {
+            trigramIndex[trigram]!.add(id);
+          }
+        }
+      }
+    }
+
+    return {
+      'trigram_index': trigramIndex,
+      'version': currentCacheVersion,
+    };
+  }
+
+  /// 生成 Trigram（3-gram）
+  static List<String> _generateTrigrams(String text) {
+    if (text.length < 3) {
+      return [text]; // 短字串直接返回
+    }
+
+    final trigrams = <String>[];
+    for (var i = 0; i <= text.length - 3; i++) {
+      trigrams.add(text.substring(i, i + 3));
+    }
+    return trigrams;
+  }
+
+  /// 保存搜尋索引到 Hive
+  Future<void> _saveSearchIndex(Map<String, dynamic> indexData) async {
+    if (_searchIndexBox == null) {
+      debugPrint('[EXERCISE_CACHE] 搜尋索引 Box 未初始化，跳過保存');
+      return;
+    }
+
+    try {
+      await _searchIndexBox!.put(_trigramIndexKey, indexData['trigram_index']);
+      await _searchIndexBox!.put(_indexVersionKey, indexData['version']);
+
+      final trigramCount = (indexData['trigram_index'] as Map).length;
+      debugPrint('[EXERCISE_CACHE] ✅ 搜尋索引建構完成（$trigramCount 個 trigram）');
+    } catch (e) {
+      debugPrint('[EXERCISE_CACHE] 搜尋索引保存失敗: $e');
+    }
+  }
+
+  /// 獲取 Trigram 索引（供 FuzzySearchEngine 使用）
+  Map<String, List<String>>? getTrigramIndex() {
+    if (_searchIndexBox == null) return null;
+
+    final index = _searchIndexBox!.get(_trigramIndexKey);
+    if (index == null) return null;
+
+    // 轉換類型
+    return (index as Map).map((key, value) {
+      return MapEntry(
+        key.toString(),
+        (value as List).cast<String>(),
+      );
+    });
+  }
+
+  /// 檢查搜尋索引是否有效
+  bool isSearchIndexValid() {
+    if (_searchIndexBox == null) return false;
+
+    final indexVersion = _searchIndexBox!.get(_indexVersionKey, defaultValue: 0);
+    final hasIndex = _searchIndexBox!.containsKey(_trigramIndexKey);
+
+    return indexVersion == currentCacheVersion && hasIndex;
+  }
+
+  /// 使用 Trigram 索引快速過濾候選動作
+  ///
+  /// [query] 搜尋關鍵字
+  /// [exercises] 完整動作列表
+  /// 返回可能匹配的候選動作 ID 集合
+  Set<String> filterCandidatesByTrigram(String query, {int minMatchCount = 1}) {
+    final trigramIndex = getTrigramIndex();
+    if (trigramIndex == null || query.length < 2) {
+      return {}; // 索引不存在或查詢太短，返回空集合
+    }
+
+    final queryTrigrams = _generateTrigrams(query.toLowerCase());
+    final candidateCounts = <String, int>{};
+
+    // 計算每個候選 ID 匹配的 trigram 數量
+    for (final trigram in queryTrigrams) {
+      final matchingIds = trigramIndex[trigram];
+      if (matchingIds != null) {
+        for (final id in matchingIds) {
+          candidateCounts[id] = (candidateCounts[id] ?? 0) + 1;
+        }
+      }
+    }
+
+    // 過濾出匹配數量達到閾值的候選
+    return candidateCounts.entries
+        .where((e) => e.value >= minMatchCount)
+        .map((e) => e.key)
+        .toSet();
+  }
+
+  /// 獲取搜尋索引資訊
+  Map<String, dynamic> getSearchIndexInfo() {
+    if (_searchIndexBox == null) {
+      return {'initialized': false};
+    }
+
+    final trigramIndex = _searchIndexBox!.get(_trigramIndexKey) as Map?;
+    final trigramCount = trigramIndex?.length ?? 0;
+    final version = _searchIndexBox!.get(_indexVersionKey, defaultValue: 0);
+
+    return {
+      'initialized': true,
+      'isValid': isSearchIndexValid(),
+      'trigramCount': trigramCount,
+      'version': version,
+    };
   }
 }

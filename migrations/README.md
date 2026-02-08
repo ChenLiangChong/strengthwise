@@ -2,7 +2,7 @@
 
 > 資料庫 Migration 文件索引
 
-**最後更新**：2026-01-17（v3.9 Realtime 配置）
+**最後更新**：2026-02-07（v5.0 動作分類系統 v2）
 
 ---
 
@@ -95,6 +95,8 @@ psql -U postgres -d strengthwise -f 002_v1_initial_data.sql
 | `21_v3_tracking_mode.sql` | 044, 044b, 045 | v3.2+ | TrackingMode 欄位與搜尋 |
 | `22_v3_pr_final_fixes.sql` | 046, 047 | v3.3 | PR DELETE 觸發器、ID 格式修復 |
 | `23_fix_pr_weight_time.sql` | - | v3.3.1 | 修復 weight_time 模式被錯誤納入 PR |
+| `24_v5_exercise_classification_v2.sql` | - | v5.0 | 動作分類系統 v2 Schema（新欄位、別名表、參照表）|
+| `25_v5_exercise_data_import.sql` | - | v5.0 | 動作分類 v2 資料匯入（779 筆 + 2352 別名）|
 | `32_add_webhooks_availability.sql` | - | v3.9 | FCM Webhook 配置說明（手動在 Dashboard） |
 | `33_enable_realtime_availability.sql` | - | v3.9 | 開啟 Realtime + REPLICA IDENTITY FULL |
 
@@ -103,7 +105,7 @@ psql -U postgres -d strengthwise -f 002_v1_initial_data.sql
 ## 🔄 執行順序
 
 ```
-演進版：001 → 002 → ... → 008 → 09 → 10 → ... → 23 → 32 → 33
+演進版：001 → 002 → ... → 008 → 09 → 10 → ... → 23 → 24 → 25 → 32 → 33
 
 精簡版：01 → 02 → ... → 10
 ```

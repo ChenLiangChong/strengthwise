@@ -43,6 +43,19 @@ class Exercise {
   // v3.2+ 追蹤模式
   final TrackingMode trackingMode;    // 追蹤模式（weight_reps/time_only/distance_time 等）
 
+  // v5.0+ 動作分類系統 v2 欄位
+  final String? canonicalName;        // SEE 標準中文名
+  final String? canonicalNameEn;      // SEE 標準英文名
+  final List<String> movementPatterns; // 動作模式（如 horizontal_push, squat）
+  final List<String> pplTags;         // PPL 標籤（push/pull/legs/core/mobility/cardio）
+  final String? primaryMuscle;        // 主動肌（25 個有效值之一）
+  final List<String> synergistMuscles; // 協同肌
+  final String mechanicsType;         // compound / isolation
+  final bool isUnilateral;            // 單邊動作
+  final String difficultyLevel;       // beginner / intermediate / advanced
+  final bool isExplosive;             // 爆發力動作
+  final List<String> aliases;         // 別名列表（用於搜尋）
+
   /// 創建一個訓練動作實例
   Exercise({
     required this.id,
@@ -77,6 +90,18 @@ class Exercise {
     required this.createdAt,
     // v3.2+ 追蹤模式
     this.trackingMode = TrackingMode.weightReps,
+    // v5.0+ 動作分類系統 v2
+    this.canonicalName,
+    this.canonicalNameEn,
+    this.movementPatterns = const [],
+    this.pplTags = const [],
+    this.primaryMuscle,
+    this.synergistMuscles = const [],
+    this.mechanicsType = 'compound',
+    this.isUnilateral = false,
+    this.difficultyLevel = 'beginner',
+    this.isExplosive = false,
+    this.aliases = const [],
   });
 
   /// 從 Supabase 資料創建對象
@@ -127,6 +152,18 @@ class Exercise {
     List<String>? apps,
     DateTime? createdAt,
     TrackingMode? trackingMode,
+    // v5.0+ 動作分類系統 v2
+    String? canonicalName,
+    String? canonicalNameEn,
+    List<String>? movementPatterns,
+    List<String>? pplTags,
+    String? primaryMuscle,
+    List<String>? synergistMuscles,
+    String? mechanicsType,
+    bool? isUnilateral,
+    String? difficultyLevel,
+    bool? isExplosive,
+    List<String>? aliases,
   }) {
     return Exercise(
       id: id ?? this.id,
@@ -158,6 +195,18 @@ class Exercise {
       apps: apps ?? this.apps,
       createdAt: createdAt ?? this.createdAt,
       trackingMode: trackingMode ?? this.trackingMode,
+      // v5.0+ 動作分類系統 v2
+      canonicalName: canonicalName ?? this.canonicalName,
+      canonicalNameEn: canonicalNameEn ?? this.canonicalNameEn,
+      movementPatterns: movementPatterns ?? this.movementPatterns,
+      pplTags: pplTags ?? this.pplTags,
+      primaryMuscle: primaryMuscle ?? this.primaryMuscle,
+      synergistMuscles: synergistMuscles ?? this.synergistMuscles,
+      mechanicsType: mechanicsType ?? this.mechanicsType,
+      isUnilateral: isUnilateral ?? this.isUnilateral,
+      difficultyLevel: difficultyLevel ?? this.difficultyLevel,
+      isExplosive: isExplosive ?? this.isExplosive,
+      aliases: aliases ?? this.aliases,
     );
   }
   

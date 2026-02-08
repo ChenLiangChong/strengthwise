@@ -2,17 +2,17 @@
 
 > Supabase PostgreSQL 資料庫架構與最佳實踐
 
-**最後更新**：2026-01-17（v3.9）
+**最後更新**：2026-02-07（v5.0）
 
 ---
 
 ## 📊 架構總覽
 
 ```
-Supabase PostgreSQL（24 個表格）
+Supabase PostgreSQL（28 個表格）
 ├── 核心表格（7 個）
 │   ├── users              - 用戶資料
-│   ├── exercises          - 系統動作庫（794 個）
+│   ├── exercises          - 系統動作庫（775 個）
 │   ├── custom_exercises   - 自訂動作
 │   ├── workout_plans      - 訓練計劃/記錄
 │   ├── workout_templates  - 訓練模板
@@ -22,6 +22,12 @@ Supabase PostgreSQL（24 個表格）
 ├── 元數據表格（2 個）
 │   ├── body_parts         - 身體部位（8 個）
 │   └── exercise_types     - 訓練類型（3 個）
+│
+├── 動作分類系統（4 個）⭐ v5.0
+│   ├── exercise_aliases        - 動作別名表（2344 筆）
+│   ├── ref_movement_patterns   - 動作模式參照表
+│   ├── ref_muscle_groups       - 肌肉群參照表（25 個）
+│   └── ref_equipment           - 器材參照表
 │
 ├── 教練學員系統（8 個）
 │   ├── coaching_relationships - 教練學員關係
@@ -114,6 +120,17 @@ CREATE TABLE public.exercises (
   action_name TEXT,
   action_name_en TEXT,
   tracking_mode TEXT DEFAULT 'weight_reps',  -- v3.2+ 追蹤模式
+  -- v5.0 動作分類系統 v2 欄位
+  canonical_name TEXT,              -- SEE 標準中文名
+  canonical_name_en TEXT,           -- SEE 標準英文名
+  movement_patterns TEXT[] DEFAULT '{}',  -- 動作模式（可複選）
+  ppl_tags TEXT[] DEFAULT '{}',     -- PPL 標籤（可複選）
+  primary_muscle TEXT,              -- 主動肌（單選）
+  synergist_muscles TEXT[] DEFAULT '{}',  -- 協同肌（可複選）
+  mechanics_type TEXT DEFAULT 'compound',  -- 力學類型
+  is_unilateral BOOLEAN DEFAULT FALSE,     -- 單邊動作
+  difficulty_level TEXT DEFAULT 'beginner', -- 難度等級
+  is_explosive BOOLEAN DEFAULT FALSE,       -- 爆發力動作
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -122,9 +139,13 @@ CREATE TABLE public.exercises (
 CREATE INDEX idx_exercises_name_gin ON exercises USING gin(to_tsvector('simple', name));
 CREATE INDEX idx_exercises_training_type ON exercises(training_type);
 CREATE INDEX idx_exercises_body_part ON exercises(body_part);
+-- v5.0 GIN 索引（加速陣列查詢）
+CREATE INDEX idx_exercises_movement_patterns ON exercises USING GIN (movement_patterns);
+CREATE INDEX idx_exercises_ppl_tags ON exercises USING GIN (ppl_tags);
+CREATE INDEX idx_exercises_primary_muscle ON exercises (primary_muscle);
 ```
 
-**資料統計**：794 個動作（阻力 744、活動度 30、心肺 20）
+**資料統計**：775 個動作（阻力 700+、活動度 30+、心肺 20+）+ 2344 個別名
 
 **tracking_mode 可用值**（v3.2+）：
 | 模式 | 說明 | 適用動作 |
@@ -137,6 +158,110 @@ CREATE INDEX idx_exercises_body_part ON exercises(body_part);
 | `distance_time` | 距離 + 時間 | 跑步機、划船機 |
 | `distance_only` | 僅距離 | 立定跳遠 |
 | `calories` | 卡路里 | 風扇車 |
+
+**v5.0 動作分類欄位說明**：
+
+| 欄位 | 類型 | 說明 |
+|------|------|------|
+| `canonical_name` | TEXT | SEE 標準中文名（Specification-Equipment-Exercise）|
+| `canonical_name_en` | TEXT | SEE 標準英文名 |
+| `movement_patterns` | TEXT[] | 動作模式（push, pull, squat, hinge, lunge, core, carry 等）|
+| `ppl_tags` | TEXT[] | PPL 標籤（push, pull, legs, core, mobility, cardio）|
+| `primary_muscle` | TEXT | 主動肌（25 個有效值，詳見 ref_muscle_groups）|
+| `synergist_muscles` | TEXT[] | 協同肌 |
+| `mechanics_type` | TEXT | compound（多關節）/ isolation（單關節）|
+| `is_unilateral` | BOOLEAN | 單邊動作標記 |
+| `difficulty_level` | TEXT | beginner / intermediate / advanced |
+| `is_explosive` | BOOLEAN | 爆發力動作標記 |
+
+---
+
+### 2.1 exercise_aliases - 動作別名表 ⭐ v5.0
+
+```sql
+CREATE TABLE public.exercise_aliases (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  exercise_id TEXT NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+  alias_term TEXT NOT NULL,           -- 別名（如「夾腿機」對應「機械髖內收」）
+  locale TEXT DEFAULT 'zh-TW',        -- zh-TW, en-US
+  category TEXT DEFAULT 'common',     -- common, slang, abbreviation, brand
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 索引
+CREATE INDEX idx_exercise_aliases_exercise_id ON exercise_aliases(exercise_id);
+CREATE INDEX idx_exercise_aliases_term ON exercise_aliases(alias_term);
+CREATE INDEX idx_exercise_aliases_term_lower ON exercise_aliases(LOWER(alias_term));
+```
+
+**RLS**：所有人可讀（公開資料）
+
+---
+
+### 2.2 ref_movement_patterns - 動作模式參照表 ⭐ v5.0
+
+```sql
+CREATE TABLE public.ref_movement_patterns (
+  id TEXT PRIMARY KEY,                -- 如 'horizontal_push'
+  name_zh TEXT NOT NULL,              -- 如 '水平推'
+  name_en TEXT NOT NULL,              -- 如 'Horizontal Push'
+  parent_id TEXT REFERENCES ref_movement_patterns(id),
+  description_zh TEXT,
+  description_en TEXT,
+  sort_order INT DEFAULT 0
+);
+```
+
+**動作模式層級結構**：
+- **Push**：horizontal_push, vertical_push, isolation_push
+- **Pull**：horizontal_pull, vertical_pull, isolation_pull
+- **Squat**：isolation_squat
+- **Hinge**：isolation_hinge
+- **Lunge**
+- **Core**：anti_extension, anti_rotation, anti_lateral, flexion, rotation
+- **Carry**
+- **Cardio**
+- **Mobility**
+
+---
+
+### 2.3 ref_muscle_groups - 肌肉群參照表 ⭐ v5.0
+
+```sql
+CREATE TABLE public.ref_muscle_groups (
+  id TEXT PRIMARY KEY,                -- 如 'pec_major_sternal'
+  name_zh TEXT NOT NULL,              -- 如 '胸大肌（胸骨部）'
+  name_en TEXT NOT NULL,              -- 如 'Pectoralis Major (Sternal)'
+  region TEXT NOT NULL,               -- upper_body, lower_body, core
+  parent_group TEXT,                  -- chest, back, shoulders, arms, legs, core
+  sort_order INT DEFAULT 0
+);
+```
+
+**25 個有效主動肌值**：
+- **胸**：pec_major_clavicular, pec_major_sternal, pec_minor, serratus_anterior
+- **背**：lats, traps, rhomboids, erector_spinae, teres_major
+- **肩**：front_delts, side_delts, rear_delts, rotator_cuff
+- **手**：biceps, triceps, brachialis, forearms
+- **腿**：quads, hamstrings, glutes, adductors, calves, hip_flexors, tibialis_anterior
+- **核心**：abs, obliques
+
+---
+
+### 2.4 ref_equipment - 器材參照表 ⭐ v5.0
+
+```sql
+CREATE TABLE public.ref_equipment (
+  id TEXT PRIMARY KEY,                -- 如 'barbell'
+  name_zh TEXT NOT NULL,              -- 如 '槓鈴'
+  name_en TEXT NOT NULL,              -- 如 'Barbell'
+  description_zh TEXT,
+  description_en TEXT,
+  sort_order INT DEFAULT 0
+);
+```
+
+**常用器材**：barbell, dumbbell, kettlebell, cable, machine, bodyweight, smith_machine, suspension, resistance_band, landmine
 
 ---
 
@@ -614,6 +739,44 @@ CREATE TABLE public.personal_records (
   record_date TIMESTAMPTZ NOT NULL,
   workout_plan_id TEXT,
   UNIQUE(user_id, exercise_id)
+);
+```
+
+---
+
+## ⚡ RPC 函數
+
+### search_exercises_v2() ⭐ v5.0
+
+進階動作搜尋函數，支援別名、動作模式、PPL 標籤篩選。
+
+```sql
+search_exercises_v2(
+  search_query TEXT,              -- 搜尋關鍵字（支援名稱 + 別名）
+  p_movement_patterns TEXT[],     -- 動作模式篩選
+  p_ppl_tags TEXT[],              -- PPL 標籤篩選
+  p_primary_muscle TEXT,          -- 主動肌篩選
+  p_equipment TEXT,               -- 器材篩選
+  p_is_explosive BOOLEAN,         -- 爆發力篩選
+  p_difficulty_level TEXT,        -- 難度篩選
+  max_results INT DEFAULT 50      -- 結果數量上限
+)
+```
+
+**返回欄位**：完整 exercises 資料 + `relevance_score`（相關度分數）
+
+**使用範例**：
+```sql
+-- 搜尋「臥推」並篩選啞鈴、推類動作
+SELECT * FROM search_exercises_v2(
+  '臥推',
+  ARRAY['horizontal_push'],
+  ARRAY['push'],
+  NULL,
+  'dumbbell',
+  NULL,
+  NULL,
+  20
 );
 ```
 

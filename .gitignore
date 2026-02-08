@@ -104,6 +104,11 @@ client_secret_*.json
 **/private/
 **/secrets/
 
+# 動作資料庫資料（敏感）
+scripts/review_data/
+scripts/reference_data/
+migrations/25_v5_exercise_data_import.sql
+
 # Node.js / npm
 node_modules/
 **/node_modules/
