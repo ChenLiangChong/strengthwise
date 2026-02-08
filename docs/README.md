@@ -47,17 +47,12 @@
 | [planning/TESTING_STRATEGY.md](planning/TESTING_STRATEGY.md) | 測試策略（564 個通過）|
 | [planning/PRODUCTION_LAUNCH_GUIDE.md](planning/PRODUCTION_LAUNCH_GUIDE.md) | 生產環境發布指南 |
 
-### v5.0 動作分類系統
-
-| 文檔 | 說明 |
-|------|------|
-| [planning/EXERCISE_CLASSIFICATION_ANALYSIS.md](planning/EXERCISE_CLASSIFICATION_ANALYSIS.md) | 動作分類系統分析（775 筆審核完成）✅ |
-| [planning/V5_IMPACT_ANALYSIS.md](planning/V5_IMPACT_ANALYSIS.md) | v5.0 全面影響分析 + 向後兼容架構 ✅ |
-
 ### 已歸檔（實施完成）
 
 | 文檔 | 說明 |
 |------|------|
+| [planning/archived/EXERCISE_CLASSIFICATION_ANALYSIS.md](planning/archived/EXERCISE_CLASSIFICATION_ANALYSIS.md) | v5.0 動作分類系統分析（775 筆審核完成）✅ |
+| [planning/archived/V5_IMPACT_ANALYSIS.md](planning/archived/V5_IMPACT_ANALYSIS.md) | v5.0 全面影響分析 + 向後兼容架構 ✅ |
 | [planning/archived/TRACKING_MODE_SPEC.md](planning/archived/TRACKING_MODE_SPEC.md) | v3.2-v3.3 TrackingMode 擴充 ✅ |
 | [planning/archived/DATA_FLOW_ANALYSIS.md](planning/archived/DATA_FLOW_ANALYSIS.md) | v3.1-E 數據流分析 + 快取策略 ✅ |
 | [planning/archived/SESSION_MODE_SPEC.md](planning/archived/SESSION_MODE_SPEC.md) | v3.1-SM 教練上課模式 ✅ |

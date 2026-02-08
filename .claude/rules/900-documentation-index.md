@@ -33,8 +33,8 @@
 | **功能規劃（歸檔）** | `docs/planning/archived/*.md` | 已完成的功能規格書 |
 | **架構評審 v4.0** | `docs/planning/archived/ARCHITECTURE_REVIEW_V4.md` | 架構優化報告 ✅ |
 | **自訂動作改進** | `docs/planning/archived/CUSTOM_EXERCISE_IMPROVEMENTS.md` | 自訂動作功能 ✅ |
-| **運動分類分析** | `docs/planning/EXERCISE_CLASSIFICATION_ANALYSIS.md` | 運動分類系統（775 筆審核完成）✅ |
-| **v5.0 影響分析** | `docs/planning/V5_IMPACT_ANALYSIS.md` | v5.0 對各層影響盤點 + 向後兼容架構 ✅ |
+| **運動分類分析** | `docs/planning/archived/EXERCISE_CLASSIFICATION_ANALYSIS.md` | 運動分類系統（775 筆審核完成）✅ |
+| **v5.0 影響分析** | `docs/planning/archived/V5_IMPACT_ANALYSIS.md` | v5.0 對各層影響盤點 + 向後兼容架構 ✅ |
 | **TrackingMode** | `docs/planning/archived/TRACKING_MODE_SPEC.md` | 多追蹤模式適配 ✅ |
 | **Session Mode** | `docs/planning/archived/SESSION_MODE_SPEC.md` | 教練上課模式 ✅ |
 | **訓練權限** | `docs/planning/archived/TRAINING_PERMISSION_MATRIX.md` | 訓練權限矩陣 ✅ |

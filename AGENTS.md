@@ -2,7 +2,7 @@
 
 > AI 程式碼助手開發規範索引
 
-**最後更新**：2026年1月22日 - v4.3（完成 - UI/UX 微調）
+**最後更新**：2026年2月9日 - v5.0（完成 - 動作分類系統 v2）
 
 ---
 
@@ -90,6 +90,7 @@
 | `965-docs-fcm-setup.mdc` | FCM_SETUP_GUIDE.md 維護 |
 | `970-docs-readme.mdc` | docs/README.md 維護 |
 | `980-docs-project-overview.mdc` | PROJECT_OVERVIEW.md 維護 |
+| `990-docs-planning.mdc` | docs/planning/*.md 維護 |
 
 ---
 
@@ -139,7 +140,7 @@
 
 ## 🎯 當前開發狀態
 
-**版本**：v4.3 ✅ 完成（UI/UX 微調）
+**版本**：v5.0 ✅ 完成（動作分類系統 v2）
 
 詳細進度請查看：**[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)**
 

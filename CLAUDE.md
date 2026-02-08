@@ -137,7 +137,7 @@
 
 ## 🎯 當前開發狀態
 
-**版本**：v4.3 ✅ 完成（UI/UX 微調）
+**版本**：v5.0 ✅ 完成（動作分類系統 v2）
 
 詳細進度請查看：**[docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md)**
 
