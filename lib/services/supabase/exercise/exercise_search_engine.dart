@@ -86,15 +86,20 @@ class ExerciseSearchEngine {
   }
 
   /// v5.0+ 進階搜尋（支援別名、動作模式、PPL 標籤）
+  ///
+  /// [equipmentSet] v5.0+ 多選器材篩選，優先於 [equipment]
   List<Exercise> searchAdvancedFromCache({
     required List<Exercise> cache,
     String? query,
     List<String>? movementPatterns,
     List<String>? pplTags,
+    List<String>? excludePplTags,
     String? primaryMuscle,
     String? equipment,
+    Set<String>? equipmentSet,
     bool? isExplosive,
     String? difficultyLevel,
+    String? mechanicsType,
     int limit = 50,
   }) {
     var results = cache.toList();
@@ -119,13 +124,22 @@ class ExerciseSearchEngine {
       }).toList();
     }
 
+    // PPL 標籤排除（訓練類型互斥）
+    if (excludePplTags != null && excludePplTags.isNotEmpty) {
+      results = results.where((e) {
+        return !e.pplTags.any((t) => excludePplTags.contains(t));
+      }).toList();
+    }
+
     // 主動肌篩選
     if (primaryMuscle != null && primaryMuscle.isNotEmpty) {
       results = results.where((e) => e.primaryMuscle == primaryMuscle).toList();
     }
 
-    // 器材篩選
-    if (equipment != null && equipment.isNotEmpty) {
+    // 器材篩選（多選優先）
+    if (equipmentSet != null && equipmentSet.isNotEmpty) {
+      results = results.where((e) => equipmentSet.contains(e.equipment)).toList();
+    } else if (equipment != null && equipment.isNotEmpty) {
       results = results.where((e) => e.equipment == equipment).toList();
     }
 
@@ -138,6 +152,12 @@ class ExerciseSearchEngine {
     if (difficultyLevel != null && difficultyLevel.isNotEmpty) {
       results =
           results.where((e) => e.difficultyLevel == difficultyLevel).toList();
+    }
+
+    // 動作類型篩選（複合/孤立）
+    if (mechanicsType != null && mechanicsType.isNotEmpty) {
+      results =
+          results.where((e) => e.mechanicsType == mechanicsType).toList();
     }
 
     // 排序

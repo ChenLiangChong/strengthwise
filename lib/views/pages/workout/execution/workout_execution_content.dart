@@ -625,7 +625,7 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
       context: context,
       barrierDismissible: false,
       builder: (context) => ExerciseSettingsDialog(
-        exerciseName: exercise.name,
+        exerciseName: exercise.displayName,
         setsController: _newExerciseSetsController,
         repsController: _newExerciseRepsController,
         weightController: _newExerciseWeightController,

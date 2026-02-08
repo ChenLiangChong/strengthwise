@@ -230,20 +230,24 @@ class StatisticsServiceSupabase implements IStatisticsService {
       // 3️⃣ 使用彙總表的方法（這些有獨立快取）
       final frequency = await getTrainingFrequency(userId, timeRange);
       final volumeHistory = await getVolumeHistory(userId, timeRange);
-      final trainingTypeStats = await getTrainingTypeStats(userId, timeRange);
       final personalRecords = await getPersonalRecords(userId, limit: 10);
+
+      // ⭐ v5.0: 直接從已載入的 workouts 計算（避免重複查詢）
+      final trainingTypeStats =
+          _calculator.calculateTrainingTypeStats(typedWorkouts);
 
       // 4️⃣ 純計算方法（直接使用已查詢的 workouts，不再重複調用 _getCompletedWorkouts）
       final bodyPartStats = _calculator.calculateBodyPartStats(typedWorkouts);
       final equipmentStats = _calculator.calculateEquipmentStats(typedWorkouts);
 
       // ⭐ Phase 2 優化：一次計算所有肌群細節，避免循環調用
+      // ⭐ v5.0: key 改用 parentGroupId
       final muscleDetails = <String, List<SpecificMuscleStats>>{};
       for (var stat in bodyPartStats) {
         final details = _calculator.calculateSpecificMuscleStats(
-            typedWorkouts, stat.bodyPart);
+            typedWorkouts, stat.parentGroupId);
         if (details.isNotEmpty) {
-          muscleDetails[stat.bodyPart] = details;
+          muscleDetails[stat.parentGroupId] = details;
         }
       }
 
@@ -371,7 +375,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
   @override
   Future<List<SpecificMuscleStats>> getSpecificMuscleStats(
     String userId,
-    String bodyPart,
+    String parentGroup,
     TimeRange timeRange,
   ) async {
     try {
@@ -385,7 +389,7 @@ class StatisticsServiceSupabase implements IStatisticsService {
       await _loadExerciseClassifications(workouts);
 
       return _calculator.calculateSpecificMuscleStats(
-          workouts.cast<UnifiedWorkoutData>(), bodyPart);
+          workouts.cast<UnifiedWorkoutData>(), parentGroup);
     } catch (e) {
       _errorService.logError('計算特定肌群統計失敗: $e', type: 'StatisticsServiceError');
       return [];
@@ -400,14 +404,16 @@ class StatisticsServiceSupabase implements IStatisticsService {
     try {
       final startDate = timeRange.startDate;
       final endDate = timeRange.endDate;
+      final workouts = await _getCompletedWorkouts(userId, startDate, endDate);
 
-      _logDebug('⚡ 訓練類型統計：使用 daily_workout_summary 彙總表查詢');
+      if (workouts.isEmpty) return [];
 
-      // ⚡ 使用彙總表查詢（效能提升 90%+）
-      final summaryData =
-          await _dataLoader.getTrainingTypeSummary(userId, startDate, endDate);
+      // 載入動作分類
+      await _loadExerciseClassifications(workouts);
 
-      return _calculator.calculateTrainingTypeStats(summaryData);
+      // ⭐ v5.0: 客戶端計算（使用 pplTags），取代 daily_workout_summary 永遠為 0 的計數
+      return _calculator
+          .calculateTrainingTypeStats(workouts.cast<UnifiedWorkoutData>());
     } catch (e) {
       _errorService.logError('計算訓練類型統計失敗: $e', type: 'StatisticsServiceError');
       return [];
@@ -624,8 +630,11 @@ class StatisticsServiceSupabase implements IStatisticsService {
     // 使用已有的計算方法（這些會走獨立快取或純計算）
     final frequency = await getTrainingFrequency(userId, timeRange);
     final volumeHistory = await getVolumeHistory(userId, timeRange);
-    final trainingTypeStats = await getTrainingTypeStats(userId, timeRange);
     final personalRecords = await getPersonalRecords(userId, limit: 10);
+
+    // ⭐ v5.0: 直接從已載入的 workouts 計算（避免重複查詢）
+    final trainingTypeStats =
+        _calculator.calculateTrainingTypeStats(filteredWorkouts);
 
     // 純計算方法
     final bodyPartStats = _calculator.calculateBodyPartStats(filteredWorkouts);
@@ -635,9 +644,9 @@ class StatisticsServiceSupabase implements IStatisticsService {
     final muscleDetails = <String, List<SpecificMuscleStats>>{};
     for (var stat in bodyPartStats) {
       final details = _calculator.calculateSpecificMuscleStats(
-          filteredWorkouts, stat.bodyPart);
+          filteredWorkouts, stat.parentGroupId);
       if (details.isNotEmpty) {
-        muscleDetails[stat.bodyPart] = details;
+        muscleDetails[stat.parentGroupId] = details;
       }
     }
 

@@ -681,7 +681,7 @@ class WorkoutExecutionController extends ChangeNotifier
 
       if (context != null) {
         // ignore: use_build_context_synchronously - Controller 層無法檢查 mounted
-        NotificationUtils.showSuccess(context, '已添加新運動：${exercise.name}');
+        NotificationUtils.showSuccess(context, '已添加新運動：${exercise.displayName}');
       }
     } catch (e) {
       _handleError('添加運動失敗', e);

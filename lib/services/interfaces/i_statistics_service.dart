@@ -32,11 +32,11 @@ abstract class IStatisticsService {
   /// 獲取特定肌群細節
   ///
   /// [userId] 用戶 ID
-  /// [bodyPart] 身體部位
+  /// [parentGroup] 肌群分區 ID（如 'chest'、'back'）
   /// [timeRange] 時間範圍
   Future<List<SpecificMuscleStats>> getSpecificMuscleStats(
     String userId,
-    String bodyPart,
+    String parentGroup,
     TimeRange timeRange,
   );
 

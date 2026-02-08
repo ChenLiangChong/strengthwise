@@ -1,6 +1,9 @@
 /// 身體部位統計
+///
+/// ⭐ v5.0: 新增 [parentGroupId] 對應 ref_muscle_groups 的 parent_group ID
 class BodyPartStats {
-  final String bodyPart;         // 身體部位名稱
+  final String bodyPart;         // 顯示名稱（如 "胸部"、"背部"）
+  final String parentGroupId;    // parent_group ID（如 "chest"、"back"）
   final double totalVolume;      // 總訓練量
   final int workoutCount;        // 訓練次數
   final int exerciseCount;       // 動作數量
@@ -8,6 +11,7 @@ class BodyPartStats {
 
   BodyPartStats({
     required this.bodyPart,
+    required this.parentGroupId,
     required this.totalVolume,
     required this.workoutCount,
     required this.exerciseCount,

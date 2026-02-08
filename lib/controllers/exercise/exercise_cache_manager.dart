@@ -1,104 +1,43 @@
-// ignore_for_file: unnecessary_getters_setters - 保持封裝一致性
-
 import 'package:strengthwise/models/exercise/exercise.dart';
 
 /// 運動數據緩存管理器
 ///
-/// 管理運動相關的本地緩存，包括分類、運動列表和運動詳情
+/// 管理運動相關的本地緩存：動作詳情 + 參照資料
 class ExerciseCacheManager {
-  // 數據緩存
-  final Map<String, List<String>> _categoriesCache = {};
-  final Map<String, List<Exercise>> _exercisesCache = {};
-  List<String>? _exerciseTypes;
-  List<String>? _bodyParts;
+  // 動作詳情快取
   final Map<String, Exercise> _exerciseDetailsCache = {};
-  
-  /// 獲取緩存的訓練類型
-  List<String>? get exerciseTypes => _exerciseTypes;
-  
-  /// 設置訓練類型緩存
-  set exerciseTypes(List<String>? value) {
-    _exerciseTypes = value;
-  }
-  
-  /// 獲取緩存的身體部位
-  List<String>? get bodyParts => _bodyParts;
-  
-  /// 設置身體部位緩存
-  set bodyParts(List<String>? value) {
-    _bodyParts = value;
-  }
-  
-  /// 獲取緩存的分類
-  List<String>? getCategoriesByKey(String key) {
-    return _categoriesCache[key];
-  }
-  
-  /// 設置分類緩存
-  void setCategoriesByKey(String key, List<String> categories) {
-    _categoriesCache[key] = categories;
-  }
-  
-  /// 獲取緩存的運動列表
-  List<Exercise>? getExercisesByKey(String key) {
-    return _exercisesCache[key];
-  }
 
-  /// 設置運動列表緩存
-  void setExercisesByKey(String key, List<Exercise> exercises) {
-    _exercisesCache[key] = exercises;
-  }
+  // ⭐ v5.0: 參照資料快取（movementPatterns / muscleGroups / equipment）
+  final Map<String, List<Map<String, String>>> _refDataCache = {};
 
-  /// 獲取運動詳情
+  /// 獲取動作詳情
   Exercise? getExerciseDetails(String exerciseId) {
     return _exerciseDetailsCache[exerciseId];
   }
 
-  /// 設置運動詳情
+  /// 設置動作詳情
   void setExerciseDetails(String exerciseId, Exercise exercise) {
     _exerciseDetailsCache[exerciseId] = exercise;
   }
-  
-  /// 檢查運動詳情是否已緩存
+
+  /// 檢查動作詳情是否已緩存
   bool hasExerciseDetails(String exerciseId) {
     return _exerciseDetailsCache.containsKey(exerciseId);
   }
-  
-  /// 清除特定類型的緩存
-  void clearCache(String cacheType) {
-    switch (cacheType) {
-      case 'all':
-        _categoriesCache.clear();
-        _exercisesCache.clear();
-        _exerciseTypes = null;
-        _bodyParts = null;
-        _exerciseDetailsCache.clear();
-        break;
-      case 'categories':
-        _categoriesCache.clear();
-        break;
-      case 'exercises':
-        _exercisesCache.clear();
-        break;
-      case 'details':
-        _exerciseDetailsCache.clear();
-        break;
-    }
+
+  /// 獲取參照資料快取
+  List<Map<String, String>>? getRefData(String key) {
+    return _refDataCache[key];
   }
-  
-  /// 清除特定層級的分類緩存
-  void clearLevelCache(int level) {
-    final keysToRemove = <String>[];
-    
-    for (var key in _categoriesCache.keys) {
-      if (key.startsWith('level$level')) {
-        keysToRemove.add(key);
-      }
-    }
-    
-    for (var key in keysToRemove) {
-      _categoriesCache.remove(key);
-    }
+
+  /// 設置參照資料快取
+  void setRefData(String key, List<Map<String, String>> data) {
+    _refDataCache[key] = data;
+  }
+
+  /// 清除所有快取
+  void clearAll() {
+    _exerciseDetailsCache.clear();
+    _refDataCache.clear();
   }
 }
-

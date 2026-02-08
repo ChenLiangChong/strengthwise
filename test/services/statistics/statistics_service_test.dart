@@ -42,14 +42,16 @@ void main() {
     ],
     bodyPartStats: [
       BodyPartStats(
-        bodyPart: '胸',
+        bodyPart: '胸部',
+        parentGroupId: 'chest',
         totalVolume: 3000.0,
         workoutCount: 3,
         exerciseCount: 4,
         percentage: 0.3,
       ),
       BodyPartStats(
-        bodyPart: '背',
+        bodyPart: '背部',
+        parentGroupId: 'back',
         totalVolume: 2500.0,
         workoutCount: 2,
         exerciseCount: 3,
@@ -59,7 +61,7 @@ void main() {
     muscleDetails: {},
     trainingTypeStats: [
       TrainingTypeStats(
-        trainingType: '重訓',
+        trainingType: '阻力訓練',
         workoutCount: 5,
         percentage: 0.8,
       ),
@@ -393,14 +395,16 @@ void main() {
         // Arrange
         final bodyPartStats = [
           BodyPartStats(
-            bodyPart: '胸',
+            bodyPart: '胸部',
+            parentGroupId: 'chest',
             totalVolume: 3000.0,
             workoutCount: 12,
             exerciseCount: 4,
             percentage: 0.30,
           ),
           BodyPartStats(
-            bodyPart: '背',
+            bodyPart: '背部',
+            parentGroupId: 'back',
             totalVolume: 2500.0,
             workoutCount: 10,
             exerciseCount: 3,
@@ -416,7 +420,7 @@ void main() {
 
         // Assert
         expect(result.length, 2);
-        expect(result[0].bodyPart, '胸');
+        expect(result[0].bodyPart, '胸部');
         expect(result[0].percentage, 0.30);
       });
 
@@ -424,15 +428,15 @@ void main() {
         // Arrange
         final bodyPartStats = [
           BodyPartStats(
-              bodyPart: '胸', totalVolume: 3000.0, workoutCount: 12, exerciseCount: 4, percentage: 0.25),
+              bodyPart: '胸部', parentGroupId: 'chest', totalVolume: 3000.0, workoutCount: 12, exerciseCount: 4, percentage: 0.25),
           BodyPartStats(
-              bodyPart: '背', totalVolume: 2500.0, workoutCount: 10, exerciseCount: 3, percentage: 0.20),
+              bodyPart: '背部', parentGroupId: 'back', totalVolume: 2500.0, workoutCount: 10, exerciseCount: 3, percentage: 0.20),
           BodyPartStats(
-              bodyPart: '腿', totalVolume: 4000.0, workoutCount: 15, exerciseCount: 5, percentage: 0.35),
+              bodyPart: '腿部', parentGroupId: 'legs', totalVolume: 4000.0, workoutCount: 15, exerciseCount: 5, percentage: 0.35),
           BodyPartStats(
-              bodyPart: '肩', totalVolume: 1500.0, workoutCount: 8, exerciseCount: 2, percentage: 0.15),
+              bodyPart: '肩部', parentGroupId: 'shoulders', totalVolume: 1500.0, workoutCount: 8, exerciseCount: 2, percentage: 0.15),
           BodyPartStats(
-              bodyPart: '手臂', totalVolume: 600.0, workoutCount: 6, exerciseCount: 2, percentage: 0.05),
+              bodyPart: '手臂', parentGroupId: 'arms', totalVolume: 600.0, workoutCount: 6, exerciseCount: 2, percentage: 0.05),
         ];
         when(() => mockService.getBodyPartStats('user-001', TimeRange.month))
             .thenAnswer((_) async => bodyPartStats);
@@ -484,12 +488,12 @@ void main() {
           ),
         ];
         when(() =>
-                mockService.getSpecificMuscleStats('user-001', '胸', TimeRange.week))
+                mockService.getSpecificMuscleStats('user-001', 'chest', TimeRange.week))
             .thenAnswer((_) async => muscleStats);
 
         // Act
         final result = await mockService.getSpecificMuscleStats(
-            'user-001', '胸', TimeRange.week);
+            'user-001', 'chest', TimeRange.week);
 
         // Assert
         expect(result.length, 2);
@@ -499,11 +503,11 @@ void main() {
       test('無該部位記錄返回空列表', () async {
         // Arrange
         when(() => mockService.getSpecificMuscleStats(
-            'user-001', '核心', TimeRange.week)).thenAnswer((_) async => []);
+            'user-001', 'core', TimeRange.week)).thenAnswer((_) async => []);
 
         // Act
         final result = await mockService.getSpecificMuscleStats(
-            'user-001', '核心', TimeRange.week);
+            'user-001', 'core', TimeRange.week);
 
         // Assert
         expect(result, isEmpty);
@@ -532,12 +536,12 @@ void main() {
           ),
         ];
         when(() =>
-                mockService.getSpecificMuscleStats('user-001', '腿', TimeRange.week))
+                mockService.getSpecificMuscleStats('user-001', 'legs', TimeRange.week))
             .thenAnswer((_) async => muscleStats);
 
         // Act
         final result = await mockService.getSpecificMuscleStats(
-            'user-001', '腿', TimeRange.week);
+            'user-001', 'legs', TimeRange.week);
 
         // Assert
         expect(result.length, 3);
@@ -554,12 +558,12 @@ void main() {
         // Arrange
         final typeStats = [
           TrainingTypeStats(
-            trainingType: '重訓',
+            trainingType: '阻力訓練',
             workoutCount: 50,
             percentage: 0.80,
           ),
           TrainingTypeStats(
-            trainingType: '有氧',
+            trainingType: '心肺適能訓練',
             workoutCount: 10,
             percentage: 0.15,
           ),
@@ -573,19 +577,19 @@ void main() {
 
         // Assert
         expect(result.length, 2);
-        expect(result[0].trainingType, '重訓');
+        expect(result[0].trainingType, '阻力訓練');
       });
 
       test('百分比計算正確', () async {
         // Arrange
         final typeStats = [
           TrainingTypeStats(
-            trainingType: '重訓',
+            trainingType: '阻力訓練',
             workoutCount: 80,
             percentage: 0.80,
           ),
           TrainingTypeStats(
-            trainingType: '功能性訓練',
+            trainingType: '心肺適能訓練',
             workoutCount: 20,
             percentage: 0.20,
           ),

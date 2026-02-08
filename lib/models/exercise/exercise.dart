@@ -210,6 +210,10 @@ class Exercise {
     );
   }
   
+  /// v5.0: 顯示名稱（優先 SEE 標準名稱）
+  String get displayName => canonicalName ?? name;
+  String get displayNameEn => canonicalNameEn ?? nameEn;
+
   /// 獲取訓練類型的枚舉值
   ExerciseType get exerciseType => ExerciseTypeExtension.fromString(type);
   

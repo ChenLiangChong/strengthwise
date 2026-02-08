@@ -28,14 +28,10 @@ class MuscleBalanceAnalyzer {
       for (var exercise in workout.exercises) {
         if (!exercise.isCompleted) continue;
 
-        // 載入動作分類
+        // ⭐ v5.0: 使用 pplTags 判斷肌群類別（取代 v4 中文字串解析）
         final exerciseData = _exerciseCache[exercise.exerciseId];
-        final bodyPart = exerciseData?.bodyPart.isNotEmpty == true
-            ? exerciseData!.bodyPart
-            : '';
-
-        // 判斷肌群類別
-        final category = _categorizeMuscleGroup(bodyPart);
+        final pplTags = exerciseData?.pplTags ?? [];
+        final category = _categorizeMuscleGroupByPplTags(pplTags);
         final volume =
             (exercise.weight * exercise.reps * exercise.sets).toDouble();
 
@@ -110,32 +106,21 @@ class MuscleBalanceAnalyzer {
     );
   }
 
-  /// 將身體部位分類到肌群類別
-  MuscleGroupCategory _categorizeMuscleGroup(String bodyPart) {
-    final part = bodyPart.toLowerCase();
-
-    // 推動作
-    if (part.contains('胸') ||
-        part.contains('肩') ||
-        (part.contains('手') && part.contains('三頭'))) {
-      return MuscleGroupCategory.push;
+  /// ⭐ v5.0: 使用 pplTags 直接判斷肌群類別
+  ///
+  /// 取代 v4 的中文字串比對（`bodyPart.contains('胸')` 等），
+  /// 直接使用 v5.0 分類系統的 PPL 標籤。
+  MuscleGroupCategory _categorizeMuscleGroupByPplTags(List<String> pplTags) {
+    // PPL 標籤對映表（ExerciseLabels.ppl 的 key 與 MuscleGroupCategory 一致）
+    for (final tag in pplTags) {
+      switch (tag) {
+        case 'push': return MuscleGroupCategory.push;
+        case 'pull': return MuscleGroupCategory.pull;
+        case 'legs': return MuscleGroupCategory.legs;
+        case 'core': return MuscleGroupCategory.core;
+        // cardio / mobility → other（MuscleGroupCategory 無此分類）
+      }
     }
-
-    // 拉動作
-    if (part.contains('背') || (part.contains('手') && part.contains('二頭'))) {
-      return MuscleGroupCategory.pull;
-    }
-
-    // 腿部
-    if (part.contains('腿') || part.contains('臀')) {
-      return MuscleGroupCategory.legs;
-    }
-
-    // 核心
-    if (part.contains('核心') || part.contains('腹')) {
-      return MuscleGroupCategory.core;
-    }
-
     return MuscleGroupCategory.other;
   }
 }

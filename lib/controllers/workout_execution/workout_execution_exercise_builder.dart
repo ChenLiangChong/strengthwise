@@ -45,7 +45,7 @@ class WorkoutExecutionExerciseBuilder {
     // 創建運動記錄
     return ExerciseRecord(
       exerciseId: exercise.id,
-      exerciseName: exercise.name,
+      exerciseName: exercise.displayName,
       sets: setRecords,
       notes: '',
       completed: false,

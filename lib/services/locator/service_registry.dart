@@ -49,6 +49,7 @@ import '../supabase/drawing_service_supabase.dart';
 import '../supabase/invite_code_service_supabase.dart';
 import '../supabase/injury_coach_note_service_supabase.dart';
 
+import '../cache/exercise_preferences_service.dart';
 import '../cache/favorites_service.dart';
 import '../cache/statistics_local_cache_service.dart';
 import '../cache/workout_plan_local_cache_service.dart';
@@ -113,6 +114,7 @@ class ServiceRegistry {
     _registerSessionRealtimeService(serviceLocator);
     _registerOnboardingService(serviceLocator);
     _registerRealtimeSubscriptionManager(serviceLocator);
+    _registerExercisePreferencesService(serviceLocator);
   }
 
   /// ⚡ 註冊本地快取服務（Phase 2 持久化優化）
@@ -463,6 +465,15 @@ class ServiceRegistry {
         () => RealtimeSubscriptionManager(
           supabase: Supabase.instance.client,
         ),
+      );
+    }
+  }
+
+  /// ⭐ v5.0: 註冊動作庫偏好設定服務
+  static void _registerExercisePreferencesService(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<ExercisePreferencesService>()) {
+      serviceLocator.registerLazySingleton<ExercisePreferencesService>(
+        () => ExercisePreferencesService(),
       );
     }
   }

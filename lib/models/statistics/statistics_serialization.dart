@@ -83,6 +83,7 @@ extension TrainingVolumePointJson on TrainingVolumePoint {
 extension BodyPartStatsJson on BodyPartStats {
   Map<String, dynamic> toJson() => {
         'bodyPart': bodyPart,
+        'parentGroupId': parentGroupId,
         'totalVolume': totalVolume,
         'workoutCount': workoutCount,
         'exerciseCount': exerciseCount,
@@ -91,6 +92,7 @@ extension BodyPartStatsJson on BodyPartStats {
 
   static BodyPartStats fromJson(Map<String, dynamic> json) => BodyPartStats(
         bodyPart: json['bodyPart'] ?? '',
+        parentGroupId: json['parentGroupId'] ?? '',
         totalVolume: (json['totalVolume'] ?? 0).toDouble(),
         workoutCount: json['workoutCount'] ?? 0,
         exerciseCount: json['exerciseCount'] ?? 0,

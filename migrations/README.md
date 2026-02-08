@@ -2,7 +2,7 @@
 
 > 資料庫 Migration 文件索引
 
-**最後更新**：2026-02-07（v5.0 動作分類系統 v2）
+**最後更新**：2026-02-08（v5.1 篩選系統修復）
 
 ---
 
@@ -22,7 +22,7 @@ migrations/
 │   ├── 09_views.sql
 │   └── 10_initial_data.sql
 │
-├── 001_v1_core_tables.sql  # 演進版 - 22 個文件
+├── 001_v1_core_tables.sql  # 演進版 - 28 個文件
 ├── 002_v1_initial_data.sql
 ├── ... (按版本演進)
 └── README.md
@@ -51,7 +51,7 @@ psql -U postgres -d strengthwise -f 02_types.sql
 cd migrations
 psql -U postgres -d strengthwise -f 001_v1_core_tables.sql
 psql -U postgres -d strengthwise -f 002_v1_initial_data.sql
-# ... 按順序執行 001-22
+# ... 按順序執行 001-26, 32-33
 ```
 
 ---
@@ -97,6 +97,9 @@ psql -U postgres -d strengthwise -f 002_v1_initial_data.sql
 | `23_fix_pr_weight_time.sql` | - | v3.3.1 | 修復 weight_time 模式被錯誤納入 PR |
 | `24_v5_exercise_classification_v2.sql` | - | v5.0 | 動作分類系統 v2 Schema（新欄位、別名表、參照表）|
 | `25_v5_exercise_data_import.sql` | - | v5.0 | 動作分類 v2 資料匯入（779 筆 + 2352 別名）|
+| `26_v5_update_exercise_names_to_see.sql` | - | v5.1 | 歷史資料動作名稱更新為 SEE 標準名稱 + trigger 修改 |
+| `27_v5_fix_equipment_column.sql` | - | v5.1 | 修復 exercises.equipment 欄位為 ref_equipment.id 標準值 |
+| `28_v5_drop_search_rpc.sql` | - | v5.1 | 移除 search_exercises_v2 RPC（改用客戶端快取篩選） |
 | `32_add_webhooks_availability.sql` | - | v3.9 | FCM Webhook 配置說明（手動在 Dashboard） |
 | `33_enable_realtime_availability.sql` | - | v3.9 | 開啟 Realtime + REPLICA IDENTITY FULL |
 
@@ -105,7 +108,7 @@ psql -U postgres -d strengthwise -f 002_v1_initial_data.sql
 ## 🔄 執行順序
 
 ```
-演進版：001 → 002 → ... → 008 → 09 → 10 → ... → 23 → 24 → 25 → 32 → 33
+演進版：001 → 002 → ... → 008 → 09 → 10 → ... → 23 → 24 → 25 → 26 → 27 → 28 → 32 → 33
 
 精簡版：01 → 02 → ... → 10
 ```

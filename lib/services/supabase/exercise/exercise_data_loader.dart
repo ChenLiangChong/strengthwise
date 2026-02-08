@@ -2,12 +2,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// ⭐ 定義 exercises 表的標準查詢欄位（避免 SELECT *）
 /// v3.2+ 新增 tracking_mode 欄位
+/// v5.0+ 新增動作分類系統 v2 欄位
 const String _kExerciseSelectFields = '''
-  id, name, name_en, body_parts, training_type, equipment, 
-  level1, level2, level3, level4, level5, action_name, 
-  description, image_url, video_url, body_part, 
+  id, name, name_en, body_parts, training_type, equipment,
+  level1, level2, level3, level4, level5, action_name,
+  description, image_url, video_url, body_part,
   specific_muscle, equipment_category, equipment_subcategory, created_at,
-  tracking_mode
+  tracking_mode,
+  training_type_en, body_part_en, specific_muscle_en,
+  equipment_category_en, equipment_subcategory_en,
+  canonical_name, canonical_name_en,
+  movement_patterns, ppl_tags, primary_muscle, synergist_muscles,
+  mechanics_type, is_unilateral, difficulty_level, is_explosive,
+  exercise_aliases(alias_term)
 ''';
 
 /// ⭐ 定義 custom_exercises 表的標準查詢欄位

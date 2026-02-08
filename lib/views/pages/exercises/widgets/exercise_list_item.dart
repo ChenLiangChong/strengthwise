@@ -1,38 +1,26 @@
-// ✅ 已響應式改造 (Phase 0)
 import 'package:flutter/material.dart';
+import 'package:strengthwise/models/exercise/exercise_labels.dart';
 import 'package:strengthwise/utils/responsive/responsive.dart';
 import '../../../../models/exercise_model.dart';
 
 /// 動作列表項 Widget
 ///
-/// 用於在動作列表中顯示單個動作的卡片
-///
-/// 響應式設計：
-/// - 使用 Theme 文字樣式
-/// - 響應式間距
+/// 顯示動作名稱、v5.0 分類標籤（PPL + 器材 + 難度）。
 class ExerciseListItem extends StatelessWidget {
   final Exercise exercise;
-  final String? selectedBodyPart;
-  final String? selectedSpecificMuscle;
-  final String? selectedEquipmentCategory;
-  final String? selectedEquipmentSubcategory;
   final VoidCallback onTap;
   final VoidCallback onSelect;
 
   const ExerciseListItem({
     super.key,
     required this.exercise,
-    this.selectedBodyPart,
-    this.selectedSpecificMuscle,
-    this.selectedEquipmentCategory,
-    this.selectedEquipmentSubcategory,
     required this.onTap,
     required this.onSelect,
   });
 
   @override
   Widget build(BuildContext context) {
-    final displayName = exercise.name;
+    final displayName = exercise.displayName;
     final infoParts = _buildInfoParts();
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
@@ -63,14 +51,16 @@ class ExerciseListItem extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    // 底部資訊（肌群、器材）
+                    // 底部資訊（PPL + 器材 + 難度）
                     if (infoParts.isNotEmpty) ...[
                       SizedBox(height: context.spacing.xs),
                       Text(
-                        infoParts.join(' • '),
+                        infoParts.join(' · '),
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ],
@@ -101,27 +91,30 @@ class ExerciseListItem extends StatelessWidget {
     );
   }
 
-  /// 構建資訊標籤列表
+  /// 構建 v5.0 分類標籤
   List<String> _buildInfoParts() {
     final infoParts = <String>[];
 
-    // 肌群資訊
-    if (selectedSpecificMuscle != null) {
-      infoParts.add('肌群：$selectedSpecificMuscle');
-    } else if (selectedBodyPart != null) {
-      infoParts.add('部位：$selectedBodyPart');
+    // PPL 標籤
+    if (exercise.pplTags.isNotEmpty) {
+      infoParts.add(
+        ExerciseLabels.resolve(ExerciseLabels.ppl, exercise.pplTags.first),
+      );
     }
 
-    // 器材資訊
-    if (selectedEquipmentSubcategory != null) {
-      infoParts.add('器材：$selectedEquipmentSubcategory');
-    } else if (selectedEquipmentCategory != null) {
-      infoParts.add('類別：$selectedEquipmentCategory');
-    } else if (exercise.equipment.isNotEmpty) {
-      infoParts.add('器材：${exercise.equipment}');
+    // 器材
+    if (exercise.equipment.isNotEmpty) {
+      infoParts.add(
+        ExerciseLabels.resolve(ExerciseLabels.equipment, exercise.equipment),
+      );
     } else {
-      infoParts.add('器材：徒手');
+      infoParts.add('徒手');
     }
+
+    // 難度
+    infoParts.add(
+      ExerciseLabels.resolve(ExerciseLabels.difficulty, exercise.difficultyLevel),
+    );
 
     return infoParts;
   }

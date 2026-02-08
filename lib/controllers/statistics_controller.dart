@@ -173,14 +173,14 @@ class StatisticsController extends ChangeNotifier implements IStatisticsControll
 
   /// 獲取身體部位詳細統計
   ///
-  /// [bodyPart] 身體部位名稱
-  Future<List<SpecificMuscleStats>> getBodyPartDetails(String bodyPart) async {
+  /// [parentGroup] 肌群分區 ID（如 'chest'、'back'）
+  Future<List<SpecificMuscleStats>> getBodyPartDetails(String parentGroup) async {
     if (_userId == null) return [];
 
     try {
       return await _statisticsService.getSpecificMuscleStats(
         _userId!,
-        bodyPart,
+        parentGroup,
         _timeRange,
       );
     } catch (e) {

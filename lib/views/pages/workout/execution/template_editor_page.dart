@@ -211,7 +211,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => ExerciseSettingsDialog(
-        exerciseName: exercise.name,
+        exerciseName: exercise.displayName,
         setsController: _newExerciseSetsController,
         repsController: _newExerciseRepsController,
         weightController: _newExerciseWeightController,
@@ -238,7 +238,7 @@ class _TemplateEditorPageState extends State<TemplateEditorPage> {
         _exercises.add(exercise_models.WorkoutExercise(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           exerciseId: exercise.id,
-          name: exercise.name,
+          name: exercise.displayName,
           actionName: exercise.actionName,
           equipment: exercise.equipment,
           bodyParts: exercise.bodyParts,

@@ -54,6 +54,11 @@ class ExerciseServiceSupabase implements IExerciseService {
   // 載入狀態追蹤
   final Map<String, DateTime> _lastLoadTimes = {};
 
+  // 參照資料記憶體快取（靜態資料，App 生命週期內不變）
+  List<Map<String, String>>? _cachedMovementPatterns;
+  List<Map<String, String>>? _cachedMuscleGroups;
+  List<Map<String, String>>? _cachedEquipmentList;
+
   // 子模組
   late final ExerciseDataLoader _dataLoader;
   late final ExerciseDataParser _dataParser;
@@ -173,243 +178,12 @@ class ExerciseServiceSupabase implements IExerciseService {
       }),
     );
 
-    // 預載入訓練類型
-    unawaited(
-      getExerciseTypes().catchError((e) {
-        _logError('預載入訓練類型失敗: $e');
-        return <String>[];
-      }),
-    );
-
-    // 預載入身體部位
-    unawaited(
-      getBodyParts().catchError((e) {
-        _logError('預載入身體部位失敗: $e');
-        return <String>[];
-      }),
-    );
-
     _logDebug('✅ 預載入任務已啟動（背景執行）');
   }
 
   @override
   void logDebug(String message) {
     _logDebug(message);
-  }
-
-  @override
-  Future<List<String>> getExerciseTypes() async {
-    _ensureInitialized();
-
-    _logDebug('開始載入訓練類型...');
-    _lastLoadTimes['exerciseTypes'] = DateTime.now();
-
-    try {
-      final types = await _dataLoader.loadExerciseTypes();
-      _logDebug('成功從伺服器載入 ${types.length} 個訓練類型');
-      return types;
-    } catch (e) {
-      _logError('載入訓練類型失敗: $e');
-      rethrow;
-    }
-  }
-
-  @override
-  Future<List<String>> getBodyParts() async {
-    _ensureInitialized();
-
-    _logDebug('開始載入身體部位');
-    _lastLoadTimes['bodyParts'] = DateTime.now();
-
-    try {
-      final parts = await _dataLoader.loadBodyParts();
-      _logDebug('成功從伺服器載入 ${parts.length} 個身體部位');
-      return parts;
-    } catch (e) {
-      _logError('載入身體部位失敗: $e');
-      rethrow;
-    }
-  }
-
-  @override
-  Future<List<String>> getCategoriesByLevel(
-      int level, Map<String, String> filters) async {
-    _ensureInitialized();
-
-    _logDebug('開始載入Level$level分類');
-
-    // 建構緩存鍵
-    final selectedType = filters['type'] ?? "";
-    final selectedBodyPart = filters['bodyPart'] ?? "";
-    final selectedLevel1 = filters['level1'] ?? "";
-    final selectedLevel2 = filters['level2'] ?? "";
-    final selectedLevel3 = filters['level3'] ?? "";
-    final selectedLevel4 = filters['level4'] ?? "";
-
-    final cacheKey =
-        'level${level}_${selectedType}_${selectedBodyPart}_${selectedLevel1}_${selectedLevel2}_${selectedLevel3}_$selectedLevel4';
-    _logDebug('緩存鍵: $cacheKey');
-    _lastLoadTimes[cacheKey] = DateTime.now();
-
-    // 緩存功能已移除（Supabase 遷移）
-    // if (_useCache) {
-    //   await ExerciseCacheService.clearCacheForKey('cat_$cacheKey');
-    // }
-
-    try {
-      // 緩存功能已移除（Supabase 遷移）
-      // if (_useCache) {
-      //   try {
-      //     final cachedCategories = await ExerciseCacheService.getCategories(cacheKey);
-      //     if (cachedCategories.isNotEmpty) {
-      //       _logDebug('成功從緩存載入 Level$level 分類: ${cachedCategories.length} 個項目');
-      //       return cachedCategories;
-      //     }
-      //   } catch (e) {
-      //     _logDebug('從緩存獲取 Level$level 分類失敗，將從伺服器獲取: $e');
-      //   }
-      // }
-
-      // 驗證必要條件
-      if (level == 1) {
-        if (selectedType.isEmpty) {
-          throw ArgumentError('查詢level1時必須指定訓練類型');
-        }
-        if (selectedBodyPart.isEmpty) {
-          throw ArgumentError('查詢level1時必須指定身體部位');
-        }
-      }
-
-      // 執行查詢
-      final response = await _dataLoader.loadCategoriesByLevel(
-        level: level,
-        selectedType: selectedType,
-        selectedBodyPart: selectedBodyPart,
-        selectedLevel1: selectedLevel1,
-        selectedLevel2: selectedLevel2,
-        selectedLevel3: selectedLevel3,
-        selectedLevel4: selectedLevel4,
-      );
-
-      _logDebug('查詢到 ${(response as List).length} 個文檔');
-
-      // 提取並返回分類
-      final result = _dataParser.extractCategoriesFromLevel(response, level);
-      _logDebug('成功從伺服器載入 Level$level 分類: ${result.length} 個項目');
-      return result;
-    } catch (e) {
-      _logError('載入分類失敗: $e');
-      rethrow;
-    }
-  }
-
-  @override
-  Future<List<Exercise>> getExercisesByFilters(
-      Map<String, String> filters) async {
-    _ensureInitialized();
-
-    // 建構緩存鍵
-    final cacheKey =
-        'exercises_${filters.entries.map((e) => '${e.key}_${e.value}').join('_')}';
-    _logDebug('最終動作緩存鍵: $cacheKey');
-    _lastLoadTimes[cacheKey] = DateTime.now();
-
-    try {
-      // ⚡ 優先使用記憶體快取（如果已預載入）
-      final allExercisesCache = _preloadManager.allExercisesCache;
-      if (allExercisesCache != null && allExercisesCache.isNotEmpty) {
-        _logDebug('✨ 使用記憶體快取（${allExercisesCache.length} 個動作），客戶端過濾...');
-
-        // 客戶端過濾
-        var exercises = allExercisesCache;
-
-        for (final entry in filters.entries) {
-          if (entry.value.isEmpty) continue;
-
-          if (entry.key == 'bodyPart') {
-            exercises =
-                exercises.where((e) => e.bodyPart == entry.value).toList();
-            _logDebug('過濾條件: bodyPart=${entry.value}，剩餘 ${exercises.length} 個');
-          } else if (entry.key == 'type') {
-            exercises =
-                exercises.where((e) => e.trainingType == entry.value).toList();
-            _logDebug('過濾條件: type=${entry.value}，剩餘 ${exercises.length} 個');
-          } else if (entry.key == 'level1') {
-            exercises =
-                exercises.where((e) => e.level1 == entry.value).toList();
-            _logDebug('過濾條件: level1=${entry.value}，剩餘 ${exercises.length} 個');
-          } else if (entry.key == 'level2') {
-            exercises =
-                exercises.where((e) => e.level2 == entry.value).toList();
-            _logDebug('過濾條件: level2=${entry.value}，剩餘 ${exercises.length} 個');
-          } else if (entry.key == 'level3') {
-            exercises =
-                exercises.where((e) => e.level3 == entry.value).toList();
-            _logDebug('過濾條件: level3=${entry.value}，剩餘 ${exercises.length} 個');
-          } else if (entry.key == 'level4') {
-            exercises =
-                exercises.where((e) => e.level4 == entry.value).toList();
-            _logDebug('過濾條件: level4=${entry.value}，剩餘 ${exercises.length} 個');
-          } else if (entry.key == 'level5') {
-            exercises =
-                exercises.where((e) => e.level5 == entry.value).toList();
-            _logDebug('過濾條件: level5=${entry.value}，剩餘 ${exercises.length} 個');
-          }
-        }
-
-        _logDebug('✅ 從快取過濾出 ${exercises.length} 個動作（零網路請求！）');
-        return exercises;
-      }
-
-      // ⚠️ 快取未準備好，回退到資料庫查詢
-      _logDebug('⚠️ 快取未準備好，從資料庫查詢...');
-
-      // 建構 Supabase 查詢（明確指定欄位）
-      var query = _client.from('exercises').select(_kExerciseSelectFields);
-
-      // 新增所有有效的過濾條件
-      for (final entry in filters.entries) {
-        if (entry.value.isEmpty) continue;
-
-        if (entry.key == 'bodyPart') {
-          query = query.contains('body_parts', [entry.value]);
-          _logDebug('新增查詢條件: body_parts包含${entry.value}');
-        } else if (entry.key == 'type') {
-          query = query.eq('training_type', entry.value);
-          _logDebug('新增查詢條件: training_type=${entry.value}');
-        } else {
-          // 對於 level1-level5 的條件
-          query = query.eq(entry.key, entry.value);
-          _logDebug('新增查詢條件: ${entry.key}=${entry.value}');
-        }
-      }
-
-      // 執行查詢，新增逾時處理
-      final response = await query.timeout(
-        Duration(seconds: _queryTimeout),
-        onTimeout: () => throw TimeoutException('查詢逾時，請檢查網路連線'),
-      );
-
-      _logDebug('查詢到 ${(response as List).length} 個最終動作');
-
-      // 解析動作，新增更好的錯誤處理
-      List<Exercise> exercises = [];
-      for (var item in response) {
-        try {
-          final exercise = Exercise.fromSupabase(item);
-          exercises.add(exercise);
-        } catch (e) {
-          _logError('解析動作失敗: ${item['id']} - $e');
-          // 繼續處理其他文檔，而不是中斷整個流程
-        }
-      }
-
-      _logDebug('成功從伺服器載入 ${exercises.length} 個運動');
-      return exercises;
-    } catch (e) {
-      _logError('載入最終動作失敗: $e');
-      rethrow;
-    }
   }
 
   @override
@@ -693,72 +467,50 @@ class ExerciseServiceSupabase implements IExerciseService {
     String? query,
     List<String>? movementPatterns,
     List<String>? pplTags,
+    List<String>? excludePplTags,
     String? primaryMuscle,
     String? equipment,
+    Set<String>? equipmentSet,
     bool? isExplosive,
     String? difficultyLevel,
+    String? mechanicsType,
     int limit = 50,
   }) async {
     _ensureInitialized();
 
     _logDebug('🔍 進階搜尋: query=$query, patterns=$movementPatterns, '
         'ppl=$pplTags, muscle=$primaryMuscle, equipment=$equipment, '
-        'explosive=$isExplosive, difficulty=$difficultyLevel');
+        'equipmentSet=$equipmentSet, '
+        'explosive=$isExplosive, difficulty=$difficultyLevel, '
+        'mechanics=$mechanicsType');
 
     try {
-      // ⚡ 優先嘗試從記憶體快取搜尋
+      // 確保快取已準備好（Hive 讀取毫秒級，首次安裝才需等 Supabase 下載）
+      await _preloadManager.ensureCacheReady();
       final allExercisesCache = _preloadManager.allExercisesCache;
-      if (allExercisesCache != null && allExercisesCache.isNotEmpty) {
-        _logDebug('✨ 使用記憶體快取進行進階搜尋...');
 
-        final results = _searchEngine.searchAdvancedFromCache(
-          cache: allExercisesCache,
-          query: query,
-          movementPatterns: movementPatterns,
-          pplTags: pplTags,
-          primaryMuscle: primaryMuscle,
-          equipment: equipment,
-          isExplosive: isExplosive,
-          difficultyLevel: difficultyLevel,
-          limit: limit,
-        );
-
-        _logDebug('✅ 從快取進階搜尋到 ${results.length} 個結果');
-        return results;
+      if (allExercisesCache == null || allExercisesCache.isEmpty) {
+        _logError('快取載入後仍為空');
+        return [];
       }
 
-      // ⚠️ 快取未準備好，使用 RPC 函數
-      _logDebug('☁️  使用 search_exercises_v2 RPC 函數...');
-
-      final response = await _client.rpc(
-        'search_exercises_v2',
-        params: {
-          'search_query': query,
-          'p_movement_patterns': movementPatterns,
-          'p_ppl_tags': pplTags,
-          'p_primary_muscle': primaryMuscle,
-          'p_equipment': equipment,
-          'p_is_explosive': isExplosive,
-          'p_difficulty_level': difficultyLevel,
-          'max_results': limit,
-        },
-      ).timeout(
-        Duration(seconds: _queryTimeout),
-        onTimeout: () => throw TimeoutException('進階搜尋逾時'),
+      final results = _searchEngine.searchAdvancedFromCache(
+        cache: allExercisesCache,
+        query: query,
+        movementPatterns: movementPatterns,
+        pplTags: pplTags,
+        excludePplTags: excludePplTags,
+        primaryMuscle: primaryMuscle,
+        equipment: equipment,
+        equipmentSet: equipmentSet,
+        isExplosive: isExplosive,
+        difficultyLevel: difficultyLevel,
+        mechanicsType: mechanicsType,
+        limit: limit,
       );
 
-      final List<Exercise> exercises = [];
-      for (var item in response as List) {
-        try {
-          final exercise = Exercise.fromSupabase(item);
-          exercises.add(exercise);
-        } catch (e) {
-          _logError('解析進階搜尋結果失敗: ${item['id']} - $e');
-        }
-      }
-
-      _logDebug('✅ 進階搜尋到 ${exercises.length} 個結果');
-      return exercises;
+      _logDebug('✅ 進階搜尋到 ${results.length} 個結果');
+      return results;
     } catch (e) {
       _logError('進階搜尋失敗: $e');
       // 回退到基本搜尋
@@ -772,6 +524,7 @@ class ExerciseServiceSupabase implements IExerciseService {
   @override
   Future<List<Map<String, String>>> getMovementPatterns() async {
     _ensureInitialized();
+    if (_cachedMovementPatterns != null) return _cachedMovementPatterns!;
 
     _logDebug('載入動作模式參照資料...');
 
@@ -795,7 +548,8 @@ class ExerciseServiceSupabase implements IExerciseService {
         });
       }
 
-      _logDebug('成功載入 ${patterns.length} 個動作模式');
+      _cachedMovementPatterns = patterns;
+      _logDebug('✅ 載入 ${patterns.length} 個動作模式');
       return patterns;
     } catch (e) {
       _logError('載入動作模式失敗: $e');
@@ -806,6 +560,7 @@ class ExerciseServiceSupabase implements IExerciseService {
   @override
   Future<List<Map<String, String>>> getMuscleGroups() async {
     _ensureInitialized();
+    if (_cachedMuscleGroups != null) return _cachedMuscleGroups!;
 
     _logDebug('載入肌肉群參照資料...');
 
@@ -830,7 +585,8 @@ class ExerciseServiceSupabase implements IExerciseService {
         });
       }
 
-      _logDebug('成功載入 ${muscles.length} 個肌肉群');
+      _cachedMuscleGroups = muscles;
+      _logDebug('✅ 載入 ${muscles.length} 個肌肉群');
       return muscles;
     } catch (e) {
       _logError('載入肌肉群失敗: $e');
@@ -841,6 +597,7 @@ class ExerciseServiceSupabase implements IExerciseService {
   @override
   Future<List<Map<String, String>>> getEquipmentList() async {
     _ensureInitialized();
+    if (_cachedEquipmentList != null) return _cachedEquipmentList!;
 
     _logDebug('載入器材參照資料...');
 
@@ -863,7 +620,8 @@ class ExerciseServiceSupabase implements IExerciseService {
         });
       }
 
-      _logDebug('成功載入 ${equipment.length} 種器材');
+      _cachedEquipmentList = equipment;
+      _logDebug('✅ 載入 ${equipment.length} 種器材');
       return equipment;
     } catch (e) {
       _logError('載入器材失敗: $e');

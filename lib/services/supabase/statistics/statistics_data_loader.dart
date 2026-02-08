@@ -141,24 +141,6 @@ class StatisticsDataLoader {
         .toList();
   }
 
-  /// 從彙總表查詢訓練類型統計
-  Future<List<Map<String, dynamic>>> getTrainingTypeSummary(
-    String userId,
-    DateTime startDate,
-    DateTime endDate,
-  ) async {
-    final response = await _supabase
-        .from('daily_workout_summary')
-        .select('resistance_training_count, cardio_count, mobility_count')
-        .eq('user_id', userId)
-        .gte('date', DateTimeUtils.formatToUtcIso(startDate).split('T')[0])
-        .lte('date', DateTimeUtils.formatToUtcIso(endDate).split('T')[0]);
-
-    return (response as List<dynamic>)
-        .map((row) => row as Map<String, dynamic>)
-        .toList();
-  }
-
   /// 從彙總表查詢個人記錄
   ///
   /// ⚠️ 重要：使用 personal_records_top_by_body_part View

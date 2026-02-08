@@ -56,8 +56,26 @@ class ExerciseMapper {
       isUnilateral: data['is_unilateral'] ?? false,
       difficultyLevel: data['difficulty_level'] ?? 'beginner',
       isExplosive: data['is_explosive'] ?? false,
-      aliases: List<String>.from(data['aliases'] ?? []),
+      aliases: _parseAliases(data),
     );
+  }
+
+  /// 解析別名（支援 Supabase 嵌套格式和 Hive 快取格式）
+  static List<String> _parseAliases(Map<String, dynamic> data) {
+    // Hive 快取格式：直接是 List<String>
+    final aliases = data['aliases'];
+    if (aliases is List) {
+      return aliases.whereType<String>().toList();
+    }
+    // Supabase 嵌套查詢格式：exercise_aliases: [{alias_term: "xxx"}, ...]
+    final nested = data['exercise_aliases'];
+    if (nested is List) {
+      return nested
+          .map((item) => item is Map ? item['alias_term'] as String? : null)
+          .whereType<String>()
+          .toList();
+    }
+    return [];
   }
 
   /// 從 JSON 創建對象（客戶端格式）

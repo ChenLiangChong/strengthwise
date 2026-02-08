@@ -13,6 +13,7 @@ class ExercisePreloadManager {
   
   List<Exercise>? _allExercisesCache;
   bool _isPreloading = false;
+  Completer<void>? _preloadCompleter;
 
   ExercisePreloadManager({
     required ExerciseLocalCacheService localCache,
@@ -28,14 +29,26 @@ class ExercisePreloadManager {
   /// 是否正在預載入
   bool get isPreloading => _isPreloading;
 
+  /// 等待預載入完成（供搜尋時使用）
+  Future<void> ensureCacheReady() async {
+    if (_allExercisesCache != null && _allExercisesCache!.isNotEmpty) return;
+    if (_preloadCompleter != null) {
+      await _preloadCompleter!.future;
+      return;
+    }
+    // 沒有正在預載入，主動觸發
+    await preloadAllExercises();
+  }
+
   /// 預載入所有動作到快取
   Future<void> preloadAllExercises() async {
     if (_isPreloading) {
       _logDebug('預載入已在進行中，跳過');
-      return;
+      return _preloadCompleter?.future ?? Future.value();
     }
 
     _isPreloading = true;
+    _preloadCompleter = Completer<void>();
     _logDebug('🚀 開始背景預載入所有動作資料...');
 
     try {
@@ -52,6 +65,7 @@ class ExercisePreloadManager {
           _logDebug(
               '✅ 從本地快取載入 ${exercises.length} 個動作（耗時 ${duration.inMilliseconds}ms）');
           _isPreloading = false;
+          _preloadCompleter?.complete();
           return;
         }
       }
@@ -72,9 +86,12 @@ class ExercisePreloadManager {
       _logDebug(
           '✅ 從 Supabase 下載並快取 ${exercises.length} 個動作（耗時 ${duration.inMilliseconds}ms）');
       _isPreloading = false;
+      _preloadCompleter?.complete();
     } catch (e) {
       _logDebug('預載入所有動作失敗: $e');
       _isPreloading = false;
+      _preloadCompleter?.completeError(e);
+      _preloadCompleter = null;
     }
   }
 

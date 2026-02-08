@@ -70,7 +70,8 @@ class ExerciseLocalCacheService {
   /// v3: 新增 tracking_mode 欄位支援 (2026-01-12)
   /// v4: 強制重新下載確保 tracking_mode 正確 (2026-01-17)
   /// v5: 新增 v2 分類欄位 + 搜尋索引支援 (2026-02-07)
-  static const int currentCacheVersion = 5;
+  /// v6: 修正 SELECT 欄位遺漏，強制重新下載完整 v5 資料 (2026-02-08)
+  static const int currentCacheVersion = 6;
 
   Box? _box;
   Box? _searchIndexBox;

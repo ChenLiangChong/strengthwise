@@ -14,63 +14,9 @@ abstract class IExerciseController {
   
   /// 記錄調試信息
   void logDebug(String message);
-  
-  /// 載入訓練類型
-  Future<List<String>> loadExerciseTypes();
-  
-  /// 載入身體部位
-  Future<List<String>> loadBodyParts();
-  
-  /// 載入特定級別的分類
-  /// 
-  /// [level] 分類級別 (1-5)
-  /// [selectedType] 選擇的訓練類型
-  /// [selectedBodyPart] 選擇的身體部位
-  /// [selectedLevel1] 選擇的一級分類
-  /// [selectedLevel2] 選擇的二級分類
-  /// [selectedLevel3] 選擇的三級分類
-  /// [selectedLevel4] 選擇的四級分類
-  Future<List<String>> loadCategories({
-    required int level,
-    String? selectedType,
-    String? selectedBodyPart,
-    String? selectedLevel1,
-    String? selectedLevel2,
-    String? selectedLevel3,
-    String? selectedLevel4,
-  });
-  
-  /// 載入最終動作列表
-  /// 
-  /// [selectedType] 選擇的訓練類型
-  /// [selectedBodyPart] 選擇的身體部位
-  /// [selectedLevel1] 選擇的一級分類
-  /// [selectedLevel2] 選擇的二級分類
-  /// [selectedLevel3] 選擇的三級分類
-  /// [selectedLevel4] 選擇的四級分類
-  /// [selectedLevel5] 選擇的五級分類
-  Future<List<Exercise>> loadFinalExercises({
-    String? selectedType,
-    String? selectedBodyPart,
-    String? selectedLevel1,
-    String? selectedLevel2,
-    String? selectedLevel3,
-    String? selectedLevel4,
-    String? selectedLevel5,
-  });
-  
+
   /// 根據ID獲取動作詳情
   Future<Exercise?> getExerciseById(String exerciseId);
-
-  // =========================================================================
-  // ⭐ v3.7: 查詢方法（供 View 層使用）
-  // =========================================================================
-
-  /// 獲取訓練類型列表
-  Future<List<String>> getExerciseTypes();
-
-  /// 根據篩選條件獲取動作列表
-  Future<List<Exercise>> getExercisesByFilters(Map<String, String> filters);
 
   // =========================================================================
   // ⭐ v3.7: 收藏功能
@@ -98,4 +44,57 @@ abstract class IExerciseController {
 
   /// 獲取用戶收藏的動作列表（含詳細資訊）
   Future<List<FavoriteExercise>> getFavoriteExercises(String userId);
-} 
+
+  // =========================================================================
+  // ⭐ v5.0: 進階搜尋與篩選
+  // =========================================================================
+
+  /// v5.0 進階搜尋（支援多維度篩選）
+  ///
+  /// [query] 搜尋關鍵字（支援別名搜尋）
+  /// [movementPatterns] 動作模式篩選（如 ['horizontal_push', 'squat']）
+  /// [pplTags] PPL 標籤篩選（如 ['push', 'legs']）
+  /// [primaryMuscle] 主動肌篩選（如 'pec_major_sternal'）
+  /// [equipment] 器材篩選（如 'barbell'）
+  /// [isExplosive] 爆發力動作篩選
+  /// [difficultyLevel] 難度等級篩選（beginner/intermediate/advanced）
+  /// [limit] 返回結果數量上限（預設 50）
+  Future<List<Exercise>> searchExercisesAdvanced({
+    String? query,
+    List<String>? movementPatterns,
+    List<String>? pplTags,
+    List<String>? excludePplTags,
+    String? primaryMuscle,
+    String? equipment,
+    Set<String>? equipmentSet,
+    bool? isExplosive,
+    String? difficultyLevel,
+    String? mechanicsType,
+    int limit = 50,
+  });
+
+  /// 獲取動作模式參照資料
+  Future<List<Map<String, String>>> getMovementPatterns();
+
+  /// 獲取肌肉群參照資料
+  Future<List<Map<String, String>>> getMuscleGroups();
+
+  /// 獲取器材參照資料
+  Future<List<Map<String, String>>> getEquipmentList();
+
+  // =========================================================================
+  // ⭐ v5.0: 偏好設定
+  // =========================================================================
+
+  /// 偏好的瀏覽模式（'anatomy' 或 'pattern'）
+  String get preferredBrowseMode;
+
+  /// 使用者的健身房器材 IDs
+  Set<String> get myEquipment;
+
+  /// 設定偏好的瀏覽模式
+  Future<void> setPreferredBrowseMode(String mode);
+
+  /// 設定使用者的健身房器材
+  Future<void> setMyEquipment(Set<String> equipment);
+}

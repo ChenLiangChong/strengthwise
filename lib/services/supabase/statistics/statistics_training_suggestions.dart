@@ -67,13 +67,16 @@ class TrainingSuggestionsGenerator {
     List<TrainingSuggestion> suggestions,
   ) {
     final trainingTypes = statisticsData.trainingTypeStats;
-    final hasCardio = trainingTypes.any((t) => t.trainingType == '有氧');
-    final hasStretching = trainingTypes.any((t) => t.trainingType == '伸展');
+    // ⭐ v5.0: 對應 calculateTrainingTypeStats 輸出的中文名稱
+    final hasCardio =
+        trainingTypes.any((t) => t.trainingType == '心肺適能訓練');
+    final hasMobility =
+        trainingTypes.any((t) => t.trainingType == '活動度與伸展');
 
-    if (!hasCardio && !hasStretching) {
+    if (!hasCardio && !hasMobility) {
       suggestions.add(TrainingSuggestion(
-        title: '建議增加有氧和伸展',
-        description: '在重訓之外,適當的有氧和伸展可以提升整體健康',
+        title: '建議增加心肺與活動度訓練',
+        description: '在重訓之外，適當的心肺訓練和活動度訓練可以提升整體健康',
         type: SuggestionType.info,
       ));
     }
