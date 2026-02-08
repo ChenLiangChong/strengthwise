@@ -2,7 +2,7 @@
 
 > 專案架構、技術棧、目錄結構
 
-**最後更新**：2026-02-07
+**最後更新**：2026-02-09
 
 ---
 
@@ -20,10 +20,10 @@
 ### 專案規模
 
 ```
-總代碼量：~68,000 行
-├── Flutter/Dart：~64,000 行
-├── SQL/Migrations：~5,000 行（27 個檔案）
-└── Python 腳本：~1,800 行
+總代碼量：~74,000 行
+├── Flutter/Dart：~70,000 行
+├── SQL/Migrations：~6,000 行（30+ 個檔案）
+└── Python 腳本：~2,400 行
 
 核心組件：
 ├── Pages：65+
@@ -31,7 +31,8 @@
 ├── Services：60+（含 Realtime、Notification）
 ├── Interfaces：25 Controller + 20+ Service
 ├── Models：73+
-└── Widgets：234+（含 Coach Mark）
+├── Widgets：240+（含 Coach Mark、v5.0 篩選元件）
+└── Tests：370+（Service 單元測試）
 ```
 
 ---
@@ -54,7 +55,7 @@ Flutter (Dart SDK >=3.1.0, Flutter >=3.16.0)
 ```
 Supabase (PostgreSQL 14+)
 ├── Authentication：Supabase Auth + Google Sign-In
-├── Database：PostgreSQL（24 個表格）
+├── Database：PostgreSQL（24+ 個表格，含 v5.0 參照表）
 ├── Storage：檔案儲存（照片、手繪圖）
 ├── Realtime：即時訂閱
 └── 安全性：Row Level Security (RLS) - 50+ 策略
@@ -157,7 +158,7 @@ lib/
 ├── themes/                      # 主題系統
 └── utils/                       # 工具類
 
-migrations/                      # SQL Migration（35 個）
+migrations/                      # SQL Migration（28+ 個）
 docs/                            # 文檔
 scripts/                         # Python 工具
 ```

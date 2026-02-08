@@ -746,39 +746,9 @@ CREATE TABLE public.personal_records (
 
 ## ⚡ RPC 函數
 
-### search_exercises_v2() ⭐ v5.0
+### ~~search_exercises_v2()~~ ❌ 已移除（migration 28）
 
-進階動作搜尋函數，支援別名、動作模式、PPL 標籤篩選。
-
-```sql
-search_exercises_v2(
-  search_query TEXT,              -- 搜尋關鍵字（支援名稱 + 別名）
-  p_movement_patterns TEXT[],     -- 動作模式篩選
-  p_ppl_tags TEXT[],              -- PPL 標籤篩選
-  p_primary_muscle TEXT,          -- 主動肌篩選
-  p_equipment TEXT,               -- 器材篩選
-  p_is_explosive BOOLEAN,         -- 爆發力篩選
-  p_difficulty_level TEXT,        -- 難度篩選
-  max_results INT DEFAULT 50      -- 結果數量上限
-)
-```
-
-**返回欄位**：完整 exercises 資料 + `relevance_score`（相關度分數）
-
-**使用範例**：
-```sql
--- 搜尋「臥推」並篩選啞鈴、推類動作
-SELECT * FROM search_exercises_v2(
-  '臥推',
-  ARRAY['horizontal_push'],
-  ARRAY['push'],
-  NULL,
-  'dumbbell',
-  NULL,
-  NULL,
-  20
-);
-```
+> **已在 migration 28 移除**。搜尋改為客戶端 Hive 快取搜尋（ExerciseSearchEngine + FuzzySearchEngine），支援離線使用且效能更佳。
 
 ---
 

@@ -1,7 +1,7 @@
 -- ============================================================================
 -- StrengthWise Migration: 26_v5_update_exercise_names_to_see.sql
 -- ============================================================================
--- 版本: v5.1
+-- 版本: v5.0
 -- 日期: 2026-02-08
 -- 目的: 將所有已儲存的動作名稱更新為 SEE 標準名稱（canonical_name）
 -- ============================================================================
@@ -170,7 +170,7 @@ BEGIN
   LOOP
     exercise_id_val := exercise_item->>'exerciseId';
 
-    -- v5.1: 優先使用 canonical_name，回退到 JSONB 中的 exerciseName
+    -- v5.0: 優先使用 canonical_name，回退到 JSONB 中的 exerciseName
     SELECT COALESCE(e.canonical_name, exercise_item->>'exerciseName', exercise_item->>'name', '未知動作')
     INTO exercise_name_val
     FROM exercises e
@@ -323,7 +323,7 @@ BEGIN
   LOOP
     exercise_id_val := exercise_item->>'exerciseId';
 
-    -- v5.1: 優先使用 canonical_name
+    -- v5.0: 優先使用 canonical_name
     SELECT COALESCE(e.canonical_name, exercise_item->>'exerciseName', exercise_item->>'name', '未知動作')
     INTO exercise_name_val
     FROM exercises e

@@ -65,7 +65,7 @@ def main():
     lines.append('-- ============================================================================')
     lines.append('-- StrengthWise Migration: 27_v5_fix_equipment_column.sql')
     lines.append('-- ============================================================================')
-    lines.append('-- 版本: v5.1')
+    lines.append('-- 版本: v5.0')
     lines.append(f'-- 日期: 2026-02-08')
     lines.append('-- 生成方式: scripts/tools/generate_equipment_migration.py')
     lines.append('-- ============================================================================')

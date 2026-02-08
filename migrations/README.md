@@ -2,7 +2,7 @@
 
 > 資料庫 Migration 文件索引
 
-**最後更新**：2026-02-08（v5.1 篩選系統修復）
+**最後更新**：2026-02-09（v5.0 動作分類系統 v2）
 
 ---
 
@@ -96,10 +96,10 @@ psql -U postgres -d strengthwise -f 002_v1_initial_data.sql
 | `22_v3_pr_final_fixes.sql` | 046, 047 | v3.3 | PR DELETE 觸發器、ID 格式修復 |
 | `23_fix_pr_weight_time.sql` | - | v3.3.1 | 修復 weight_time 模式被錯誤納入 PR |
 | `24_v5_exercise_classification_v2.sql` | - | v5.0 | 動作分類系統 v2 Schema（新欄位、別名表、參照表）|
-| `25_v5_exercise_data_import.sql` | - | v5.0 | 動作分類 v2 資料匯入（779 筆 + 2352 別名）|
-| `26_v5_update_exercise_names_to_see.sql` | - | v5.1 | 歷史資料動作名稱更新為 SEE 標準名稱 + trigger 修改 |
-| `27_v5_fix_equipment_column.sql` | - | v5.1 | 修復 exercises.equipment 欄位為 ref_equipment.id 標準值 |
-| `28_v5_drop_search_rpc.sql` | - | v5.1 | 移除 search_exercises_v2 RPC（改用客戶端快取篩選） |
+| `25_v5_exercise_data_import.sql` | - | v5.0 | 動作分類 v2 資料匯入（775 筆 + 2344 別名）|
+| `26_v5_update_exercise_names_to_see.sql` | - | v5.0 | 歷史資料動作名稱更新為 SEE 標準名稱 + trigger 修改 |
+| `27_v5_fix_equipment_column.sql` | - | v5.0 | 修復 exercises.equipment 欄位為 ref_equipment.id 標準值 |
+| `28_v5_drop_search_rpc.sql` | - | v5.0 | 移除 search_exercises_v2 RPC（改用客戶端快取篩選） |
 | `32_add_webhooks_availability.sql` | - | v3.9 | FCM Webhook 配置說明（手動在 Dashboard） |
 | `33_enable_realtime_availability.sql` | - | v3.9 | 開啟 Realtime + REPLICA IDENTITY FULL |
 

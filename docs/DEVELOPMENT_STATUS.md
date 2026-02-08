@@ -39,9 +39,11 @@
 | 10 | ExerciseLocalCacheService 擴展（v2 欄位 + 搜尋索引）| Dart | ✅ 完成 |
 | 11 | FuzzySearchEngine 新增（Jaro-Winkler + Trigram）| Dart | ✅ 完成 |
 | 12 | ExerciseSearchEngine 整合模糊搜尋 | Dart | ✅ 完成 |
-| 13 | Hive 離線模糊搜尋整合測試 | 測試 | ⏳ 待測試 |
+| 13 | Hive 離線模糊搜尋整合測試 | 測試 | ✅ 完成 |
 | 14 | PinyinConverter（拼音索引）| Dart | 📋 後續版本 |
-| 15 | UI 進階篩選器 | UI | 📋 後續版本 |
+| 15 | UI 進階篩選器（PPL chips、進階篩選、瀏覽卡片）| UI | ✅ 完成 |
+| 16 | Flutter 統計遷移（bodyPartStats、muscleBalance、trainingTypeStats）| Dart | ✅ 完成 |
+| 17 | 影響分析報告 | 文檔 | ✅ 完成 |
 
 **新增欄位**：
 - `canonical_name` / `canonical_name_en`：SEE 標準名稱
@@ -58,9 +60,6 @@
 - `ref_muscle_groups`：肌肉群參照表
 - `ref_equipment`：器材參照表
 
-**新增 RPC**：
-- `search_exercises_v2()`：進階搜尋函式
-
 **搜尋系統設計決策**：
 - 模糊搜尋僅針對 5 個名稱欄位（name, nameEn, canonicalName, canonicalNameEn, aliases）
 - 其他欄位（movement_patterns, ppl_tags 等）作為精確篩選條件
@@ -69,14 +68,17 @@
 - Isolate 並行處理避免 UI 卡頓
 - 拼音索引支援中文輸入
 
-**Hive 離線搜尋架構**：
-```
-exercises_cache Box（現有）：擴展儲存 v2 欄位
-exercises_search_index Box（新增）：
-├── trigram_index      → {"squ": ["id1","id2"], ...}
-├── pinyin_full_index  → {"shenqun": ["id1"], ...}
-└── pinyin_initials    → {"sq": ["id1"], ...}
-```
+**Flutter 統計遷移（Phase C-F）**：
+- bodyPartStats：`primaryMuscle → parentGroup` 取代 v4 bodyPart 字串
+- muscleBalance：使用 pplTags 判斷推/拉/腿/核心
+- trainingTypeStats：客戶端計算（pplTags），修復從 v1 起永遠為 0 的 bug
+- equipmentStats：v5.0 映射
+- training suggestions：字串比對修正
+
+**影響分析**：[V5_IMPACT_ANALYSIS.md](planning/V5_IMPACT_ANALYSIS.md)
+- v4 欄位向後兼容（DB trigger、Views 安全運作）
+- v5 欄位用於客戶端精確統計
+- DB 業務上不需要改動
 
 ---
 
@@ -334,7 +336,7 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 | v4.1 | Service 單元測試（24 個 Service，~293 測試）|
 | v4.2 | 效能優化（UI 渲染 + 啟動/網路）|
 | v4.3 | UI/UX 微調（TIME 佈局 + 背景計時器）|
-| **v5.0** | **動作分類系統 v2（775 動作 + 2344 別名 + RPC 搜尋）** |
+| **v5.0** | **動作分類系統 v2（775 動作 + 2344 別名 + Hive 離線搜尋 + 統計遷移）** |
 
 **詳細版本歷史**：[archived/VERSION_HISTORY.md](archived/VERSION_HISTORY.md)  
 **技術架構**：[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)  
@@ -357,13 +359,12 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 | Service 單元測試 | ✅ 24 個 Service（~293 測試案例） |
 
 **下一步重點**：
-1. Hive 離線模糊搜尋整合測試
-2. Beta 測試準備
-3. 實機效能驗證
+1. Beta 測試準備
+2. 實機效能驗證
 
 ---
 
-> ✅ **v5.0 完成**（2026-02-08）：動作分類系統 v2（775 動作 + 2344 別名 + search_exercises_v2 RPC）
+> ✅ **v5.0 完成**（2026-02-08）：動作分類系統 v2（775 動作 + 2344 別名 + Hive 離線搜尋 + 統計遷移）
 >
 > ✅ **v4.3 完成**（2026-01-22）：UI/UX 微調（TIME 佈局優化 + 背景計時器修復）
 >

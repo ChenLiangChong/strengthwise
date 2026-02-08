@@ -215,34 +215,12 @@ else:
 
 
 # ============================================================
-# 6. 搜尋函式驗證
+# 6. 搜尋函式驗證（已跳過）
 # ============================================================
 print("\n\n🔎 6. search_exercises_v2 函式測試")
 print("-" * 40)
-
-try:
-    # 測試搜尋「臥推」
-    result = supabase.rpc('search_exercises_v2', {
-        'search_query': '臥推',
-        'max_results': 5
-    }).execute()
-    print(f"  搜尋「臥推」: {len(result.data)} 筆結果")
-    for r in result.data[:3]:
-        print(f"    - {r.get('canonical_name', r.get('name', '?'))}")
-except Exception as e:
-    print(f"  ⚠️  RPC 呼叫失敗: {e}")
-
-try:
-    # 測試搜尋「弓箭步」
-    result = supabase.rpc('search_exercises_v2', {
-        'search_query': '弓箭步',
-        'max_results': 5
-    }).execute()
-    print(f"  搜尋「弓箭步」: {len(result.data)} 筆結果")
-    for r in result.data[:3]:
-        print(f"    - {r.get('canonical_name', r.get('name', '?'))}")
-except Exception as e:
-    print(f"  ⚠️  RPC 呼叫失敗: {e}")
+print("  ⏭️  已跳過：search_exercises_v2 RPC 已在 migration 28 移除")
+print("  搜尋改為客戶端 Hive 快取搜尋（ExerciseSearchEngine + FuzzySearchEngine）")
 
 
 # ============================================================
@@ -254,9 +232,9 @@ print("=" * 60)
 
 issues = []
 if updated_count < 700:
-    issues.append(f"更新筆數偏低: {updated_count}/779")
+    issues.append(f"更新筆數偏低: {updated_count}/775")
 if alias_count < 2000:
-    issues.append(f"別名數偏低: {alias_count}/2352")
+    issues.append(f"別名數偏低: {alias_count}/2344")
 
 if issues:
     print("⚠️  發現問題:")

@@ -74,15 +74,15 @@ Model Layer              → lib/models/
 - v4.1：Service 單元測試（24 個 Service，370 測試）✅
 - v4.2：效能優化（UI 渲染 + 啟動/網路）✅
 - v4.3：UI/UX 微調（TIME 佈局 + 背景計時器）✅
-- v5.0：動作分類系統 v2（775 動作 + 2344 別名 + search_exercises_v2 RPC）✅
+- v5.0：動作分類系統 v2（775 動作 + 2344 別名 + Hive 離線搜尋 + 統計遷移）✅
 
 ## 📊 專案規模
 
 ```
-總代碼量：~70,000 行
-├── Flutter/Dart：~66,000 行
-├── SQL/Migrations：~23,000 行（29 個檔案）
-└── Python 腳本：~1,800 行
+總代碼量：~74,000 行
+├── Flutter/Dart：~70,000 行
+├── SQL/Migrations：~6,000 行（30+ 個檔案）
+└── Python 腳本：~2,400 行
 
 核心組件：
 ├── Pages：65+

@@ -2,7 +2,7 @@
 
 > 資料庫管理、測試資料生成、圖片處理工具
 
-**最後更新**：2026-01-12（v3.3 整理完成）
+**最後更新**：2026-02-09（v5.0 動作分類系統 v2）
 
 ---
 
@@ -31,7 +31,12 @@ scripts/
     ├── export_db_schema.py               # 導出資料庫 Schema
     ├── verify_daily_summary.py           # 驗證統計正確性
     ├── exercise_auditor.py               # 動作分類審核（多 Agent 版）
-    └── exercise_auditor_simple.py        # 動作分類審核（簡化版）
+    ├── exercise_auditor_simple.py        # 動作分類審核（簡化版）
+    ├── check_v4_fields.py               # v4/v5 欄位完整性檢查 ⭐ v5.0
+    ├── check_see_names.py               # SEE 標準名稱檢查 ⭐ v5.0
+    ├── generate_equipment_migration.py   # 器材欄位遷移 SQL 生成 ⭐ v5.0
+    ├── verify_migration_25.py           # Migration 25 資料驗證 ⭐ v5.0
+    └── cleanup_orphan_exercises.py      # 孤立動作清理 ⭐ v5.0
 ```
 
 ---
@@ -118,6 +123,38 @@ python scripts/tools/verify_daily_summary.py <user_uuid>
 
 檢查 daily_workout_summary 與實際資料是否一致
 
+#### 8. v4/v5 欄位完整性檢查 ⭐ v5.0
+
+```bash
+python scripts/tools/check_v4_fields.py
+```
+
+檢查 exercises 表的 v4 欄位（trigger 向後兼容）和 v5 欄位（客戶端統計）完整性
+
+#### 9. Migration 25 資料驗證 ⭐ v5.0
+
+```bash
+python scripts/tools/verify_migration_25.py
+```
+
+驗證 migration 25 匯入的動作分類資料是否完整（775 筆 + 2344 別名）
+
+#### 10. 器材欄位遷移 SQL 生成 ⭐ v5.0
+
+```bash
+python scripts/tools/generate_equipment_migration.py
+```
+
+生成 migration 27 的 SQL（修復 exercises.equipment 欄位為 ref_equipment.id 標準值）
+
+#### 11. 孤立動作清理 ⭐ v5.0
+
+```bash
+python scripts/tools/cleanup_orphan_exercises.py
+```
+
+清理不在審核 CSV 中的孤立系統動作（18 筆已清除）
+
 ---
 
 ## 📊 常用流程
@@ -143,7 +180,7 @@ python scripts/tools/generate_training_data_with_timezone.py <uuid>
 
 ## 🏋️ 動作分類審核工具 ✅ 已完成
 
-> **審核狀態**：779 筆動作已完成 v2 規範審核（2026-02-07）
+> **審核狀態**：775 筆動作已完成 v2 規範審核（2026-02-08）
 > **輸出檔案**：`review_data/exercises_review_audited.csv`
 
 ### 環境設置

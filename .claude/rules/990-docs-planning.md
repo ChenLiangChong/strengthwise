@@ -10,8 +10,9 @@ docs/planning/
 ├── TESTING_STRATEGY.md             ← 測試策略 🔄 活躍
 ├── PRODUCTION_LAUNCH_GUIDE.md      ← 生產環境發布 🔄 活躍
 ├── VIRTUAL_CLIENT_SPEC.md          ← 虛擬學員功能 📋 規劃
-├── EXERCISE_CLASSIFICATION_ANALYSIS.md ← 動作分類系統（779 筆審核完成）✅
+├── EXERCISE_CLASSIFICATION_ANALYSIS.md ← 動作分類系統（775 筆審核完成）✅
 ├── EXERCISE_CLASSIFICATION_DISCUSSIONS.md ← 分類討論紀錄
+├── V5_IMPACT_ANALYSIS.md              ← v5.0 全面影響分析 ✅
 └── archived/                       ← 📦 已完成的規格書（10 個）
     ├── ARCHITECTURE_REVIEW_V4.md   ← v4.0 架構評審 ✅
     ├── CUSTOM_EXERCISE_IMPROVEMENTS.md ← 自訂動作改進 ✅

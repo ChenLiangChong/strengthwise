@@ -2,7 +2,7 @@
 
 > 專案文檔索引
 
-**最後更新**：2026-02-07
+**最後更新**：2026-02-09
 
 ---
 
@@ -46,6 +46,13 @@
 | [planning/HOME_BOOKING_UX_SPEC.md](planning/HOME_BOOKING_UX_SPEC.md) | v3.1-B 首頁 + 行事曆 UX |
 | [planning/TESTING_STRATEGY.md](planning/TESTING_STRATEGY.md) | 測試策略（564 個通過）|
 | [planning/PRODUCTION_LAUNCH_GUIDE.md](planning/PRODUCTION_LAUNCH_GUIDE.md) | 生產環境發布指南 |
+
+### v5.0 動作分類系統
+
+| 文檔 | 說明 |
+|------|------|
+| [planning/EXERCISE_CLASSIFICATION_ANALYSIS.md](planning/EXERCISE_CLASSIFICATION_ANALYSIS.md) | 動作分類系統分析（775 筆審核完成）✅ |
+| [planning/V5_IMPACT_ANALYSIS.md](planning/V5_IMPACT_ANALYSIS.md) | v5.0 全面影響分析 + 向後兼容架構 ✅ |
 
 ### 已歸檔（實施完成）
 
