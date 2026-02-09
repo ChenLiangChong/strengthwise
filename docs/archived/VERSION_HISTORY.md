@@ -2,7 +2,125 @@
 
 > 已完成並測試的版本詳細記錄
 
-**最後更新**：2026-01-17
+**最後更新**：2026-02-10
+
+---
+
+## v5.2: 全面安全加固（2026-02-09 完成）
+
+**功能**：
+- 安全審計修復 11 項問題（4 HIGH + 4 MEDIUM + 3 LOW）
+- 邀請碼 DELETE RLS 修復（任意用戶可刪 → 僅教練本人）
+- 密碼驗證強化（6→8 字元 + 必須字母+數字）
+- 頭像上傳三重驗證（5MB 限制 + 副檔名白名單 + magic bytes）
+- Edge Function 安全加固（錯誤回應、CORS、HSTS、日誌精簡）
+- Hive 快取 AES-256 加密（flutter_secure_storage 管理金鑰）
+- AndroidManifest allowBackup=false
+- Google Client ID 移至 .env
+
+**技術決策**：
+- Hive 加密金鑰存於 flutter_secure_storage，升級後舊快取自動重建
+- Edge Function 為內部 webhook 通訊，移除 CORS `*`
+- 頭像驗證三重檢查：檔案大小 → 副檔名白名單 → magic bytes
+
+**Migration**：`35_security_fixes.sql`
+
+---
+
+## v5.1: App 版本檢查（2026-02-09 完成）
+
+**功能**：
+- app_config 表（key-value 設計，公開讀取 RLS）
+- AppVersionConfig Model + VersionUtils 語意版本比較
+- IAppConfigService 介面 + AppConfigService 實作（LazySingleton）
+- AppVersionInfo Widget（純文字行內提示）
+- 20 個單元測試案例
+
+**技術決策**：
+- SharedPreferences 離線快取 + 忽略版本記憶
+- package_info_plus 取得執行時版本號
+- 純 Text.rich() + TapGestureRecognizer 行內提示
+
+**Migration**：`34_app_config.sql`
+
+---
+
+## v5.0: 動作分類系統 v2（2026-02-08 完成）
+
+**功能**：
+- 775 個系統動作 100% v5 欄位覆蓋
+- 2344 個別名（zh-TW: 1042, en-US: 1302）
+- 22 動作模式 + 26 肌肉群 + 19 器材參照表
+- 7 種 tracking_mode
+- 新增欄位：canonical_name, movement_patterns, ppl_tags, primary_muscle, synergist_muscles, mechanics_type, is_explosive
+- FuzzySearchEngine（Jaro-Winkler + Trigram）+ Hive 離線搜尋
+- Flutter 統計遷移（bodyPartStats, muscleBalance, trainingTypeStats, equipmentStats）
+
+**技術決策**：
+- 模糊搜尋僅針對 5 個名稱欄位，其他作為精確篩選
+- Hive 持久化支援離線搜尋 + Isolate 並行處理
+- v4 欄位向後兼容（DB trigger），v5 欄位用於客戶端精確統計
+
+**核心檔案**：exercise_model.dart, exercise_search_engine.dart, fuzzy_search_engine.dart, exercise_local_cache_service.dart
+**Migration**：`24_v5_exercise_classification_v2.sql`, `25_v5_exercise_data_import.sql`, `26-28`
+
+---
+
+## v4.3: UI/UX 微調（2026-01-22 完成）
+
+**功能**：
+- Exercise Card TIME 佈局優化（複合時間模式三行結構、timeOnly 五列結構）
+- 背景計時器修復（sync 替代 pause/resume，計時器背景繼續運行）
+
+**技術決策**：
+- 新增 syncElapsedTime() 方法，避免 pause/resume 導致計時中斷
+- PREV 寬度 60px → 48px（timeOnly 模式）
+
+**核心檔案**：exercise_card.dart, workout_execution_data_manager.dart, workout_execution_content.dart
+
+---
+
+## v4.2: 效能優化（2026-01-20 完成）
+
+**功能**：
+- UI 渲染優化（ValueKey、KeyedSubtree、Selector 替代 Consumer）
+- 啟動和網路優化（超時調整、訂閱清理、防抖優化）
+- Lint 修復（517 → 0 issues）
+- 測試修復（workout_data_validator_test.dart 型別修正）
+
+**技術決策**：
+- Radio API 棄用：使用 ignore_for_file 暫緩，待遷移到 RadioGroup
+- dart fix --apply 自動修復 ~300 issues
+
+**預期效果**：列表滾動流暢度 +30-40%，統計頁只重建當前 Tab，Realtime 響應 -200ms
+
+---
+
+## v4.1: Service 單元測試（2026-01-20 完成）
+
+**功能**：
+- 24 個 Service Interface 完整測試
+- 370 個測試案例全部通過
+- 優先級分 4 級：P0 核心(3)、P1 重要(7)、P2 次要(6)、P3 輔助(5)
+- Mock 基礎設施：24 個 Mock 類別 + 完整 FallbackValues
+
+**核心檔案**：test/services/ 下 19 個測試檔案、test/mocks/mock_services.dart
+
+---
+
+## v4.0: 架構優化（2026-01-19 完成）
+
+**功能**：
+- Controller Interface 覆蓋 8/29 (28%) → 25/29 (86%)
+- 強制解包 42 處 → 8 處 (↓81%)
+- Service ErrorService 注入全部完成
+- dynamic 內部運算全部改為具體型別
+
+**Bug 修復**：
+- BodyDataController 生命週期（ChangeNotifierProvider 誤 dispose singleton → .value）
+- connectivity_plus Windows 平台跳過網路監聽
+
+**詳細說明**：docs/planning/archived/ARCHITECTURE_REVIEW_V4.md
 
 ---
 

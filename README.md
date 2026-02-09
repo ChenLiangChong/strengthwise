@@ -8,7 +8,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Latest-3ECF8E?logo=supabase)](https://supabase.com/)
 [![Dart](https://img.shields.io/badge/Dart-3.1+-0175C2?logo=dart)](https://dart.dev/)
 
-**最新版本**：v3.6（2026-01-15）✅  
+**最新版本**：v5.2（2026-02-09）✅  
 **專案狀態**：🚀 生產就緒 (Production Ready)
 
 ---
@@ -33,9 +33,9 @@
 - ⚡ 秒開載入（首頁預載入 + 智能快取）
 
 **💪 運動庫**
-- ✅ 794 個專業動作（完整雙語資料）
-- ✅ 階層式瀏覽（訓練類型/身體部位/動作分類）
-- ✅ 繁體中文全文搜尋（pgroonga）
+- ✅ 775 個專業動作 + 2344 別名（v5.0 多維度分類系統）
+- ✅ 多維度分類（動作模式、PPL 標籤、肌肉群、器材）
+- ✅ 模糊搜尋引擎（Jaro-Winkler + Trigram + Hive 離線搜尋）
 - ✅ 自訂動作系統（CRUD + 統計整合）
 
 ---
@@ -91,6 +91,16 @@
 - ✅ 課前 1 小時提醒（雙方）
 - ✅ 學員填問卷通知教練（含紅綠燈）
 - ✅ 預約狀態變更通知
+
+---
+
+### 🔐 安全加固（v5.2）
+
+- ✅ Hive 快取 AES-256 加密（flutter_secure_storage 管理金鑰）
+- ✅ 頭像上傳三重驗證（檔案大小 + 副檔名 + magic bytes）
+- ✅ 密碼驗證強化（8+ 字元 + 字母數字）
+- ✅ Edge Function 安全加固（錯誤隱藏、CORS、HSTS）
+- ✅ RLS 安全審計完成
 
 ---
 
@@ -166,7 +176,7 @@
 | **儲存** | Supabase Storage | Latest |
 | **狀態管理** | Provider (ChangeNotifier) | - |
 | **依賴注入** | GetIt (Service Locator) | - |
-| **本地儲存** | SharedPreferences | - |
+| **本地儲存** | Hive (AES-256 加密) + SharedPreferences | - |
 | **圖表** | fl_chart | Latest |
 | **全文搜尋** | pgroonga | Latest |
 
@@ -213,21 +223,22 @@ strengthwise/
 └── test/                   # 測試檔案
 ```
 
-### 代碼統計（v3.1）
+### 代碼統計（v5.2）
 
 | 項目 | 數量 |
 |------|------|
-| 總行數 | 68,000+ |
-| Model 類別 | 67+ |
-| Service 類別 | 55+ |
-| Controller 類別 | 22+ |
-| 獨立 Widget 元件 | 200+ |
+| 總行數 | ~74,000 |
+| Model 類別 | 73+ |
+| Service 類別 | 60+ |
+| Controller 類別 | 29（含 70+ 子模組） |
+| 獨立 Widget 元件 | 234+ |
 | 頁面 | 65+ |
 | 統計模組 | 16 |
-| 資料庫表格 | 24 |
+| 資料庫表格 | 22+ |
 | RLS 策略 | 50+ |
 | Migrations | 35 |
 | Python 工具 | 8 |
+| Service 測試 | 370+ |
 
 ---
 
@@ -286,7 +297,7 @@ strengthwise/
 | `users` | 用戶資料（與 Supabase Auth 同步） | - |
 | `workout_plans` | 訓練計劃和記錄（統一表） | - |
 | `workout_templates` | 訓練模板 | - |
-| `exercises` | 系統動作庫 | 794 |
+| `exercises` | 系統動作庫 | 775 |
 | `custom_exercises` | 用戶自訂動作 | - |
 | `body_data` | 身體數據記錄 | - |
 
@@ -311,6 +322,21 @@ strengthwise/
 | `daily_readiness` | 課前問卷 ⭐ v3.0 |
 | `health_assessments` | PAR-Q+ 健康評估 |
 | `user_devices` | FCM 推播 Token ⭐ v3.0 |
+
+### 動作分類系統（v5.0）
+
+| 表格 | 說明 |
+|------|------|
+| `exercise_aliases` | 動作別名（2344 筆，支援俚語搜尋）|
+| `ref_movement_patterns` | 動作模式參照表（22 種）|
+| `ref_muscle_groups` | 肌肉群參照表（26 種）|
+| `ref_equipment` | 器材參照表（19 種）|
+
+### 配置表（v5.1）
+
+| 表格 | 說明 |
+|------|------|
+| `app_config` | 全局配置（key-value，版本檢查等）|
 
 ### 資料庫特色
 
@@ -367,6 +393,36 @@ strengthwise/
 ---
 
 ## 🗺️ 版本歷程
+
+### 🎉 v5.2 - 全面安全加固（2026-02-09）✅
+
+- ✅ 安全審計修復 11 項問題（RLS、密碼、上傳驗證、Hive 加密、Edge Function）
+- ✅ Hive 快取 AES-256 加密
+- ✅ Edge Function CORS/HSTS/錯誤回應加固
+
+### 🎉 v5.1 - App 版本檢查（2026-02-09）✅
+
+- ✅ 遠端版本配置（app_config 表）
+- ✅ Profile 頁面版本號 + 行內更新提示
+
+### 🎉 v5.0 - 動作分類系統 v2（2026-02-08）✅
+
+- ✅ 775 個動作 + 2344 別名 + 多維度分類
+- ✅ 模糊搜尋引擎（Jaro-Winkler + Trigram + Hive 離線搜尋）
+- ✅ Flutter 統計遷移（bodyPartStats、muscleBalance、trainingTypeStats）
+
+### 🎉 v4.0-v4.3 - 架構優化 + 效能 + 測試（2026-01-19~22）✅
+
+- ✅ Controller Interface 統一（28%→86%）
+- ✅ Service 單元測試（24 Service，370 測試）
+- ✅ 效能優化（Lint 517→0、UI 渲染 + 啟動優化）
+- ✅ UI/UX 微調（TIME 佈局 + 背景計時器）
+
+### 🎉 v3.7-v3.9 - 快取 + 時間 + 即時同步（2026-01-17）✅
+
+- ✅ 快取架構統一 + DI 優化
+- ✅ 時間輸入 UX 優化 + 訓練執行計時器
+- ✅ 跨用戶即時同步 + FCM 完善
 
 ### 🎉 v3.6 - MVVM 純架構重構（2026-01-15）✅
 
@@ -490,7 +546,7 @@ strengthwise/
 - ✅ 用戶認證（Supabase Auth + Google Sign-In）
 - ✅ 訓練計劃管理（創建、編輯、刪除、模板）
 - ✅ 訓練執行和記錄（實時保存、每組單獨編輯）
-- ✅ 運動庫（794 個專業動作 + 階層式瀏覽）
+- ✅ 運動庫（775 個專業動作 + 階層式瀏覽）
 - ✅ 自訂動作功能（CRUD + 統計整合）
 - ✅ 行事曆視圖（月曆 + 快速創建）
 
@@ -513,24 +569,19 @@ strengthwise/
 
 ## 🔮 未來規劃
 
-### 短期（1-2 個月）
-- [ ] v3.1 功能測試（33 項）
-- [ ] Android 首頁 Widget（下堂課倒數）
+### 短期
+- [ ] Beta 測試準備（招募測試用戶、生產環境配置）
+- [ ] 實機效能驗證
 - [ ] iOS APNs 推播整合
-- [ ] 準備 Beta 測試
 
 ### 中期（3-6 個月）
-- [ ] Onboarding 流程
-- [ ] 語音筆記與 AI 功能
-  - 語音轉文字（Whisper API）
-  - 智能筆記建議（GPT-4）
-- [ ] 數據匯出（CSV/PDF）
 - [ ] 訓練計劃模板市場
+- [ ] 語音筆記與 AI 功能
+- [ ] 數據匯出（CSV/PDF）
 
 ### 長期（6 個月以上）
-- [ ] 社交功能（動態分享、排行榜）
+- [ ] 社群功能（動態分享、排行榜）
 - [ ] 多語言支援
-- [ ] Web 版本
 - [ ] Apple Watch / Wear OS 支援
 
 ---

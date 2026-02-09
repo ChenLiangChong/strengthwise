@@ -3,7 +3,7 @@
 > Firebase Cloud Messaging (HTTP v1 API) + Supabase Edge Functions 配置指南
 
 **建立日期**：2026-01-05  
-**最後更新**：2026-01-17（v4.0 - 新增 workout_plans 通知）  
+**最後更新**：2026-02-10（v5.2 - Edge Function 安全加固）
 **目標版本**：v4.0（跨用戶即時同步）
 
 ---
@@ -371,6 +371,50 @@ if (token != null) {
 ```dart
 await notificationService.removeTokenFromDatabase(userId);
 ```
+
+---
+
+## 🔐 Edge Function 安全配置（v5.2）
+
+v5.2 安全加固對三個 Edge Function 進行了以下安全改善：
+
+### CORS 配置
+
+```
+變更前：Access-Control-Allow-Origin: *
+變更後：移除 CORS headers（不需要）
+```
+
+**原因**：Edge Function 僅由 Database Webhook 和 pg_cron 內部調用，不經過瀏覽器，不需要 CORS。
+
+### HSTS Header
+
+所有回應新增：
+```
+Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+```
+
+### 錯誤回應
+
+```
+變更前：回傳詳細錯誤訊息（可能洩漏內部實作）
+變更後：統一回傳 "Internal server error"
+```
+
+### 日誌精簡
+
+```
+變更前：console.log 輸出完整 payload（含用戶資料）
+變更後：僅記錄必要資訊（表名、事件類型），移除敏感資料
+```
+
+### 受影響的函式
+
+| 函式 | 修改內容 |
+|------|----------|
+| `push-notify/index.ts` | CORS 移除 + HSTS + 錯誤隱藏 + 日誌精簡 |
+| `session-reminder/index.ts` | CORS 移除 + HSTS + 錯誤隱藏 + 日誌精簡 |
+| `readiness-notify/index.ts` | CORS 移除 + HSTS + 錯誤隱藏 + 日誌精簡 |
 
 ---
 
