@@ -2,8 +2,8 @@
 
 > 下一步計劃、當前版本、未來規劃
 
-**當前版本**：v5.1（2026-02-09 完成 - App 版本檢查）
-**上一版本**：v5.0（2026-02-08 完成 - 動作分類系統 v2）
+**當前版本**：v5.2（2026-02-09 完成 - 全面安全加固）
+**上一版本**：v5.1（2026-02-09 完成 - App 版本檢查）
 **維護者**：StrengthWise 開發團隊
 
 ---
@@ -18,6 +18,31 @@
 ---
 
 ## 下一步計劃
+
+### v5.2 全面安全加固（✅ 完成）
+
+**目標**：安全審計後修復 11 項問題（4 HIGH + 4 MEDIUM + 3 LOW）
+
+| # | 項目 | 嚴重度 | 狀態 |
+|---|------|--------|------|
+| 1 | 邀請碼 DELETE RLS 修復（Migration 35） | HIGH | ✅ 完成 |
+| 2 | 密碼驗證強化（6→8 字元 + 字母數字） | HIGH | ✅ 完成 |
+| 3 | 頭像上傳驗證（5MB + 副檔名 + magic bytes） | HIGH | ✅ 完成 |
+| 4 | Edge Function 錯誤回應加固 | HIGH | ✅ 完成 |
+| 5 | Edge Function CORS 限制 | MEDIUM | ✅ 完成 |
+| 6 | Edge Function Payload 日誌精簡 | MEDIUM | ✅ 完成 |
+| 7 | Hive 快取 AES-256 加密 | MEDIUM | ✅ 完成 |
+| 8 | AndroidManifest allowBackup=false | MEDIUM | ✅ 完成 |
+| 9 | Google Client ID 移至 .env | LOW | ✅ 完成 |
+| 10 | Edge Function HSTS Header | LOW | ✅ 完成 |
+| 11 | Release 建置混淆文件化 | LOW | ✅ 完成 |
+
+**技術決策**：
+- Hive 加密金鑰存於 `flutter_secure_storage`，升級後舊快取自動重建
+- Edge Function 為內部 webhook 通訊，移除 CORS `*`
+- 頭像驗證三重檢查：檔案大小 → 副檔名白名單 → magic bytes
+
+---
 
 ### v5.1 App 版本檢查（✅ 完成）
 
@@ -118,7 +143,7 @@
 
 | 項目 | 工作量 | 說明 |
 |------|--------|------|
-| RLS 策略完整性驗證 | 1 天 | 虛擬學員功能前需審查 |
+| RLS 策略完整性驗證 | 1 天 | ✅ v5.2 已完成安全審計 |
 | LocalCacheManager 統一 | 2-3 天 | 5 個獨立 CacheService 合併入口 |
 | 離線寫入佇列機制 | 評估中 | Write-Through Queue + 網路恢復自動重試 |
 
@@ -360,7 +385,8 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 | v4.2 | 效能優化（UI 渲染 + 啟動/網路）|
 | v4.3 | UI/UX 微調（TIME 佈局 + 背景計時器）|
 | v5.0 | 動作分類系統 v2（775 動作 + 2344 別名 + Hive 離線搜尋 + 統計遷移）|
-| **v5.1** | **App 版本檢查（遠端版本配置 + 行內更新提示）** |
+| v5.1 | App 版本檢查（遠端版本配置 + 行內更新提示） |
+| **v5.2** | **全面安全加固（RLS + 密碼 + 上傳驗證 + Hive 加密 + Edge Function）** |
 
 **詳細版本歷史**：[archived/VERSION_HISTORY.md](archived/VERSION_HISTORY.md)  
 **技術架構**：[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)  
@@ -372,7 +398,7 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 
 | 項目 | 狀態 |
 |------|------|
-| v1.0-v5.1 | ✅ 100% |
+| v1.0-v5.2 | ✅ 100% |
 | 代碼品質 | ✅ 0 issues（517→0，含 deprecated API 處理）|
 | MVVM 架構 | ✅ 100% 合規 |
 | 快取架構 | ✅ Service 層統一管理 |
@@ -388,6 +414,8 @@ PostGIS 地理搜尋、審核狀態機、評價系統、圖片上傳
 
 ---
 
+> ✅ **v5.2 完成**（2026-02-09）：全面安全加固（RLS + 密碼 + 上傳驗證 + Hive 加密 + Edge Function）
+>
 > ✅ **v5.1 完成**（2026-02-09）：App 版本檢查（遠端版本配置 + 行內更新提示）
 >
 > ✅ **v5.0 完成**（2026-02-08）：動作分類系統 v2（775 動作 + 2344 別名 + Hive 離線搜尋 + 統計遷移）
