@@ -227,8 +227,8 @@ class _LoginPageState extends State<LoginPage> {
                           if (value == null || value.isEmpty) {
                             return '請輸入密碼';
                           }
-                          if (_isSignUp && value.length < 6) {
-                            return '密碼長度至少需要6個字符';
+                          if (_isSignUp && value.length < 8) {
+                            return '密碼長度至少 8 個字符，需包含字母和數字';
                           }
                           return null;
                         },

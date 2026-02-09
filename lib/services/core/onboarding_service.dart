@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:strengthwise/utils/hive_encryption_helper.dart';
 
 /// Onboarding 引導服務
 ///
@@ -57,7 +58,7 @@ class OnboardingService {
       if (Hive.isBoxOpen(_boxName)) {
         _box = Hive.box(_boxName);
       } else {
-        _box = await Hive.openBox(_boxName);
+        _box = await HiveEncryptionHelper.openBox(_boxName);
       }
       
       if (kDebugMode) {

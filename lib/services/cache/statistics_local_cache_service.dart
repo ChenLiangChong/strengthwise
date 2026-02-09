@@ -4,6 +4,7 @@ import '../../models/statistics/statistics_data.dart';
 import '../../models/statistics/statistics_serialization.dart';
 import '../../models/statistics/time_range.dart';
 import '../../utils/datetime_utils.dart';
+import '../../utils/hive_encryption_helper.dart';
 
 /// 統計數據本地快取服務
 ///
@@ -53,7 +54,7 @@ class StatisticsLocalCacheService {
 
       while (retryCount < maxRetries) {
         try {
-          _box = await Hive.openBox(_boxName);
+          _box = await HiveEncryptionHelper.openBox(_boxName);
           _validateVersion();
           _isInitialized = true;
           _isInitializing = false;

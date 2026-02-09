@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'utils/hive_encryption_helper.dart';
 import 'views/pages/startup/splash_screen.dart';
 import 'services/service_locator.dart';
 import 'services/core/supabase_service.dart';
@@ -102,9 +103,10 @@ Future<void> _quickInitialization() async {
   await setupServiceLocator(lazyInit: true);
 }
 
-/// ⚡ 初始化 Hive 並提前打開所有 Box
+/// ⚡ 初始化 Hive 並提前打開所有加密 Box
 ///
-/// 讓 LocalCacheService 首次訪問時 Box 已經開啟，不需等待
+/// 讓 LocalCacheService 首次訪問時 Box 已經開啟，不需等待。
+/// ⭐ v5.2: 所有 Box 使用 AES-256 加密，金鑰安全儲存於 flutter_secure_storage
 Future<void> _initializeHive() async {
   try {
     final startTime = DateTime.now();
@@ -112,15 +114,18 @@ Future<void> _initializeHive() async {
     // 初始化 Hive
     await Hive.initFlutter();
 
-    // ⚡ 並行打開所有 Box（只開不讀，極快）
+    // ⭐ v5.2: 初始化加密金鑰
+    await HiveEncryptionHelper.initialize();
+
+    // ⚡ 並行打開所有加密 Box（只開不讀，極快）
     // ⭐ v3.7: 修正 Box 名稱，與 LocalCacheService 對齊
     await Future.wait([
-      Hive.openBox('user_cache'),
-      Hive.openBox('relationship_cache'),
-      Hive.openBox('statistics_cache'),
-      Hive.openBox('workout_plans_cache'),  // 修正：對齊 WorkoutPlanLocalCacheService
-      Hive.openBox('exercises_cache'),       // 修正：對齊 ExerciseLocalCacheService
-      Hive.openBox('onboarding_status'),     // ⭐ v3.2: Onboarding 狀態
+      HiveEncryptionHelper.openBox('user_cache'),
+      HiveEncryptionHelper.openBox('relationship_cache'),
+      HiveEncryptionHelper.openBox('statistics_cache'),
+      HiveEncryptionHelper.openBox('workout_plans_cache'),
+      HiveEncryptionHelper.openBox('exercises_cache'),
+      HiveEncryptionHelper.openBox('onboarding_status'),
     ]);
 
     final duration = DateTime.now().difference(startTime);

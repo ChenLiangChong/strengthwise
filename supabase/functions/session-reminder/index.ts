@@ -13,10 +13,12 @@ import {
   cleanupInvalidTokens,
 } from "../_shared/fcm.ts";
 
+// 安全標頭（內部 pg_cron 觸發，不需 CORS 開放）
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
 };
 
 serve(async (req) => {
@@ -183,7 +185,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("[session-reminder] Error:", error);
     return new Response(
-      JSON.stringify({ error: String(error) }),
+      JSON.stringify({ error: "Internal server error" }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

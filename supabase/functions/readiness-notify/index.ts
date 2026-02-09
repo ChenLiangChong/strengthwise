@@ -13,10 +13,12 @@ import {
   cleanupInvalidTokens,
 } from "../_shared/fcm.ts";
 
+// 安全標頭（內部 webhook，不需 CORS 開放）
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
 };
 
 // 紅綠燈轉文字
@@ -46,10 +48,7 @@ serve(async (req) => {
 
     // 解析請求
     const payload = await req.json();
-    console.log(
-      "[readiness-notify] Webhook payload:",
-      JSON.stringify(payload, null, 2)
-    );
+    console.log("[readiness-notify] Processing:", { type: payload.type, table: payload.table, recordId: payload.record?.id });
 
     const { type, table, record, old_record } = payload;
 
@@ -148,7 +147,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("[readiness-notify] Error:", error);
     return new Response(
-      JSON.stringify({ error: String(error) }),
+      JSON.stringify({ error: "Internal server error" }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

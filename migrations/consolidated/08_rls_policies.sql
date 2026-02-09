@@ -751,13 +751,15 @@ CREATE POLICY "Coaches can create invite codes" ON invite_codes
    FROM users
   WHERE ((users.id = auth.uid()) AND (users.is_coach = true))))));
 
--- Policy: Users can delete invite codes (DELETE)
+-- Policy: Coaches can delete own invite codes (DELETE)
+-- ⭐ v5.2 安全修復：限制為教練只能刪除自己的邀請碼
 DROP POLICY IF EXISTS "Users can delete invite codes" ON invite_codes;
-CREATE POLICY "Users can delete invite codes" ON invite_codes
+DROP POLICY IF EXISTS "Coaches can delete own invite codes" ON invite_codes;
+CREATE POLICY "Coaches can delete own invite codes" ON invite_codes
     AS PERMISSIVE
     FOR DELETE
     TO authenticated
-    USING ((expires_at > now()));
+    USING (auth.uid() = coach_id);
 
 -- Policy: Users can query valid invite codes (SELECT)
 DROP POLICY IF EXISTS "Users can query valid invite codes" ON invite_codes;
@@ -1106,3 +1108,14 @@ CREATE POLICY "Users can view their own workout templates" ON workout_templates
     FOR SELECT
     TO public
     USING ((user_id = auth.uid()));
+
+-- ============================================================================
+-- Table: app_config (v5.1)
+-- ============================================================================
+ALTER TABLE app_config ENABLE ROW LEVEL SECURITY;
+
+-- Policy: app_config_public_read (SELECT)
+DROP POLICY IF EXISTS "app_config_public_read" ON app_config;
+CREATE POLICY "app_config_public_read" ON app_config
+    FOR SELECT
+    USING (true);

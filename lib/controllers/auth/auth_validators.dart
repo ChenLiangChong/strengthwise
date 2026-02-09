@@ -12,7 +12,7 @@ class AuthValidators {
   /// 
   /// 返回值: 0 (弱) 到 3 (強)
   static int getPasswordStrength(String password) {
-    if (password.length < 6) return 0;
+    if (password.length < 8) return 0;
     
     int strength = 0;
     
@@ -55,8 +55,13 @@ class AuthValidators {
   }
   
   /// 檢查密碼是否符合最低要求
+  ///
+  /// 規則：至少 8 個字符，需包含至少 1 個字母和 1 個數字
   static bool isPasswordValid(String password) {
-    return password.length >= 6;
+    if (password.length < 8) return false;
+    final hasLetter = RegExp(r'[a-zA-Z]').hasMatch(password);
+    final hasDigit = RegExp(r'[0-9]').hasMatch(password);
+    return hasLetter && hasDigit;
   }
 }
 

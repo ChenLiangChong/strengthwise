@@ -101,6 +101,18 @@ adb -s <DEVICE_ID> install -r build\app\outputs\flutter-apk\app-release.apk
 | `flutter build apk --release --split-per-abi` | 分架構 | ~18-20 MB |
 | `flutter build appbundle --release` | Google Play | AAB |
 
+### 程式碼混淆（建議用於正式發布）
+
+```bash
+# APK（含混淆 + debug info 分離）
+flutter build apk --release --obfuscate --split-debug-info=build/debug-info
+
+# AAB（Google Play 上架用）
+flutter build appbundle --release --obfuscate --split-debug-info=build/debug-info
+```
+
+> `--split-debug-info` 產出的 debug 符號檔案可用於 Crashlytics 等服務還原堆疊追蹤。
+
 ### 簽名配置（正式發布）
 
 1. **創建簽名密鑰**：

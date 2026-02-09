@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:strengthwise/utils/datetime_utils.dart';
+import 'package:strengthwise/utils/hive_encryption_helper.dart';
 import '../../models/exercise_model.dart';
 import '../../models/tracking_mode.dart'; // v3 新增
 
@@ -87,9 +88,9 @@ class ExerciseLocalCacheService {
 
       while (retryCount < maxRetries) {
         try {
-          _box = await Hive.openBox(_boxName);
+          _box = await HiveEncryptionHelper.openBox(_boxName);
           // v5.0: 同時打開搜尋索引 Box
-          _searchIndexBox = await Hive.openBox(_searchIndexBoxName);
+          _searchIndexBox = await HiveEncryptionHelper.openBox(_searchIndexBoxName);
           debugPrint('[EXERCISE_CACHE] 本地快取初始化完成（含搜尋索引）');
           return;
         } catch (e) {

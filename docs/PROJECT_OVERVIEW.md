@@ -12,8 +12,8 @@
 
 | 項目 | 內容 |
 |------|------|
-| 當前版本 | v5.0（完成 - 動作分類系統 v2）|
-| 上一版本 | v4.3（UI/UX 微調）|
+| 當前版本 | v5.1（完成 - App 版本檢查）|
+| 上一版本 | v5.0（動作分類系統 v2）|
 | 主要功能 | 個人健身記錄 + 教練學員管理平台 |
 | 目標平台 | Android / iOS / Windows / Web |
 
@@ -30,9 +30,9 @@
 ├── Controllers：29（含 70+ 子模組）
 ├── Services：60+（含 Realtime、Notification）
 ├── Interfaces：25 Controller + 20+ Service
-├── Models：73+
+├── Models：74+
 ├── Widgets：240+（含 Coach Mark、v5.0 篩選元件）
-└── Tests：370+（Service 單元測試）
+└── Tests：390+（Service 單元測試 + 版本工具）
 ```
 
 ---
@@ -55,7 +55,7 @@ Flutter (Dart SDK >=3.1.0, Flutter >=3.16.0)
 ```
 Supabase (PostgreSQL 14+)
 ├── Authentication：Supabase Auth + Google Sign-In
-├── Database：PostgreSQL（24+ 個表格，含 v5.0 參照表）
+├── Database：PostgreSQL（29 個表格，含 v5.0 參照表 + v5.1 app_config）
 ├── Storage：檔案儲存（照片、手繪圖）
 ├── Realtime：即時訂閱
 └── 安全性：Row Level Security (RLS) - 50+ 策略
@@ -158,7 +158,7 @@ lib/
 ├── themes/                      # 主題系統
 └── utils/                       # 工具類
 
-migrations/                      # SQL Migration（28+ 個）
+migrations/                      # SQL Migration（29+ 個）
 docs/                            # 文檔
 scripts/                         # Python 工具
 ```

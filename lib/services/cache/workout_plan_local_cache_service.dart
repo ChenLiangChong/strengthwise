@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/workout_record_model.dart';
 import '../../utils/datetime_utils.dart';
+import '../../utils/hive_encryption_helper.dart';
 
 /// 訓練計劃本地快取服務
 ///
@@ -45,7 +46,7 @@ class WorkoutPlanLocalCacheService {
 
       while (retryCount < maxRetries) {
         try {
-          _box = await Hive.openBox(_boxName);
+          _box = await HiveEncryptionHelper.openBox(_boxName);
           _validateVersion();
           _isInitialized = true;
           _isInitializing = false;

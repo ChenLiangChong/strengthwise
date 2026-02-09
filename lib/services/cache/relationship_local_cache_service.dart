@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/coaching_relationship_model.dart';
 import '../../utils/datetime_utils.dart';
+import '../../utils/hive_encryption_helper.dart';
 
 /// 教練學員關係本地快取服務
 ///
@@ -49,7 +50,7 @@ class RelationshipLocalCacheService {
 
       while (retryCount < maxRetries) {
         try {
-          _box = await Hive.openBox(_boxName);
+          _box = await HiveEncryptionHelper.openBox(_boxName);
           _validateVersion();
           _isInitialized = true;
           _isInitializing = false;

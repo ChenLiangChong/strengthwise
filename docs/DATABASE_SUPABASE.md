@@ -2,14 +2,14 @@
 
 > Supabase PostgreSQL 資料庫架構與最佳實踐
 
-**最後更新**：2026-02-07（v5.0）
+**最後更新**：2026-02-09（v5.1）
 
 ---
 
 ## 📊 架構總覽
 
 ```
-Supabase PostgreSQL（28 個表格）
+Supabase PostgreSQL（29 個表格）
 ├── 核心表格（7 個）
 │   ├── users              - 用戶資料
 │   ├── exercises          - 系統動作庫（775 個）
@@ -49,6 +49,9 @@ Supabase PostgreSQL（28 個表格）
 │
 ├── 推播通知（1 個）⭐ v3.0-C
 │   └── user_devices       - 用戶設備（FCM Token 管理）
+│
+├── 全局配置（1 個）⭐ v5.1
+│   └── app_config           - App 遠端配置（版本檢查等）
 │
 └── 優化表格（2 個）
     ├── daily_workout_summary - 每日訓練統計
@@ -742,6 +745,21 @@ CREATE TABLE public.personal_records (
 );
 ```
 
+### 19. 全局配置 ⭐ v5.1
+
+```sql
+-- App 全局配置表（key-value，JSONB 格式）
+CREATE TABLE public.app_config (
+  key TEXT PRIMARY KEY,              -- 配置鍵（唯一）
+  value JSONB NOT NULL,              -- JSON 格式配置值
+  description TEXT,                  -- 配置說明
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()  -- 最後更新時間
+);
+```
+
+> 公開讀取，僅 service_role 可寫入。
+> 目前使用的 key：`app_version`（版本檢查配置）
+
 ---
 
 ## ⚡ RPC 函數
@@ -880,6 +898,14 @@ CREATE TABLE public.personal_records (
 | ALL | Users can * own | `user_id = auth.uid()` |
 | SELECT | Trainees view in workouts | 動作存在於自己的訓練中 |
 
+#### app_config（全局配置）⭐ v5.1
+
+| 操作 | 策略名稱 | 條件 |
+|-----|---------|------|
+| SELECT | app_config_public_read | `true`（所有人可讀，含匿名） |
+
+> 僅 service_role 可寫入（透過 Dashboard 或 Admin API）
+
 #### exercises（系統動作庫）
 
 | 操作 | 策略名稱 | 條件 |
@@ -903,7 +929,7 @@ CREATE TABLE public.personal_records (
 |-----|---------|------|
 | SELECT | Users can query valid | `expires_at > now()` |
 | INSERT | Coaches can create | `coach_id = auth.uid()` + `is_coach = true` |
-| DELETE | Users can delete | `expires_at > now()` |
+| DELETE | Coaches can delete own | `coach_id = auth.uid()`（⭐ v5.2 安全修復）|
 
 #### notes（個人筆記）
 

@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../interfaces/i_auth_service.dart';
 import '../core/error_handling_service.dart';
 import '../service_locator.dart' show Environment;
@@ -39,9 +40,7 @@ class AuthServiceSupabase implements IAuthService {
         _googleSignIn = googleSignIn ??
             GoogleSignIn(
               // Web 平台不支援 serverClientId，由 HTML meta tag 提供
-              serverClientId: kIsWeb
-                  ? null
-                  : '254965941837-bp00e1l33hbvss4tpb94t9i16g8729e6.apps.googleusercontent.com',
+              serverClientId: kIsWeb ? null : dotenv.env['GOOGLE_CLIENT_ID'],
             ),
         _errorService = errorService {
     // 初始化子模組
@@ -218,8 +217,8 @@ class AuthServiceSupabase implements IAuthService {
     _ensureInitialized();
 
     try {
-      if (newPassword.length < 6) {
-        _logError('密碼長度必須至少 6 個字符');
+      if (newPassword.length < 8) {
+        _logError('密碼長度必須至少 8 個字符');
         return false;
       }
 

@@ -2,7 +2,7 @@
 
 > 資料庫 Migration 文件索引
 
-**最後更新**：2026-02-09（v5.0 動作分類系統 v2）
+**最後更新**：2026-02-09（v5.1 App 版本檢查）
 
 ---
 
@@ -102,13 +102,15 @@ psql -U postgres -d strengthwise -f 002_v1_initial_data.sql
 | `28_v5_drop_search_rpc.sql` | - | v5.0 | 移除 search_exercises_v2 RPC（改用客戶端快取篩選） |
 | `32_add_webhooks_availability.sql` | - | v3.9 | FCM Webhook 配置說明（手動在 Dashboard） |
 | `33_enable_realtime_availability.sql` | - | v3.9 | 開啟 Realtime + REPLICA IDENTITY FULL |
+| `34_app_config.sql` | - | v5.1 | App 全局配置表（版本檢查）|
+| `35_security_fixes.sql` | - | v5.2 | 安全性修復（invite_codes DELETE RLS）|
 
 ---
 
 ## 🔄 執行順序
 
 ```
-演進版：001 → 002 → ... → 008 → 09 → 10 → ... → 23 → 24 → 25 → 26 → 27 → 28 → 32 → 33
+演進版：001 → 002 → ... → 008 → 09 → 10 → ... → 23 → 24 → 25 → 26 → 27 → 28 → 32 → 33 → 34 → 35
 
 精簡版：01 → 02 → ... → 10
 ```

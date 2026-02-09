@@ -32,13 +32,10 @@ void main() {
     // getPasswordStrength
     // =========================================================================
     group('getPasswordStrength', () {
-      test('短密碼 (<6) 返回 0', () {
+      test('短密碼 (<8) 返回 0', () {
         expect(AuthValidators.getPasswordStrength('abc'), 0);
         expect(AuthValidators.getPasswordStrength('12345'), 0);
-      });
-
-      test('只有長度 (6-7) 返回 0', () {
-        expect(AuthValidators.getPasswordStrength('abcdef'), 0);
+        expect(AuthValidators.getPasswordStrength('abcdefg'), 0);
       });
 
       test('長密碼 (8+) 加 1 分', () {
@@ -87,14 +84,23 @@ void main() {
     // isPasswordValid
     // =========================================================================
     group('isPasswordValid', () {
-      test('>=6 字符返回 true', () {
-        expect(AuthValidators.isPasswordValid('123456'), isTrue);
-        expect(AuthValidators.isPasswordValid('abcdefgh'), isTrue);
+      test('>=8 字符且含字母+數字返回 true', () {
+        expect(AuthValidators.isPasswordValid('abcdef12'), isTrue);
+        expect(AuthValidators.isPasswordValid('Test1234'), isTrue);
+        expect(AuthValidators.isPasswordValid('password1'), isTrue);
       });
 
-      test('<6 字符返回 false', () {
-        expect(AuthValidators.isPasswordValid('12345'), isFalse);
-        expect(AuthValidators.isPasswordValid('abc'), isFalse);
+      test('<8 字符返回 false', () {
+        expect(AuthValidators.isPasswordValid('abc123'), isFalse);
+        expect(AuthValidators.isPasswordValid('ab1'), isFalse);
+      });
+
+      test('只有字母（無數字）返回 false', () {
+        expect(AuthValidators.isPasswordValid('abcdefgh'), isFalse);
+      });
+
+      test('只有數字（無字母）返回 false', () {
+        expect(AuthValidators.isPasswordValid('12345678'), isFalse);
       });
 
       test('空字串返回 false', () {
