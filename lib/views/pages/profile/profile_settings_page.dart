@@ -507,7 +507,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                           '開啟教練模式以使用教練中心功能',
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.outline,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                         ),
                         SizedBox(height: context.spacing.md),
@@ -618,7 +618,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                           '刪除帳號後，您的訓練記錄將被永久刪除且無法復原',
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.outline,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                         ),
                         SizedBox(height: context.spacing.md),

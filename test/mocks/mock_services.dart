@@ -35,6 +35,7 @@ import 'package:strengthwise/services/interfaces/i_coach_display_preferences_ser
 import 'package:strengthwise/services/interfaces/i_coach_assessment_note_service.dart';
 import 'package:strengthwise/services/interfaces/i_injury_coach_note_service.dart';
 import 'package:strengthwise/services/interfaces/i_notification_service.dart';
+import 'package:strengthwise/services/interfaces/i_app_config_service.dart';
 import 'package:strengthwise/services/core/error_handling_service.dart';
 import 'package:strengthwise/services/cache/statistics_local_cache_service.dart';
 import 'package:strengthwise/services/cache/workout_plan_local_cache_service.dart';
@@ -153,6 +154,13 @@ class MockCoachAssessmentNoteService extends Mock implements ICoachAssessmentNot
 
 /// IInjuryCoachNoteService Mock
 class MockInjuryCoachNoteService extends Mock implements IInjuryCoachNoteService {}
+
+// ============================================================================
+// Mock Classes - App 配置
+// ============================================================================
+
+/// IAppConfigService Mock
+class MockAppConfigService extends Mock implements IAppConfigService {}
 
 // ============================================================================
 // Mock Classes - 核心依賴

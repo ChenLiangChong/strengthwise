@@ -1235,6 +1235,20 @@ BEGIN
 END $$;
 
 -- =====================================================
+-- PART 4: App 全局配置（v5.1）
+-- =====================================================
+INSERT INTO app_config (key, value, description) VALUES (
+  'app_version',
+  '{
+    "latest_version": "1.1.1",
+    "update_url_android": "https://play.google.com/store/apps/details?id=com.strengthwise.fitness",
+    "update_url_ios": "",
+    "release_notes": ""
+  }'::jsonb,
+  'App 版本控制配置'
+) ON CONFLICT (key) DO NOTHING;
+
+-- =====================================================
 -- 完成訊息
 -- =====================================================
 DO $$
@@ -1243,4 +1257,5 @@ BEGIN
   RAISE NOTICE '   - 794 個系統動作（雙語）';
   RAISE NOTICE '   - 元數據表修正';
   RAISE NOTICE '   - Body Parts 同步';
+  RAISE NOTICE '   - App 全局配置（v5.1）';
 END $$;

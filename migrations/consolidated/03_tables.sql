@@ -569,3 +569,15 @@ CREATE TABLE IF NOT EXISTS workout_templates (
 );
 
 ALTER TABLE workout_templates ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================================
+-- Table: app_config (v5.1)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS app_config (
+    key TEXT PRIMARY KEY,
+    value JSONB NOT NULL,
+    description TEXT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE app_config ENABLE ROW LEVEL SECURITY;

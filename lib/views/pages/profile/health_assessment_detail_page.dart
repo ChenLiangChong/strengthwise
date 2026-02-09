@@ -453,14 +453,14 @@ class _HealthAssessmentDetailPageState
                           height: 12,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: theme.colorScheme.outline,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           '載入教練備註...',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.outline,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],

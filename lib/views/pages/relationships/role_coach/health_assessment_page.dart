@@ -1092,7 +1092,7 @@ class _HealthAssessmentPageState extends State<HealthAssessmentPage> {
                   Text(
                     '尚無教練備註',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.outline,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
               ],

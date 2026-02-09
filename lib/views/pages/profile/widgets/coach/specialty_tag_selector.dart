@@ -200,7 +200,7 @@ class _CategorySection extends StatelessWidget {
           child: Text(
             category.label,
             style: theme.textTheme.labelLarge?.copyWith(
-              color: colorScheme.outline,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ),

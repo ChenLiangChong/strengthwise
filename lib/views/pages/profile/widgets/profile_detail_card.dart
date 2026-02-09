@@ -54,7 +54,7 @@ class ProfileDetailCard extends StatelessWidget {
             if (bmiData['heightText'] != null ||
                 bmiData['weightText'] != null ||
                 bmiData['bmi'] != null) ...[
-              _buildSectionHeader(context, '👤 基本資料', colorScheme),
+              _buildSectionHeader(context, '基本資料', colorScheme, Icons.person_outline),
               SizedBox(height: context.spacing.sm),
               Container(
                 padding: EdgeInsets.all(context.spacing.sm),
@@ -87,7 +87,7 @@ class ProfileDetailCard extends StatelessWidget {
             ],
 
             // 偏好設定區塊
-            _buildSectionHeader(context, '⚙️ 偏好設定', colorScheme),
+            _buildSectionHeader(context, '偏好設定', colorScheme, Icons.settings_outlined),
             SizedBox(height: context.spacing.sm),
             Container(
               padding: EdgeInsets.all(context.spacing.sm),
@@ -182,14 +182,20 @@ class ProfileDetailCard extends StatelessWidget {
   }
 
   Widget _buildSectionHeader(
-      BuildContext context, String title, ColorScheme colorScheme) {
+      BuildContext context, String title, ColorScheme colorScheme, IconData icon) {
     final textTheme = Theme.of(context).textTheme;
-    return Text(
-      title,
-      style: textTheme.bodyMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-        color: colorScheme.onSurfaceVariant,
-      ),
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+        const SizedBox(width: 6),
+        Text(
+          title,
+          style: textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 

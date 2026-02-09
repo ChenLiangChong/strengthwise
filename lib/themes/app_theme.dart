@@ -201,6 +201,9 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
+        hintStyle: const TextStyle(color: slate400), // [修正] 淺灰 placeholder，與輸入文字明確區分
+        floatingLabelStyle:
+            const TextStyle(color: blue600), // [修正] 聚焦時 label 用主色
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(inputBorderRadius),
           borderSide: BorderSide.none,
@@ -361,6 +364,9 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: slate700, // 比卡片稍亮
+        hintStyle: const TextStyle(color: slate400), // [修正] 中灰 placeholder，與白色輸入文字明確區分
+        floatingLabelStyle:
+            const TextStyle(color: sky400), // [修正] 聚焦時 label 用主色
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(inputBorderRadius),
           borderSide: BorderSide.none,
@@ -527,6 +533,11 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
+        hintStyle: TextStyle(
+            color: roseOnSurfaceVariant
+                .withValues(alpha: 0.5)), // [修正] 半透明粉 placeholder
+        floatingLabelStyle: const TextStyle(
+            color: rosePrimaryDark), // [修正] 聚焦時 label 用主色
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(inputBorderRadius),
           borderSide: BorderSide.none,

@@ -60,6 +60,8 @@ import '../notification/notification_service.dart';
 import '../realtime/session_realtime_service.dart';
 import '../realtime/realtime_subscription_manager.dart';
 import '../core/onboarding_service.dart';
+import '../core/app_config_service.dart';
+import '../interfaces/i_app_config_service.dart';
 
 /// 服務註冊器
 ///
@@ -115,6 +117,7 @@ class ServiceRegistry {
     _registerOnboardingService(serviceLocator);
     _registerRealtimeSubscriptionManager(serviceLocator);
     _registerExercisePreferencesService(serviceLocator);
+    _registerAppConfigService(serviceLocator);
   }
 
   /// ⚡ 註冊本地快取服務（Phase 2 持久化優化）
@@ -464,6 +467,17 @@ class ServiceRegistry {
       serviceLocator.registerLazySingleton<RealtimeSubscriptionManager>(
         () => RealtimeSubscriptionManager(
           supabase: Supabase.instance.client,
+        ),
+      );
+    }
+  }
+
+  /// ⭐ v5.1: 註冊 App 配置服務（版本檢查）
+  static void _registerAppConfigService(GetIt serviceLocator) {
+    if (!serviceLocator.isRegistered<IAppConfigService>()) {
+      serviceLocator.registerLazySingleton<IAppConfigService>(
+        () => AppConfigService(
+          errorService: serviceLocator<ErrorHandlingService>(),
         ),
       );
     }

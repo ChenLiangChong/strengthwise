@@ -17,6 +17,7 @@ import 'package:strengthwise/views/pages/profile/widgets/profile_detail_card.dar
 import 'package:strengthwise/views/pages/profile/widgets/profile_menu_item.dart';
 import 'package:strengthwise/views/pages/profile/widgets/profile_theme_switcher.dart';
 import 'package:strengthwise/views/pages/profile/widgets/profile_logout_button.dart';
+import 'package:strengthwise/views/pages/profile/widgets/app_version_info.dart';
 
 /// 個人檔案頁面
 ///
@@ -134,6 +135,10 @@ class _ProfilePageContent extends StatelessWidget {
                     }
                   },
                 ),
+
+                // ⭐ v5.1: App 版本資訊
+                SizedBox(height: context.spacing.lg),
+                const AppVersionInfo(),
               ],
             ),
           ),

@@ -495,7 +495,7 @@ class _CertificationTile extends StatelessWidget {
                 Text(
                   '${certification.organization}${certification.year != null ? ' · ${certification.year}' : ''}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.outline,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -526,7 +526,7 @@ class _InfoRow extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(icon, size: 20, color: colorScheme.outline),
+        Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -535,7 +535,7 @@ class _InfoRow extends StatelessWidget {
               Text(
                 label,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.outline,
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 4),
@@ -593,7 +593,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               subtitle,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.outline,
+                color: colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),

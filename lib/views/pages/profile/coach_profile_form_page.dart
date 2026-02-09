@@ -234,7 +234,7 @@ class _Step1BasicInfo extends StatelessWidget {
               Text(
                 '這些資料將顯示在您的教練檔案上',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.outline,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 24),
@@ -317,7 +317,7 @@ class _Step2ProfessionalBackground extends StatelessWidget {
               Text(
                 '選擇您的專長和證照',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.outline,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 24),
