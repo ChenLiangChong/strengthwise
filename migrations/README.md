@@ -104,13 +104,14 @@ psql -U postgres -d strengthwise -f 002_v1_initial_data.sql
 | `33_enable_realtime_availability.sql` | - | v3.9 | 開啟 Realtime + REPLICA IDENTITY FULL |
 | `34_app_config.sql` | - | v5.1 | App 全局配置表（版本檢查）|
 | `35_security_fixes.sql` | - | v5.2 | 安全性修復（invite_codes DELETE RLS）|
+| `36_fix_summary_delete_trigger.sql` | - | v5.2 | 修復刪除計畫後 daily_workout_summary 殘留 |
 
 ---
 
 ## 🔄 執行順序
 
 ```
-演進版：001 → 002 → ... → 008 → 09 → 10 → ... → 23 → 24 → 25 → 26 → 27 → 28 → 32 → 33 → 34 → 35
+演進版：001 → 002 → ... → 008 → 09 → 10 → ... → 23 → 24 → 25 → 26 → 27 → 28 → 32 → 33 → 34 → 35 → 36
 
 精簡版：01 → 02 → ... → 10
 ```

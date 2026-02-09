@@ -36,8 +36,7 @@
 |------|------|
 | `000-core-persona.md` | AI 人格、認知立場、溝通協議 |
 | `001-project-context.md` | 專案資訊、技術棧、版本狀態 |
-| `900-documentation-index.md` | 文檔索引與查閱指南 |
-| `999-documentation-maintenance.md` | 文檔維護規則 |
+| `999-documentation-maintenance.md` | 文檔維護規則（含各領域維護規範）|
 
 ### Flutter/Dart 規則
 
@@ -82,15 +81,10 @@
 
 | 檔案 | 用途 |
 |------|------|
-| `920-docs-database.md` | DATABASE_SUPABASE.md 維護 |
-| `930-docs-ui.md` | UI 文檔維護 |
-| `940-docs-development.md` | DEVELOPMENT_STATUS.md 維護 |
-| `950-docs-saas.md` | SAAS_PLATFORM_ROADMAP.md 維護 |
-| `960-docs-health-assessment.md` | HEALTH_ASSESSMENT_SYSTEM.md 維護 |
+| `930-docs-ui.md` | UI 文檔維護（雙文件協調）|
 | `965-docs-fcm-setup.md` | FCM_SETUP_GUIDE.md 維護 |
-| `970-docs-readme.md` | docs/README.md 維護 |
-| `980-docs-project-overview.md` | PROJECT_OVERVIEW.md 維護 |
 | `990-docs-planning.md` | docs/planning/*.md 維護 |
+| `999-documentation-maintenance.md` | 其他所有文檔維護規則（已整合）|
 
 ---
 

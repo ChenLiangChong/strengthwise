@@ -42,23 +42,23 @@
 
 | 文檔 | 說明 |
 |------|------|
-| [planning/SYNC_ARCHITECTURE_SPEC.md](planning/SYNC_ARCHITECTURE_SPEC.md) | v4.0 同步架構規格（EventBus/Realtime/FCM）⭐ |
 | [planning/HOME_BOOKING_UX_SPEC.md](planning/HOME_BOOKING_UX_SPEC.md) | v3.1-B 首頁 + 行事曆 UX |
-| [planning/TESTING_STRATEGY.md](planning/TESTING_STRATEGY.md) | 測試策略（564 個通過）|
+| [planning/TESTING_STRATEGY.md](planning/TESTING_STRATEGY.md) | 測試策略（1180+ 個通過）|
 | [planning/PRODUCTION_LAUNCH_GUIDE.md](planning/PRODUCTION_LAUNCH_GUIDE.md) | 生產環境發布指南 |
+| [planning/VIRTUAL_CLIENT_SPEC.md](planning/VIRTUAL_CLIENT_SPEC.md) | 虛擬學員測試功能 |
 
 ### 已歸檔（實施完成）
 
 | 文檔 | 說明 |
 |------|------|
-| [planning/archived/EXERCISE_CLASSIFICATION_ANALYSIS.md](planning/archived/EXERCISE_CLASSIFICATION_ANALYSIS.md) | v5.0 動作分類系統分析（775 筆審核完成）✅ |
-| [planning/archived/V5_IMPACT_ANALYSIS.md](planning/archived/V5_IMPACT_ANALYSIS.md) | v5.0 全面影響分析 + 向後兼容架構 ✅ |
-| [planning/archived/TRACKING_MODE_SPEC.md](planning/archived/TRACKING_MODE_SPEC.md) | v3.2-v3.3 TrackingMode 擴充 ✅ |
-| [planning/archived/DATA_FLOW_ANALYSIS.md](planning/archived/DATA_FLOW_ANALYSIS.md) | v3.1-E 數據流分析 + 快取策略 ✅ |
+| [planning/archived/SYNC_ARCHITECTURE_SPEC.md](planning/archived/SYNC_ARCHITECTURE_SPEC.md) | v4.0 同步架構規格（EventBus/Realtime/FCM）✅ |
+| [planning/archived/BETA_RECRUITMENT_DESIGN.md](planning/archived/BETA_RECRUITMENT_DESIGN.md) | Beta 封測招募設計 ✅ |
+| [planning/archived/EXERCISE_CLASSIFICATION_ANALYSIS.md](planning/archived/EXERCISE_CLASSIFICATION_ANALYSIS.md) | v5.0 動作分類系統分析 ✅ |
+| [planning/archived/V5_IMPACT_ANALYSIS.md](planning/archived/V5_IMPACT_ANALYSIS.md) | v5.0 影響分析 ✅ |
+| [planning/archived/DATA_FLOW_ANALYSIS.md](planning/archived/DATA_FLOW_ANALYSIS.md) | v3.1-E 數據流分析 ✅ |
 | [planning/archived/SESSION_MODE_SPEC.md](planning/archived/SESSION_MODE_SPEC.md) | v3.1-SM 教練上課模式 ✅ |
 | [planning/archived/TRAINING_PERMISSION_MATRIX.md](planning/archived/TRAINING_PERMISSION_MATRIX.md) | v3.1 訓練權限矩陣 ✅ |
 | [planning/archived/BOOKING_SYSTEM_OPTIMIZATION.md](planning/archived/BOOKING_SYSTEM_OPTIMIZATION.md) | v3.0 預約系統優化 ✅ |
-| [planning/archived/RESPONSIVE_ARCHITECTURE_DESIGN.md](planning/archived/RESPONSIVE_ARCHITECTURE_DESIGN.md) | v3.0 響應式架構 ✅ |
 | [planning/archived/COACH_PROFILE_SPEC.md](planning/archived/COACH_PROFILE_SPEC.md) | v2.9 教練公開檔案 ✅ |
 
 ---

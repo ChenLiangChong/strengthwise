@@ -114,3 +114,14 @@ node_modules/
 **/node_modules/
 presentations/
 .vercel
+
+# 設計素材（不追蹤大型圖片檔）
+picture/
+
+# Supabase CLI 暫存檔
+supabase/.temp/
+
+# 暫存分析/除錯檔案
+analyze_output.txt
+flutter_01.png
+flutter_01.log
