@@ -145,6 +145,9 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
   // 是否已載入
   bool _isInitialized = false;
 
+  // 鍵盤可見狀態（用於偵測返回鍵關閉鍵盤後自動取消聚焦）
+  bool _isKeyboardVisible = false;
+
   // ⭐ v3.1: 防止自己觸發的 Realtime 更新導致閃爍
   DateTime? _lastLocalSaveTime;
 
@@ -247,6 +250,19 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
       }
       _loadWorkoutPlan();
     }
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    // 偵測鍵盤關閉（例如按返回鍵），自動取消輸入欄位聚焦
+    final bottomInset = WidgetsBinding.instance
+        .platformDispatcher.views.first.viewInsets.bottom;
+    final isKeyboardNowVisible = bottomInset > 0;
+    if (_isKeyboardVisible && !isKeyboardNowVisible) {
+      FocusScope.of(context).unfocus();
+    }
+    _isKeyboardVisible = isKeyboardNowVisible;
   }
 
   @override
@@ -1379,7 +1395,10 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
 
         // 主要內容區
         Expanded(
-          child: CustomScrollView(
+          child: GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            behavior: HitTestBehavior.translucent,
+            child: CustomScrollView(
             slivers: [
               // 頂部額外 Widget（如 ReadinessCard）
               if (widget.headerWidgets != null)
@@ -1440,6 +1459,7 @@ class WorkoutExecutionContentState extends State<WorkoutExecutionContent>
                 child: SizedBox(height: 96),
               ),
             ],
+          ),
           ),
         ),
 

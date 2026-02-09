@@ -286,6 +286,7 @@ class _TimeInputFieldState extends State<TimeInputField> {
             style: textStyle,
             decoration: inputDecoration.copyWith(hintText: '0'),
             keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.next,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(3), // 最大 999 分鐘
@@ -316,11 +317,13 @@ class _TimeInputFieldState extends State<TimeInputField> {
             style: textStyle,
             decoration: inputDecoration.copyWith(hintText: '00'),
             keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(2),
             ],
             onChanged: (_) => _notifyChange(),
+            onSubmitted: (_) => FocusScope.of(context).unfocus(),
           ),
         ),
       ],
