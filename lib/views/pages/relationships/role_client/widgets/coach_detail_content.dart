@@ -81,14 +81,19 @@ class _CoachDetailContentState extends State<CoachDetailContent>
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: colorScheme.primary,
-                  child: Text(
-                    (widget.coach.displayName ?? widget.coach.email)
-                        .substring(0, 1)
-                        .toUpperCase(),
-                    style: textTheme.titleSmall?.copyWith(
-                      color: colorScheme.onPrimary,
-                    ),
-                  ),
+                  backgroundImage: widget.coach.photoURL != null
+                      ? NetworkImage(widget.coach.photoURL!)
+                      : null,
+                  child: widget.coach.photoURL == null
+                      ? Text(
+                          (widget.coach.displayName ?? widget.coach.email)
+                              .substring(0, 1)
+                              .toUpperCase(),
+                          style: textTheme.titleSmall?.copyWith(
+                            color: colorScheme.onPrimary,
+                          ),
+                        )
+                      : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

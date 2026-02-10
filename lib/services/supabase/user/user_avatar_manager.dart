@@ -91,11 +91,12 @@ class UserAvatarManager {
         ),
       );
 
-      // 獲取公開 URL
+      // 獲取公開 URL（加上時間戳避免客戶端快取舊圖）
       final publicUrl = _supabase.storage.from('avatars').getPublicUrl(path);
+      final cacheBustedUrl = '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
 
-      _logDebug('頭像上傳成功: $publicUrl');
-      return publicUrl;
+      _logDebug('頭像上傳成功: $cacheBustedUrl');
+      return cacheBustedUrl;
     } catch (e) {
       _logDebug('上傳頭像失敗: $e');
       return null;

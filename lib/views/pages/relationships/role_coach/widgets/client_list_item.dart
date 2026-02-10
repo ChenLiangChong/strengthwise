@@ -50,13 +50,18 @@ class ClientListItem extends StatelessWidget {
                   CircleAvatar(
                     radius: 24.scaled(context), // ⭐ 響應式頭像
                     backgroundColor: colorScheme.primaryContainer,
-                    child: Text(
-                      _getInitials(client.displayName ?? client.email),
-                      style: context.responsive.titleSmall.copyWith(
-                        color: colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
-                      ), // ⭐ 響應式文字
-                    ),
+                    backgroundImage: client.photoURL != null
+                        ? NetworkImage(client.photoURL!)
+                        : null,
+                    child: client.photoURL == null
+                        ? Text(
+                            _getInitials(client.displayName ?? client.email),
+                            style: context.responsive.titleSmall.copyWith(
+                              color: colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ), // ⭐ 響應式文字
+                          )
+                        : null,
                   ),
                   SizedBox(width: context.spacing.md), // ⭐ 響應式間距
 

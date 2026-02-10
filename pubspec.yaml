@@ -35,6 +35,7 @@ dependencies:
   qr_flutter: ^4.1.0         # QR Code 生成
   mobile_scanner: ^5.1.1     # QR Code 掃描（新一代）
   permission_handler: ^11.0.0  # 相機權限管理
+  image_cropper: ^11.0.0       # 頭像裁切（圓形裁切框）
   
   # ⭐ v3.0-C: 推播通知
   firebase_messaging: ^15.1.6     # FCM 推播（Android/iOS）

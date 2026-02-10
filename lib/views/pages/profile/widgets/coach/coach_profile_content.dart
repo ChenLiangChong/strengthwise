@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:strengthwise/models/coach_profile/coach_profile_model.dart';
 import 'package:strengthwise/models/coach_profile/coach_specialty.dart';
 import 'package:strengthwise/controllers/interfaces/i_coach_profile_controller.dart';
+import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/views/pages/profile/coach_profile_form_page.dart';
 
@@ -55,6 +56,8 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
   CoachProfileModel? _profile;
   bool _isLoading = true;
   String? _errorMessage;
+  /// 從 users 表載入的頭像 URL（優先於外部傳入的 photoUrl）
+  String? _loadedPhotoUrl;
 
   @override
   void initState() {
@@ -80,9 +83,15 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
       // ⭐ v3.6: 透過 CoachProfileController 查詢
       final coachProfileController = serviceLocator<ICoachProfileController>();
       final profile = await coachProfileController.getCoachProfileById(widget.coachId);
+
+      // ⭐ v5.3: 從 users 表載入頭像 URL（自訂上傳的頭像）
+      final profileController = serviceLocator<IProfileController>();
+      final userProfile = await profileController.getUserProfileById(widget.coachId);
+
       if (mounted) {
         setState(() {
           _profile = profile;
+          _loadedPhotoUrl = userProfile?.photoURL;
           _isLoading = false;
         });
       }
@@ -138,7 +147,7 @@ class _CoachProfileContentState extends State<CoachProfileContent> {
           // 頭像與基本資訊
           _ProfileHeaderCard(
             profile: profile,
-            photoUrl: widget.photoUrl,
+            photoUrl: _loadedPhotoUrl ?? widget.photoUrl,
           ),
           const SizedBox(height: 24),
 

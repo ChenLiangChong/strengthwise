@@ -122,14 +122,19 @@ class _ClientDetailContentState extends State<ClientDetailContent>
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: colorScheme.primary,
-                  child: Text(
-                    (widget.client.displayName ?? widget.client.email)
-                        .substring(0, 1)
-                        .toUpperCase(),
-                    style: textTheme.titleSmall?.copyWith(
-                      color: colorScheme.onPrimary,
-                    ),
-                  ),
+                  backgroundImage: widget.client.photoURL != null
+                      ? NetworkImage(widget.client.photoURL!)
+                      : null,
+                  child: widget.client.photoURL == null
+                      ? Text(
+                          (widget.client.displayName ?? widget.client.email)
+                              .substring(0, 1)
+                              .toUpperCase(),
+                          style: textTheme.titleSmall?.copyWith(
+                            color: colorScheme.onPrimary,
+                          ),
+                        )
+                      : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

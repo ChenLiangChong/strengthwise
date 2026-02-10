@@ -1,8 +1,10 @@
 // ✅ 已響應式改造 (Phase 0)
 // ⭐ v3.2: Onboarding 教練模式詢問
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
 import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
@@ -73,7 +75,10 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   void initState() {
     super.initState();
     _controller = serviceLocator<IProfileController>();
-    _loadUserProfile();
+    // 延遲到 build 完成後再載入，避免 notifyListeners 在 build 期間觸發
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserProfile();
+    });
   }
 
   @override
@@ -248,14 +253,57 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     }
   }
 
-  /// 選擇照片
+  /// 選擇照片並裁切
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
 
-    if (pickedFile != null) {
+    if (pickedFile == null) return;
+
+    // Windows / Linux 不支援 image_cropper，直接使用選取的圖片
+    if (defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux) {
       setState(() {
         _avatarFile = File(pickedFile.path);
+      });
+      return;
+    }
+
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: pickedFile.path,
+      maxWidth: 512,
+      maxHeight: 512,
+      compressQuality: 85,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: '裁切頭像',
+          toolbarColor: colorScheme.surface,
+          toolbarWidgetColor: colorScheme.onSurface,
+          activeControlsWidgetColor: colorScheme.primary,
+          cropStyle: CropStyle.circle,
+          aspectRatioPresets: [CropAspectRatioPreset.square],
+          lockAspectRatio: true,
+        ),
+        IOSUiSettings(
+          title: '裁切頭像',
+          cropStyle: CropStyle.circle,
+          aspectRatioPresets: [CropAspectRatioPreset.square],
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+        ),
+      ],
+    );
+
+    if (croppedFile != null) {
+      setState(() {
+        _avatarFile = File(croppedFile.path);
       });
     }
   }

@@ -65,6 +65,11 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            // ProGuard / R8 規則（UCrop okhttp3 suppress）
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
