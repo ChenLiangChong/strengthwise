@@ -38,7 +38,7 @@ class ProfileAvatarEditor extends StatelessWidget {
             right: 0,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.blue,
+                color: Theme.of(context).colorScheme.primary,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: IconButton(

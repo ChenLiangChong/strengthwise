@@ -79,8 +79,7 @@ class UserAvatarManager {
         return null;
       }
 
-      final fileName = 'avatar_$userId.jpg';
-      final path = 'avatars/$fileName';
+      final path = '$userId/avatar.jpg';
 
       // 上傳檔案到 Supabase Storage
       await _supabase.storage.from('avatars').upload(
@@ -108,8 +107,7 @@ class UserAvatarManager {
     try {
       _logDebug('開始刪除頭像');
       
-      final fileName = 'avatar_$userId.jpg';
-      final path = 'avatars/$fileName';
+      final path = '$userId/avatar.jpg';
       
       await _supabase.storage.from('avatars').remove([path]);
       

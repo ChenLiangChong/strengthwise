@@ -1015,6 +1015,23 @@ CREATE TABLE public.app_config (
 - **Size Limit**：5 MB
 - **MIME Types**：`image/png`
 
+### avatars（用戶頭像）⭐ v5.3
+
+- **Public**：true（公開讀取）
+- **Size Limit**：5 MB
+- **MIME Types**：`image/jpeg`, `image/png`, `image/webp`
+
+**路徑結構**：`{user_id}/avatar.jpg`
+
+**RLS**：
+- 任何人可讀取（公開 URL）
+- 用戶只能上傳/更新/刪除自己的頭像
+
+**驗證**（App 端三重檢查）：
+1. 檔案大小 ≤ 5MB
+2. 副檔名白名單（jpg/jpeg/png/webp）
+3. Magic bytes 驗證（真實檔案類型）
+
 ---
 
 ## 📝 查詢最佳實踐

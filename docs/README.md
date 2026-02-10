@@ -46,6 +46,7 @@
 | [planning/TESTING_STRATEGY.md](planning/TESTING_STRATEGY.md) | 測試策略（1180+ 個通過）|
 | [planning/PRODUCTION_LAUNCH_GUIDE.md](planning/PRODUCTION_LAUNCH_GUIDE.md) | 生產環境發布指南 |
 | [planning/VIRTUAL_CLIENT_SPEC.md](planning/VIRTUAL_CLIENT_SPEC.md) | 虛擬學員測試功能 |
+| [planning/STUDIO_MANAGEMENT_SPEC.md](planning/STUDIO_MANAGEMENT_SPEC.md) | v6.0+ 工作室管理系統 |
 
 ### 已歸檔（實施完成）
 
