@@ -114,6 +114,7 @@ class ProfileController extends ChangeNotifier implements IProfileController {
     bool? isCoach,
     bool? isStudent,
     File? avatarFile,
+    Uint8List? avatarBytes,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -122,7 +123,7 @@ class ProfileController extends ChangeNotifier implements IProfileController {
     try {
       // 記錄舊的體重（用於判斷是否有變更）
       final oldWeight = _userProfile?.weight;
-      
+
       final success = await _userService.updateUserProfile(
         displayName: displayName,
         nickname: nickname,
@@ -136,6 +137,7 @@ class ProfileController extends ChangeNotifier implements IProfileController {
         isCoach: isCoach,
         isStudent: isStudent,
         avatarFile: avatarFile,
+        avatarBytes: avatarBytes,
       );
 
       if (success) {

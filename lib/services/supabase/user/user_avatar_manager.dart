@@ -103,6 +103,50 @@ class UserAvatarManager {
     }
   }
   
+  /// ⭐ v5.3: 上傳頭像（Uint8List 版本，跨平台支援 Web）
+  ///
+  /// 驗證：檔案大小（≤5MB）、magic bytes
+  Future<String?> uploadAvatarBytes(String userId, Uint8List bytes, {String ext = 'jpg'}) async {
+    try {
+      _logDebug('開始上傳頭像（bytes 模式，${bytes.length} bytes）');
+
+      // 1. 檢查檔案大小
+      if (bytes.length > _maxFileSizeBytes) {
+        _logDebug('頭像檔案過大: ${bytes.length} bytes（上限 ${_maxFileSizeBytes ~/ 1024 ~/ 1024}MB）');
+        return null;
+      }
+
+      // 2. 檢查 magic bytes（真實檔案類型）
+      if (!_isValidImageHeader(bytes)) {
+        _logDebug('頭像檔案內容無效（magic bytes 不匹配）');
+        return null;
+      }
+
+      final path = '$userId/avatar.jpg';
+
+      // 使用 uploadBinary 上傳（Web 相容）
+      await _supabase.storage.from('avatars').uploadBinary(
+        path,
+        bytes,
+        fileOptions: const FileOptions(
+          cacheControl: '3600',
+          upsert: true,
+          contentType: 'image/jpeg',
+        ),
+      );
+
+      // 獲取公開 URL（加上時間戳避免客戶端快取舊圖）
+      final publicUrl = _supabase.storage.from('avatars').getPublicUrl(path);
+      final cacheBustedUrl = '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+
+      _logDebug('頭像上傳成功（bytes 模式）: $cacheBustedUrl');
+      return cacheBustedUrl;
+    } catch (e) {
+      _logDebug('上傳頭像失敗（bytes 模式）: $e');
+      return null;
+    }
+  }
+
   /// 刪除頭像
   Future<bool> deleteAvatar(String userId) async {
     try {

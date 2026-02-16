@@ -8,8 +8,9 @@ import '../../../models/user_model.dart';
 
 /// ⭐ 定義 users 表的標準查詢欄位（避免 SELECT *）
 const String _kUserSelectFields = '''
-  id, email, display_name, nickname, photo_url, gender, 
-  height, weight, birth_date, is_coach, is_student, 
+  id, email, display_name, nickname, photo_url, gender, gender_visible,
+  height, weight, birth_date, is_coach, is_student,
+  bio, unit_system,
   profile_created_at, profile_updated_at
 ''';
 

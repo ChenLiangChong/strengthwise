@@ -55,6 +55,7 @@ abstract class IProfileController extends ChangeNotifier {
     bool? isCoach,
     bool? isStudent,
     File? avatarFile,
+    Uint8List? avatarBytes, // ⭐ v5.3: Web 跨平台頭像上傳
   });
 
   /// 切換教練模式

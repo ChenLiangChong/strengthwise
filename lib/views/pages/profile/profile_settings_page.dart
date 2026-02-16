@@ -1,11 +1,12 @@
 // ✅ 已響應式改造 (Phase 0)
 // ⭐ v3.2: Onboarding 教練模式詢問
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:strengthwise/controllers/interfaces/i_profile_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/services/core/onboarding_service.dart';
@@ -44,6 +45,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
 
   // 本地狀態（不屬於全局狀態）
   File? _avatarFile;
+  Uint8List? _avatarBytes; // ⭐ v5.3: Web 跨平台頭像
   final TextEditingController _displayNameController = TextEditingController();
   final TextEditingController _nicknameController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
@@ -130,7 +132,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   /// ⭐ v3.1-B: 檢查是否有未保存的變更
   bool _hasUnsavedChanges() {
     // 頭像有變更
-    if (_avatarFile != null) return true;
+    if (_avatarFile != null || _avatarBytes != null) return true;
 
     // 基本資料有變更
     if (_displayNameController.text != _originalDisplayName) return true;
@@ -218,6 +220,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
       isCoach: _isCoach,
       isStudent: _isStudent,
       avatarFile: _avatarFile,
+      avatarBytes: _avatarBytes,
     );
 
     _isSaving = false;
@@ -266,10 +269,12 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     if (pickedFile == null) return;
 
     // Windows / Linux 不支援 image_cropper，直接使用選取的圖片
-    if (defaultTargetPlatform == TargetPlatform.windows ||
-        defaultTargetPlatform == TargetPlatform.linux) {
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.windows ||
+         defaultTargetPlatform == TargetPlatform.linux)) {
       setState(() {
         _avatarFile = File(pickedFile.path);
+        _avatarBytes = null;
       });
       return;
     }
@@ -298,13 +303,27 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
           aspectRatioLockEnabled: true,
           resetAspectRatioEnabled: false,
         ),
+        // ⭐ v5.3: Web 裁切支援
+        WebUiSettings(
+          context: context,
+        ),
       ],
     );
 
     if (croppedFile != null) {
-      setState(() {
-        _avatarFile = File(croppedFile.path);
-      });
+      if (kIsWeb) {
+        // ⭐ v5.3: Web 平台用 bytes（dart:io File 不支援 Web）
+        final bytes = await croppedFile.readAsBytes();
+        setState(() {
+          _avatarBytes = bytes;
+          _avatarFile = null;
+        });
+      } else {
+        setState(() {
+          _avatarFile = File(croppedFile.path);
+          _avatarBytes = null;
+        });
+      }
     }
   }
 
@@ -349,6 +368,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
       isCoach: widget.isFirstTimeSetup ? false : _isCoach,
       isStudent: widget.isFirstTimeSetup ? true : _isStudent,
       avatarFile: _avatarFile,
+      avatarBytes: _avatarBytes,
     );
 
     if (!mounted) return;
@@ -521,6 +541,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                     bioController: _bioController,
                     photoURL: controller.userProfile?.photoURL,
                     avatarFile: _avatarFile,
+                    avatarBytes: _avatarBytes,
                     gender: _gender,
                     genderVisible: _genderVisible,
                     birthDate: _birthDate,

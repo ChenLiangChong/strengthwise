@@ -164,6 +164,7 @@ class UserServiceSupabase implements IUserService {
     String? bio,
     String? unitSystem,
     File? avatarFile,
+    Uint8List? avatarBytes,
   }) async {
     try {
       final userId = _currentUserId;
@@ -189,7 +190,13 @@ class UserServiceSupabase implements IUserService {
       if (unitSystem != null) updateData['unit_system'] = unitSystem;
 
       // 處理頭像上傳
-      if (avatarFile != null) {
+      // ⭐ v5.3: 優先使用 avatarBytes（Web 跨平台），否則用 File（原生平台）
+      if (avatarBytes != null) {
+        final avatarUrl = await _avatarManager.uploadAvatarBytes(userId, avatarBytes);
+        if (avatarUrl != null) {
+          updateData['photo_url'] = avatarUrl;
+        }
+      } else if (avatarFile != null) {
         final avatarUrl = await _avatarManager.uploadAvatar(userId, avatarFile);
         if (avatarUrl != null) {
           updateData['photo_url'] = avatarUrl;

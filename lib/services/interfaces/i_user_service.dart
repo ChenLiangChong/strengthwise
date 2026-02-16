@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import '../../models/user_model.dart';
 
 /// 用戶服務接口
@@ -30,6 +31,7 @@ abstract class IUserService {
     String? bio,          // 新增：個人簡介
     String? unitSystem,   // 新增：單位系統
     File? avatarFile,
+    Uint8List? avatarBytes, // ⭐ v5.3: Web 跨平台頭像上傳
   });
   
   /// 切換用戶角色

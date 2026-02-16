@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'profile_avatar_editor.dart';
@@ -25,6 +26,7 @@ class ProfileFormContent extends StatelessWidget {
   // 狀態
   final String? photoURL;
   final File? avatarFile;
+  final Uint8List? avatarBytes; // ⭐ v5.3: Web 跨平台支援
   final String? gender;
   final bool genderVisible;
   final DateTime? birthDate;
@@ -54,6 +56,7 @@ class ProfileFormContent extends StatelessWidget {
     required this.bioController,
     required this.photoURL,
     required this.avatarFile,
+    this.avatarBytes,
     required this.gender,
     required this.genderVisible,
     required this.birthDate,
@@ -91,6 +94,7 @@ class ProfileFormContent extends StatelessWidget {
           ProfileAvatarEditor(
             photoURL: photoURL,
             avatarFile: avatarFile,
+            avatarBytes: avatarBytes,
             onPickImage: onPickImage,
           ),
 

@@ -507,6 +507,24 @@ class CoachingRelationshipController extends ChangeNotifier implements ICoaching
         return false;
       }
 
+      // ⭐ v5.3: 發布關係建立事件 + 重新載入列表
+      final coachId = result.coachId;
+      final clientId = result.clientId;
+      if (coachId != null && clientId != null) {
+        _eventBusController.publishRelationshipCreated(
+          relationshipId: result.relationshipId ?? '',
+          coachId: coachId,
+          clientId: clientId,
+        );
+
+        // 根據角色重新載入列表
+        if (myRole == 'coach') {
+          await loadCoachClients(coachId);
+        } else {
+          await loadClientCoaches(clientId);
+        }
+      }
+
       _clearError();
       _setLoading(false);
       notifyListeners();
@@ -616,6 +634,17 @@ class CoachingRelationshipController extends ChangeNotifier implements ICoaching
         notifyListeners();
         _setLoading(false);
         return false;
+      }
+
+      // ⭐ v5.3: 發布關係建立事件 + 重新載入學員的教練列表
+      final coachId = result.coachId;
+      if (coachId != null) {
+        _eventBusController.publishRelationshipCreated(
+          relationshipId: result.relationshipId ?? '',
+          coachId: coachId,
+          clientId: traineeId,
+        );
+        await loadClientCoaches(traineeId);
       }
 
       _clearError();
