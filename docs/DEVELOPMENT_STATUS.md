@@ -19,9 +19,9 @@
 
 ## 下一步計劃
 
-### v5.3 頭像功能增強（🚧 開發中）
+### v5.3 頭像功能增強 + Bug 修復（🚧 開發中）
 
-**目標**：頭像全局顯示 + 圖片裁切
+**目標**：頭像全局顯示 + 圖片裁切 + 多項 Bug 修復
 
 | # | 項目 | 類型 | 狀態 |
 |---|------|------|------|
@@ -30,11 +30,19 @@
 | 3 | 教練中心學員列表頭像顯示 | UI | ✅ 完成 |
 | 4 | 教練中心學員詳情頭像顯示 | UI | ✅ 完成 |
 | 5 | 學員中心教練詳情頭像顯示 | UI | ✅ 完成 |
+| 6 | 個人簡介查詢欄位遺漏修復 | Bug | ✅ 完成 |
+| 7 | Web 頭像上傳完整支援 | Bug | ✅ 完成 |
+| 8 | 教練綁定學員即時更新修復 | Bug | ✅ 完成 |
 
 **技術決策**：
 - `image_cropper` 原生裁切 UI（Android: uCrop, iOS: TOCropViewController, Web: Cropper.js）
 - 裁切參數：圓形框 + 1:1 比例 + 512px + 85% 壓縮
 - Storage 路徑：`avatars/{user_id}/avatar.jpg`，RLS 限制只能操作自己的頭像
+
+**Bug 修復**：
+- `_kUserSelectFields` 遺漏 `bio`、`unit_system`、`gender_visible`，導致個人簡介保存後重新載入為空
+- Web 頭像上傳：整條路徑依賴 `dart:io File`（Web 不支援），改用 `Uint8List` + `uploadBinary()` 跨平台方案 + cropperjs Web 裁切
+- `scanAndBind()` / `useInviteCode()` 成功後未發布 EventBus 事件、未重新載入列表，導致教練綁定學員需重開 App
 
 ---
 
