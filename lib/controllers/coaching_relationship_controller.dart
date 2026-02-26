@@ -507,7 +507,7 @@ class CoachingRelationshipController extends ChangeNotifier implements ICoaching
         return false;
       }
 
-      // ⭐ v5.3: 發布關係建立事件 + 重新載入列表
+      // ⭐ v5.3: 發布關係建立事件 + 清除快取 + 重新載入列表
       final coachId = result.coachId;
       final clientId = result.clientId;
       if (coachId != null && clientId != null) {
@@ -516,6 +516,9 @@ class CoachingRelationshipController extends ChangeNotifier implements ICoaching
           coachId: coachId,
           clientId: clientId,
         );
+
+        // ⚡ 顯式清除快取（確保不從舊快取載入）
+        _relationshipService.clearCache();
 
         // 根據角色重新載入列表
         if (myRole == 'coach') {
@@ -636,7 +639,7 @@ class CoachingRelationshipController extends ChangeNotifier implements ICoaching
         return false;
       }
 
-      // ⭐ v5.3: 發布關係建立事件 + 重新載入學員的教練列表
+      // ⭐ v5.3: 發布關係建立事件 + 清除快取 + 重新載入學員的教練列表
       final coachId = result.coachId;
       if (coachId != null) {
         _eventBusController.publishRelationshipCreated(
@@ -644,6 +647,10 @@ class CoachingRelationshipController extends ChangeNotifier implements ICoaching
           coachId: coachId,
           clientId: traineeId,
         );
+
+        // ⚡ 顯式清除快取（InviteCodeService 不持有 relationship 快取引用）
+        _relationshipService.clearCache();
+
         await loadClientCoaches(traineeId);
       }
 
@@ -760,11 +767,13 @@ class CoachingRelationshipController extends ChangeNotifier implements ICoaching
   Future<List<UserModel>> getCoachClientsWithDetails(
     String coachId, {
     String? status,
+    bool forceRefresh = false,
   }) async {
     try {
       return await _relationshipService.getCoachClientsWithDetails(
         coachId,
         status: status,
+        forceRefresh: forceRefresh,
       );
     } catch (e) {
       _errorService.logError(
@@ -781,11 +790,13 @@ class CoachingRelationshipController extends ChangeNotifier implements ICoaching
   Future<List<CoachingRelationshipModel>> getCoachClients(
     String coachId, {
     String? status,
+    bool forceRefresh = false,
   }) async {
     try {
       return await _relationshipService.getCoachClients(
         coachId,
         status: status,
+        forceRefresh: forceRefresh,
       );
     } catch (e) {
       _errorService.logError(

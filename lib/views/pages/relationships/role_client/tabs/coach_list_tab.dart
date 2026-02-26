@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:strengthwise/controllers/interfaces/i_coach_management_controller.dart';
-import 'package:strengthwise/controllers/interfaces/i_coaching_relationship_controller.dart';
 import 'package:strengthwise/services/service_locator.dart';
 import 'package:strengthwise/models/user/user_model.dart';
 import 'package:strengthwise/controllers/interfaces/i_auth_controller.dart';
@@ -53,14 +52,9 @@ class _CoachListTabState extends State<CoachListTab>
     super.dispose();
   }
 
-  /// 刷新列表
+  /// 刷新列表（強制跳過快取）
   Future<void> _refresh() async {
-    // ⭐ v3.6: 透過 Controller 清除快取
-    final coachingController = serviceLocator<ICoachingRelationshipController>();
-    coachingController.clearClientCache(widget.clientId);
-
-    // 重新載入
-    await _controller.loadCoaches(widget.clientId);
+    await _controller.loadCoaches(widget.clientId, forceRefresh: true);
   }
 
   /// 查看教練詳情

@@ -43,26 +43,29 @@ class CoachingRelationshipServiceSupabase
   Future<List<CoachingRelationshipModel>> getCoachClients(
     String coachId, {
     String? status,
+    bool forceRefresh = false,
   }) async {
     try {
-      // ⚡ 1. 優先檢查記憶體快取（最快）
-      final memoryCached = _cache.getCoachClients(coachId, status);
-      if (memoryCached != null) {
-        return memoryCached;
-      }
+      if (!forceRefresh) {
+        // ⚡ 1. 優先檢查記憶體快取（最快）
+        final memoryCached = _cache.getCoachClients(coachId, status);
+        if (memoryCached != null) {
+          return memoryCached;
+        }
 
-      // ⚡ 2. 檢查 Hive 持久化快取
-      if (_localCacheService != null) {
-        final hiveCached = await _localCacheService!.getCachedCoachClientsAsync(coachId, status);
-        if (hiveCached != null) {
-          if (kDebugMode) {
-            debugPrint('[RELATIONSHIP_SERVICE] ⚡ 從 Hive 快取載入 ${hiveCached.length} 個學員關係');
+        // ⚡ 2. 檢查 Hive 持久化快取
+        if (_localCacheService != null) {
+          final hiveCached = await _localCacheService!.getCachedCoachClientsAsync(coachId, status);
+          if (hiveCached != null) {
+            if (kDebugMode) {
+              debugPrint('[RELATIONSHIP_SERVICE] ⚡ 從 Hive 快取載入 ${hiveCached.length} 個學員關係');
+            }
+            // 同步到記憶體快取
+            _cache.setCoachClients(coachId, status, hiveCached);
+            // 背景更新（不阻塞）
+            _refreshCoachClientsInBackground(coachId, status);
+            return hiveCached;
           }
-          // 同步到記憶體快取
-          _cache.setCoachClients(coachId, status, hiveCached);
-          // 背景更新（不阻塞）
-          _refreshCoachClientsInBackground(coachId, status);
-          return hiveCached;
         }
       }
 
@@ -107,26 +110,29 @@ class CoachingRelationshipServiceSupabase
   Future<List<CoachingRelationshipModel>> getClientCoaches(
     String clientId, {
     String? status,
+    bool forceRefresh = false,
   }) async {
     try {
-      // ⚡ 1. 優先檢查記憶體快取（最快）
-      final memoryCached = _cache.getClientCoaches(clientId, status);
-      if (memoryCached != null) {
-        return memoryCached;
-      }
+      if (!forceRefresh) {
+        // ⚡ 1. 優先檢查記憶體快取（最快）
+        final memoryCached = _cache.getClientCoaches(clientId, status);
+        if (memoryCached != null) {
+          return memoryCached;
+        }
 
-      // ⚡ 2. 檢查 Hive 持久化快取
-      if (_localCacheService != null) {
-        final hiveCached = await _localCacheService!.getCachedClientCoachesAsync(clientId, status);
-        if (hiveCached != null) {
-          if (kDebugMode) {
-            debugPrint('[RELATIONSHIP_SERVICE] ⚡ 從 Hive 快取載入 ${hiveCached.length} 個教練關係');
+        // ⚡ 2. 檢查 Hive 持久化快取
+        if (_localCacheService != null) {
+          final hiveCached = await _localCacheService!.getCachedClientCoachesAsync(clientId, status);
+          if (hiveCached != null) {
+            if (kDebugMode) {
+              debugPrint('[RELATIONSHIP_SERVICE] ⚡ 從 Hive 快取載入 ${hiveCached.length} 個教練關係');
+            }
+            // 同步到記憶體快取
+            _cache.setClientCoaches(clientId, status, hiveCached);
+            // 背景更新（不阻塞）
+            _refreshClientCoachesInBackground(clientId, status);
+            return hiveCached;
           }
-          // 同步到記憶體快取
-          _cache.setClientCoaches(clientId, status, hiveCached);
-          // 背景更新（不阻塞）
-          _refreshClientCoachesInBackground(clientId, status);
-          return hiveCached;
         }
       }
 
@@ -171,12 +177,15 @@ class CoachingRelationshipServiceSupabase
   Future<List<UserModel>> getCoachClientsWithDetails(
     String coachId, {
     String? status,
+    bool forceRefresh = false,
   }) async {
     try {
       // 檢查快取
-      final cached = _cache.getClientDetails(coachId, status);
-      if (cached != null) {
-        return cached;
+      if (!forceRefresh) {
+        final cached = _cache.getClientDetails(coachId, status);
+        if (cached != null) {
+          return cached;
+        }
       }
 
       // 查詢學員 ID 列表

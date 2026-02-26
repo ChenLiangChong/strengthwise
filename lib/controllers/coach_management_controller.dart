@@ -68,19 +68,20 @@ class CoachManagementController extends ChangeNotifier implements ICoachManageme
 
   /// 載入學員的教練列表
   @override
-  Future<void> loadCoaches(String clientId) async {
+  Future<void> loadCoaches(String clientId, {bool forceRefresh = false}) async {
     _setLoading(true);
     _clearError();
 
     try {
       if (kDebugMode) {
-        debugPrint('[CoachManagementController] 🔄 載入教練列表，學員 ID: $clientId');
+        debugPrint('[CoachManagementController] 🔄 載入教練列表，學員 ID: $clientId${forceRefresh ? '（強制刷新）' : ''}');
       }
 
       // 獲取教練關係列表（只載入 active 狀態）
       final relationships = await _relationshipService.getClientCoaches(
         clientId,
         status: 'active',
+        forceRefresh: forceRefresh,
       );
 
       if (kDebugMode) {

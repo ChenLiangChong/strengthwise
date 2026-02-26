@@ -110,10 +110,10 @@ abstract class ICoachingRelationshipController extends ChangeNotifier {
   );
 
   /// 獲取教練的學員列表（帶用戶詳情）
-  Future<List<UserModel>> getCoachClientsWithDetails(String coachId, {String? status});
+  Future<List<UserModel>> getCoachClientsWithDetails(String coachId, {String? status, bool forceRefresh = false});
 
   /// 獲取教練的學員關係列表
-  Future<List<CoachingRelationshipModel>> getCoachClients(String coachId, {String? status});
+  Future<List<CoachingRelationshipModel>> getCoachClients(String coachId, {String? status, bool forceRefresh = false});
 
   // ==================== 快取管理 ====================
 

@@ -67,16 +67,10 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
 
   /// 載入學員列表
   ///
-  /// ⚡ 使用 Stale-While-Revalidate 策略：
-  /// - 立即顯示快取數據（如有）
-  /// - Service 層會在背景刷新數據
-  /// - 不再強制清除快取
-  Future<void> _loadClients() async {
+  /// [forceRefresh] 強制跳過快取直接查 DB（綁定返回、手動刷新時使用）
+  Future<void> _loadClients({bool forceRefresh = false}) async {
     final userId = _currentUserId;
     if (userId == null) return;
-
-    // ⚡ 移除 clearCoachCache，使用 Stale-While-Revalidate
-    // _relationshipService.clearCoachCache(_currentUserId!);
 
     setState(() {
       _isLoading = true;
@@ -84,16 +78,20 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
     });
 
     try {
+      final statusFilter = _selectedFilter == 'all' ? null : _selectedFilter;
+
       // ⭐ v3.6: 透過 CoachingRelationshipController 查詢
       final clientUsers = await _coachingController.getCoachClientsWithDetails(
         userId,
-        status: _selectedFilter == 'all' ? null : _selectedFilter,
+        status: statusFilter,
+        forceRefresh: forceRefresh,
       );
 
       // 同時獲取關係列表（包含備註、創建時間等）
       final relationships = await _coachingController.getCoachClients(
         userId,
-        status: _selectedFilter == 'all' ? null : _selectedFilter,
+        status: statusFilter,
+        forceRefresh: forceRefresh,
       );
 
       // 建立 clientId -> UserModel 的對應
@@ -140,7 +138,7 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
 
     // 可選：重新載入列表（因為可能有新學員）
     if (mounted) {
-      _loadClients();
+      _loadClients(forceRefresh: true);
     }
   }
 
@@ -192,7 +190,7 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
       );
 
       if (result == true && mounted) {
-        _loadClients(); // 重新載入列表
+        _loadClients(forceRefresh: true); // 綁定成功，強制刷新
       }
     }
   }
@@ -206,7 +204,7 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('學員已歸檔')),
         );
-        _loadClients();
+        _loadClients(forceRefresh: true);
       }
     } catch (e) {
       if (mounted) {
@@ -231,7 +229,7 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
               backgroundColor: Colors.orange,
             ),
           );
-          _loadClients();
+          _loadClients(forceRefresh: true);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(_coachingController.errorMessage ?? '刪除失敗')),
@@ -278,7 +276,7 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: '刷新列表',
-            onPressed: _isLoading ? null : _loadClients,
+            onPressed: _isLoading ? null : () => _loadClients(forceRefresh: true),
           ),
           // 顯示當前用戶 UUID（開發專用）
           if (_currentUserId != null)
@@ -446,7 +444,7 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
               relationships: _relationships,
               clientsMap: _clientsMap,
               isLoading: _isLoading,
-              onRefresh: _loadClients,
+              onRefresh: () => _loadClients(forceRefresh: true),
               onArchiveClient: (relationship) =>
                   _archiveClient(relationship.id),
               onDeleteClient: (relationship) => _deleteClient(relationship.id),
@@ -498,7 +496,7 @@ class _ClientManagementPageState extends State<ClientManagementPage> {
               key: ValueKey(client.uid),
               clientId: client.uid,
               client: client,
-              onDataChanged: _loadClients,
+              onDataChanged: () => _loadClients(forceRefresh: true),
             )
           : null,
     );

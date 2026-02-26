@@ -48,6 +48,7 @@ abstract class ICoachingRelationshipService {
   Future<List<CoachingRelationshipModel>> getCoachClients(
     String coachId, {
     String? status,
+    bool forceRefresh = false,
   });
 
   /// 獲取學員的所有教練列表
@@ -57,6 +58,7 @@ abstract class ICoachingRelationshipService {
   Future<List<CoachingRelationshipModel>> getClientCoaches(
     String clientId, {
     String? status,
+    bool forceRefresh = false,
   });
 
   /// 獲取學員的詳細資料（含用戶資料）
@@ -67,6 +69,7 @@ abstract class ICoachingRelationshipService {
   Future<List<UserModel>> getCoachClientsWithDetails(
     String coachId, {
     String? status,
+    bool forceRefresh = false,
   });
 
   /// 獲取學員及其關係狀態（用於筆記篩選器）⭐ 新增

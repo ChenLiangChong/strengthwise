@@ -32,7 +32,7 @@ abstract class ICoachManagementController extends ChangeNotifier {
   // ==================== 教練列表管理 ====================
 
   /// 載入學員的教練列表
-  Future<void> loadCoaches(String clientId);
+  Future<void> loadCoaches(String clientId, {bool forceRefresh = false});
 
   /// 搜尋教練
   void searchCoaches(String query);

@@ -268,10 +268,19 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
 
     if (pickedFile == null) return;
 
+    // ⭐ v5.3: Web 平台跳過裁切，直接用 bytes 上傳
+    if (kIsWeb) {
+      final bytes = await pickedFile.readAsBytes();
+      setState(() {
+        _avatarBytes = bytes;
+        _avatarFile = null;
+      });
+      return;
+    }
+
     // Windows / Linux 不支援 image_cropper，直接使用選取的圖片
-    if (!kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.windows ||
-         defaultTargetPlatform == TargetPlatform.linux)) {
+    if (defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux) {
       setState(() {
         _avatarFile = File(pickedFile.path);
         _avatarBytes = null;
@@ -303,27 +312,14 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
           aspectRatioLockEnabled: true,
           resetAspectRatioEnabled: false,
         ),
-        // ⭐ v5.3: Web 裁切支援
-        WebUiSettings(
-          context: context,
-        ),
       ],
     );
 
     if (croppedFile != null) {
-      if (kIsWeb) {
-        // ⭐ v5.3: Web 平台用 bytes（dart:io File 不支援 Web）
-        final bytes = await croppedFile.readAsBytes();
-        setState(() {
-          _avatarBytes = bytes;
-          _avatarFile = null;
-        });
-      } else {
-        setState(() {
-          _avatarFile = File(croppedFile.path);
-          _avatarBytes = null;
-        });
-      }
+      setState(() {
+        _avatarFile = File(croppedFile.path);
+        _avatarBytes = null;
+      });
     }
   }
 
