@@ -169,8 +169,13 @@ class ExerciseSearchEngine {
         return bScore.compareTo(aScore);
       });
     } else {
-      // 無搜尋關鍵字時按名稱排序
-      results.sort((a, b) => a.name.compareTo(b.name));
+      // 無搜尋關鍵字時：難度優先，同難度按名稱排序
+      results.sort((a, b) {
+        final diffCmp = _difficultyOrder(a.difficultyLevel)
+            .compareTo(_difficultyOrder(b.difficultyLevel));
+        if (diffCmp != 0) return diffCmp;
+        return a.name.compareTo(b.name);
+      });
     }
 
     return results.take(limit).toList();
@@ -333,6 +338,20 @@ class ExerciseSearchEngine {
     }
 
     return combined.take(limit).toList();
+  }
+
+  /// 難度等級排序值（beginner 最前）
+  int _difficultyOrder(String level) {
+    switch (level) {
+      case 'beginner':
+        return 0;
+      case 'intermediate':
+        return 1;
+      case 'advanced':
+        return 2;
+      default:
+        return 3;
+    }
   }
 
   /// 獲取模糊搜尋引擎（供直接訪問）
